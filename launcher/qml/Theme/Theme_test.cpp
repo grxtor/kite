@@ -65,6 +65,14 @@ class ThemeTest : public QObject
 							   "    property int controlHeightLg: Theme.control.heightLg\n"
 							   "    property color surfaceHover: Theme.palette.surfaceHover\n"
 							   "    property bool dark: Theme.dark\n"
+							   "    property int motionFast: Theme.motion.fast\n"
+							   "    property int motionPulse: Theme.motion.pulse\n"
+							   "    property bool motionReduced: Theme.motion.reduced\n"
+							   "    property color dangerInk: Theme.tone(\"danger\").ink\n"
+							   "    property color dangerSoft: Theme.tone(\"danger\").soft\n"
+							   "    property color unknownInk: Theme.tone(\"nonsense\").ink\n"
+							   "    property int iconMid: Theme.icon.mid\n"
+							   "    property int heroPixelSize: Theme.type.hero.pixelSize\n"
 							   "    property color canvasColor: Theme.palette.canvas\n"
 							   "    // Reaches the singletons from C++; singletonInstance() needs Qt 6.5.\n"
 							   "    property QtObject themeRef: Theme\n"
@@ -91,6 +99,14 @@ class ThemeTest : public QObject
 		QCOMPARE(root->property("controlHeight").toInt(), 40);
 		QCOMPARE(root->property("controlHeightLg").toInt(), 48);
 
+		// Motion runs at its token durations until the Reduce motion setting
+		// (Theme.reduceMotion, set by SettingsStore) zeroes them all, live.
+		QCOMPARE(root->property("motionFast").toInt(), 120);
+		QCOMPARE(root->property("motionPulse").toInt(), 900);
+		QCOMPARE(root->property("motionReduced").toBool(), false);
+		QCOMPARE(root->property("iconMid").toInt(), 20);
+		QCOMPARE(root->property("heroPixelSize").toInt(), 48);
+
 		// The colour tokens come from ThemePalette for the active theme. The
 		// launcher starts dark whatever the OS prefers, so this holds on a
 		// light runner too. The scheme is named through forScheme() so a
@@ -107,6 +123,18 @@ class ThemeTest : public QObject
 		QVERIFY(service != nullptr);
 		QObject* themeRef = root->property("themeRef").value<QObject*>();
 		QVERIFY(themeRef != nullptr);
+
+		const ThemePalette dark = ThemePalette::forScheme(ThemePalette::Scheme::Amethyst, true);
+		QCOMPARE(root->property("dangerInk").value<QColor>(), dark.danger);
+		QCOMPARE(root->property("dangerSoft").value<QColor>(), dark.dangerSubtle);
+		QCOMPARE(root->property("unknownInk").value<QColor>(), dark.textSecondary);
+
+		QVERIFY(themeRef->setProperty("reduceMotion", true));
+		QCOMPARE(root->property("motionFast").toInt(), 0);
+		QCOMPARE(root->property("motionPulse").toInt(), 0);
+		QCOMPARE(root->property("motionReduced").toBool(), true);
+		QVERIFY(themeRef->setProperty("reduceMotion", false));
+		QCOMPARE(root->property("motionFast").toInt(), 120);
 
 		// Switching mode replaces the whole theme as one unit: `changed` fires
 		// once per switch, not once per property.

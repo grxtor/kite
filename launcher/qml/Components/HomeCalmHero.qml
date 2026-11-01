@@ -104,7 +104,7 @@ Item {
             size: root.actionsHeight
             playWidth: root.playWidth
             glass: true
-            glassFill: Qt.rgba(1, 1, 1, 0.07)
+            glassFill: Theme.media.glass
         }
     }
 }

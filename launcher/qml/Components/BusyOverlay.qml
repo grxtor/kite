@@ -34,6 +34,8 @@ Rectangle {
         onWheel: (wheel) => wheel.accepted = true
     }
 
+    WindowDragZone {}
+
     GlassSurface {
         anchors.centerIn: parent
         width: Math.min(360, parent.width - Theme.space.xxl * 2)

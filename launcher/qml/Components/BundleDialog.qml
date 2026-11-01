@@ -12,7 +12,7 @@ import Kite.Theme
  * `performance`: Add-ons (the Comfort bundle) or Kite Performance (the instance's mode switch, plus a Graphics API
  * row on Minecraft 26.2+ that edits options.txt). Warns when OptiFine and Sodium or Iris would meet.
  */
-Dialog {
+AppDialog {
     id: root
 
     property bool performance: false
@@ -41,7 +41,6 @@ Dialog {
     readonly property string irisId: "YL57xq9U"
     readonly property bool optiFineClash: root.optiFine
         && (root.checkedAll.indexOf(root.sodiumId) >= 0 || root.checkedAll.indexOf(root.irisId) >= 0)
-    readonly property int preferredWidth: 600
     readonly property int listHeight: 400
     readonly property int graphicsBoxWidth: Theme.control.heightLg * 4
     readonly property var graphicsChoices: [
@@ -105,19 +104,8 @@ Dialog {
             root.installRequested(root.checkedAll)
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : implicitHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: root.performance ? qsTr("Kite Performance") : qsTr("Add-ons")
-
-    header: DialogHeader {
-        title: root.title
-    }
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
@@ -186,7 +174,7 @@ Dialog {
                     excluded: root.excluded
                     onCheckedProjectsChanged: root.recount()
 
-                    Text {
+                    Copy {
                         width: list.width - Theme.space.xxl * 2
                         x: Theme.space.xxl
                         y: list.height / 3
@@ -194,9 +182,8 @@ Dialog {
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
                         text: qsTr("Nothing in this bundle for this loader.")
-                        color: Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
+                        tone: "tertiary"
                     }
                 }
                 onItemAdded: root.recount()

@@ -55,28 +55,18 @@ AbstractButton {
         y: Math.round((control.height - implicitHeight) / 2)
     }
 
-    background: Rectangle {
+    background: StateFill {
         width: control.compact ? control.railSquare : control.width
         height: control.railSquare
         x: control.compact ? control.iconAxis - width / 2 : 0
         y: (control.height - height) / 2
         radius: control.cornerRadius
-        color: control.down ? Theme.palette.pressedOverlay
-             : control.hovered || menu.visible ? Theme.palette.hoverOverlay : "transparent"
+        hovered: control.hovered || menu.visible
+        down: control.down
         border.width: control.signedIn ? 0 : 1
         border.color: Theme.palette.border
 
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            color: "transparent"
-            border.width: 2
-            border.color: Theme.palette.focusRing
-            visible: control.visualFocus
-        }
+        FocusFrame { around: Theme.space.xxs; visible: control.visualFocus }
     }
 
     contentItem: Item {
@@ -97,7 +87,7 @@ AbstractButton {
             color: control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
         }
 
-        Text {
+        Copy {
             anchors.left: parent.left
             anchors.leftMargin: control.labelX
             anchors.right: chevron.visible ? chevron.left : parent.right
@@ -106,9 +96,6 @@ AbstractButton {
             visible: !control.compact
             text: control.signedIn ? control.name : qsTr("Sign in")
             elide: Text.ElideRight
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
             font.weight: Font.DemiBold
         }
 

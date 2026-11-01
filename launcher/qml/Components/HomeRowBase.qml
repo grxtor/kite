@@ -53,14 +53,5 @@ Item {
         onTapped: { root.forceActiveFocus(); root.openMenu(null) }
     }
 
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: -Theme.space.xs
-        z: 1
-        radius: root.cornerRadius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus
-    }
+    FocusFrame { cornerRadius: root.cornerRadius; z: 1; visible: root.activeFocus }
 }

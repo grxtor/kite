@@ -16,7 +16,6 @@ HomeRowBase {
     readonly property int padding: Theme.space.lg - 2
     readonly property int sidePadding: Theme.space.lg
     readonly property int playSize: Theme.control.height
-    readonly property int nameSize: 16
     readonly property bool hasPhoto: root.row.coverImage.length > 0
     readonly property color ink: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
     readonly property color inkSecondary: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
@@ -47,7 +46,7 @@ HomeRowBase {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: parent.parent.iconName.length > 0
                 iconName: parent.parent.iconName
-                size: Theme.icon.sm - 2
+                size: Theme.icon.xs
                 color: parent.parent.ink
             }
             Text {
@@ -61,12 +60,12 @@ HomeRowBase {
         }
     }
 
-    Rectangle {
+    StateFill {
         id: plate
         anchors.fill: parent
+        card: true
+        hovered: root.hovered
         radius: Theme.radius.lg
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     CoverArt {
@@ -85,7 +84,7 @@ HomeRowBase {
         radius: Theme.radius.lg
         color: "transparent"
         border.width: root.hovered ? 1 : 0
-        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.color: Theme.media.glassEdge
     }
 
     Item {
@@ -122,7 +121,7 @@ HomeRowBase {
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "hourglass"
-                        size: Theme.icon.sm - 2
+                        size: Theme.icon.xs
                         color: root.inkSecondary
                     }
                     Text {
@@ -144,22 +143,19 @@ HomeRowBase {
             anchors.bottom: parent.bottom
             spacing: Theme.space.xxs + 1
 
-            Text {
+            Copy {
                 width: parent.width
                 text: root.row.name
+                role: "cardName"
                 elide: Text.ElideRight
                 color: root.ink
-                font.family: Theme.font.family
-                font.pixelSize: root.nameSize
-                font.weight: Font.DemiBold
             }
-            Text {
+            Copy {
                 width: parent.width
                 text: root.subText
+                role: "caption"
                 elide: Text.ElideRight
                 color: root.inkSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
             }
         }
 

@@ -50,7 +50,6 @@ Rectangle {
     property int roomWidth: 0
     // False while the host keeps the rail (narrow window): the expand toggle hides.
     property bool canExpand: true
-    property bool barBeside: true
     // Colour behind the rail, for the corners of a full-tile instance icon.
     property color surround: "transparent"
     property int bandHeight: Theme.control.heightLg
@@ -170,7 +169,7 @@ Rectangle {
         enabled: root.settled
         NumberAnimation {
             property: "implicitWidth"
-            duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.normal
+            duration: Theme.motion.normal
             easing.type: Theme.motion.easing
         }
     }
@@ -204,17 +203,14 @@ Rectangle {
         }
 
         // Centred on the mark by its letters, not its line box, which hangs low.
-        Text {
+        Copy {
             id: wordmark
             x: root.controlsWidth > 0 ? mark.x + mark.width + Theme.space.md : root.inset + root.labelX
             anchors.baseline: mark.verticalCenter
             anchors.baselineOffset: -wordmarkInk.tightBoundingRect.y / 2
             visible: !root.railed && (root.controlsWidth === 0 || x + width + Theme.space.md <= bandToggle.x)
             text: "Kite"
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.subheading.pixelSize
-            font.weight: Font.Bold
+            role: "subheading"
             font.letterSpacing: -0.2
         }
         TextMetrics {

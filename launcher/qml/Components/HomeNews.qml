@@ -92,41 +92,42 @@ Column {
     Repeater {
         model: root.entries
         delegate: AbstractButton {
-            id: card
+            id: post
             required property var modelData
-            readonly property bool hasImage: card.modelData.image.length > 0 && picture.status !== Image.Error
+            readonly property bool hasImage: post.modelData.image.length > 0 && picture.status !== Image.Error
             readonly property real imageAspect: 16 / 9
 
             width: root.width
             hoverEnabled: true
             padding: Theme.space.md
-            Accessible.name: card.modelData.title
-            onClicked: if (card.modelData.link) Qt.openUrlExternally(card.modelData.link)
+            Accessible.name: post.modelData.title
+            onClicked: if (post.modelData.link) Qt.openUrlExternally(post.modelData.link)
 
-            background: Rectangle {
+            background: StateFill {
                 id: cardFill
+                card: true
+                hovered: post.hovered
+                active: post.down
+                activeFill: Theme.palette.surfaceRaised
+                rest: root.flat ? "transparent" : Theme.palette.surface
                 radius: Theme.radius.lg
-                color: card.down ? Theme.palette.surfaceRaised
-                     : card.hovered ? Theme.palette.surfaceHover
-                     : root.flat ? "transparent" : Theme.palette.surface
-                border.width: card.visualFocus ? Theme.focus.width : root.flat ? 0 : 1
-                border.color: card.visualFocus ? Theme.palette.focusRing
-                            : card.hovered ? Theme.neutral.borderHover : Theme.palette.border
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                border.width: post.visualFocus ? Theme.focus.width : root.flat ? 0 : 1
+                border.color: post.visualFocus ? Theme.palette.focusRing
+                            : post.hovered ? Theme.neutral.borderHover : Theme.palette.border
             }
 
             contentItem: Column {
                 spacing: Theme.space.sm
 
                 Item {
-                    visible: card.hasImage
+                    visible: post.hasImage
                     width: parent.width
-                    height: visible ? Math.round(width / card.imageAspect) : 0
+                    height: visible ? Math.round(width / post.imageAspect) : 0
 
                     Image {
                         id: picture
                         anchors.fill: parent
-                        source: card.modelData.image
+                        source: post.modelData.image
                         sourceSize: Qt.size(width * 2, height * 2)
                         fillMode: Image.PreserveAspectCrop
                         smooth: true
@@ -139,24 +140,20 @@ Column {
                     }
                 }
 
-                Text {
+                Copy {
                     width: parent.width
-                    text: card.modelData.title
+                    text: post.modelData.title
+                    role: "bodyStrong"
                     wrapMode: Text.Wrap
                     maximumLineCount: 3
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
                 }
-                Text {
+                Copy {
                     width: parent.width
-                    visible: !!card.modelData.date
-                    text: card.modelData.date ? Format.calendarDate(new Date(card.modelData.date)) : ""
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    visible: !!post.modelData.date
+                    text: post.modelData.date ? Format.calendarDate(new Date(post.modelData.date)) : ""
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
         }

@@ -43,7 +43,7 @@ Item {
     readonly property bool hasFile: !!logs && logs.currentFile.length > 0
     // Set by this view's own Upload button, so another log view sharing the uploader does not also
     // copy and announce the link.
-    property bool uploading: false
+    property alias uploading: linkToast.pending
 
     readonly property var lines: {
         if (!logs || !logs.content)
@@ -54,29 +54,6 @@ Item {
         return all
     }
 
-    property var matches: []
-    property int current: -1
-
-    function recomputeMatches() {
-        var needle = findBar.text.toLowerCase()
-        var found = []
-        if (needle.length > 0) {
-            var all = root.lines
-            for (var i = 0; i < all.length; ++i) {
-                if (all[i].toLowerCase().indexOf(needle) >= 0)
-                    found.push(i)
-            }
-        }
-        root.matches = found
-        root.current = found.length > 0 ? 0 : -1
-    }
-
-    function step(delta) {
-        if (root.matches.length === 0)
-            return
-        root.current = (root.current + delta + root.matches.length) % root.matches.length
-    }
-
     function pickFirst() {
         if (root.selectFirst && root.logs && root.logs.currentFile.length === 0 && fileCombo.count > 0)
             root.logs.selectFile(fileCombo.textAt(0))
@@ -85,12 +62,22 @@ Item {
     Component.onCompleted: pickFirst()
     onLogsChanged: pickFirst()
 
-    onLinesChanged: findDelay.restart()
+    onLinesChanged: finder.schedule()
 
-    Timer {
-        id: findDelay
-        interval: 150
-        onTriggered: root.recomputeMatches()
+    LogMatches {
+        id: finder
+        onSearch: {
+            var needle = findBar.text.toLowerCase()
+            var found = []
+            if (needle.length > 0) {
+                var all = root.lines
+                for (var i = 0; i < all.length; ++i) {
+                    if (all[i].toLowerCase().indexOf(needle) >= 0)
+                        found.push(i)
+                }
+            }
+            setMatches(found)
+        }
     }
 
     Connections {
@@ -99,23 +86,11 @@ Item {
         function onModelReset() { root.pickFirst() }
     }
 
-    Connections {
-        target: root.uploader
-        ignoreUnknownSignals: true
-        function onUploaded(url) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            clipboard.copyText(url)
-            toast.show(qsTr("Link copied to your clipboard."), "success", qsTr("Open"),
-                       () => Qt.openUrlExternally(url))
-        }
-        function onFailed(message) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            toast.show(message, "danger")
-        }
+    UploadLinkToast {
+        id: linkToast
+        uploader: root.uploader
+        clipboardItem: clipboard
+        toastItem: toast
     }
 
     ColumnLayout {
@@ -156,11 +131,11 @@ Item {
                 id: findBar
                 Layout.fillWidth: true
                 visible: root.hasFile
-                matchCount: root.matches.length
-                current: root.current
-                onTextChanged: findDelay.restart()
-                onNext: root.step(1)
-                onPrevious: root.step(-1)
+                matchCount: finder.matches.length
+                current: finder.current
+                onTextChanged: finder.schedule()
+                onNext: finder.step(1)
+                onPrevious: finder.step(-1)
             }
 
             Item {
@@ -168,38 +143,32 @@ Item {
                 visible: !root.hasFile
             }
 
-            Button {
+            CompactButton {
+                compact: root.compact
                 enabled: root.hasFile
                 text: qsTr("Copy")
                 icon.source: Icons.url("copy")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     clipboard.copyText(root.logs.content)
                     toast.show(qsTr("Log copied."), "success")
                 }
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 visible: !!root.uploader
                 enabled: root.hasFile && !!root.uploader && !root.uploader.busy
                 text: root.uploading ? qsTr("Uploading…") : qsTr("Upload")
                 icon.source: Icons.url("arrow-up")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     root.uploading = true
                     root.uploader.uploadFile(root.logs.path + "/" + root.logs.currentFile)
                 }
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 enabled: !!root.logs
                 text: qsTr("Open folder")
                 icon.source: Icons.url("folder")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: root.openFolderRequested(root.logs.path)
             }
             IconButton {
@@ -248,13 +217,10 @@ Item {
             }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             LogLines {
                 anchors.fill: parent
@@ -262,8 +228,8 @@ Item {
                 visible: root.hasFile
                 model: root.lines
                 wrap: findBar.wrap
-                matches: root.matches
-                current: root.current
+                matches: finder.matches
+                current: finder.current
             }
 
             EmptyState {
@@ -274,7 +240,7 @@ Item {
                 body: fileCombo.count > 0
                       ? qsTr("Pick a file above to view it.")
                       : qsTr("There are no log files here yet.")
-                MeshIcon { iconName: "terminal"; size: 40; color: Theme.palette.textTertiary }
+                MeshIcon { iconName: "terminal"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
         }
     }

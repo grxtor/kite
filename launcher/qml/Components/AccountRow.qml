@@ -40,29 +40,17 @@ Item {
     readonly property int rowHeight: 80
     readonly property bool hovered: !root.hidden && hoverHandler.hovered
 
-    function stateTone(key) {
-        switch (key) {
-        case "online": return "success"
-        case "working": return "neutral"
-        case "errored": case "gone": return "danger"
-        case "expired": return "warning"
-        default: return "neutral"
-        }
-    }
-
     implicitHeight: root.hidden ? 0 : root.rowHeight + root.gap
     visible: !root.hidden
 
-    Rectangle {
-        id: card
+    StateFill {
         width: parent.width
         height: root.rowHeight
         radius: Theme.radius.lg
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
+        card: true
+        hovered: root.hovered
         border.width: 1
         border.color: Theme.palette.border
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         HoverHandler { id: hoverHandler; enabled: !root.hidden }
 
@@ -83,14 +71,11 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
 
-                Text {
+                Copy {
                     width: parent.width
                     text: root.shownName
+                    role: "title"
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
                 }
 
                 Row {
@@ -99,10 +84,10 @@ Item {
                         iconName: root.isMSA ? "user" : "users"
                         text: root.isMSA ? qsTr("Microsoft") : qsTr("Offline")
                     }
-                    StatusBadge {
+                    AccountStateBadge {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.isMSA && root.status.length > 0
-                        tone: root.stateTone(root.stateKey)
+                        stateKey: root.stateKey
                         text: root.status
                     }
                 }
@@ -123,16 +108,18 @@ Item {
 
                 Menu {
                     id: rowMenu
-                    MenuItem {
+                    MenuEntry {
+                        // Skins and capes belong to a Microsoft account.
+                        visible: root.isMSA
+                        enabled: root.isMSA
                         // "and", not "&": a MenuItem reads "&" as a mnemonic too.
                         text: qsTr("Skin and cape")
                         icon.source: Icons.url("image")
                         onTriggered: root.manageSkinRequested()
                     }
-                    MenuItem {
-                        // A hidden item still takes its row in a Menu; zero it as well.
+                    MenuEntry {
                         visible: root.isMSA
-                        height: visible ? implicitHeight : 0
+                        enabled: root.isMSA
                         text: qsTr("Sign in again")
                         icon.source: Icons.url("refresh")
                         onTriggered: root.refreshRequested()

@@ -37,16 +37,16 @@ Item {
     ToolTip.delay: 400
     ToolTip.text: root.label
 
-    Rectangle {
+    StateFill {
         id: card
         anchors.fill: parent
         radius: Theme.radius.md
-        color: root.selected ? Theme.palette.accentSubtle : Theme.palette.surface
+        rest: Theme.palette.surface
+        active: root.selected
         border.width: root.selected ? 2 : 1
         border.color: root.selected ? Theme.palette.accent
                     : hover.hovered && root.enabled ? Theme.palette.borderStrong : Theme.palette.border
 
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
@@ -112,7 +112,7 @@ Item {
         }
     }
 
-    Text {
+    Copy {
         visible: !root.compact
         anchors.top: thumb.bottom
         anchors.topMargin: Theme.space.xs
@@ -121,10 +121,9 @@ Item {
         anchors.margins: Theme.space.xxs
         horizontalAlignment: Text.AlignHCenter
         text: root.label
+        role: "caption"
+        tone: "secondary"
         elide: Text.ElideRight
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
     }
 
     HoverHandler {

@@ -8,7 +8,8 @@ import QtQuick.Controls
 /*
  * The macOS menu bar for the QML shell: new instance and import, Settings, the Help links and "Check for updates"
  * where this build can update itself. Main.qml uses it as the window's menuBar only on macOS with the native menu
- * bar setting on; every entry is a signal for Main.qml.
+ * bar setting on; every entry is a signal for Main.qml, which turns the bar off (`enabled`) while first-run setup
+ * is on screen.
  */
 MenuBar {
     id: root
@@ -24,6 +25,7 @@ MenuBar {
 
     Menu {
         title: qsTr("File")
+        enabled: root.enabled
         MenuItem {
             text: qsTr("New instance…")
             onTriggered: root.newInstanceRequested("create")
@@ -43,6 +45,7 @@ MenuBar {
     Menu {
         id: helpMenu
         title: qsTr("Help")
+        enabled: root.enabled
 
         Instantiator {
             model: root.about ? root.about.helpLinks : []
@@ -55,9 +58,8 @@ MenuBar {
             onObjectRemoved: (index, object) => helpMenu.removeItem(object)
         }
         MenuSeparator {}
-        MenuItem {
+        MenuEntry {
             visible: root.updaterAvailable
-            height: visible ? implicitHeight : 0
             text: qsTr("Check for updates…")
             onTriggered: root.checkForUpdatesRequested()
         }

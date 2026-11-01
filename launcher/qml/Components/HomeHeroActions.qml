@@ -17,7 +17,7 @@ Row {
     property int size: Theme.control.heightLg
     property int playWidth: 176
     property bool glass: false
-    property color glassFill: Qt.rgba(1, 1, 1, 0.12)
+    property color glassFill: Theme.media.glassStrong
 
     readonly property bool canChoose: root.hero.canLaunch && !!root.hero.launchOptionsFor
 

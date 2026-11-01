@@ -338,34 +338,29 @@ Item {
                             icon.source: Icons.url("file")
                             onTriggered: root.addFromFile()
                         }
-                        MenuItem {
-                            // A hidden item still takes its row in a Menu; zero it.
+                        MenuEntry {
                             visible: root.kind === "mods" || root.kind === "coremods"
-                            height: visible ? implicitHeight : 0
                             text: qsTr("Open configs folder")
                             icon.source: Icons.url("folder")
                             onTriggered: root.openFolderRequested(root.content ? root.content.configsDir : "")
                         }
                         MenuSeparator {}
-                        MenuItem {
+                        MenuEntry {
                             visible: root.updatable
-                            height: visible ? implicitHeight : 0
                             enabled: root.unlocked && root.count > 0 && !root.flowsBusy
                             text: qsTr("Check for updates")
                             icon.source: Icons.url("refresh")
                             onTriggered: root.withLoader(() => flows.checkUpdates([]))
                         }
-                        MenuItem {
+                        MenuEntry {
                             visible: root.kind === "mods"
-                            height: visible ? implicitHeight : 0
                             enabled: root.unlocked && root.count > 0 && !root.flowsBusy
                             text: qsTr("Verify dependencies")
                             icon.source: Icons.url("layers")
                             onTriggered: root.withLoader(() => flows.verifyDependencies())
                         }
-                        MenuSeparator {
+                        MenuDivider {
                             visible: root.updatable || root.kind === "mods"
-                            height: visible ? implicitHeight : 0
                         }
                         MenuItem {
                             enabled: root.listModel && root.listModel.count > 0
@@ -527,7 +522,7 @@ Item {
         visible: root.isMinecraft && root.count === 0 && !root.flowsBusy
         title: root.current.emptyTitle
         body: root.current.emptyBody
-        MeshIcon { iconName: root.current.icon; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: root.current.icon; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     EmptyState {
@@ -537,7 +532,7 @@ Item {
         visible: !root.isMinecraft
         title: qsTr("No content")
         body: qsTr("This instance cannot have mods, resource packs or shader packs.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     FileDialog {

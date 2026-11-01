@@ -45,7 +45,7 @@ AbstractButton {
 
     background: Item {
         // Opaque at rest too, so the logo's corner matte can always paint in exactly this colour.
-        Rectangle {
+        StateFill {
             id: strip
             anchors.fill: parent
             anchors.leftMargin: Theme.space.xs
@@ -53,11 +53,10 @@ AbstractButton {
             anchors.topMargin: Theme.space.xxs
             anchors.bottomMargin: Theme.space.xxs
             radius: Theme.radius.sm
-            // Picked keeps the hover look. The edge fades in from its own colour at zero alpha, so it never greys on
-            // the way.
-            readonly property bool lifted: row.selected || row.hovered
-            color: lifted ? Theme.palette.surfaceHover : Theme.palette.surface
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+            // Picked keeps the hover look.
+            card: true
+            hovered: row.hovered
+            active: row.selected
         }
         Rectangle {
             anchors.left: parent.left
@@ -114,36 +113,31 @@ AbstractButton {
             Item {
                 Layout.fillWidth: true
                 implicitHeight: titleText.implicitHeight
-                Text {
+                Copy {
                     id: titleText
                     width: Math.min(implicitWidth, parent.width)
                     text: row.title
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
-                    font.weight: Font.DemiBold
+                    role: "bodyStrong"
                 }
-                Text {
+                Copy {
                     x: titleText.width + Theme.space.xs
                     width: Math.max(0, parent.width - x)
                     anchors.baseline: titleText.baseline
                     visible: row.author.length > 0 && width > 0
                     text: qsTr("by %1").arg(row.author)
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: row.downloading ? (row.download.status || qsTr("Installing…"))
                     : row.checking ? qsTr("Checking what it needs…") : row.description
                 elide: Text.ElideRight
-                color: row.downloading || row.checking ? Theme.palette.textSecondary : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: row.downloading || row.checking ? "secondary" : "tertiary"
             }
         }
 

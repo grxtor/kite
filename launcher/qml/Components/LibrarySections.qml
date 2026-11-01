@@ -8,9 +8,8 @@ import Kite.Theme
 /*
  * The library's instances: every group as a collapsible section, the instance
  * ⋯ menu, the group dialogs and the Export/Create shortcut flows. No scrolling
- * of its own, so LibraryPage and HomePage can share it; its height is its
- * content's. Without `sectionModelFor`, `instanceModel` is one section
- * without a header.
+ * of its own (Home's page scrolls it); its height is its content's. Without
+ * `sectionModelFor`, `instanceModel` is one section without a header.
  */
 Item {
     id: root

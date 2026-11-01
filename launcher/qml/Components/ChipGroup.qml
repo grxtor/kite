@@ -47,25 +47,19 @@ Row {
                 border.color: chip.selected ? Theme.palette.accent : Theme.palette.border
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
 
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: -Theme.space.xxs
-                    radius: Theme.radius.pill
-                    color: "transparent"
-                    border.width: 2
-                    border.color: Theme.palette.focusRing
+                FocusFrame {
+                    around: Theme.space.xxs
                     visible: chip.visualFocus
                 }
             }
 
-            contentItem: Text {
+            contentItem: Copy {
                 id: label
                 text: chip.modelData.label
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                color: chip.selected ? Theme.palette.accentText : Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: chip.selected ? "accent" : "secondary"
                 font.weight: chip.selected ? Font.DemiBold : Font.Medium
             }
         }

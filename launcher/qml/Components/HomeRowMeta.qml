@@ -34,14 +34,14 @@ Item {
     Row {
         spacing: Theme.space.xs
 
-        Text {
+        Copy {
             id: first
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(implicitWidth, root.width - (rest.visible ? rest.width + parent.spacing : 0))
             text: root.leading
+            role: "caption"
+            tone: "secondary"
             elide: Text.ElideRight
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
             font.pixelSize: root.size
         }
         Row {
@@ -56,19 +56,19 @@ Item {
                 size: root.size
                 color: Theme.palette.warning
             }
-            Text {
+            Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.crashText
-                color: Theme.palette.warning
-                font.family: Theme.font.family
+                role: "caption"
+                tone: "warning"
                 font.pixelSize: root.size
             }
-            Text {
+            Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.trailing.length > 0
                 text: root.trailing
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
+                role: "caption"
+                tone: "secondary"
                 font.pixelSize: root.size
             }
         }

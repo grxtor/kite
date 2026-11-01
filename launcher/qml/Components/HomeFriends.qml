@@ -27,46 +27,20 @@ Column {
     // The "Set up Kite" card above already asks to sign in; this only says why it matters.
     property bool setupShowsSignIn: false
 
-    // "off", "noAccount", "signingIn", "error" or "ready".
-    readonly property string phase: Format.friendsPhase(root.controller)
-    readonly property bool signInFirst: Format.friendsSignInFirst(root.controller)
-    readonly property bool ready: root.phase === "ready"
-    readonly property bool stale: Format.friendsStale(root.controller)
-    readonly property bool showsLists: root.ready || root.stale
+    readonly property FriendsState friendsState: FriendsState { controller: root.controller }
     // Whether the section has anything to show; the panel hides without it. Friends off is a choice, and a
     // missing Microsoft account is already said by the "Set up Kite" card.
-    readonly property bool shown: root.phase !== "off"
-                                  && !(root.phase === "noAccount" && root.setupShowsSignIn)
+    readonly property bool shown: root.friendsState.phase !== "off"
+                                  && !(root.friendsState.phase === "noAccount" && root.setupShowsSignIn)
                                   && !(root.controller && root.controller.refused)
     readonly property int maxRows: 5
-    readonly property var groups: Format.friendsGrouped(root.controller ? root.controller.friends : [])
-    readonly property var around: root.groups.playing.concat(root.groups.online)
-    readonly property int incomingCount: root.controller ? root.controller.incomingCount : 0
-    readonly property int onlineCount: root.controller ? root.controller.onlineCount : 0
-    readonly property bool loaded: !!root.controller && root.controller.loaded
-    property bool retrying: false
+    readonly property var around: root.friendsState.groups.playing.concat(root.friendsState.groups.online)
 
     spacing: Theme.space.sm
 
-    Connections {
-        target: root.controller
-        function onActionFinished(action) {
-            if (action === "refresh")
-                root.retrying = false
-        }
-        // A refresh dropped because friends was turned off meanwhile is never answered: the flag lasts while it is
-        // failing.
-        function onChanged() {
-            if (root.controller.state !== "error")
-                root.retrying = false
-        }
-    }
-
-    function retry() {
-        if (root.retrying)
-            return
-        root.retrying = true
-        root.controller.refresh()
+    FriendsRetry {
+        id: retry
+        controller: root.controller
     }
 
     RowLayout {
@@ -78,52 +52,51 @@ Column {
             Layout.maximumWidth: parent.width
             text: qsTr("Friends")
         }
-        Text {
-            visible: root.ready && root.onlineCount > 0
+        Copy {
+            visible: root.friendsState.connected && root.friendsState.onlineCount > 0
             Layout.alignment: Qt.AlignVCenter
-            text: qsTr("%1 online").arg(root.onlineCount)
-            color: Theme.palette.success
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            text: qsTr("%1 online").arg(root.friendsState.onlineCount)
+            role: "label"
+            tone: "success"
         }
         Item { Layout.fillWidth: true }
         LinkButton {
-            visible: root.showsLists && Format.friendsHasAnyone(root.controller, false)
+            visible: root.friendsState.showsLists && Format.friendsHasAnyone(root.controller, false)
             text: qsTr("All")
             onClicked: root.manageRequested("friends")
         }
     }
 
     Column {
-        visible: !root.showsLists
+        visible: !root.friendsState.showsLists
         width: parent.width
         spacing: Theme.space.sm
 
         PanelNote {
             width: parent.width
-            text: root.phase === "noAccount" ? Format.friendsNeedAccount
-                : root.phase === "error" ? (root.controller.error.length > 0 ? root.controller.error : qsTr("Friends could not connect."))
+            text: root.friendsState.phase === "noAccount" ? Format.friendsNeedAccount
+                : root.friendsState.phase === "error" ? (root.controller.error.length > 0 ? root.controller.error : qsTr("Friends could not connect."))
                 : qsTr("Connecting…")
         }
         Button {
-            visible: (root.phase === "noAccount" || root.phase === "error")
-                     && !(root.signInFirst && root.setupShowsSignIn)
-            enabled: !root.retrying
+            visible: (root.friendsState.phase === "noAccount" || root.friendsState.phase === "error")
+                     && !(root.friendsState.signInFirst && root.setupShowsSignIn)
+            enabled: !retry.retrying
             buttonSize: "sm"
-            text: root.signInFirst ? qsTr("Sign in") : root.retrying ? qsTr("Trying…") : qsTr("Try again")
-            icon.source: root.signInFirst || root.retrying ? "" : Icons.url("refresh")
+            text: root.friendsState.signInFirst ? qsTr("Sign in") : retry.retrying ? qsTr("Trying…") : qsTr("Try again")
+            icon.source: root.friendsState.signInFirst || retry.retrying ? "" : Icons.url("refresh")
             onClicked: {
-                if (root.signInFirst)
+                if (root.friendsState.signInFirst)
                     root.signInRequested()
                 else
-                    root.retry()
+                    retry.run()
             }
         }
     }
 
     // A poll failed with the friends already read: they stay, this says they may be out of date.
     Column {
-        visible: root.stale
+        visible: root.friendsState.stale
         width: parent.width
         spacing: Theme.space.sm
 
@@ -138,11 +111,11 @@ Column {
             ToolTip.text: root.controller ? root.controller.error : ""
         }
         Button {
-            enabled: !root.retrying
+            enabled: !retry.retrying
             buttonSize: "sm"
-            text: root.retrying ? qsTr("Trying…") : qsTr("Try again")
-            icon.source: root.retrying ? "" : Icons.url("refresh")
-            onClicked: root.retry()
+            text: retry.retrying ? qsTr("Trying…") : qsTr("Try again")
+            icon.source: retry.retrying ? "" : Icons.url("refresh")
+            onClicked: retry.run()
         }
     }
 
@@ -153,15 +126,15 @@ Column {
     }
 
     HomeFriendsRequestsLink {
-        visible: root.ready && root.incomingCount > 0
+        visible: root.friendsState.connected && root.friendsState.incomingCount > 0
         x: -Theme.space.sm
         width: parent.width + Theme.space.sm * 2
-        count: root.incomingCount
+        count: root.friendsState.incomingCount
         onClicked: root.manageRequested("requests")
     }
 
     Repeater {
-        model: root.showsLists ? root.around.slice(0, root.maxRows) : []
+        model: root.friendsState.showsLists ? root.around.slice(0, root.maxRows) : []
         delegate: Item {
             id: slot
             required property var modelData
@@ -173,20 +146,17 @@ Column {
                 x: -Theme.space.sm
                 width: root.width + Theme.space.sm * 2
                 friend: slot.modelData
-                stale: root.stale
+                stale: root.friendsState.stale
                 compact: true
                 interactive: true
                 onClicked: root.manageRequested("friends")
 
-                IconButton {
+                FriendJoinButton {
                     id: joinButton
-                    visible: Format.friendJoinable(slot.modelData)
-                    enabled: root.ready
-                    size: Theme.control.heightSm
-                    variant: "secondary"
-                    iconName: "play"
-                    tip: joinButton.hovered && root.joinFlow ? root.joinFlow.tip(slot.modelData)
-                                                             : qsTr("Join %1").arg(slot.modelData.host)
+                    enabled: root.friendsState.connected
+                    iconOnly: true
+                    friend: slot.modelData
+                    joinFlow: root.joinFlow
                     onClicked: root.joinRequested(slot.modelData)
                     // A button only takes Space; Return would pass on to the row, which opens the Friends page.
                     Keys.onReturnPressed: joinButton.clicked()
@@ -198,37 +168,32 @@ Column {
 
     AbstractButton {
         id: more
-        visible: root.showsLists && root.around.length > root.maxRows
+        visible: root.friendsState.showsLists && root.around.length > root.maxRows
         hoverEnabled: true
         implicitHeight: Theme.control.heightSm
         text: qsTr("+%1 more").arg(root.around.length - root.maxRows)
         onClicked: root.manageRequested("friends")
-        contentItem: Text {
+        contentItem: Copy {
             text: more.text
-            color: more.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            font.weight: Theme.type.label.weight
+            role: "label"
+            tone: more.hovered ? "primary" : "secondary"
+            font.weight: Font.Medium
             verticalAlignment: Text.AlignVCenter
         }
-        background: Rectangle {
-            radius: Theme.radius.sm
-            color: "transparent"
-            border.width: more.visualFocus ? Theme.focus.width : 0
-            border.color: Theme.palette.focusRing
+        background: Item {
+            FocusFrame { around: 0; cornerRadius: Theme.radius.sm; visible: more.visualFocus }
         }
     }
 
     HomeFriendsOfflineStrip {
-        visible: root.showsLists && root.groups.offline.length > 0 && root.around.length === 0
+        visible: root.friendsState.showsLists && root.friendsState.groups.offline.length > 0 && root.around.length === 0
         width: parent.width
-        friends: root.groups.offline
+        friends: root.friendsState.groups.offline
         onClicked: root.manageRequested("friends")
     }
 
     Column {
-        visible: root.showsLists && root.loaded
-                 && root.groups.playing.length + root.groups.online.length + root.groups.offline.length === 0
+        visible: root.friendsState.showsLists && root.friendsState.loaded && root.friendsState.friendCount === 0
         width: parent.width
         spacing: Theme.space.sm
 

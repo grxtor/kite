@@ -13,19 +13,10 @@ import Kite.Theme
 Item {
     id: root
 
-    // FriendsController, or null.
-    property var controller: null
+    // FriendsSidePanel's FriendsState.
+    property FriendsState friendsState: FriendsState {}
     property var joinFlow: null
     property var menu: null
-    // "off", "noAccount", "signingIn", "error" or "ready" (Format.friendsPhase()).
-    property string phase: "off"
-    property bool showsLists: false
-    property bool stale: false
-    // The server answers: Join and ⋯ need it, reading the list does not.
-    property bool connected: false
-    // Format.friendsGrouped(): { playing, online, offline }.
-    property var groups: ({ playing: [], online: [], offline: [] })
-    property int incomingCount: 0
     property color surface: Theme.palette.canvas
 
     signal expandRequested()
@@ -33,15 +24,15 @@ Item {
     signal requestsRequested()
     signal joinRequested(var friend)
 
-    readonly property bool signInFirst: Format.friendsSignInFirst(root.controller)
-    readonly property bool failed: root.phase === "error" && !root.signInFirst
-    readonly property string stateTip: root.phase === "off" ? qsTr("Friends is off")
-                                     : root.phase === "signingIn" ? qsTr("Connecting…")
-                                     : root.signInFirst ? qsTr("Sign in to use Friends")
+    readonly property bool failed: root.friendsState.phase === "error" && !root.friendsState.signInFirst
+    readonly property string stateTip: root.friendsState.phase === "off" ? qsTr("Friends is off")
+                                     : root.friendsState.phase === "signingIn" ? qsTr("Connecting…")
+                                     : root.friendsState.signInFirst ? qsTr("Sign in to use Friends")
                                      : qsTr("Can't connect")
-    readonly property string stateIcon: root.failed ? "alert-triangle" : root.signInFirst ? "user" : "users"
+    readonly property string stateIcon: root.failed ? "alert-triangle" : root.friendsState.signInFirst ? "user" : "users"
 
-    readonly property var ordered: root.groups.playing.concat(root.groups.online, root.groups.offline)
+    readonly property var ordered: root.friendsState.groups.playing.concat(root.friendsState.groups.online,
+                                                                           root.friendsState.groups.offline)
     function groupOf(friend) {
         return friend.state === "playing" ? 0 : friend.state === "online" ? 1 : 2
     }
@@ -66,7 +57,7 @@ Item {
 
         IconButton {
             size: Theme.control.heightSm
-            visible: root.showsLists
+            visible: root.friendsState.showsLists
             iconName: "chevron-left"
             tip: qsTr("Expand friends")
             onClicked: {
@@ -77,10 +68,10 @@ Item {
         IconButton {
             id: requests
             size: Theme.control.heightSm
-            visible: root.showsLists
+            visible: root.friendsState.showsLists
             iconName: "bell"
             tip: qsTr("Friend requests")
-            Accessible.description: root.incomingCount > 0 ? String(root.incomingCount) : ""
+            Accessible.description: root.friendsState.incomingCount > 0 ? String(root.friendsState.incomingCount) : ""
             onClicked: {
                 card.close()
                 root.requestsRequested()
@@ -89,13 +80,13 @@ Item {
             CountPill {
                 x: requests.width - width + Theme.space.xs
                 y: -Theme.space.xs
-                count: root.incomingCount
+                count: root.friendsState.incomingCount
                 ringColor: root.surface
             }
         }
         IconButton {
             size: Theme.control.heightSm
-            visible: root.showsLists
+            visible: root.friendsState.showsLists
             iconName: "plus"
             tip: qsTr("Add a friend")
             onClicked: {
@@ -105,7 +96,7 @@ Item {
         }
         IconButton {
             size: Theme.control.heightSm
-            visible: !root.showsLists
+            visible: !root.friendsState.showsLists
             iconName: root.stateIcon
             tip: root.stateTip
             onClicked: root.expandRequested()
@@ -114,7 +105,7 @@ Item {
 
     Rectangle {
         id: rule
-        visible: root.showsLists
+        visible: root.friendsState.showsLists
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: tools.bottom
         anchors.topMargin: Theme.space.sm
@@ -125,7 +116,7 @@ Item {
 
     Item {
         id: lists
-        visible: root.showsLists
+        visible: root.friendsState.showsLists
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: rule.bottom
@@ -168,7 +159,7 @@ Item {
                             id: head
                             width: slot.width
                             friend: slot.modelData
-                            stale: root.stale
+                            stale: root.friendsState.stale
                             selected: card.opened && card.friendUuid === slot.modelData.uuid
                             onClicked: root.toggleCard(head, slot.modelData.uuid)
                         }
@@ -177,19 +168,8 @@ Item {
             }
         }
 
-        ScrollFade {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            atTop: true
-            flickable: flick
-        }
-        ScrollFade {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            flickable: flick
-        }
+        ScrollFade { atTop: true; flickable: flick }
+        ScrollFade { flickable: flick }
     }
 
     component GroupRule: Item {
@@ -205,11 +185,11 @@ Item {
 
     FriendHeadCard {
         id: card
-        controller: root.controller
+        controller: root.friendsState.controller
         menu: root.menu
         joinFlow: root.joinFlow
-        stale: root.stale
-        actionsEnabled: root.connected
+        stale: root.friendsState.stale
+        actionsEnabled: root.friendsState.connected
         onJoinRequested: (friend) => root.joinRequested(friend)
     }
 }

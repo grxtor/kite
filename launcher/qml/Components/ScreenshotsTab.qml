@@ -44,7 +44,7 @@ Item {
     property var selected: ({})
     property int selectedCount: 0
     // Set by the Upload actions, so only this tab reacts to the result.
-    property bool uploading: false
+    property alias uploading: linkToast.pending
 
     // For the "review=<name>" dev route: everything selected, or the first picture's rename.
     function review(name) {
@@ -130,29 +130,24 @@ Item {
             toast.show(qsTr("Some screenshots could not be deleted."), "danger")
     }
 
+    function copyImage(row) {
+        if (root.model.copyImage(row))
+            toast.show(qsTr("Image copied."), "success")
+        else
+            toast.show(qsTr("The image could not be copied."), "danger")
+    }
+
     function baseName(name) {
         var dot = name.lastIndexOf(".")
         return dot > 0 ? name.slice(0, dot) : name
     }
 
-    Connections {
-        target: root.uploader
-        ignoreUnknownSignals: true
-        function onUploaded(url, count) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            clipboard.copyText(url)
-            toast.show(count > 1 ? qsTr("Album link copied to your clipboard.")
-                                 : qsTr("Link copied to your clipboard."),
-                       "success", qsTr("Open"), () => Qt.openUrlExternally(url))
-        }
-        function onFailed(message) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            toast.show(message, "danger")
-        }
+    UploadLinkToast {
+        id: linkToast
+        uploader: root.uploader
+        clipboardItem: clipboard
+        toastItem: toast
+        manyText: qsTr("Album link copied to your clipboard.")
     }
 
     FontMetrics {
@@ -168,12 +163,11 @@ Item {
         TabToolbar {
             Layout.fillWidth: true
 
-            leading: Text {
+            leading: Copy {
                 visible: root.selectedCount > 0
                 text: qsTr("%1 selected").arg(root.selectedCount)
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "secondary"
             }
 
             Button {
@@ -290,12 +284,7 @@ Item {
                                 flat: false
                                 iconName: "copy"
                                 tip: qsTr("Copy image")
-                                onClicked: {
-                                    if (root.model.copyImage(cell.index))
-                                        toast.show(qsTr("Image copied."), "success")
-                                    else
-                                        toast.show(qsTr("The image could not be copied."), "danger")
-                                }
+                                onClicked: root.copyImage(cell.index)
                             }
                             IconButton {
                                 id: moreButton
@@ -358,12 +347,7 @@ Item {
                     MenuItem {
                         text: qsTr("Copy image")
                         icon.source: Icons.url("copy")
-                        onTriggered: {
-                            if (root.model.copyImage(cell.index))
-                                toast.show(qsTr("Image copied."), "success")
-                            else
-                                toast.show(qsTr("The image could not be copied."), "danger")
-                        }
+                        onTriggered: root.copyImage(cell.index)
                     }
                     MenuItem {
                         text: qsTr("Rename…")
@@ -375,9 +359,8 @@ Item {
                             renamePrompt.open()
                         }
                     }
-                    MenuItem {
+                    MenuEntry {
                         visible: root.canUpload
-                        height: visible ? implicitHeight : 0
                         enabled: !!root.uploader && !root.uploader.busy
                         text: root.selectedCount > 1 && cell.picked ? qsTr("Upload selected to Imgur")
                                                                     : qsTr("Upload to Imgur")
@@ -401,16 +384,15 @@ Item {
                     }
                 }
 
-                Text {
+                Copy {
                     anchors.top: frame.bottom
                     anchors.topMargin: Theme.space.xs
                     x: frame.x
                     width: frame.width
                     text: root.captionOf(cell.name)
                     elide: Text.ElideMiddle
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "secondary"
                     font.weight: Font.Medium
                 }
             }
@@ -458,6 +440,6 @@ Item {
         visible: !root.model || root.model.count === 0
         title: qsTr("No screenshots yet")
         body: qsTr("Press F2 in game; they will show up here.")
-        MeshIcon { iconName: "image"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "image"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

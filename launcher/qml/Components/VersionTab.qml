@@ -89,14 +89,12 @@ Item {
                   : (root.tools ? root.tools.error : "")
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             visible: !!root.components && root.components.busy
             implicitHeight: statusRow.implicitHeight + Theme.space.sm * 2
             radius: Theme.radius.md
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             ColumnLayout {
                 id: statusRow
@@ -104,16 +102,15 @@ Item {
                 anchors.margins: Theme.space.sm
                 spacing: Theme.space.xs
 
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: root.components && root.components.task
                           ? (root.components.task.status.length > 0 ? root.components.task.status
                              : (root.components.task.title.length > 0 ? root.components.task.title : qsTr("Updating…")))
                           : qsTr("Updating…")
                     elide: Text.ElideRight
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "secondary"
                 }
                 LaunchProgressBar {
                     Layout.fillWidth: true
@@ -145,13 +142,10 @@ Item {
                 spacing: Theme.space.sm
 
                 MeshIcon { iconName: "alert-triangle"; size: Theme.icon.sm; color: Theme.palette.danger }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: root.components ? root.friendlyError(root.components.lastError) : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                 }
                 Button {
                     flat: true
@@ -187,7 +181,7 @@ Item {
         visible: list.count === 0
         title: qsTr("No components")
         body: qsTr("This instance has nothing installed yet.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     ScrollFade {
@@ -261,30 +255,26 @@ Item {
                 onClicked: rowMenu.popup(moreButton, moreButton.width - rowMenu.width, moreButton.height)
             }
 
-            // Hidden entries are zeroed as well: a hidden item still takes its row in a Menu.
             Menu {
                 id: rowMenu
                 // Looked up on every open: customizing a component creates its file.
                 onAboutToShow: row.hasFile = !!root.tools && root.tools.hasJsonFile(row.index)
-                MenuItem {
+                MenuEntry {
                     visible: row.changeable && row.hasVersionList
-                    height: visible ? implicitHeight : 0
                     enabled: !root.locked
                     text: qsTr("Change version…")
                     icon.source: Icons.url("download")
                     onTriggered: root.openChangeVersion(row.uid)
                 }
-                MenuItem {
+                MenuEntry {
                     visible: row.isCustomizable && !row.isCustom
-                    height: visible ? implicitHeight : 0
                     enabled: !root.locked
                     text: qsTr("Customize")
                     icon.source: Icons.url("edit")
                     onTriggered: root.components.customizeComponent(row.index)
                 }
-                MenuItem {
+                MenuEntry {
                     visible: row.isRevertible
-                    height: visible ? implicitHeight : 0
                     enabled: !root.locked
                     text: qsTr("Revert to the original…")
                     icon.source: Icons.url("refresh")
@@ -294,36 +284,31 @@ Item {
                         revertConfirm.open()
                     }
                 }
-                MenuItem {
+                MenuEntry {
                     visible: row.hasFile
-                    height: visible ? implicitHeight : 0
                     text: qsTr("Edit JSON")
                     icon.source: Icons.url("edit")
                     onTriggered: root.tools.editComponentJson(row.index)
                 }
-                MenuItem {
+                MenuEntry {
                     visible: row.isMoveable
-                    height: visible ? implicitHeight : 0
                     enabled: !root.locked && row.index > 0
                     text: qsTr("Move up")
                     icon.source: Icons.url("arrow-up")
                     onTriggered: root.components.moveComponentUp(row.index)
                 }
-                MenuItem {
+                MenuEntry {
                     visible: row.isMoveable
-                    height: visible ? implicitHeight : 0
                     enabled: !root.locked && row.index < list.count - 1
                     text: qsTr("Move down")
                     icon.source: Icons.url("arrow-down")
                     onTriggered: root.components.moveComponentDown(row.index)
                 }
-                MenuSeparator {
+                MenuDivider {
                     visible: row.isRemovable
-                    height: visible ? implicitHeight : 0
                 }
-                MenuItem {
+                MenuEntry {
                     visible: row.isRemovable
-                    height: visible ? implicitHeight : 0
                     enabled: !root.locked
                     text: qsTr("Remove…")
                     icon.source: Icons.url("trash")

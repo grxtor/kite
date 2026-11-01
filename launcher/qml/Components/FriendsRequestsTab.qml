@@ -19,9 +19,6 @@ Item {
 
     readonly property var incoming: root.controller ? root.controller.incoming : []
     readonly property var outgoing: root.controller ? root.controller.outgoing : []
-    readonly property bool hasRequests: root.incoming.length > 0 || root.outgoing.length > 0
-    // Not before they have been read: an empty list that is still arriving is not "no requests".
-    readonly property bool empty: !!root.controller && root.controller.loaded && !root.hasRequests
 
     FriendsPending {
         id: pending
@@ -32,9 +29,16 @@ Item {
     FriendsListScroll {
         id: list
         anchors.fill: parent
-        visible: root.hasRequests
+        controller: root.controller
+        count: root.incoming.length + root.outgoing.length
         actionsEnabled: root.actionsEnabled
         spacing: Theme.space.sm
+        emptyState: EmptyState {
+            upperThird: true
+            title: qsTr("No friend requests")
+            body: qsTr("Requests you get, and requests you send, wait here until they are answered.")
+            iconName: "user"
+        }
 
         Column {
             width: parent.width
@@ -112,14 +116,5 @@ Item {
                 }
             }
         }
-    }
-
-    EmptyState {
-        anchors.fill: parent
-        visible: root.empty
-        upperThird: true
-        title: qsTr("No friend requests")
-        body: qsTr("Requests you get, and requests you send, wait here until they are answered.")
-        SoftIconCircle { iconName: "user" }
     }
 }

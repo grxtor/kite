@@ -25,13 +25,12 @@ HomeRowBase {
     implicitHeight: Theme.control.heightLg + Theme.space.lg
     cornerRadius: Theme.radius.md
 
-    Rectangle {
+    StateFill {
         anchors.fill: parent
         anchors.leftMargin: -root.bleed
         anchors.rightMargin: -root.bleed
         radius: Theme.radius.md
-        color: root.hovered ? Theme.palette.hoverOverlay : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        hovered: root.hovered
     }
     Rectangle {
         anchors.left: parent.left
@@ -61,14 +60,11 @@ HomeRowBase {
             Layout.minimumWidth: 0
             spacing: Theme.space.xxs
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.row.name
+                role: "bodyStrong"
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
             }
             HomeRowMeta {
                 Layout.fillWidth: true
@@ -89,15 +85,14 @@ HomeRowBase {
                 MeshIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "hourglass"
-                    size: Theme.icon.sm - 2
+                    size: Theme.icon.xs
                     color: Theme.palette.textTertiary
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.playTimeText
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "tertiary"
                     font.features: ({ "tnum": 1 })
                 }
             }

@@ -142,14 +142,12 @@ Item {
                     id: labelRow
                     spacing: Theme.space.sm
                     leftPadding: root.pillPadding
-                    Text {
+                    Copy {
                         id: label
                         anchors.verticalCenter: parent.verticalCenter
                         width: tab.labelWidth
                         text: tab.modelData.label
                         color: tab.inkColor
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
                         font.weight: tab.selected ? Font.DemiBold : Font.Medium
                     }
                     Item {
@@ -165,37 +163,25 @@ Item {
                             radius: Theme.radius.pill
                             color: Theme.palette.accent
                         }
-                        Text {
+                        Copy {
                             id: countLabel
                             anchors.centerIn: parent
                             text: tab.hasCount ? tab.modelData.count : ""
+                            role: "caption"
                             color: tab.attention ? Theme.palette.textOnAccent
                                  : tab.selected ? tab.inkColor : Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
                             font.weight: tab.attention ? Font.DemiBold : Font.Medium
                         }
                     }
                 }
 
-                background: Item {
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Theme.radius.pill
-                        color: tab.selected ? Theme.palette.accentSubtle
-                             : tab.down ? Theme.palette.pressedOverlay
-                             : tab.hovered ? Theme.palette.hoverOverlay : "transparent"
-                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-                    }
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.margins: -Theme.focus.offset
-                        radius: Theme.radius.pill
-                        color: "transparent"
-                        border.width: Theme.focus.width
-                        border.color: Theme.palette.focusRing
-                        visible: tab.visualFocus
-                    }
+                background: StateFill {
+                    radius: Theme.radius.pill
+                    hovered: tab.hovered
+                    down: tab.down
+                    active: tab.selected
+
+                    FocusFrame { around: Theme.focus.offset; cornerRadius: Theme.radius.pill; visible: tab.visualFocus }
                 }
             }
         }
@@ -220,13 +206,11 @@ Item {
                 id: moreRow
                 spacing: Theme.space.xs
                 leftPadding: root.pillPadding
-                Text {
+                Copy {
                     id: moreLabel
                     anchors.verticalCenter: parent.verticalCenter
                     text: moreButton.selected ? root.currentOverflowTab.label : moreMetrics.text
                     color: moreButton.inkColor
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                     font.weight: moreButton.selected ? Font.DemiBold : Font.Medium
                 }
                 MeshIcon {
@@ -237,24 +221,13 @@ Item {
                 }
             }
 
-            background: Item {
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.radius.pill
-                    color: moreButton.selected ? Theme.palette.accentSubtle
-                         : moreButton.down ? Theme.palette.pressedOverlay
-                         : moreButton.hovered || moreMenu.visible ? Theme.palette.hoverOverlay : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-                }
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: -Theme.focus.offset
-                    radius: Theme.radius.pill
-                    color: "transparent"
-                    border.width: Theme.focus.width
-                    border.color: Theme.palette.focusRing
-                    visible: moreButton.visualFocus
-                }
+            background: StateFill {
+                radius: Theme.radius.pill
+                hovered: moreButton.hovered || moreMenu.visible
+                down: moreButton.down
+                active: moreButton.selected
+
+                FocusFrame { around: Theme.focus.offset; cornerRadius: Theme.radius.pill; visible: moreButton.visualFocus }
             }
 
             Menu {

@@ -53,19 +53,11 @@ Item {
     readonly property int dragLiveWidth: root.dragWidth < root.snapWidth ? root.dragWidth
                                                                          : Math.max(root.dragWidth, root.minExpandedWidth)
 
-    // "off", "noAccount", "signingIn", "error" or "ready" (Format.friendsPhase()).
-    readonly property string phase: Format.friendsPhase(root.controller)
-    readonly property bool connected: root.phase === "ready"
-    readonly property bool stale: Format.friendsStale(root.controller)
-    readonly property bool showsLists: root.connected || root.stale
-    // Before the first read the lists are empty for want of an answer, not for lack of friends.
-    readonly property bool loaded: !!root.controller && root.controller.loaded
-    readonly property int friendCount: root.controller ? root.controller.friends.length : 0
-    readonly property var groups: Format.friendsGrouped(root.controller ? root.controller.friends : [])
+    readonly property FriendsState friendsState: FriendsState { controller: root.controller }
 
     // Asks only while connected: otherwise the controller answers with a toast the panel already says.
     function load() {
-        if (!root.controller || !root.connected)
+        if (!root.controller || !root.friendsState.connected)
             return
         root.controller.refresh()
     }
@@ -133,7 +125,7 @@ Item {
         enabled: root.settled
         NumberAnimation {
             property: "width"
-            duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.normal
+            duration: Theme.motion.normal
             easing.type: Theme.motion.easing
         }
     }
@@ -166,21 +158,12 @@ Item {
         opacity: root.showsFull ? 0 : 1
         visible: opacity > 0
         Behavior on opacity {
-            NumberAnimation {
-                duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.fast
-                easing.type: Theme.motion.easing
-            }
+            NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        controller: root.controller
+        friendsState: root.friendsState
         joinFlow: root.joinFlow
         menu: personMenu
-        phase: root.phase
-        showsLists: root.showsLists
-        stale: root.stale
-        connected: root.connected
-        groups: root.groups
-        incomingCount: root.controller ? root.controller.incomingCount : 0
         onExpandRequested: root.expandedRequested(true)
         onAddRequested: root.friendsRequested("add")
         onRequestsRequested: root.friendsRequested("requests")
@@ -195,22 +178,12 @@ Item {
         opacity: root.showsFull ? 1 : 0
         visible: opacity > 0
         Behavior on opacity {
-            NumberAnimation {
-                duration: SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.fast
-                easing.type: Theme.motion.easing
-            }
+            NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
         }
 
-        controller: root.controller
+        friendsState: root.friendsState
         joinFlow: root.joinFlow
         menu: personMenu
-        phase: root.phase
-        connected: root.connected
-        stale: root.stale
-        showsLists: root.showsLists
-        loaded: root.loaded
-        friendCount: root.friendCount
-        groups: root.groups
         onFriendsRequested: (tab) => root.friendsRequested(tab)
         onNavigateRequested: (target) => root.navigateRequested(target)
         onJoinRequested: (friend) => root.joinRequested(friend)

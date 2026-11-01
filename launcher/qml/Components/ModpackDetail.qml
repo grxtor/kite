@@ -15,22 +15,15 @@ import Kite.Theme
 Item {
     id: root
 
-    component Subheading: Text {
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.heading
-        font.pixelSize: Theme.type.subheading.pixelSize
-        font.weight: Theme.type.subheading.weight
+    component Subheading: Copy {
+        role: "subheading"
     }
 
-    component SideCard: Rectangle {
+    component SideCard: BoxSurface {
         id: sideCard
         property string title
         default property alias content: sideBody.data
         implicitHeight: sideColumn.implicitHeight + Theme.space.lg * 2
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
 
         Column {
             id: sideColumn
@@ -56,20 +49,17 @@ Item {
         visible: value.length > 0
         width: parent ? parent.width : 0
         spacing: Theme.space.xxs
-        Text {
+        Copy {
             text: parent.label
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
+            role: "caption"
+            tone: "tertiary"
             font.weight: Font.Medium
         }
-        Text {
+        Copy {
             width: parent.width
             text: parent.value
             wrapMode: Text.Wrap
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
         }
     }
 
@@ -101,17 +91,13 @@ Item {
     readonly property bool installing: !!watcher && watcher.running
     readonly property bool installed: !!watcher && watcher.succeeded
 
-    // The provider's ISO last-modified date as Format.lastPlayed() words it,
-    // or "" when there is none.
-    readonly property string updatedText: {
-        var ms = Date.parse(root.pack.updated || "")
-        return ms > 0 ? Format.lastPlayed(ms) : ""
-    }
+    // The provider's ISO last-modified date as an age, worded like the card's ("5 days ago"), or "" when there is none.
+    readonly property string updatedText: Format.ageText(root.pack.updated || "")
 
     readonly property var loaderNames: ({ neoforge: "NeoForge", forge: "Forge", fabric: "Fabric",
                                           quilt: "Quilt", liteloader: "LiteLoader" })
     function loaderName(id) {
-        return root.loaderNames[id] || (id.length > 0 ? id.charAt(0).toUpperCase() + id.slice(1) : id)
+        return root.loaderNames[id] || Format.titleCase(id)
     }
 
     function distinct(field) {
@@ -151,10 +137,6 @@ Item {
         var v = root.versions[versionBox.currentIndex]
         root.watcher = root.installer(root.pack.projectId, v.id,
                                       nameField.text.length > 0 ? nameField.text : root.pack.title, "")
-    }
-
-    function titleCase(word) {
-        return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
     }
 
     onPackChanged: {
@@ -232,25 +214,20 @@ Item {
                     Layout.alignment: Qt.AlignTop
                     spacing: Theme.space.sm
 
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         text: root.pack.title || ""
                         elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.heading
-                        font.pixelSize: Theme.type.display.pixelSize
-                        font.weight: Theme.type.display.weight
+                        role: "display"
                     }
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         visible: text.length > 0
                         text: root.pack.description || ""
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
+                        tone: "secondary"
                         lineHeight: Theme.type.body.lineHeight
                     }
 
@@ -277,12 +254,11 @@ Item {
                                     size: Theme.icon.sm
                                     color: Theme.palette.textTertiary
                                 }
-                                Text {
+                                Copy {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.text
-                                    color: Theme.palette.textSecondary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.label.pixelSize
+                                    role: "label"
+                                    tone: "secondary"
                                     font.weight: Font.Medium
                                 }
                             }
@@ -297,7 +273,7 @@ Item {
                             model: root.pack.categories || []
                             delegate: Tag {
                                 required property var modelData
-                                text: root.titleCase(String(modelData))
+                                text: Format.titleCase(String(modelData))
                             }
                         }
                     }
@@ -396,16 +372,14 @@ Item {
                             visible: !!root.watcher
                             spacing: Theme.space.xs
 
-                            Text {
+                            Copy {
                                 width: parent.width
                                 text: root.installed ? qsTr("Installed")
                                     : root.installing ? (root.watcher.status || qsTr("Installing…"))
                                     : root.watcher && root.watcher.failed ? qsTr("Install failed")
                                     : ""
                                 wrapMode: Text.Wrap
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
                                 font.weight: Font.Medium
                             }
                             LaunchProgressBar {
@@ -413,15 +387,14 @@ Item {
                                 visible: root.installing
                                 progress: root.watcher ? root.watcher.progress : -1
                             }
-                            Text {
+                            Copy {
                                 width: parent.width
                                 visible: text.length > 0
                                 text: root.watcher && root.watcher.failed ? root.watcher.error
                                     : root.installed ? qsTr("“%1” is in your library.").arg(nameField.text) : ""
                                 wrapMode: Text.Wrap
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
+                                role: "caption"
+                                tone: "secondary"
                             }
                         }
                     }

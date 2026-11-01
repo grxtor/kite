@@ -6,41 +6,33 @@ import Kite.Theme
 
 /*
  * What the Friends page shows instead of its list while friends are not connected: off, connecting, signed out, or
- * failed. A failure only a new Minecraft sign-in fixes (`controller.needsSignIn`) offers "Sign in"; any other
- * offers "Try again". Once the lists have been read, a failed poll does not get here (Format.friendsStale()).
+ * failed. A failure only a new Minecraft sign-in fixes (`friendsState.signInFirst`) offers "Sign in"; any other
+ * offers "Try again". Once the lists have been read, a failed poll does not get here (FriendsState.stale).
  */
 Item {
     id: root
 
-    // FriendsController, or null.
-    property var controller: null
-    // "off", "noAccount", "signingIn" or "error" (Format.friendsPhase()).
-    property string phase: "off"
+    // The view's FriendsState.
+    property FriendsState friendsState: FriendsState {}
 
     signal navigateRequested(string target)
 
+    readonly property var controller: root.friendsState.controller
+    readonly property string phase: root.friendsState.phase
     readonly property string errorText: root.controller ? root.controller.error : ""
-    readonly property bool signInFirst: Format.friendsSignInFirst(root.controller)
+    readonly property bool signInFirst: root.friendsState.signInFirst
     readonly property bool failed: root.phase === "error" && !root.signInFirst
-    property bool retrying: false
 
-    Connections {
-        target: root.controller
-        function onActionFinished(action) {
-            if (action === "refresh")
-                root.retrying = false
-        }
-        // A refresh dropped because friends was turned off meanwhile is never answered: the flag lasts while it is
-        // failing.
-        function onChanged() {
-            if (root.controller.state !== "error")
-                root.retrying = false
-        }
+    FriendsRetry {
+        id: retry
+        controller: root.controller
     }
 
     EmptyState {
         anchors.fill: parent
         upperThird: true
+        iconName: root.failed ? "alert-triangle" : root.signInFirst ? "user" : "users"
+        iconColor: root.failed ? Theme.tone("warning").ink : Theme.palette.textTertiary
         title: root.phase === "off" ? qsTr("Friends is off")
              : root.phase === "signingIn" ? qsTr("Connecting…")
              : root.signInFirst ? qsTr("Sign in to use Friends")
@@ -52,23 +44,16 @@ Item {
             : qsTr("Friends could not connect.")
         actionText: root.phase === "off" ? qsTr("Turn on")
                   : root.signInFirst ? qsTr("Sign in")
-                  : root.failed ? (root.retrying ? qsTr("Trying…") : qsTr("Try again")) : ""
-        actionIcon: root.failed && !root.retrying ? "refresh" : ""
-        actionEnabled: !root.retrying
+                  : root.failed ? (retry.retrying ? qsTr("Trying…") : qsTr("Try again")) : ""
+        actionIcon: root.failed && !retry.retrying ? "refresh" : ""
+        actionEnabled: !retry.retrying
         onActionTriggered: {
-            if (root.phase === "off") {
+            if (root.phase === "off")
                 root.controller.enabled = true
-            } else if (root.signInFirst) {
+            else if (root.signInFirst)
                 root.navigateRequested("accounts")
-            } else if (root.controller) {
-                root.retrying = true
-                root.controller.refresh()
-            }
-        }
-
-        SoftIconCircle {
-            iconName: root.failed ? "alert-triangle" : root.signInFirst ? "user" : "users"
-            tone: root.failed ? "warning" : "accent"
+            else
+                retry.run()
         }
     }
 }

@@ -12,7 +12,7 @@ import Kite.Theme
  * content (VersionRow), the installed one tagged. Install hands a ContentInstallReview back through
  * reviewRequested(), so what it needs comes along and the old file is replaced.
  */
-Dialog {
+AppDialog {
     id: root
 
     // ContentUpdateController, already asked to loadVersions().
@@ -25,24 +25,12 @@ Dialog {
     readonly property string installedId: root.controller ? root.controller.installedVersionId : ""
     readonly property bool pickedInstalled: root.pickedVersion >= 0 && root.pickedVersion < root.versions.length
                                             && root.versions[root.pickedVersion].id === root.installedId
-    readonly property int preferredWidth: 520
     readonly property int preferredHeight: 560
     readonly property int listMinHeight: 200
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.preferredHeight, parent ? parent.height - Theme.space.xxl * 2 : root.preferredHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closeOnOutsidePress: true
     title: root.controller ? qsTr("Change version of %1").arg(root.controller.versionsTitle) : ""
-
-    header: DialogHeader {
-        title: root.title
-        icon: "layers"
-    }
 
     // Preselects the newest compatible version that is not the installed one.
     onVersionsChanged: {
@@ -55,14 +43,9 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        PanelNote {
             Layout.fillWidth: true
             text: qsTr("Versions that run on this instance come first. Anything the new version needs is listed before it installs.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: Theme.type.label.lineHeight
         }
 
         Item {
@@ -102,7 +85,7 @@ Dialog {
                 visible: !root.loading && root.versions.length === 0
                 title: qsTr("No versions")
                 body: root.controller ? root.controller.versionsError : ""
-                MeshIcon { iconName: "layers"; size: 40; color: Theme.palette.textTertiary }
+                MeshIcon { iconName: "layers"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
         }
     }

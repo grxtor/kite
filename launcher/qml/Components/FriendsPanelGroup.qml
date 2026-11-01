@@ -40,11 +40,8 @@ Column {
         readonly property color ink: header.hovered || header.visualFocus ? Theme.palette.textSecondary
                                                                          : Theme.palette.textTertiary
 
-        background: Rectangle {
-            radius: Theme.radius.sm
-            color: "transparent"
-            border.width: header.visualFocus ? Theme.focus.width : 0
-            border.color: Theme.palette.focusRing
+        background: Item {
+            FocusFrame { around: 0; cornerRadius: Theme.radius.sm; visible: header.visualFocus }
         }
         contentItem: RowLayout {
             spacing: Theme.space.xs
@@ -52,19 +49,16 @@ Column {
             MeshIcon {
                 Layout.alignment: Qt.AlignVCenter
                 iconName: root.expanded ? "chevron-down" : "chevron-right"
-                size: Theme.icon.sm - 4
+                size: Theme.icon.xxs
                 color: header.ink
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
                 text: root.title
                 elide: Text.ElideRight
+                role: "overline"
                 color: header.ink
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.overline.pixelSize
-                font.weight: Theme.type.overline.weight
-                font.letterSpacing: Theme.type.overline.letterSpacing
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
             }
         }
@@ -96,17 +90,10 @@ Column {
                     // version is left to the Friends page.
                     detailSuffix: ""
 
-                    Button {
-                        id: join
-                        visible: Format.friendJoinable(slot.modelData)
+                    FriendJoinButton {
                         enabled: root.actionsEnabled
-                        buttonSize: "sm"
-                        text: qsTr("Join")
-                        Accessible.name: qsTr("Join %1 on %2").arg(slot.modelData.name).arg(slot.modelData.host)
-                        // Worked out as the pointer arrives, so it is never an old answer.
-                        ToolTip.visible: join.hovered
-                        ToolTip.delay: 500
-                        ToolTip.text: join.hovered && root.joinFlow ? root.joinFlow.tip(slot.modelData) : ""
+                        friend: slot.modelData
+                        joinFlow: root.joinFlow
                         onClicked: root.joinRequested(slot.modelData)
                     }
                     FriendMoreButton {

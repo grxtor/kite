@@ -53,11 +53,10 @@ Item {
             Layout.fillWidth: true
 
             leading: [
-                Text {
+                Copy {
                     text: qsTr("World")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 },
                 ComboBox {
                     id: picker
@@ -181,7 +180,7 @@ Item {
         visible: picker.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Data packs live inside a world's own folder, so create a world first.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     EmptyState {
@@ -190,7 +189,7 @@ Item {
         visible: picker.count > 0 && list.count === 0
         title: qsTr("No data packs")
         body: qsTr("Data packs change this world's recipes, loot and more. Add a .zip to get started.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     FileDialog {

@@ -64,16 +64,15 @@ Item {
 
     HoverHandler { id: hoverHandler }
 
-    Rectangle {
-        id: card
+    StateFill {
+        id: plate
         anchors.fill: parent
+        card: true
+        hovered: root.hovered
         radius: Theme.radius.lg
-        color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         Shadow {
-            radius: card.radius
+            radius: plate.radius
             level: Theme.elevation.sm
             opacity: root.hovered ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
@@ -101,7 +100,7 @@ Item {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
-                matte: root.showsPackArt || root.iconFills ? card.color : "transparent"
+                matte: root.showsPackArt || root.iconFills ? plate.color : "transparent"
                 lifted: root.hovered
 
                 Image {
@@ -138,16 +137,13 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: Theme.type.title.lineHeightPx
 
-                    Text {
+                    Copy {
                         id: nameText
                         width: Math.min(implicitWidth, parent.width - (newChip.visible ? newChip.width + Theme.space.sm : 0))
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.name
+                        role: "title"
                         elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.heading
-                        font.pixelSize: Theme.type.title.pixelSize
-                        font.weight: Theme.type.title.weight
                     }
                     Rectangle {
                         id: newChip
@@ -161,13 +157,12 @@ Item {
                         border.width: 1
                         border.color: Theme.palette.accent
 
-                        Text {
+                        Copy {
                             id: newLabel
                             anchors.centerIn: parent
                             text: qsTr("New")
-                            color: Theme.palette.accentText
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
+                            role: "caption"
+                            tone: "accent"
                             font.weight: Font.DemiBold
                         }
                     }
@@ -177,31 +172,29 @@ Item {
                     Layout.fillWidth: true
                     spacing: Theme.space.xs
 
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         width: Math.min(implicitWidth, parent.width)
                         text: root.hasCrashed ? root.versionText
                                               : [root.versionText, Format.lastPlayed(root.lastLaunch)]
                                                 .filter((part) => part.length > 0).join("  •  ")
+                        role: "label"
+                        tone: "secondary"
                         elide: Text.ElideRight
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
                     }
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.hasCrashed
                         iconName: "alert-triangle"
-                        size: Theme.icon.sm - 2
+                        size: Theme.icon.xs
                         color: Theme.palette.warning
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.hasCrashed
                         text: qsTr("Crashed last time")
-                        color: Theme.palette.warning
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
+                        tone: "warning"
                     }
                 }
             }
@@ -216,12 +209,11 @@ Item {
                     size: Theme.icon.sm
                     color: Theme.palette.textTertiary
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.playTimeText
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                     font.features: ({ "tnum": 1 })
                 }
             }
@@ -248,21 +240,13 @@ Item {
 
     // Over everything so the logo's corner matte never paints across it.
     Rectangle {
-        anchors.fill: card
-        radius: card.radius
+        anchors.fill: plate
+        radius: plate.radius
         color: "transparent"
         border.width: 1
         border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
         Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
-    Rectangle {
-        anchors.fill: card
-        anchors.margins: -Theme.space.xs
-        radius: card.radius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus
-    }
+    FocusFrame { target: plate; visible: root.activeFocus }
 }

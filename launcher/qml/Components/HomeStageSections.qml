@@ -17,7 +17,6 @@ Grid {
     // NewsModel, or null.
     property var news: null
 
-    signal createRequested()
     signal signInRequested()
 
     readonly property int setupWidth: 340
@@ -36,7 +35,6 @@ Grid {
         visible: setup.shown
         hasInstances: root.hasInstances
         signedIn: root.signedIn
-        onCreateRequested: root.createRequested()
         onSignInRequested: root.signInRequested()
     }
 

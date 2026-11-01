@@ -77,16 +77,13 @@ SettingRow {
                 onMoved: if (!pressed) save()
             }
 
-            Text {
+            Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.valueWidth
                 horizontalAlignment: Text.AlignRight
                 text: root.spec.text(Math.round(slider.value))
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                role: "bodyStrong"
             }
         }
     }
@@ -123,13 +120,11 @@ SettingRow {
 
     Component {
         id: textControl
-        Text {
+        Copy {
             text: root.spec.kind === "text" ? root.spec.text() : root.raw
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignRight
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            tone: "secondary"
         }
     }
 }

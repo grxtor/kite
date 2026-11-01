@@ -38,6 +38,8 @@ Item {
     readonly property bool keyMissing: !!root.active && root.active.keyMissing === true
     // ATLauncher and Technic say nothing about loaders; Technic has no sorts.
     readonly property bool loaderFilterAvailable: root.provider !== "atlauncher" && root.provider !== "technic"
+    // The loader is the only filter here.
+    readonly property int activeFilterCount: !!root.active && root.active.loader.length > 0 ? 1 : 0
     // Modrinth installs through the shell; the other models install themselves (C++ owns their TaskWatchers).
     readonly property var activeInstaller: root.provider === "modrinth"
         ? root.installer
@@ -199,12 +201,10 @@ Item {
                     }
                 }
 
-                Button {
+                FiltersButton {
                     id: filtersButton
                     visible: root.loaderFilterAvailable
-                    readonly property bool narrowed: !!root.active && root.active.loader.length > 0
-                    text: narrowed ? qsTr("Filters (1)") : qsTr("Filters")
-                    icon.source: Icons.url("filter")
+                    count: root.activeFilterCount
                     onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
 
                     Popup {
@@ -218,14 +218,11 @@ Item {
                         contentItem: ColumnLayout {
                             spacing: Theme.space.xs
 
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 Layout.bottomMargin: Theme.space.xs
                                 text: qsTr("Loader")
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                                font.weight: Theme.type.bodyStrong.weight
+                                role: "bodyStrong"
                             }
                             Repeater {
                                 model: root.loaders
@@ -359,7 +356,7 @@ Item {
 
         MeshIcon {
             iconName: root.active && root.active.error.length > 0 ? "alert-triangle" : "search"
-            size: 40
+            size: Theme.icon.xl
             color: Theme.palette.textTertiary
         }
     }
@@ -374,6 +371,6 @@ Item {
         actionText: qsTr("Browse Modrinth")
         actionIcon: "compass"
         onActionTriggered: root.setProvider("modrinth")
-        MeshIcon { iconName: "alert-triangle"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "alert-triangle"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

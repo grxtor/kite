@@ -26,8 +26,10 @@ Column {
     readonly property int maxRows: 4
     readonly property int gap: root.look === "stage" ? Theme.space.lg
                               : root.look === "calm" ? 0 : Theme.space.md
-    readonly property int rowMinWidth: root.look === "stage" ? 190
-                                     : root.look === "night" ? 300 : 480
+    readonly property int stageCardMinWidth: 190
+    readonly property int nightRowMinWidth: 300
+    readonly property int rowMinWidth: root.look === "stage" ? root.stageCardMinWidth
+                                     : root.look === "night" ? root.nightRowMinWidth : 480
     readonly property int columns: root.look === "stage"
         ? (root.width >= root.rowMinWidth * root.maxRows + root.gap * (root.maxRows - 1) ? root.maxRows : 2)
         : root.look === "calm" ? 1

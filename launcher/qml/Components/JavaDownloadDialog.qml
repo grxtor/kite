@@ -12,7 +12,7 @@ import Kite.Theme
  * computer, then watch it download. The work is JavaDownloadController's. The
  * runtime lands in Kite's own Java folder.
  */
-Dialog {
+AppDialog {
     id: root
 
     readonly property var download: JavaStore.download
@@ -21,41 +21,36 @@ Dialog {
 
     signal useRequested(string path)
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(520, parent ? parent.width - Theme.space.xxl * 2 : 520)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: root.busy ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
     title: qsTr("Download Java")
+    primaryText: root.done ? qsTr("Use this Java")
+                           : !!root.download && root.download.alreadyInstalled ? qsTr("Download again") : qsTr("Download")
+    primaryEnabled: root.done || (!!root.download && root.download.build >= 0 && !root.busy && !root.download.loading)
+    cancelText: root.done ? qsTr("Close") : qsTr("Cancel")
+    // The download goes on after the click; the dialog closes when it is done or cancelled.
+    closeOnPrimary: false
+    closePolicy: root.busy ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-    header: DialogHeader {
-        title: root.title
-        icon: "download"
+    onPrimaryClicked: {
+        if (!root.done) {
+            root.download.download()
+            return
+        }
+        root.useRequested(root.download.installedPath)
+        root.close()
     }
-
     onOpened: if (root.download) root.download.reset()
     onClosed: if (root.download) root.download.cancel()
-
-    component FieldLabel: Text {
-        Layout.alignment: Qt.AlignVCenter
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.body.pixelSize
-    }
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: qsTr("Kite keeps downloaded Java in its own folder, apart from anything you installed yourself.")
             wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: Theme.type.label.lineHeight
+            tone: "tertiary"
+            role: "label"
+            lineHeight: spec.lineHeight
         }
 
         GridLayout {
@@ -65,7 +60,7 @@ Dialog {
             rowSpacing: Theme.space.md
             enabled: !root.busy
 
-            FieldLabel { text: qsTr("Vendor") }
+            FieldLabel { Layout.alignment: Qt.AlignVCenter; text: qsTr("Vendor") }
             ComboBox {
                 Layout.fillWidth: true
                 model: root.download ? root.download.vendors : []
@@ -85,7 +80,7 @@ Dialog {
                 }
             }
 
-            FieldLabel { text: qsTr("Java version") }
+            FieldLabel { Layout.alignment: Qt.AlignVCenter; text: qsTr("Java version") }
             ComboBox {
                 Layout.fillWidth: true
                 model: root.download ? root.download.versions : []
@@ -104,7 +99,7 @@ Dialog {
                 }
             }
 
-            FieldLabel { text: qsTr("Build") }
+            FieldLabel { Layout.alignment: Qt.AlignVCenter; text: qsTr("Build") }
             ComboBox {
                 Layout.fillWidth: true
                 model: root.download ? root.download.builds : []
@@ -123,24 +118,22 @@ Dialog {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: !!root.download && root.download.alreadyInstalled && !root.busy && !root.done
             text: qsTr("This build is already downloaded. Downloading again replaces it.")
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            tone: "secondary"
+            role: "label"
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: !!root.download && root.download.error.length > 0
             text: root.download ? root.download.error : ""
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            tone: "danger"
+            role: "label"
         }
 
         ColumnLayout {
@@ -154,13 +147,12 @@ Dialog {
                 value: root.download ? root.download.progress : 0
                 indeterminate: !!root.download && root.download.progress <= 0
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.download ? root.download.status : ""
                 elide: Text.ElideRight
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                tone: "tertiary"
+                role: "caption"
             }
         }
 
@@ -173,49 +165,9 @@ Dialog {
                 size: Theme.icon.md
                 color: Theme.palette.success
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: qsTr("Java is downloaded and ready.")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-            }
-        }
-    }
-
-    footer: RowLayout {
-        spacing: Theme.space.sm
-        Item { Layout.fillWidth: true }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            visible: !root.done
-            text: qsTr("Cancel")
-            onClicked: root.close()
-        }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            Layout.rightMargin: Theme.space.xl
-            visible: !root.done
-            highlighted: true
-            text: !!root.download && root.download.alreadyInstalled ? qsTr("Download again") : qsTr("Download")
-            enabled: !!root.download && root.download.build >= 0 && !root.busy && !root.download.loading
-            onClicked: root.download.download()
-        }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            visible: root.done
-            text: qsTr("Close")
-            onClicked: root.close()
-        }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            Layout.rightMargin: Theme.space.xl
-            visible: root.done
-            highlighted: true
-            text: qsTr("Use this Java")
-            onClicked: {
-                root.useRequested(root.download.installedPath)
-                root.close()
             }
         }
     }

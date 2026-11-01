@@ -69,14 +69,13 @@ SettingRow {
             }
         }
 
-        Text {
+        Copy {
             visible: root.checkResult.length > 0
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.checkResult
-            color: root.checkOk ? Theme.palette.success : Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
+            role: "caption"
+            tone: root.checkOk ? "success" : "danger"
         }
     }
 

@@ -44,12 +44,9 @@ Popup {
     // Short words in two columns; a single column of twenty categories would make the panel scroll.
     readonly property int optionColumns: 2
 
-    component GroupTitle: Text {
+    component GroupTitle: Copy {
         Layout.fillWidth: true
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.bodyStrong.pixelSize
-        font.weight: Theme.type.bodyStrong.weight
+        role: "bodyStrong"
     }
 
     function toggled(list, id, on) {
@@ -84,13 +81,10 @@ Popup {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("Filters")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    role: "title"
                 }
                 Button {
                     flat: true
@@ -207,13 +201,12 @@ Popup {
                         }
                     }
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     visible: !!root.browser && root.browser.categories.length === 0
                     text: qsTr("Loading categories…")
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "tertiary"
                 }
             }
 

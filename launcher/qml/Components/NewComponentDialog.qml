@@ -12,7 +12,7 @@ import Kite.Theme
  * with no libraries or arguments; the user fills it in by editing its JSON. The
  * id must be new to this instance; empty uses one made from the name.
  */
-Dialog {
+AppDialog {
     id: root
 
     property var tools: null
@@ -24,20 +24,12 @@ Dialog {
     // Shown only once the user has typed something, not on an untouched form.
     readonly property bool touched: nameField.text.length > 0 || uidField.text.length > 0
 
-    readonly property int dialogWidth: 480
-
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
+    size: "sm"
+    closeOnPrimary: false
     title: qsTr("Add empty component")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "layers"
-    }
+    primaryText: qsTr("Add")
+    primaryEnabled: root.problem.length === 0
+    onPrimaryClicked: root.add()
 
     onOpened: {
         nameField.text = ""
@@ -48,13 +40,12 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: qsTr("An empty component has no files of its own. Add its libraries and arguments by editing its JSON afterwards.")
+            role: "label"
+            tone: "tertiary"
             wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
             lineHeight: Theme.type.label.lineHeight
         }
 
@@ -87,32 +78,13 @@ Dialog {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: root.touched && root.problem.length > 0
             text: root.problem
+            role: "label"
+            tone: "danger"
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-        }
-    }
-
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-
-        Button {
-            text: qsTr("Add")
-            highlighted: true
-            enabled: root.problem.length === 0
-            onClicked: root.add()
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
         }
     }
 

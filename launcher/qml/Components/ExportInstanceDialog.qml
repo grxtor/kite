@@ -13,7 +13,7 @@ import Kite.Theme
  * work is InstanceExportController's. Stays up with progress and a way to stop while the archive is written, and
  * closes once the file is there (`exported(message)` cues a toast); a failure keeps it open with the reason.
  */
-Dialog {
+AppDialog {
     id: root
 
     // InstanceExportController.
@@ -27,7 +27,6 @@ Dialog {
     readonly property string format: root.controller ? root.controller.format : "zip"
     readonly property bool pack: root.format !== "zip"
 
-    readonly property int dialogWidth: 640
     readonly property int dialogHeight: 700
     readonly property int treeMinHeight: 140
     readonly property int treeIndent: Theme.icon.md
@@ -54,20 +53,11 @@ Dialog {
         root.watcher = watcher
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
+    size: "lg"
     height: Math.min(root.dialogHeight, parent ? parent.height - Theme.space.xxl * 2 : root.dialogHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
     // A stray click outside should not throw away typing, and an export in progress only stops through its button.
     closePolicy: root.exporting ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.controller ? qsTr("Export “%1”").arg(root.controller.instanceName) : qsTr("Export")
-
-    header: DialogHeader {
-        title: root.title
-    }
 
     onOpened: {
         root.failure = ""
@@ -114,17 +104,16 @@ Dialog {
                 onActivated: (id) => root.controller.format = id
             }
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
+                role: "label"
+                tone: "secondary"
+                wrapMode: Text.Wrap
                 text: root.format === "modrinth"
                       ? qsTr("A Modrinth pack (.mrpack). Mods from Modrinth are linked for download, and everything else is packed in.")
                       : root.format === "curseforge"
                         ? qsTr("A CurseForge pack (.zip). Mods from CurseForge are linked for download, and everything else is packed in.")
                         : qsTr("The whole instance in one .zip file, ready to import into Kite or another launcher.")
-                wrapMode: Text.Wrap
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
 
             GridLayout {
@@ -225,30 +214,24 @@ Dialog {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("Files")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
+                    role: "bodyStrong"
                 }
-                Text {
+                Copy {
                     text: qsTr("Unchecked files are left out")
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "tertiary"
                 }
             }
 
-            Rectangle {
+            BoxSurface {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumHeight: root.treeMinHeight
                 radius: Theme.radius.sm
                 color: "transparent"
-                border.width: 1
-                border.color: Theme.palette.border
 
                 TreeView {
                     id: tree
@@ -276,11 +259,10 @@ Dialog {
 
                         HoverHandler { id: hover }
 
-                        Rectangle {
+                        StateFill {
                             anchors.fill: parent
                             radius: Theme.radius.sm
-                            color: hover.hovered ? Theme.palette.hoverOverlay : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+                            hovered: hover.hovered
                         }
 
                         // Under the row's content, so a click on the checkbox stays the checkbox's.
@@ -322,13 +304,11 @@ Dialog {
                                 size: Theme.icon.sm
                                 color: Theme.palette.textTertiary
                             }
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 text: node.display
+                                tone: node.checkState === Qt.Unchecked ? "tertiary" : "primary"
                                 elide: Text.ElideRight
-                                color: node.checkState === Qt.Unchecked ? Theme.palette.textTertiary : Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.body.pixelSize
                             }
                         }
                     }
@@ -359,13 +339,12 @@ Dialog {
             visible: root.exporting
             spacing: Theme.space.xs
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.watcher && root.watcher.status.length > 0 ? root.watcher.status : qsTr("Exporting…")
+                role: "label"
+                tone: "secondary"
                 elide: Text.ElideMiddle
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             ProgressBar {
                 Layout.fillWidth: true
@@ -374,14 +353,13 @@ Dialog {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: root.failure.length > 0 || (root.format === "modrinth" && !!root.controller && !root.controller.ready)
             text: root.failure.length > 0 ? root.failure : qsTr("A Modrinth pack needs a version.")
+            role: "caption"
+            tone: "danger"
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
         }
     }
 

@@ -68,15 +68,12 @@ AbstractButton {
             Row {
                 width: parent.width
                 spacing: Theme.space.xs
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - check.width - parent.spacing
                     text: root.label
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
+                    role: "bodyStrong"
                 }
                 Rectangle {
                     id: check
@@ -90,18 +87,17 @@ AbstractButton {
                         anchors.centerIn: parent
                         visible: root.chosen
                         iconName: "check"
-                        size: Theme.icon.sm - 2
+                        size: Theme.icon.xs
                         color: Theme.palette.textOnAccent
                     }
                 }
             }
-            Text {
+            Copy {
                 width: parent.width
                 text: root.note
                 elide: Text.ElideRight
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "tertiary"
             }
         }
     }

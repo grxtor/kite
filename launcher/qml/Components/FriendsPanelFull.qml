@@ -13,20 +13,10 @@ import Kite.Theme
 Item {
     id: root
 
-    // FriendsController, or null.
-    property var controller: null
+    // FriendsSidePanel's FriendsState.
+    property FriendsState friendsState: FriendsState {}
     property var joinFlow: null
     property var menu: null
-
-    // Derived by FriendsSidePanel from the controller, for this and the strip alike.
-    property string phase: "off"
-    property bool connected: false
-    property bool stale: false
-    property bool showsLists: false
-    property bool loaded: false
-    property int friendCount: 0
-    // Format.friendsGrouped(): { playing, online, offline }.
-    property var groups: ({ playing: [], online: [], offline: [] })
 
     // Which groups show their rows; offline starts folded.
     property bool playingOpen: true
@@ -46,12 +36,12 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.topMargin: 1
-        ready: root.connected
-        loaded: root.loaded
-        friendCount: root.friendCount
-        onlineCount: root.controller ? root.controller.onlineCount : 0
-        incomingCount: root.controller ? root.controller.incomingCount : 0
-        showsLists: root.showsLists
+        ready: root.friendsState.connected
+        loaded: root.friendsState.loaded
+        friendCount: root.friendsState.friendCount
+        onlineCount: root.friendsState.onlineCount
+        incomingCount: root.friendsState.incomingCount
+        showsLists: root.friendsState.showsLists
         onAddRequested: root.friendsRequested("add")
         onRequestsRequested: root.friendsRequested("requests")
         onCollapseRequested: root.collapseRequested()
@@ -59,7 +49,7 @@ Item {
 
     Item {
         id: lists
-        visible: root.showsLists
+        visible: root.friendsState.showsLists
         anchors.left: parent.left
         anchors.leftMargin: 1
         anchors.right: parent.right
@@ -84,51 +74,51 @@ Item {
 
                 FriendsStaleBar {
                     width: parent.width
-                    visible: root.stale
-                    controller: root.controller
+                    visible: root.friendsState.stale
+                    controller: root.friendsState.controller
                 }
 
                 FriendsNotice {
                     width: parent.width
-                    controller: root.controller
+                    controller: root.friendsState.controller
                     onSettingsRequested: root.navigateRequested("settings/friends")
                 }
 
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("IN GAME — %1").arg(root.groups.playing.length)
-                    friends: root.groups.playing
+                    title: qsTr("IN GAME — %1").arg(root.friendsState.groups.playing.length)
+                    friends: root.friendsState.groups.playing
                     expanded: root.playingOpen
                     menu: root.menu
                     joinFlow: root.joinFlow
-                    stale: root.stale
-                    actionsEnabled: root.connected
+                    stale: root.friendsState.stale
+                    actionsEnabled: root.friendsState.connected
                     onToggled: root.playingOpen = !root.playingOpen
                     onJoinRequested: (friend) => root.joinRequested(friend)
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("ONLINE — %1").arg(root.groups.online.length)
-                    friends: root.groups.online
+                    title: qsTr("ONLINE — %1").arg(root.friendsState.groups.online.length)
+                    friends: root.friendsState.groups.online
                     expanded: root.onlineOpen
                     menu: root.menu
-                    stale: root.stale
-                    actionsEnabled: root.connected
+                    stale: root.friendsState.stale
+                    actionsEnabled: root.friendsState.connected
                     onToggled: root.onlineOpen = !root.onlineOpen
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("OFFLINE — %1").arg(root.groups.offline.length)
-                    friends: root.groups.offline
+                    title: qsTr("OFFLINE — %1").arg(root.friendsState.groups.offline.length)
+                    friends: root.friendsState.groups.offline
                     expanded: root.offlineOpen
                     menu: root.menu
-                    stale: root.stale
-                    actionsEnabled: root.connected
+                    stale: root.friendsState.stale
+                    actionsEnabled: root.friendsState.connected
                     onToggled: root.offlineOpen = !root.offlineOpen
                 }
 
                 Column {
-                    visible: root.loaded && root.friendCount === 0
+                    visible: root.friendsState.loaded && root.friendsState.friendCount === 0
                     width: parent.width
                     spacing: Theme.space.sm
 
@@ -146,19 +136,8 @@ Item {
             }
         }
 
-        ScrollFade {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            atTop: true
-            flickable: flick
-        }
-        ScrollFade {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            flickable: flick
-        }
+        ScrollFade { atTop: true; flickable: flick }
+        ScrollFade { flickable: flick }
     }
 
     FriendsPageState {
@@ -167,9 +146,8 @@ Item {
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         anchors.margins: Theme.space.lg
-        visible: !root.showsLists
-        controller: root.controller
-        phase: root.phase
+        visible: !root.friendsState.showsLists
+        friendsState: root.friendsState
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
 }

@@ -22,14 +22,14 @@ Item {
     signal joinRequested(var friend)
 
     readonly property var groups: Format.friendsGrouped(root.controller ? root.controller.friends : [])
-    readonly property bool hasFriends: !!root.controller && root.controller.friends.length > 0
-    readonly property bool empty: !!root.controller && root.controller.loaded && !root.hasFriends
 
     FriendsListScroll {
         anchors.fill: parent
-        visible: root.hasFriends
+        controller: root.controller
+        count: root.controller ? root.controller.friends.length : 0
         actionsEnabled: root.actionsEnabled
         spacing: Theme.space.sm
+        emptyState: FriendsEmptyState { myName: root.controller ? root.controller.myName : "" }
 
         FriendsGroup {
             width: parent.width
@@ -54,11 +54,5 @@ Item {
             menu: root.menu
             stale: root.stale
         }
-    }
-
-    FriendsEmptyState {
-        anchors.fill: parent
-        visible: root.empty
-        myName: root.controller ? root.controller.myName : ""
     }
 }

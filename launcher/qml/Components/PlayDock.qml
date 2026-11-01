@@ -35,8 +35,7 @@ Item {
     signal navigateRequested(string target)
 
     // Decorative loops stop while the window is inactive.
-    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
-                                          && !SettingsStore.bool("UiReduceMotion")
+    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive && !Theme.motion.reduced
 
     implicitHeight: Theme.layout.barHeight
 
@@ -66,6 +65,8 @@ Item {
         launchMenu.refresh()
         launchMenu.popup(moreButton, moreButton.width - launchMenu.implicitWidth,
                          -launchMenu.implicitHeight - Theme.space.xs)
+        // The closed menu's height is a guess; hold the bottom edge above the chevron once it has settled.
+        launchMenu.y = Qt.binding(() => -launchMenu.height - Theme.space.xs)
         if (submenu)
             Qt.callLater(() => launchMenu.openSubmenu(submenu))
     }
@@ -146,8 +147,8 @@ Item {
     readonly property int playHeight: Theme.control.heightLg
     readonly property int playWidth: 176
 
-    readonly property int sideMargin: Math.max(Theme.space.xl + Theme.space.xs,
-                                               Math.round((root.width - Theme.layout.maxContentWidth) / 2))
+    // The page column's margin (Main.pageSideMargin), so the bar lines up with the page above it.
+    property int sideMargin: Theme.space.xl + Theme.space.xs
 
     RowLayout {
         anchors.fill: parent
@@ -167,11 +168,10 @@ Item {
 
             onClicked: picker.visible ? picker.close() : picker.open()
 
-            background: Rectangle {
+            background: StateFill {
                 radius: Theme.radius.md
-                color: pickerButton.down ? Theme.palette.pressedOverlay
-                     : pickerButton.hovered || picker.visible ? Theme.palette.hoverOverlay : "transparent"
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                hovered: pickerButton.hovered || picker.visible
+                down: pickerButton.down
             }
 
             contentItem: RowLayout {
@@ -214,16 +214,13 @@ Item {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: 1
 
-                    Text {
+                    Copy {
                         Layout.maximumWidth: 240
                         text: root.hasInstance ? root.dockName : qsTr("Choose an instance")
+                        role: "bodyStrong"
                         elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.bodyStrong.pixelSize
-                        font.weight: Theme.type.bodyStrong.weight
                     }
-                    Text {
+                    Copy {
                         id: subtitle
                         Layout.maximumWidth: 240
                         visible: root.hasInstance && subtitle.text.length > 0
@@ -231,10 +228,9 @@ Item {
                         text: [Format.versionLine(root.dockLoader, root.dockGameVersion),
                                played.length > 0 ? qsTr("%1 played").arg(played) : ""]
                               .filter(s => s.length > 0).join("  ·  ")
+                        role: "caption"
+                        tone: "secondary"
                         elide: Text.ElideRight
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
                     }
                 }
 
@@ -314,21 +310,17 @@ Item {
                         Layout.fillWidth: true
                         spacing: Theme.space.sm
 
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: root.launchStage
+                            role: "bodyStrong"
                             elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.bodyStrong.pixelSize
-                            font.weight: Theme.type.bodyStrong.weight
                         }
-                        Text {
+                        Copy {
                             visible: root.launchProgress >= 0
                             text: qsTr("%1%").arg(Math.round(root.launchProgress * 100))
-                            color: Theme.palette.textSecondary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
+                            role: "label"
+                            tone: "secondary"
                             font.weight: Theme.type.label.weight
                             // Equal-width digits stop the number jittering.
                             font.features: ({ "tnum": 1 })
@@ -372,16 +364,14 @@ Item {
                         SequentialAnimation on opacity {
                             running: root.dockRunning && root.motionEnabled
                             loops: Animation.Infinite
-                            NumberAnimation { from: 1.0; to: 0.4; duration: 900; easing.type: Easing.InOutSine }
-                            NumberAnimation { from: 0.4; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
+                            NumberAnimation { from: 1.0; to: 0.4; duration: Theme.motion.pulse; easing.type: Easing.InOutSine }
+                            NumberAnimation { from: 0.4; to: 1.0; duration: Theme.motion.pulse; easing.type: Easing.InOutSine }
                         }
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("Playing")
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.bodyStrong.pixelSize
+                        role: "bodyStrong"
                         font.weight: Font.Bold
                     }
                 }
@@ -508,22 +498,18 @@ Item {
                                 Layout.minimumWidth: 0
                                 spacing: 0
 
-                                Text {
+                                Copy {
                                     width: parent.width
                                     text: row.name
                                     elide: Text.ElideRight
-                                    color: Theme.palette.textPrimary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.body.pixelSize
                                     font.weight: Font.Medium
                                 }
-                                Text {
+                                Copy {
                                     width: parent.width
                                     text: Format.versionLine(row.loader, row.gameVersion)
+                                    role: "caption"
+                                    tone: "tertiary"
                                     elide: Text.ElideRight
-                                    color: Theme.palette.textTertiary
-                                    font.family: Theme.font.family
-                                    font.pixelSize: Theme.type.caption.pixelSize
                                 }
                             }
                             Rectangle {
@@ -559,15 +545,12 @@ Item {
 
                     MeshIcon {
                         iconName: picker.libraryEmpty ? "cube" : "search"
-                        size: Theme.icon.lg + Theme.space.md
+                        size: Theme.icon.xl
                         color: Theme.palette.textTertiary
                     }
                 }
 
                 ScrollFade {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
                     flickable: list
                     fadeTo: Theme.palette.surfaceOverlay
                 }

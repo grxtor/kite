@@ -23,14 +23,12 @@ SettingsScroll {
     title: qsTr("Installed plugins")
     description: qsTr("Plugins add features to Kite. Turning one on or off takes effect the next time Kite starts.")
 
-    Text {
+    Copy {
         width: parent.width
         visible: root.count === 0
         text: qsTr("No plugins are installed.")
         wrapMode: Text.Wrap
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.body.pixelSize
+        tone: "secondary"
     }
 
     SettingsGroup {

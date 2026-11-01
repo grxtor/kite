@@ -16,8 +16,7 @@ Item {
     property int radius: Theme.radius.md
 
     // Decorative loops stop when the window is inactive or "Reduce motion" is on.
-    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
-                                          && !SettingsStore.bool("UiReduceMotion")
+    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive && !Theme.motion.reduced
 
     clip: true
 
@@ -30,7 +29,7 @@ Item {
 
     Rectangle {
         id: sweep
-        visible: !SettingsStore.bool("UiReduceMotion")
+        visible: !Theme.motion.reduced
         width: Math.max(1, root.width) * 0.4
         height: parent.height
         radius: root.radius

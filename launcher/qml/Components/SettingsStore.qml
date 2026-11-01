@@ -25,4 +25,11 @@ SettingsSource {
         property: "customFamily"
         value: store.string("UiFontFamily")
     }
+
+    // Theme.motion reads it, so pages, dialogs and toasts stop animating without a check of their own.
+    readonly property Binding _reduceMotion: Binding {
+        target: Theme
+        property: "reduceMotion"
+        value: store.bool("UiReduceMotion")
+    }
 }

@@ -35,17 +35,16 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.iconName.length > 0
             iconName: root.iconName
-            size: Theme.icon.sm - 2
+            size: Theme.icon.xs
             color: label.color
         }
 
-        Text {
+        Copy {
             id: label
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
-            color: root.onMedia ? Theme.media.text : Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
+            role: "caption"
+            tone: root.onMedia ? "media" : "secondary"
             font.weight: Font.Medium
         }
     }

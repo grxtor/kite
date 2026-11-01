@@ -14,15 +14,16 @@ ColumnLayout {
     id: root
 
     required property Item hero
-    property int nameSize: 48
+    property int nameSize: Theme.type.hero.pixelSize
     property color ink: Theme.palette.textPrimary
     property color inkSecondary: Theme.palette.textSecondary
     property color eyebrowInk: Theme.palette.textTertiary
 
     readonly property real playCenterY: actions.y + actions.height / 2
 
-    readonly property int eyebrowSize: 11
     readonly property real eyebrowTracking: 0.14
+    // The eyebrow is 12 px (it was 11); the block below stays where it was.
+    readonly property int eyebrowTrim: 1
     readonly property int nameGapAbove: 10
     readonly property int metaGapAbove: 14
     readonly property int actionsGapAbove: 26
@@ -34,8 +35,8 @@ ColumnLayout {
 
     HomeLabel {
         Layout.fillWidth: true
+        Layout.preferredHeight: implicitHeight - root.eyebrowTrim
         text: qsTr("Last played")
-        size: root.eyebrowSize
         tracking: root.eyebrowTracking
         color: root.eyebrowInk
     }

@@ -14,7 +14,7 @@ import Kite.Theme
  * installed here: Done hands the picked projects back (`picked`), in catalog
  * order.
  */
-Dialog {
+AppDialog {
     id: root
 
     // BundleCatalog::mods() rows to pick from.
@@ -26,7 +26,6 @@ Dialog {
 
     signal picked(var projects)
 
-    readonly property int preferredWidth: 900
     readonly property int preferredHeight: 680
     readonly property int gap: Theme.space.sm
     readonly property int minCardWidth: 190
@@ -89,19 +88,29 @@ Dialog {
         }).join(", ")
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
+    size: "xl"
     height: Math.min(root.preferredHeight, parent ? parent.height - Theme.space.xxl * 2 : root.preferredHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: qsTr("Kite Performance mods")
+    primaryText: qsTr("Done")
+    onPrimaryClicked: root.picked(root.mods.filter((mod) => root.picks.indexOf(mod.project) >= 0)
+                                           .map((mod) => mod.project))
 
-    header: DialogHeader {
-        title: root.title
-    }
+    footerLeading: [
+        Copy {
+            anchors.verticalCenter: parent.verticalCenter
+            text: qsTr("%1 of %2 on").arg(root.picks.length).arg(root.mods.length)
+            role: "label"
+            tone: "secondary"
+        },
+        Button {
+            anchors.verticalCenter: parent.verticalCenter
+            flat: true
+            visible: !root.atDefaults
+            text: qsTr("Reset to defaults")
+            icon.source: Icons.url("refresh")
+            onClicked: root.picks = root.defaults.slice()
+        }
+    ]
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
@@ -144,53 +153,13 @@ Dialog {
                 }
             }
 
-            Text {
+            Copy {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: Theme.space.xxl
                 visible: root.shownCount === 0
                 text: qsTr("No mods match.")
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-            }
-        }
-    }
-
-    footer: RowLayout {
-        spacing: Theme.space.sm
-
-        Text {
-            Layout.leftMargin: Theme.space.xl
-            Layout.bottomMargin: Theme.space.xl
-            text: qsTr("%1 of %2 on").arg(root.picks.length).arg(root.mods.length)
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-        }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            flat: true
-            visible: !root.atDefaults
-            text: qsTr("Reset to defaults")
-            icon.source: Icons.url("refresh")
-            onClicked: root.picks = root.defaults.slice()
-        }
-        Item { Layout.fillWidth: true }
-        Button {
-            Layout.bottomMargin: Theme.space.xl
-            text: qsTr("Cancel")
-            onClicked: root.close()
-        }
-        Button {
-            Layout.rightMargin: Theme.space.xl
-            Layout.bottomMargin: Theme.space.xl
-            highlighted: true
-            text: qsTr("Done")
-            icon.source: Icons.url("check")
-            onClicked: {
-                root.picked(root.mods.filter((mod) => root.picks.indexOf(mod.project) >= 0)
-                                     .map((mod) => mod.project))
-                root.close()
+                role: "label"
+                tone: "tertiary"
             }
         }
     }
@@ -217,13 +186,14 @@ Dialog {
 
         onClicked: root.toggle(card.modelData.project)
 
-        background: Rectangle {
+        background: StateFill {
+            card: true
+            rest: Theme.palette.surfaceRaised
+            hovered: card.hovered
             radius: Theme.radius.md
-            color: card.hovered ? Theme.palette.surfaceHover : Theme.palette.surfaceRaised
             border.width: 1
             border.color: card.visualFocus ? Theme.palette.focusRing
                         : card.hovered ? Theme.palette.borderStrong : Theme.palette.border
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
             // One rounded strip inside the border, its top corners clipped off (two strips would
             // double a see-through fill where they overlap).
@@ -248,15 +218,14 @@ Dialog {
                     MeshIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: card.on ? "check" : "x"
-                        size: Theme.icon.sm - 4
+                        size: Theme.icon.xxs
                         color: card.on ? Theme.palette.success : Theme.palette.textTertiary
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: card.on ? qsTr("On") : qsTr("Off")
-                        color: card.on ? Theme.palette.success : Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
+                        role: "caption"
+                        tone: card.on ? "success" : "tertiary"
                         font.weight: Font.DemiBold
                     }
                 }
@@ -282,33 +251,28 @@ Dialog {
                     text: qsTr("Default")
                 }
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: card.modelData.name
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                font.weight: Font.DemiBold
+                role: "bodyStrong"
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: card.modelData.summary || ""
                 wrapMode: Text.Wrap
                 maximumLineCount: card.needs.length > 0 ? 1 : 2
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "secondary"
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 visible: card.needs.length > 0
                 text: qsTr("Needs %1").arg(root.namesOf(card.needs))
                 elide: Text.ElideRight
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "tertiary"
             }
             Item { Layout.fillHeight: true }
         }

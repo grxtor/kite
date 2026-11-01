@@ -47,12 +47,8 @@ Column {
                 ToolTip.delay: 500
                 ToolTip.text: head.modelData.name + " · " + head.modelData.statusText
 
-                background: Rectangle {
-                    anchors.margins: -Theme.focus.offset
-                    radius: Theme.radius.sm
-                    color: "transparent"
-                    border.width: head.visualFocus ? Theme.focus.width : 0
-                    border.color: Theme.palette.focusRing
+                background: Item {
+                    FocusFrame { around: 0; cornerRadius: Theme.radius.sm; visible: head.visualFocus }
                 }
                 contentItem: FriendHead {
                     size: root.headSize

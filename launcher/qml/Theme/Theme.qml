@@ -31,6 +31,25 @@ QtObject {
     readonly property bool lightAccent: palette.accent.hslLightness > 0.8
     function previewPalette(name) { return ThemeService.previewPalette(name) }
 
+    // The UiReduceMotion setting, set by SettingsStore (Theme cannot see the
+    // settings). While true every motion duration is 0 and `motion.reduced`
+    // is true.
+    property bool reduceMotion: false
+
+    // The ink and the soft fill of a status colour, for a badge, a notice or
+    // an icon disc: "neutral", "success", "warning", "danger", "info" or
+    // "accent". Anything else reads as neutral.
+    function tone(name) {
+        switch (name) {
+        case "success": return { ink: root.palette.success, soft: root.palette.successSubtle }
+        case "warning": return { ink: root.palette.warning, soft: root.palette.warningSubtle }
+        case "danger": return { ink: root.palette.danger, soft: root.palette.dangerSubtle }
+        case "info": return { ink: root.palette.info, soft: root.palette.infoSubtle }
+        case "accent": return { ink: root.palette.accentText, soft: root.palette.accentSubtle }
+        default: return { ink: root.palette.textSecondary, soft: root.palette.surfaceOverlay }
+        }
+    }
+
     readonly property QtObject space: QtObject {
         readonly property int xxs: 2
         readonly property int xs: 4
@@ -63,6 +82,12 @@ QtObject {
         // The bottom play bar; the sidebar's foot band matches it so their top
         // edges line up.
         readonly property int barHeight: 72
+        // A dialog's preferred width (AppDialog `size`); it never exceeds the
+        // window less a margin.
+        readonly property int dialogSm: 440
+        readonly property int dialogMd: 560
+        readonly property int dialogLg: 680
+        readonly property int dialogXl: 860
     }
 
     // sm: dense rows and toolbars; default: buttons and fields; lg: a page's
@@ -128,14 +153,22 @@ QtObject {
         // An outlined control's edge under the pointer: one step over
         // palette.border.
         readonly property color borderHover: root.dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.22)
+        // The hairline round a white knob (Switch, Slider) so it holds on a pale track.
+        readonly property color knobEdge: Qt.rgba(0, 0, 0, 0.10)
     }
 
     // sm: beside a line of text; md: a control's own icon (nav item, toolbar
-    // toggle); lg: a picture-like icon (an instance in the rail).
+    // toggle); lg: a picture-like icon (an instance in the rail). xxs and xs
+    // sit inside a chip, a tag or a small row; mid is a control's glyph one
+    // step over sm; xl is an empty state's picture. No arithmetic on these.
     readonly property QtObject icon: QtObject {
+        readonly property int xxs: 14
+        readonly property int xs: 16
         readonly property int sm: 18
+        readonly property int mid: 20
         readonly property int md: 22
         readonly property int lg: 26
+        readonly property int xl: 40
     }
 
     readonly property QtObject opacity: QtObject {
@@ -175,6 +208,19 @@ QtObject {
         readonly property color scrim: Qt.rgba(0.02, 0.03, 0.05, 0.86)
         readonly property color chip: Qt.rgba(0, 0, 0, 0.38)
         readonly property color chipBorder: Qt.rgba(1, 1, 1, 0.12)
+        // Frosted glass over the night sky or a photo (no blur in Qt 6.4): a
+        // faint white fill, one step lighter when lit or under the pointer,
+        // and its edge. `glassStrong` is a glass button's resting fill.
+        readonly property color glass: Qt.rgba(1, 1, 1, 0.07)
+        readonly property color glassLit: Qt.rgba(1, 1, 1, 0.11)
+        readonly property color glassStrong: Qt.rgba(1, 1, 1, 0.12)
+        readonly property color glassEdge: Qt.rgba(1, 1, 1, 0.09)
+        // The dark counterpart over a photo (the Sahne stage's world panel).
+        readonly property color shade: Qt.rgba(0.04, 0.04, 0.05, 0.42)
+        readonly property color shadeLit: Qt.rgba(0.04, 0.04, 0.05, 0.55)
+        // Small print over glass or a photo; a bar track on media.
+        readonly property color textFaint: Qt.rgba(1, 1, 1, 0.55)
+        readonly property color track: Qt.rgba(1, 1, 1, 0.18)
     }
 
     /* Motion contract: a hover/press transition changes exactly one visual
@@ -191,14 +237,18 @@ QtObject {
      *     active tab, accentSubtle fill and accentText label.
      *   - swatch/tile picker (PalettePicker): an accent ring around the
      *     selected tile.
-     *   - segmented control (SegmentedControl): a raised fill on the selected
-     *     segment, no accent.
      * A control never falls back to a bare colour-only "selected" look.
+     *
+     * Under the Reduce motion setting every duration is 0 and `reduced` is
+     * true; an endless animation must also gate `running` on !reduced.
      */
     readonly property QtObject motion: QtObject {
-        readonly property int fast: 120
-        readonly property int normal: 180
-        readonly property int slow: 260
+        readonly property bool reduced: root.reduceMotion
+        readonly property int fast: reduced ? 0 : 120
+        readonly property int normal: reduced ? 0 : 180
+        readonly property int slow: reduced ? 0 : 260
+        // One half of the running dot's breathing loop.
+        readonly property int pulse: reduced ? 0 : 900
         readonly property int easing: Easing.OutCubic
     }
 
@@ -337,6 +387,33 @@ QtObject {
             readonly property int pixelSize: 36
             readonly property int weight: Font.Bold
             readonly property real lineHeight: 1.1
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        // The instance's name on Home's hero (heroSm: Gece's).
+        readonly property QtObject hero: QtObject {
+            readonly property int pixelSize: 48
+            readonly property int weight: Font.Bold
+            readonly property real lineHeight: 1.1
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        readonly property QtObject heroSm: QtObject {
+            readonly property int pixelSize: 46
+            readonly property int weight: Font.Bold
+            readonly property real lineHeight: 1.1
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        // Home's section name in the Sahne look, between title and subheading.
+        readonly property QtObject section: QtObject {
+            readonly property int pixelSize: 18
+            readonly property int weight: Font.DemiBold
+            readonly property real lineHeight: 1.3
+            readonly property real lineHeightPx: pixelSize * lineHeight
+        }
+        // The name on a Home card (Sahne), between bodyStrong and title.
+        readonly property QtObject cardName: QtObject {
+            readonly property int pixelSize: 16
+            readonly property int weight: Font.DemiBold
+            readonly property real lineHeight: 1.35
             readonly property real lineHeightPx: pixelSize * lineHeight
         }
     }

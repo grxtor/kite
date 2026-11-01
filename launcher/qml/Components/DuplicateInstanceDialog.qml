@@ -12,7 +12,7 @@ import Kite.Theme
  * targetId, targetGroup, sourceName and iconKey, then open(). The copy (LibraryController.duplicate(), in the same
  * group) runs after the dialog closes; `started(name, watcher)` hands on its TaskWatcher.
  */
-Dialog {
+AppDialog {
     id: root
 
     property var library: null
@@ -23,7 +23,6 @@ Dialog {
     signal started(string name, var watcher)
     signal failed()
 
-    readonly property int dialogWidth: 460
     readonly property int iconTileSize: Theme.control.heightLg + Theme.space.lg
 
     function submit() {
@@ -39,18 +38,12 @@ Dialog {
             root.failed()
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
+    size: "sm"
+    closeOnPrimary: false
     title: qsTr("Duplicate “%1”").arg(root.sourceName)
-
-    header: DialogHeader {
-        title: root.title
-    }
+    primaryText: qsTr("Duplicate")
+    primaryEnabled: !!root.library && nameField.text.trim().length > 0
+    onPrimaryClicked: root.submit()
 
     onOpened: {
         nameField.text = qsTr("%1 (copy)").arg(root.sourceName)
@@ -128,24 +121,6 @@ Dialog {
                 leftPadding: 0
                 text: qsTr("Keep play time")
             }
-        }
-    }
-
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-
-        Button {
-            highlighted: true
-            enabled: !!root.library && nameField.text.trim().length > 0
-            text: qsTr("Duplicate")
-            onClicked: root.submit()
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
         }
     }
 

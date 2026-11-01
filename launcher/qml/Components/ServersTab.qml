@@ -30,13 +30,6 @@ Item {
         { value: 2, label: qsTr("Never") }
     ]
 
-    component FieldLabel: Text {
-        width: parent ? parent.width : implicitWidth
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
-    }
-
     function addServer() {
         serverDialog.row = -1
         serverDialog.open()
@@ -162,7 +155,7 @@ Item {
         flickable: list
     }
 
-    Dialog {
+    AppDialog {
         id: serverDialog
         property int row: -1
         property string name
@@ -170,17 +163,13 @@ Item {
         property int acceptTextures: 0
         property int packChoice: 0
 
+        size: "sm"
         title: row < 0 ? qsTr("Add server") : qsTr("Edit server")
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: Math.min(440, parent ? parent.width - Theme.space.xxl * 2 : 440)
-        modal: true
-        topPadding: 0
-        bottomPadding: Theme.space.sm
-
-        header: DialogHeader {
-            title: serverDialog.title
-        }
+        primaryText: row < 0 ? qsTr("Add server") : qsTr("Save")
+        primaryEnabled: addressField.text.trim().length > 0
+        // save() closes the dialog itself, and stays open when there is nothing to save.
+        closeOnPrimary: false
+        onPrimaryClicked: save()
 
         onOpened: {
             if (row < 0) {
@@ -254,22 +243,6 @@ Item {
             }
         }
 
-        footer: Row {
-            layoutDirection: Qt.RightToLeft
-            spacing: Theme.space.sm
-            padding: Theme.space.xl
-            topPadding: 0
-            Button {
-                text: serverDialog.row < 0 ? qsTr("Add server") : qsTr("Save")
-                highlighted: true
-                enabled: addressField.text.trim().length > 0
-                onClicked: serverDialog.save()
-            }
-            Button {
-                text: qsTr("Cancel")
-                onClicked: serverDialog.close()
-            }
-        }
     }
 
     ConfirmDialog {
@@ -286,6 +259,6 @@ Item {
         visible: list.count === 0
         title: qsTr("No servers yet")
         body: qsTr("Servers you add in game show up here. You can also add one yourself.")
-        MeshIcon { iconName: "server"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "server"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

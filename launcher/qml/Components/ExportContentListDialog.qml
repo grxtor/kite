@@ -13,7 +13,7 @@ import Kite.Theme
  * a line of your own with {name}, {version} and friends. The text comes from ContentListExport through
  * InstanceContentController.exportText(); the preview is exactly what is saved or copied.
  */
-Dialog {
+AppDialog {
     id: root
 
     // InstanceContentController. `keys` picks the rows to export; every row when empty.
@@ -72,19 +72,10 @@ Dialog {
         root.fields = list
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(640, parent ? parent.width - Theme.space.xxl * 2 : 640)
+    size: "lg"
     height: Math.min(620, parent ? parent.height - Theme.space.xxl * 2 : 620)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
+    closeOnOutsidePress: true
     title: root.keys.length > 0 ? qsTr("Export %1 selected").arg(root.keys.length) : qsTr("Export list")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "list"
-    }
 
     onOpened: root.revision++
 
@@ -94,13 +85,7 @@ Dialog {
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.space.md
-            Text {
-                text: qsTr("Format")
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                font.weight: Theme.type.label.weight
-            }
+            FieldLabel { text: qsTr("Format") }
             ComboBox {
                 id: formatBox
                 Layout.preferredWidth: root.formatBoxWidth
@@ -171,32 +156,26 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: qsTr("Preview")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                role: "bodyStrong"
             }
-            Text {
+            Copy {
                 visible: !root.custom || root.lineTemplate.length > 0
                 text: root.keys.length > 0 ? qsTr("%1 selected %2").arg(root.keys.length).arg(root.noun)
                                            : qsTr("All %1").arg(root.noun)
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "tertiary"
             }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: root.previewMinHeight
             radius: Theme.radius.sm
             color: "transparent"
-            border.width: 1
-            border.color: Theme.palette.border
 
             ScrollView {
                 anchors.fill: parent
@@ -214,13 +193,12 @@ Dialog {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: qsTr("Built from what each file says about itself, so some may have no link or authors.")
+            role: "caption"
+            tone: "tertiary"
             wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
         }
     }
 
@@ -246,9 +224,7 @@ Dialog {
             text: qsTr("Copy")
             icon.source: Icons.url("copy")
             onClicked: {
-                clipboardHelper.text = root.output
-                clipboardHelper.selectAll()
-                clipboardHelper.copy()
+                clipboard.copyText(root.output)
                 root.close()
                 root.copied()
             }
@@ -259,11 +235,7 @@ Dialog {
         }
     }
 
-    // QML has no clipboard API of its own; an invisible text edit does (as in LogTab).
-    TextEdit {
-        id: clipboardHelper
-        visible: false
-    }
+    ClipboardText { id: clipboard }
 
     FileDialog {
         id: saveDialog

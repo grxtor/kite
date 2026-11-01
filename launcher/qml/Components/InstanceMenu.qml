@@ -44,6 +44,8 @@ Menu {
     // no such folder to open (see LibraryController.folders()).
     property string gameFolder
     property string modsFolder
+    // Play options make no sense for a running instance.
+    readonly property bool offerOptions: !root.targetRunning && !!root.launchOptionsFor
 
     function openFor(id, running, name, iconKey, group, anchor) {
         var folders = root.library ? root.library.folders(id) : ({})
@@ -54,18 +56,6 @@ Menu {
         targetName = name || ""
         targetIcon = iconKey || ""
         targetGroup = group || ""
-        // Play options make no sense for a running instance. A submenu has no `visible`: its entry
-        // is a MenuItem found by its subMenu.
-        var offerOptions = !running && !!root.launchOptionsFor
-        for (var i = 0; i < root.count; ++i) {
-            var item = root.itemAt(i)
-            if (item && item.subMenu === playOptionsMenu) {
-                item.visible = offerOptions
-                item.height = offerOptions ? item.implicitHeight : 0
-                // An icon like its neighbours', so the label lines up.
-                item.icon.source = Icons.url("sliders")
-            }
-        }
         if (!anchor) {
             popup()
             return
@@ -81,8 +71,15 @@ Menu {
         onTriggered: root.targetRunning ? root.stopRequested(root.targetId)
                                         : root.launchRequested(root.targetId)
     }
+    SubmenuEntry {
+        menu: root
+        submenu: playOptionsMenu
+        shown: root.offerOptions
+    }
     LaunchOptionsMenu {
         id: playOptionsMenu
+        // An icon like its neighbours', so the label lines up.
+        icon.source: Icons.url("sliders")
         instanceId: root.targetId
         optionsFor: root.launchOptionsFor
         onLaunchModeRequested: (id, mode) => root.launchModeRequested(id, mode)
@@ -101,17 +98,14 @@ Menu {
         icon.source: Icons.url("folder")
         onTriggered: root.folderRequested(root.targetId)
     }
-    MenuItem {
-        // A hidden item still takes its row in a Menu; zero it as well.
+    MenuEntry {
         visible: root.gameFolder.length > 0
-        height: visible ? implicitHeight : 0
         text: qsTr("Open .minecraft folder")
         icon.source: Icons.url("folder")
         onTriggered: root.library.openFolder(root.gameFolder)
     }
-    MenuItem {
+    MenuEntry {
         visible: root.modsFolder.length > 0
-        height: visible ? implicitHeight : 0
         text: qsTr("Open mods folder")
         icon.source: Icons.url("folder")
         onTriggered: root.library.openFolder(root.modsFolder)
@@ -140,17 +134,14 @@ Menu {
                                                           root.targetGroup, root.targetIcon)
                      : root.duplicateRequested(root.targetId, root.targetName, root.targetGroup)
     }
-    MenuItem {
-        // A hidden item still takes its row in a Menu; zero it as well.
+    MenuEntry {
         visible: !!root.exportFlows && root.exportFlows.canExport
-        height: visible ? implicitHeight : 0
         text: qsTr("Export…")
         icon.source: Icons.url("archive")
         onTriggered: root.exportFlows.exportInstance(root.targetId)
     }
-    MenuItem {
+    MenuEntry {
         visible: !!root.exportFlows && root.exportFlows.canCreateShortcut
-        height: visible ? implicitHeight : 0
         text: qsTr("Create shortcut…")
         icon.source: Icons.url("external-link")
         onTriggered: root.exportFlows.createShortcut(root.targetId)

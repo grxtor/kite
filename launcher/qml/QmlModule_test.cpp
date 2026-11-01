@@ -204,11 +204,11 @@ class QmlModuleTest : public QObject
 					 .toString(),
 				 QStringLiteral("proxy"));
 
-		QVERIFY(navigate(root.get(), QStringLiteral("library")));
-		QCOMPARE(root->property("page").toString(), QStringLiteral("library"));
+		QVERIFY(navigate(root.get(), QStringLiteral("discover")));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("discover"));
 
 		QVERIFY(!navigate(root.get(), QStringLiteral("nowhere/at/all")));
-		QCOMPARE(root->property("page").toString(), QStringLiteral("library"));
+		QCOMPARE(root->property("page").toString(), QStringLiteral("discover"));
 	}
 
 	/* No instance by that id (this stand-in has no instanceDetails()):
@@ -259,7 +259,7 @@ class QmlModuleTest : public QObject
 		QVERIFY(shell.lastLaunch.isEmpty());
 		QCOMPARE(root->property("page").toString(), QStringLiteral("accounts"));
 
-		QVERIFY(navigate(root.get(), QStringLiteral("library")));
+		QVERIFY(navigate(root.get(), QStringLiteral("discover")));
 		QVERIFY(QMetaObject::invokeMethod(
 			root.get(), "launchMode", Q_RETURN_ARG(QVariant, unused),
 			Q_ARG(QVariant, QStringLiteral("fabric")),

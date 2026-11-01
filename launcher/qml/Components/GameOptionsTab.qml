@@ -196,14 +196,10 @@ TabScroll {
             onTextChanged: if (root.model) root.model.filterText = text
         }
 
-        Rectangle {
+        BoxSurface {
             visible: root.showAll
             width: parent.width
             height: rawColumn.height
-            radius: Theme.radius.lg
-            color: Theme.palette.surface
-            border.width: 1
-            border.color: Theme.palette.border
 
             Column {
                 id: rawColumn
@@ -241,7 +237,7 @@ TabScroll {
                     }
                 }
 
-                Text {
+                Copy {
                     visible: rawRows.count === 0
                     x: Theme.space.lg
                     width: rawColumn.width - Theme.space.lg * 2
@@ -249,9 +245,8 @@ TabScroll {
                     verticalAlignment: Text.AlignVCenter
                     text: root.model ? qsTr("Nothing matches “%1”.").arg(root.model.filterText) : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
         }

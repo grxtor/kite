@@ -38,12 +38,13 @@ Flow {
             width: 96
             height: swatch.height + caption.height + Theme.space.xs
 
-            Rectangle {
+            StateFill {
                 id: swatch
                 width: parent.width
                 height: 80
                 radius: Theme.radius.md
-                color: tile.selected ? Theme.palette.surfaceHover : Theme.palette.surface
+                card: true
+                active: tile.selected
                 border.width: tile.selected ? 2 : 1
                 border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
 
@@ -59,7 +60,7 @@ Flow {
                 }
             }
 
-            Text {
+            Copy {
                 id: caption
                 anchors.top: swatch.bottom
                 anchors.topMargin: Theme.space.xs
@@ -69,9 +70,8 @@ Flow {
                 maximumLineCount: 2
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignHCenter
-                color: tile.selected ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: tile.selected ? "primary" : "secondary"
             }
 
             TapHandler {

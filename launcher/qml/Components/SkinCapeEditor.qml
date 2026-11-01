@@ -12,15 +12,15 @@ import Kite.Theme
  * Skins and capes for one account, opened from AccountsPage. One instance is
  * shared by the page; `row` is set right before open().
  */
-Dialog {
+AppDialog {
     id: root
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
+    size: "xl"
     readonly property real maxHeight: parent ? parent.height - Theme.space.xxl * 2 : implicitHeight
     height: Math.min(implicitHeight, root.maxHeight)
-    modal: true
-    topPadding: 0
+    closeOnOutsidePress: true
+    bottomPadding: Theme.space.xl
+    // Everything is applied as it is picked; the title row has the close button.
+    footer: null
     title: root.accountName.length > 0 ? qsTr("Skin and cape for %1").arg(root.accountName)
                                         : qsTr("Skin and cape")
 
@@ -35,7 +35,6 @@ Dialog {
     // Whether the Qt Quick3D preview (launcher/qml/Skin3D) exists.
     property bool skin3DAvailable: false
 
-    readonly property int preferredWidth: 840
     readonly property int previewWidth: 220
     readonly property int previewHeight: 260
     readonly property int libraryHeight: 320
@@ -190,13 +189,6 @@ Dialog {
                  })
     }
 
-    component LibrarySectionLabel: Text {
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
-        font.weight: Theme.type.label.weight
-    }
-
     contentItem: Item {
         implicitWidth: body.implicitWidth
         implicitHeight: body.implicitHeight
@@ -272,14 +264,13 @@ Dialog {
                                 elytra: root.showElytra
                             }
                         }
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             visible: preview.threeD
                             text: qsTr("Drag to turn it around.")
+                            role: "caption"
+                            tone: "tertiary"
                             horizontalAlignment: Text.AlignHCenter
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
                         }
                         CheckBox {
                             visible: preview.threeD
@@ -293,11 +284,10 @@ Dialog {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Theme.space.sm
-                            Text {
+                            Copy {
                                 text: qsTr("Arms")
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: "secondary"
                             }
                             Repeater {
                                 model: [
@@ -351,13 +341,10 @@ Dialog {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Theme.space.sm
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 text: qsTr("Skins")
-                                color: Theme.palette.textPrimary
-                                font.family: Theme.font.heading
-                                font.pixelSize: Theme.type.title.pixelSize
-                                font.weight: Theme.type.title.weight
+                                role: "title"
                             }
                             Button {
                                 id: addButton
@@ -376,14 +363,11 @@ Dialog {
                             }
                         }
 
-                        Rectangle {
+                        BoxSurface {
                             id: libraryBox
                             Layout.fillWidth: true
                             Layout.preferredHeight: root.libraryRoom
-                            radius: Theme.radius.lg
                             color: "transparent"
-                            border.width: 1
-                            border.color: Theme.palette.border
 
                             GridView {
                                 id: skinGrid
@@ -400,15 +384,14 @@ Dialog {
                                     width: skinGrid.width
                                     bottomPadding: Theme.space.sm
                                     spacing: Theme.space.sm
-                                    LibrarySectionLabel { text: qsTr("Your skins") }
-                                    Text {
+                                    FieldLabel { text: qsTr("Your skins") }
+                                    Copy {
                                         width: parent.width
                                         visible: root.skinList.length === 0
                                         text: qsTr("No skins here yet. Add one from a file, a link or a player's name.")
+                                        role: "label"
+                                        tone: "tertiary"
                                         wrapMode: Text.Wrap
-                                        color: Theme.palette.textTertiary
-                                        font.family: Theme.font.family
-                                        font.pixelSize: Theme.type.label.pixelSize
                                     }
                                 }
                                 delegate: SkinTile {
@@ -430,18 +413,17 @@ Dialog {
                                     spacing: Theme.space.sm
                                     Row {
                                         spacing: Theme.space.sm
-                                        LibrarySectionLabel {
+                                        FieldLabel {
                                             id: defaultsLabel
                                             text: qsTr("Default skins")
                                         }
-                                        Text {
+                                        Copy {
                                             anchors.baseline: defaultsLabel.baseline
                                             visible: root.defaultsLoading || !root.anyDefaultReady
                                             text: root.defaultsLoading ? qsTr("Downloading…")
                                                                        : qsTr("They download when you are online.")
-                                            color: Theme.palette.textTertiary
-                                            font.family: Theme.font.family
-                                            font.pixelSize: Theme.type.caption.pixelSize
+                                            role: "caption"
+                                            tone: "tertiary"
                                         }
                                     }
                                     Flow {
@@ -488,14 +470,13 @@ Dialog {
                                 Layout.preferredWidth: Theme.icon.md
                                 Layout.preferredHeight: Theme.icon.md
                             }
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 wrapMode: Text.Wrap
-                                color: root.messageIsError && !root.busy ? Theme.palette.danger : Theme.palette.textTertiary
+                                role: "label"
+                                tone: root.messageIsError && !root.busy ? "danger" : "tertiary"
                                 text: root.busy ? (root.watcher.status.length > 0 ? root.watcher.status : qsTr("Working…"))
                                                 : root.message
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
                             }
                         }
                     }
@@ -503,12 +484,9 @@ Dialog {
 
                 Rectangle { Layout.fillWidth: true; height: 1; color: Theme.palette.divider }
 
-                Text {
+                Copy {
                     text: qsTr("Capes")
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    role: "title"
                 }
 
                 Flow {
@@ -610,7 +588,8 @@ Dialog {
             }
         }
         MenuItem {
-            text: qsTr("Delete…")
+            // A disabled item shows no tooltip, so the reason is in its label.
+            text: skinMenu.targetWorn ? qsTr("Delete… (in use)") : qsTr("Delete…")
             icon.source: Icons.url("trash")
             enabled: !skinMenu.targetWorn
             onTriggered: {

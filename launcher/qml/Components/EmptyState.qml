@@ -7,14 +7,17 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Centered "nothing here" placeholder. The illustration is a default-property slot so callers can drop in a glyph or
- * a fuller drawing.
+ * Centered "nothing here" placeholder. `iconName` draws the usual bare glyph; the illustration is a default-property
+ * slot for a caller with a fuller drawing.
  */
 Item {
     id: root
 
     property alias title: titleLabel.text
     property alias body: bodyLabel.text
+    // A bare icon above the title; leave empty and drop a drawing in the slot for anything else.
+    property string iconName: ""
+    property color iconColor: Theme.palette.textTertiary
     property string actionText: ""
     property string actionIcon: ""
     property bool actionEnabled: true
@@ -50,28 +53,31 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: childrenRect.width
             height: childrenRect.height
+
+            Loader {
+                active: root.iconName.length > 0
+                sourceComponent: MeshIcon {
+                    iconName: root.iconName
+                    size: Theme.icon.xl
+                    color: root.iconColor
+                }
+            }
         }
 
-        Text {
+        Copy {
             id: titleLabel
             anchors.horizontalCenter: parent.horizontalCenter
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize
-            font.weight: Theme.type.title.weight
+            role: "title"
         }
 
-        Text {
+        Copy {
             id: bodyLabel
             anchors.horizontalCenter: parent.horizontalCenter
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
-            font.weight: Theme.type.body.weight
+            tone: "secondary"
             visible: text.length > 0
         }
 

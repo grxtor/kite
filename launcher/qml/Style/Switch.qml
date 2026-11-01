@@ -64,7 +64,7 @@ T.Switch {
             // a white knob would not show.
             color: control.checked && Theme.lightAccent ? Theme.palette.textOnAccent : Theme.media.text
             border.width: Theme.dark ? 0 : 1
-            border.color: Qt.rgba(0, 0, 0, 0.08)
+            border.color: Theme.neutral.knobEdge
 
             // No animation while dragging, so the thumb tracks the pointer 1:1.
             Behavior on x {

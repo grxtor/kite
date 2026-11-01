@@ -26,6 +26,7 @@ Item {
     // Set when an action refuses to start (restoreBackup() returns null while the instance runs): the watcher stays
     // null, so this is how the tab says why nothing happened.
     property string actionError: ""
+    readonly property bool jobFailed: root.actionError.length > 0 || (!!root.watcher && root.watcher.failed)
 
     readonly property string jobRunningText: qsTr("Another backup action on this instance is still running.")
     // Keeps the watcher of a job that started; a refused one (still another job running) says why.
@@ -98,18 +99,17 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            visible: root.busy || root.actionError.length > 0 || (!!root.watcher && root.watcher.failed)
+            visible: root.busy || root.jobFailed
             spacing: Theme.space.md
 
-            Text {
+            Copy {
                 Layout.preferredWidth: 140
                 text: root.actionError.length > 0 ? qsTr("Restore") : root.watcher ? (root.watcher.title || qsTr("Working…")) : ""
-                color: root.actionError.length > 0 || (root.watcher && root.watcher.failed) ? Theme.palette.danger : Theme.palette.textSecondary
+                role: "label"
+                tone: root.jobFailed ? "danger" : "secondary"
                 elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.actionError.length > 0
                       ? root.actionError
@@ -117,10 +117,9 @@ Item {
                         ? (root.watcher.failed ? (root.watcher.error || qsTr("Failed."))
                                                : (root.watcher.status || qsTr("Working…")))
                         : ""
-                color: root.actionError.length > 0 || (root.watcher && root.watcher.failed) ? Theme.palette.danger : Theme.palette.textSecondary
+                role: "label"
+                tone: root.jobFailed ? "danger" : "secondary"
                 elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             LaunchProgressBar {
                 Layout.preferredWidth: 160
@@ -206,7 +205,7 @@ Item {
         visible: list.count === 0
         title: qsTr("No backups yet")
         body: qsTr("A backup is a zip of this whole instance, including its worlds and mods, that you can restore later.")
-        MeshIcon { iconName: "archive"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "archive"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     PromptDialog {

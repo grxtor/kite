@@ -24,7 +24,7 @@ Column {
 
         MeshIcon {
             iconName: "cube"
-            size: Theme.icon.lg + Theme.space.md
+            size: Theme.icon.xl
             color: Theme.palette.textTertiary
         }
     }

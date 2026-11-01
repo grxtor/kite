@@ -34,23 +34,16 @@ Item {
             width: flick.width
             spacing: Theme.space.xl
 
-            Text {
+            Copy {
                 visible: root.description.length > 0
                 width: parent.width
                 text: root.description
+                tone: "secondary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 lineHeight: Theme.type.label.lineHeight
             }
         }
     }
 
-    ScrollFade {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        flickable: flick
-    }
+    ScrollFade { flickable: flick }
 }

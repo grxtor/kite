@@ -148,11 +148,10 @@ Item {
         Accessible.description: row.detail
         Accessible.checked: row.selected
 
-        background: Rectangle {
+        background: StateFill {
             radius: Theme.radius.md
-            color: row.down ? Theme.palette.pressedOverlay
-                 : row.hovered ? Theme.palette.hoverOverlay : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            hovered: row.hovered
+            down: row.down
         }
 
         contentItem: Column {
@@ -187,12 +186,10 @@ Item {
                     }
                 }
 
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: row.label
                     color: row.ink
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                     font.weight: row.selected ? Font.DemiBold : Font.Medium
                 }
             }
@@ -206,15 +203,14 @@ Item {
                 mods: row.mods
             }
 
-            Text {
+            Copy {
                 x: row.textX
                 width: parent.width - x
                 visible: row.detail.length > 0
                 text: row.detail
+                role: "caption"
+                tone: "tertiary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
             }
 
             // Its text, not the box it pulls out for the chevron, aligns with the other lines' edge.

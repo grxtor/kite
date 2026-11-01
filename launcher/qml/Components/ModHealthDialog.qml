@@ -14,7 +14,7 @@ import Kite.Theme
  * leave to ContentTab (actionRequested, installAll), which owns the mods list
  * and the install flow; both are locked while the game runs.
  */
-Dialog {
+AppDialog {
     id: root
 
     // InstanceContentController's `health`, a ModHealthModel.
@@ -27,7 +27,6 @@ Dialog {
     signal actionRequested(string action, string key, string dependencyId, string replacesKey)
     signal installAll()
 
-    readonly property int preferredWidth: 560
     readonly property int maxHeight: 560
     readonly property int actionLabelMaxWidth: 220
     readonly property bool blocking: !!root.health && root.health.blockingCount > 0
@@ -38,35 +37,19 @@ Dialog {
         return root.health.installRows().length
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: qsTr("Mod problems")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "alert-triangle"
-        iconColor: root.blocking ? Theme.palette.danger : Theme.palette.warning
-    }
+    icon: "alert-triangle"
+    iconColor: root.blocking ? Theme.palette.danger : Theme.palette.warning
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        PanelNote {
             Layout.fillWidth: true
             text: !root.health || root.health.count === 0 ? qsTr("Nothing is wrong with these mods.")
                   : root.blocking ? qsTr("The game may not start until these are sorted out.")
                   : qsTr("The game should still start. These are worth a look.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: Theme.type.label.lineHeight
         }
 
         ListView {
@@ -80,7 +63,7 @@ Dialog {
             model: root.health
             ScrollBar.vertical: ScrollBar {}
 
-            delegate: Rectangle {
+            delegate: BoxSurface {
                 id: item
                 required property string key
                 required property string title
@@ -97,10 +80,8 @@ Dialog {
                 width: list.width
                 implicitHeight: Math.max(body.implicitHeight, actionHolder.visible ? actionHolder.implicitHeight : 0)
                                 + Theme.space.md * 2
+                sunken: true
                 radius: Theme.radius.sm
-                color: Theme.palette.surfaceSunken
-                border.width: 1
-                border.color: Theme.palette.border
 
                 RowLayout {
                     anchors.fill: parent
@@ -122,23 +103,19 @@ Dialog {
                         Layout.minimumWidth: 0
                         spacing: Theme.space.xxs
 
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: item.title
                             wrapMode: Text.Wrap
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.Medium
                         }
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             visible: text.length > 0
                             text: item.detail
+                            role: "caption"
+                            tone: "tertiary"
                             wrapMode: Text.Wrap
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
                         }
                     }
 

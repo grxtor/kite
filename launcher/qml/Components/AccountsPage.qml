@@ -18,9 +18,6 @@ Item {
 
     readonly property var accounts: controller ? controller.accounts : null
 
-    readonly property int offlineDialogWidth: 420
-    readonly property int loginDialogWidth: 460
-    readonly property int skinNoticeWidth: 380
     readonly property int loginIndicatorSize: 32
 
     // Bumped on any account data change so the image://accountface urls change; QML caches by url.
@@ -101,15 +98,6 @@ Item {
     readonly property int heroIndex: root.defaultIndex >= 0 ? root.defaultIndex
                                     : list.count > 0 ? 0 : -1
     property var heroItem: null
-    function stateTone(key) {
-        switch (key) {
-        case "online": return "success"
-        case "working": return "neutral"
-        case "errored": case "gone": return "danger"
-        case "expired": return "warning"
-        default: return "neutral"
-        }
-    }
     readonly property bool heroIsMSA: !!heroItem && heroItem.isMSA
     readonly property bool heroIsDefault: !!heroItem && heroItem.isDefault
     readonly property string heroName: heroItem
@@ -127,6 +115,9 @@ Item {
     readonly property int heroHeight: 248
     readonly property int heroPreviewWidth: 168
     readonly property int heroPreviewHeight: 200
+
+    // The hero's player turns to show a cape just put on.
+    signal capeWorn()
 
     property var capeWatcher: null
     readonly property bool capeBusy: !!root.capeWatcher && root.capeWatcher.running
@@ -148,7 +139,7 @@ Item {
             if (!ok)
                 root.capeError = w.error.length > 0 ? w.error : qsTr("The cape could not be changed.")
             else if (capeId.length > 0)
-                heroPreview.showBack()
+                root.capeWorn()
         })
     }
 
@@ -168,13 +159,12 @@ Item {
             visible: list.count > 0
             spacing: Theme.space.sm
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: qsTr("Games launch with the default account.")
+                role: "label"
+                tone: "tertiary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             Button {
                 id: addAccountButton
@@ -198,206 +188,6 @@ Item {
             }
         }
 
-        Rectangle {
-            id: hero
-            Layout.fillWidth: true
-            Layout.maximumWidth: Theme.layout.maxContentWidth
-            Layout.alignment: Qt.AlignHCenter
-            visible: !!root.heroItem
-            implicitHeight: Math.max(root.heroHeight, heroContent.implicitHeight + Theme.space.xl * 2)
-            radius: Theme.radius.lg
-            color: Theme.palette.surface
-            border.width: 1
-            border.color: Theme.palette.border
-
-            RowLayout {
-                id: heroContent
-                anchors.fill: parent
-                anchors.margins: Theme.space.xl
-                spacing: Theme.space.xl
-
-                // An account without a skin wears the game's default; a neutral figure holds its place until it
-                // downloads.
-                SkinPreview {
-                    id: heroPreview
-                    Layout.preferredWidth: root.heroPreviewWidth
-                    Layout.preferredHeight: root.heroPreviewHeight
-                    Layout.alignment: Qt.AlignVCenter
-                    skin3DAvailable: root.skin3DAvailable
-                    skinTexture: root.heroSkin.hasSkin && root.heroAccountId.length > 0
-                                 ? "image://accountface/skin/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
-                    flatSource: root.heroAccountId.length > 0
-                                ? "image://accountface/body/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
-                    slim: !!root.heroSkin.slim
-                    capeTexture: root.heroSkin.currentCapeUrl || ""
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    spacing: Theme.space.sm
-
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        text: root.heroName
-                        elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.heading
-                        font.pixelSize: Theme.type.display.pixelSize
-                        font.weight: Theme.type.display.weight
-                    }
-
-                    Row {
-                        spacing: Theme.space.sm
-                        Tag {
-                            iconName: root.heroIsDefault ? "check" : "user"
-                            text: root.heroIsDefault ? qsTr("Default account") : qsTr("Suggested default")
-                        }
-                        Tag {
-                            iconName: root.heroIsMSA ? "user" : "users"
-                            text: root.heroIsMSA ? qsTr("Microsoft") : qsTr("Offline")
-                        }
-                        StatusBadge {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: root.heroIsMSA && root.heroStatus.length > 0
-                            tone: root.stateTone(root.heroStateKey)
-                            text: root.heroStatus
-                        }
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        visible: !root.heroIsMSA
-                        text: qsTr("Offline only: online-mode servers and custom skins need a Microsoft account.")
-                        wrapMode: Text.Wrap
-                        color: Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                    }
-
-                    Row {
-                        topPadding: Theme.space.sm
-                        spacing: Theme.space.sm
-
-                        Button {
-                            visible: !root.heroIsDefault
-                            variant: "primary"
-                            text: qsTr("Use this account")
-                            onClicked: root.controller.setDefault(root.heroRow)
-                        }
-                        Button {
-                            variant: "secondary"
-                            // "and", not "&": a Button reads "&" as a mnemonic.
-                            text: qsTr("Skin and cape")
-                            icon.source: Icons.url("image")
-                            onClicked: root.heroIsMSA ? root.openSkinEditor(root.heroRow, root.heroAccountId, root.heroName)
-                                                       : offlineSkinDialog.open()
-                        }
-                        IconButton {
-                            id: heroMoreButton
-                            flat: false
-                            iconName: "more"
-                            tip: qsTr("More")
-                            onClicked: heroMenu.popup(heroMoreButton, 0, heroMoreButton.height + Theme.space.xs)
-
-                            Menu {
-                                id: heroMenu
-                                MenuItem {
-                                    // A hidden item still takes its row in a Menu; zero it as well.
-                                    visible: root.heroIsMSA
-                                    height: visible ? implicitHeight : 0
-                                    text: qsTr("Sign in again")
-                                    icon.source: Icons.url("refresh")
-                                    onTriggered: root.controller.refresh(root.heroRow)
-                                }
-                                MenuItem {
-                                    text: qsTr("Remove account\u2026")
-                                    icon.source: Icons.url("trash")
-                                    onTriggered: {
-                                        removeDialog.row = root.heroRow
-                                        removeDialog.text = qsTr("Remove “%1” from Kite? You can sign in again at any time.").arg(root.heroName)
-                                        removeDialog.open()
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Column {
-                        visible: root.heroCapes.length > 0
-                        topPadding: Theme.space.md
-                        spacing: Theme.space.sm
-
-                        Row {
-                            spacing: Theme.space.sm
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: qsTr("Cape")
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
-                                font.weight: Font.DemiBold
-                            }
-                            BusyIndicator {
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: root.capeBusy
-                                running: visible
-                                width: Theme.icon.sm
-                                height: Theme.icon.sm
-                            }
-                        }
-
-                        Flow {
-                            width: heroContent.width - root.heroPreviewWidth - heroContent.spacing
-                            spacing: Theme.space.sm
-
-                            CapeTile {
-                                compact: true
-                                label: qsTr("No cape")
-                                isNoCapeOption: true
-                                selected: !root.heroSkin.currentCapeId
-                                enabled: !root.capeBusy
-                                onClicked: if (!selected) root.wearCape("")
-                            }
-                            Repeater {
-                                model: root.heroCapes
-                                delegate: CapeTile {
-                                    required property var modelData
-                                    compact: true
-                                    label: modelData.alias
-                                    capeUrl: modelData.url
-                                    selected: modelData.id === root.heroSkin.currentCapeId
-                                    enabled: !root.capeBusy
-                                    onClicked: if (!selected) root.wearCape(modelData.id)
-                                }
-                            }
-                        }
-
-                        Text {
-                            width: heroContent.width - root.heroPreviewWidth - heroContent.spacing
-                            visible: root.capeError.length > 0
-                            text: root.capeError
-                            wrapMode: Text.Wrap
-                            color: Theme.palette.danger
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
-                        }
-                    }
-                }
-            }
-        }
-
-        SectionHeader {
-            Layout.fillWidth: true
-            Layout.maximumWidth: Theme.layout.maxContentWidth
-            Layout.alignment: Qt.AlignHCenter
-            visible: list.count > 1
-            collapsible: false
-            title: qsTr("Other accounts")
-            count: list.count - 1
-        }
-
         Item {
             Layout.fillWidth: true
             Layout.maximumWidth: Theme.layout.maxContentWidth
@@ -412,8 +202,210 @@ Item {
                 spacing: 0
                 boundsBehavior: Flickable.StopAtBounds
                 model: root.accounts
-                currentIndex: root.heroIndex
                 ScrollBar.vertical: ScrollBar {}
+
+                // The hero and the list heading scroll with the rows, so a short window never squeezes "Other accounts" away.
+                header: Item {
+                    width: list.width
+                    height: headerColumn.implicitHeight + (list.count > 1 ? Theme.space.lg : 0)
+
+                    ColumnLayout {
+                        id: headerColumn
+                        width: parent.width
+                        spacing: Theme.space.lg
+
+                        BoxSurface {
+                            id: hero
+                            Layout.fillWidth: true
+                            visible: !!root.heroItem
+                            implicitHeight: Math.max(root.heroHeight, heroContent.implicitHeight + Theme.space.xl * 2)
+
+                            Connections {
+                                target: root
+                                function onCapeWorn() { heroPreview.showBack() }
+                            }
+
+                            RowLayout {
+                                id: heroContent
+                                anchors.fill: parent
+                                anchors.margins: Theme.space.xl
+                                spacing: Theme.space.xl
+
+                                // An account without a skin wears the game's default; a neutral figure holds its place until it
+                                // downloads.
+                                SkinPreview {
+                                    id: heroPreview
+                                    Layout.preferredWidth: root.heroPreviewWidth
+                                    Layout.preferredHeight: root.heroPreviewHeight
+                                    Layout.alignment: Qt.AlignVCenter
+                                    skin3DAvailable: root.skin3DAvailable
+                                    skinTexture: root.heroSkin.hasSkin && root.heroAccountId.length > 0
+                                                 ? "image://accountface/skin/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
+                                    flatSource: root.heroAccountId.length > 0
+                                                ? "image://accountface/body/" + root.heroAccountId + "?rev=" + root.imageRevision : ""
+                                    slim: !!root.heroSkin.slim
+                                    capeTexture: root.heroSkin.currentCapeUrl || ""
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    spacing: Theme.space.sm
+
+                                    Copy {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
+                                        text: root.heroName
+                                        role: "display"
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Row {
+                                        spacing: Theme.space.sm
+                                        Tag {
+                                            iconName: root.heroIsDefault ? "check" : "user"
+                                            text: root.heroIsDefault ? qsTr("Default account") : qsTr("Suggested default")
+                                        }
+                                        Tag {
+                                            iconName: root.heroIsMSA ? "user" : "users"
+                                            text: root.heroIsMSA ? qsTr("Microsoft") : qsTr("Offline")
+                                        }
+                                        AccountStateBadge {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            visible: root.heroIsMSA && root.heroStatus.length > 0
+                                            stateKey: root.heroStateKey
+                                            text: root.heroStatus
+                                        }
+                                    }
+
+                                    Copy {
+                                        Layout.fillWidth: true
+                                        visible: !root.heroIsMSA
+                                        text: qsTr("Offline only: online-mode servers and custom skins need a Microsoft account.")
+                                        role: "label"
+                                        tone: "tertiary"
+                                        wrapMode: Text.Wrap
+                                    }
+
+                                    Row {
+                                        topPadding: Theme.space.sm
+                                        spacing: Theme.space.sm
+
+                                        Button {
+                                            visible: !root.heroIsDefault
+                                            variant: "primary"
+                                            text: qsTr("Use this account")
+                                            onClicked: root.controller.setDefault(root.heroRow)
+                                        }
+                                        Button {
+                                            // Skins and capes belong to a Microsoft account.
+                                            visible: root.heroIsMSA
+                                            variant: "secondary"
+                                            // "and", not "&": a Button reads "&" as a mnemonic.
+                                            text: qsTr("Skin and cape")
+                                            icon.source: Icons.url("image")
+                                            onClicked: root.openSkinEditor(root.heroRow, root.heroAccountId, root.heroName)
+                                        }
+                                        IconButton {
+                                            id: heroMoreButton
+                                            flat: false
+                                            iconName: "more"
+                                            tip: qsTr("More")
+                                            onClicked: heroMenu.popup(heroMoreButton, 0, heroMoreButton.height + Theme.space.xs)
+
+                                            Menu {
+                                                id: heroMenu
+                                                MenuEntry {
+                                                    visible: root.heroIsMSA
+                                                    enabled: root.heroIsMSA
+                                                    text: qsTr("Sign in again")
+                                                    icon.source: Icons.url("refresh")
+                                                    onTriggered: root.controller.refresh(root.heroRow)
+                                                }
+                                                MenuItem {
+                                                    text: qsTr("Remove account\u2026")
+                                                    icon.source: Icons.url("trash")
+                                                    onTriggered: {
+                                                        removeDialog.row = root.heroRow
+                                                        removeDialog.text = qsTr("Remove “%1” from Kite? You can sign in again at any time.").arg(root.heroName)
+                                                        removeDialog.open()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Column {
+                                        visible: root.heroCapes.length > 0
+                                        topPadding: Theme.space.md
+                                        spacing: Theme.space.sm
+
+                                        Row {
+                                            spacing: Theme.space.sm
+                                            Copy {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: qsTr("Cape")
+                                                role: "label"
+                                                tone: "secondary"
+                                                font.weight: Font.DemiBold
+                                            }
+                                            BusyIndicator {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                visible: root.capeBusy
+                                                running: visible
+                                                width: Theme.icon.sm
+                                                height: Theme.icon.sm
+                                            }
+                                        }
+
+                                        Flow {
+                                            width: heroContent.width - root.heroPreviewWidth - heroContent.spacing
+                                            spacing: Theme.space.sm
+
+                                            CapeTile {
+                                                compact: true
+                                                label: qsTr("No cape")
+                                                isNoCapeOption: true
+                                                selected: !root.heroSkin.currentCapeId
+                                                enabled: !root.capeBusy
+                                                onClicked: if (!selected) root.wearCape("")
+                                            }
+                                            Repeater {
+                                                model: root.heroCapes
+                                                delegate: CapeTile {
+                                                    required property var modelData
+                                                    compact: true
+                                                    label: modelData.alias
+                                                    capeUrl: modelData.url
+                                                    selected: modelData.id === root.heroSkin.currentCapeId
+                                                    enabled: !root.capeBusy
+                                                    onClicked: if (!selected) root.wearCape(modelData.id)
+                                                }
+                                            }
+                                        }
+
+                                        Copy {
+                                            width: heroContent.width - root.heroPreviewWidth - heroContent.spacing
+                                            visible: root.capeError.length > 0
+                                            text: root.capeError
+                                            role: "caption"
+                                            tone: "danger"
+                                            wrapMode: Text.Wrap
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        SectionHeader {
+                            Layout.fillWidth: true
+                            visible: list.count > 1
+                            collapsible: false
+                            title: qsTr("Other accounts")
+                            count: list.count - 1
+                        }
+                    }
+                }
 
                 delegate: AccountRow {
                     width: list.width
@@ -422,7 +414,7 @@ Item {
                     rev: root.imageRevision
                     onMakeDefaultRequested: root.controller.setDefault(index)
                     onRefreshRequested: root.controller.refresh(index)
-                    onManageSkinRequested: isMSA ? root.openSkinEditor(index, accountId, shownName) : offlineSkinDialog.open()
+                    onManageSkinRequested: { if (isMSA) root.openSkinEditor(index, accountId, shownName) }
                     onRemoveRequested: {
                         removeDialog.row = index
                         removeDialog.text = qsTr("Remove “%1” from Kite? You can sign in again at any time.").arg(shownName)
@@ -455,7 +447,7 @@ Item {
 
             MeshIcon {
                 iconName: "user"
-                size: Theme.icon.lg + Theme.space.md
+                size: Theme.icon.xl
                 color: Theme.palette.textTertiary
             }
         }
@@ -476,18 +468,20 @@ Item {
         onConfirmed: if (root.controller) root.controller.remove(row)
     }
 
-    Dialog {
+    AppDialog {
         id: offlineDialog
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: Math.min(root.offlineDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.offlineDialogWidth)
-        modal: true
-        topPadding: 0
-        bottomPadding: Theme.space.sm
+        size: "sm"
+        closeOnPrimary: false
         title: qsTr("Add offline account")
+        primaryText: qsTr("Add account")
+        primaryEnabled: usernameField.text.trim().length > 0
+        onPrimaryClicked: offlineDialog.submit()
 
-        header: DialogHeader {
-            title: offlineDialog.title
+        function submit() {
+            if (root.controller && root.controller.addOffline(usernameField.text))
+                offlineDialog.close()
+            else
+                offlineError.text = qsTr("Offline accounts need a Microsoft account that owns the game first, and a name no other offline account uses.")
         }
 
         onOpened: {
@@ -498,71 +492,36 @@ Item {
 
         contentItem: Column {
             spacing: Theme.space.sm
-            Text {
+            Copy {
                 width: parent.width
                 text: qsTr("The name shown in game. Offline accounts cannot join online-mode servers.")
+                role: "label"
+                tone: "secondary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             TextField {
                 id: usernameField
                 width: parent.width
                 placeholderText: qsTr("Username")
                 selectByMouse: true
-                onAccepted: addButton.clicked()
+                onAccepted: if (offlineDialog.primaryEnabled) offlineDialog.submit()
             }
-            Text {
+            Copy {
                 id: offlineError
                 width: parent.width
                 visible: text.length > 0
+                role: "caption"
+                tone: "danger"
                 wrapMode: Text.Wrap
-                color: Theme.palette.danger
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
-            }
-        }
-
-        footer: Row {
-            layoutDirection: Qt.RightToLeft
-            spacing: Theme.space.sm
-            padding: Theme.space.xl
-            topPadding: 0
-            Button {
-                id: addButton
-                text: qsTr("Add account")
-                variant: "primary"
-                enabled: usernameField.text.trim().length > 0
-                onClicked: {
-                    if (root.controller && root.controller.addOffline(usernameField.text))
-                        offlineDialog.close()
-                    else
-                        offlineError.text = qsTr("Offline accounts need a Microsoft account that owns the game first, and a name no other offline account uses.")
-                }
-            }
-            Button {
-                text: qsTr("Cancel")
-                variant: "secondary"
-                onClicked: offlineDialog.close()
             }
         }
     }
 
-    Dialog {
+    AppDialog {
         id: loginDialog
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: Math.min(root.loginDialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.loginDialogWidth)
-        modal: true
-        topPadding: 0
-        bottomPadding: Theme.space.sm
+        size: "sm"
         closePolicy: Popup.NoAutoClose
         title: qsTr("Sign in with Microsoft")
-
-        header: DialogHeader {
-            title: loginDialog.title
-        }
 
         readonly property bool done: !!root.login && root.login.succeeded
         readonly property bool failed: !!root.login && root.login.failed
@@ -585,7 +544,7 @@ Item {
                     size: Theme.icon.lg
                     color: loginDialog.done ? Theme.palette.success : Theme.palette.danger
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     width: loginDialog.availableWidth - root.loginIndicatorSize - parent.spacing
                     text: loginDialog.done ? qsTr("Signed in. You're ready to play.")
@@ -593,20 +552,16 @@ Item {
                         : (root.login && root.login.status.length > 0 ? root.login.status
                                                                        : qsTr("Continue in your browser…"))
                     wrapMode: Text.Wrap
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                 }
             }
 
-            Text {
+            Copy {
                 width: parent.width
                 visible: !loginDialog.done && !loginDialog.failed
                 text: qsTr("A browser window opened on Microsoft's sign-in page. Sign in there; this window updates by itself.")
+                role: "label"
+                tone: "tertiary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
         }
 
@@ -653,41 +608,5 @@ Item {
         controller: root.controller
         rev: root.imageRevision
         skin3DAvailable: root.skin3DAvailable
-    }
-
-    Dialog {
-        id: offlineSkinDialog
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        // Not clamped to the window: a width bound to the overlay made this dialog's height depend on itself.
-        width: root.skinNoticeWidth
-        modal: true
-        topPadding: 0
-        bottomPadding: Theme.space.sm
-        title: qsTr("Skin and cape")
-
-        header: DialogHeader {
-            title: offlineSkinDialog.title
-        }
-
-        contentItem: Text {
-            width: parent.width
-            wrapMode: Text.Wrap
-            text: qsTr("Skins and capes belong to a Microsoft account. Sign in with the Microsoft account that owns Minecraft to change how this character looks.")
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
-        }
-
-        footer: Row {
-            layoutDirection: Qt.RightToLeft
-            spacing: Theme.space.sm
-            padding: Theme.space.xl
-            topPadding: 0
-            Button {
-                text: qsTr("Close")
-                onClicked: offlineSkinDialog.close()
-            }
-        }
     }
 }

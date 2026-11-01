@@ -61,28 +61,24 @@ Item {
             Layout.topMargin: root.topAligned && !root.stacked
                               ? Math.max(0, Math.round((root.controlLineHeight - labelText.implicitHeight / Math.max(1, labelText.lineCount)) / 2))
                               : 0
-            spacing: 2
+            spacing: Theme.space.xxs
 
-            Text {
+            Copy {
                 id: labelText
                 width: parent.width
                 text: root.label
+                role: "bodyStrong"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
-                font.weight: Font.DemiBold
             }
 
-            Text {
+            Copy {
                 width: parent.width
                 visible: root.description.length > 0
                 text: root.description
+                role: "label"
+                tone: "tertiary"
                 wrapMode: Text.Wrap
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                lineHeight: Theme.type.label.lineHeight
+                lineHeight: spec.lineHeight
             }
         }
 

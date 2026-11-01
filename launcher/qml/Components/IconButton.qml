@@ -17,8 +17,8 @@ Button {
     flat: true
     display: AbstractButton.IconOnly
     icon.source: iconName.length > 0 ? Icons.url(iconName) : ""
-    icon.width: Theme.icon.sm + 2
-    icon.height: Theme.icon.sm + 2
+    icon.width: Theme.icon.mid
+    icon.height: Theme.icon.mid
     implicitWidth: size
     implicitHeight: size
     padding: 0

@@ -97,7 +97,7 @@ ListView {
         implicitHeight: isMod ? modRow.implicitHeight : heading.implicitHeight + (entry.index === 0 ? 0 : root.headingGap)
         height: implicitHeight
 
-        Text {
+        Copy {
             id: heading
             visible: !entry.isMod
             anchors.left: parent.left
@@ -106,9 +106,8 @@ ListView {
             anchors.bottom: parent.bottom
             text: entry.isMod ? "" : entry.modelData.text
             elide: Text.ElideRight
-            color: entry.modelData.kind === "bundle" ? Theme.palette.textPrimary : Theme.palette.textTertiary
-            font.family: entry.modelData.kind === "bundle" ? Theme.font.heading : Theme.font.family
-            font.pixelSize: entry.modelData.kind === "bundle" ? Theme.type.title.pixelSize : Theme.type.caption.pixelSize
+            role: entry.modelData.kind === "bundle" ? "title" : "caption"
+            tone: entry.modelData.kind === "bundle" ? "primary" : "tertiary"
             font.weight: entry.modelData.kind === "bundle" ? Font.Bold : Font.DemiBold
         }
 
@@ -155,13 +154,10 @@ ListView {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Theme.space.sm
-                        Text {
+                        Copy {
                             text: entry.isMod ? entry.mod.name : ""
+                            role: "bodyStrong"
                             elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
-                            font.weight: Font.DemiBold
                         }
                         Tag {
                             visible: entry.isInstalled
@@ -169,22 +165,20 @@ ListView {
                         }
                         Item { Layout.fillWidth: true }
                     }
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         text: entry.isMod ? entry.mod.summary : ""
+                        role: "label"
+                        tone: "secondary"
                         wrapMode: Text.Wrap
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
                     }
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         visible: entry.unsafe
                         text: qsTr("Hypixel and other servers ban this. Using it is your responsibility.")
+                        role: "label"
+                        tone: "warning"
                         wrapMode: Text.Wrap
-                        color: Theme.palette.warning
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
                         font.weight: Font.Medium
                     }
                 }

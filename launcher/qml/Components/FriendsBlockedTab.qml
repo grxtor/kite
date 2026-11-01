@@ -17,8 +17,6 @@ Item {
     property bool actionsEnabled: true
 
     readonly property var blocked: root.controller ? root.controller.blocked : []
-    // Not before the lists have been read: an empty list that is still arriving is not "no one".
-    readonly property bool empty: !!root.controller && root.controller.loaded && root.blocked.length === 0
 
     FriendsPending {
         id: pending
@@ -29,9 +27,16 @@ Item {
     FriendsListScroll {
         id: list
         anchors.fill: parent
-        visible: root.blocked.length > 0
+        controller: root.controller
+        count: root.blocked.length
         actionsEnabled: root.actionsEnabled
         spacing: Theme.space.xxs
+        emptyState: EmptyState {
+            upperThird: true
+            title: qsTr("No one is blocked")
+            body: qsTr("Someone you block cannot send you requests or see when you are online. They are not told.")
+            iconName: "ban"
+        }
 
         FriendsSectionHeader {
             width: parent.width
@@ -55,14 +60,5 @@ Item {
                 Item { width: Theme.control.heightSm; height: 1 }
             }
         }
-    }
-
-    EmptyState {
-        anchors.fill: parent
-        visible: root.empty
-        upperThird: true
-        title: qsTr("No one is blocked")
-        body: qsTr("Someone you block cannot send you requests or see when you are online. They are not told.")
-        SoftIconCircle { iconName: "ban" }
     }
 }

@@ -13,7 +13,7 @@ import Kite.Theme
  * the launcher first, optionally joining a server and playing as a given account. The writing is
  * InstanceShortcutController's. `created(message)` cues a toast; a failure stays here with the reason.
  */
-Dialog {
+AppDialog {
     id: root
 
     // InstanceShortcutController.
@@ -26,8 +26,6 @@ Dialog {
     readonly property var accounts: root.controller ? root.controller.accounts : []
     readonly property string server: serverBox.checked ? serverField.text.trim() : ""
     readonly property bool complete: !serverBox.checked || root.server.length > 0
-
-    readonly property int dialogWidth: 480
 
     function create(where) {
         var account = accountBox.checked ? accountPicker.currentText : ""
@@ -42,17 +40,20 @@ Dialog {
         root.created(message)
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.dialogWidth, parent ? parent.width - Theme.space.xxl * 2 : root.dialogWidth)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
+    size: "sm"
+    closeOnPrimary: false
     title: qsTr("Create shortcut")
-
-    header: DialogHeader {
-        title: root.title
+    primaryText: root.location === "other" ? qsTr("Create…") : qsTr("Create")
+    primaryEnabled: !!root.controller && root.complete
+    onPrimaryClicked: {
+        root.failure = ""
+        if (root.location !== "other") {
+            root.create(root.location)
+            return
+        }
+        var name = nameField.text.trim().length > 0 ? nameField.text.trim() : nameField.placeholderText
+        saveDialog.selectedFile = root.controller.suggestedFileUrl(name)
+        saveDialog.open()
     }
 
     onOpened: {
@@ -70,13 +71,12 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: root.controller ? qsTr("Starts “%1” straight away, without opening Kite first.").arg(root.controller.instanceName) : ""
+            role: "label"
+            tone: "secondary"
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
         }
 
         ColumnLayout {
@@ -146,50 +146,21 @@ Dialog {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: qsTr("Deleting the instance deletes its shortcuts too, as long as they stay where they were made.")
+            role: "caption"
+            tone: "tertiary"
             wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: root.failure.length > 0
             text: root.failure
+            role: "caption"
+            tone: "danger"
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-        }
-    }
-
-    footer: Row {
-        layoutDirection: Qt.RightToLeft
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-
-        Button {
-            highlighted: true
-            enabled: !!root.controller && root.complete
-            text: root.location === "other" ? qsTr("Create…") : qsTr("Create")
-            onClicked: {
-                root.failure = ""
-                if (root.location !== "other") {
-                    root.create(root.location)
-                    return
-                }
-                var name = nameField.text.trim().length > 0 ? nameField.text.trim() : nameField.placeholderText
-                saveDialog.selectedFile = root.controller.suggestedFileUrl(name)
-                saveDialog.open()
-            }
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
         }
     }
 

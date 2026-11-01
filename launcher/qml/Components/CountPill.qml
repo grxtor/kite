@@ -30,13 +30,12 @@ Rectangle {
     color: root.tone === "success" ? Theme.palette.success : Theme.palette.accent
     Accessible.ignored: true
 
-    Text {
+    Copy {
         id: label
         anchors.centerIn: parent
         text: root.count > root.cap ? root.cap + "+" : String(root.count)
+        role: "caption"
         color: root.tone === "success" ? Theme.palette.canvas : Theme.palette.textOnAccent
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
         font.weight: Font.DemiBold
     }
 }

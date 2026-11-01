@@ -30,7 +30,7 @@ T.Slider {
         // the accent's ink.
         color: Theme.lightAccent ? Theme.palette.textOnAccent : Theme.media.text
         border.width: Theme.dark ? 0 : 1
-        border.color: Qt.rgba(0, 0, 0, 0.12)
+        border.color: Theme.neutral.knobEdge
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         // The hover/drag halo, under the knob.

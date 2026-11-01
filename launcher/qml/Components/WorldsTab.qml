@@ -102,16 +102,15 @@ Item {
             visible: root.busy || (!!root.watcher && root.watcher.failed)
             spacing: Theme.space.md
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.watcher
                       ? (root.watcher.failed ? (root.watcher.error || root.failText)
                                              : (root.watcher.status || root.busyText))
                       : ""
-                color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
+                role: "label"
+                tone: root.watcher && root.watcher.failed ? "danger" : "secondary"
                 elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             LaunchProgressBar {
                 Layout.preferredWidth: 160
@@ -169,9 +168,8 @@ Item {
                     Menu {
                         id: rowMenu
                         onAboutToShow: root.mceditReady = !!root.details && root.details.mceditConfigured()
-                        MenuItem {
+                        MenuEntry {
                             visible: !!root.details && root.details.isMinecraft
-                            height: visible ? implicitHeight : 0
                             text: qsTr("Data packs")
                             icon.source: Icons.url("package")
                             onTriggered: root.dataPacksRequested(cell.index)
@@ -184,9 +182,8 @@ Item {
                                 toast.show(qsTr("Seed copied."), "success")
                             }
                         }
-                        MenuItem {
+                        MenuEntry {
                             visible: root.mceditReady
-                            height: visible ? implicitHeight : 0
                             text: qsTr("Open in MCEdit")
                             icon.source: Icons.url("external-link")
                             onTriggered: root.guarded(() => {
@@ -323,13 +320,11 @@ Item {
             border.width: 1
             border.color: Theme.palette.accent
 
-            Text {
+            Copy {
                 anchors.centerIn: parent
                 text: qsTr("Drop a world here to add it")
-                color: Theme.palette.accentText
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                role: "bodyStrong"
+                tone: "accent"
             }
         }
     }
@@ -353,6 +348,6 @@ Item {
         visible: list.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Worlds you create in single player show up here. You can also add one from a .zip.")
-        MeshIcon { iconName: "globe"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "globe"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

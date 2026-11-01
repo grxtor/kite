@@ -35,7 +35,7 @@ AbstractButton {
 
     Accessible.name: text
 
-    onClicked: if (control.hero && !control.running && !control.busy) control.burstSeed++
+    onClicked: if (control.hero && !control.running && !control.busy && !Theme.motion.reduced) control.burstSeed++
 
     readonly property color fill: running
         ? (down ? Qt.darker(Theme.palette.danger, 1.12) : hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
@@ -77,18 +77,18 @@ AbstractButton {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !control.busy
                 iconName: control.running ? "stop" : "play"
-                size: control.round ? Math.round(control.size * 0.42) : Theme.icon.md - 2
+                size: control.round ? Math.round(control.size * 0.42) : Theme.icon.mid
                 color: control.ink
             }
 
-            Text {
+            Copy {
                 id: label
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !control.round
                 text: control.text
+                role: "title"
                 color: control.ink
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
                 font.weight: Font.Bold
             }
         }

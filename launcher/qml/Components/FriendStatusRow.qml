@@ -32,14 +32,13 @@ FriendRow {
     ToolTip.delay: root.tipDelayMs
     ToolTip.text: root.joinOffTip
 
-    Text {
+    Copy {
         visible: !root.compact && root.joinOff
         // A Row puts a short child at its top; the buttons beside it are centred.
         anchors.verticalCenter: parent.verticalCenter
         text: qsTr("Joining off")
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        role: "label"
+        tone: "tertiary"
         opacity: root.hovered ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 

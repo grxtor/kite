@@ -24,8 +24,7 @@ AbstractButton {
     property bool compact: false
 
     // Decorative loops stop when the window is inactive or "Reduce motion" is on.
-    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive
-                                          && !SettingsStore.bool("UiReduceMotion")
+    readonly property bool motionEnabled: Qt.application.state === Qt.ApplicationActive && !Theme.motion.reduced
 
     signal playRequested()
 
@@ -58,7 +57,7 @@ AbstractButton {
     // selection square framing it.
     property bool selected: false
 
-    background: Rectangle {
+    background: StateFill {
         width: control.compact ? control.railSquare : control.width
         height: control.compact ? control.railSquare : control.height
         x: control.compact ? control.iconAxis - width / 2 : 0
@@ -66,10 +65,8 @@ AbstractButton {
         radius: control.cornerRadius
         // On the icon rail the tile itself answers the pointer; a square behind it made a box
         // around a box.
-        color: control.compact ? "transparent"
-             : control.down ? Theme.palette.pressedOverlay
-             : control.hovered ? Theme.palette.hoverOverlay : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        hovered: !control.compact && control.hovered
+        down: !control.compact && control.down
     }
 
     contentItem: Item {
@@ -120,13 +117,13 @@ AbstractButton {
                 SequentialAnimation on opacity {
                     running: control.isRunning && control.motionEnabled
                     loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 0.45; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 1.0; to: 0.45; duration: Theme.motion.pulse; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 0.45; to: 1.0; duration: Theme.motion.pulse; easing.type: Easing.InOutSine }
                 }
             }
         }
 
-        Text {
+        Copy {
             visible: !control.compact
             anchors.left: parent.left
             anchors.leftMargin: control.labelX - control.leftPadding
@@ -136,8 +133,6 @@ AbstractButton {
             text: control.name
             elide: Text.ElideRight
             color: control.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
             font.weight: Font.Medium
         }
 

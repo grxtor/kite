@@ -46,24 +46,20 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.minimumWidth: 0
 
-            Text {
+            Copy {
                 width: parent.width
                 text: qsTr("Friends")
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.heading
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Theme.type.title.weight
+                role: "title"
                 Accessible.role: Accessible.Heading
             }
-            Text {
+            Copy {
                 width: parent.width
                 // A non-breaking space when there is nothing to say, so the header keeps its height.
                 text: root.subtitle.length > 0 ? root.subtitle : "\u00a0"
                 elide: Text.ElideRight
-                color: root.onlineCount > 0 ? Theme.palette.success : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: root.onlineCount > 0 ? "success" : "tertiary"
             }
         }
 

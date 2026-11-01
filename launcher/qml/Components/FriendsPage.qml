@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
@@ -22,16 +21,11 @@ Item {
     property string tab: "friends"
     // Main.qml binds this to its PageSlot's StackLayout.isCurrentItem.
     property bool shown: false
-    property bool retrying: false
 
     signal navigateRequested(string target)
     signal joinRequested(var friend)
 
-    // "off", "noAccount", "signingIn", "error" or "ready" (Format.friendsPhase()).
-    readonly property string phase: Format.friendsPhase(root.controller)
-    readonly property bool connected: root.phase === "ready"
-    readonly property bool stale: Format.friendsStale(root.controller)
-    readonly property bool showsLists: root.connected || root.stale
+    readonly property FriendsState friendsState: FriendsState { controller: root.controller }
     readonly property string updatedAt: Format.friendsUpdatedAt(root.controller)
     // With no friends, requests or blocks the page is only you and the way to add someone.
     readonly property bool hasAnyone: Format.friendsHasAnyone(root.controller, true)
@@ -42,7 +36,7 @@ Item {
     // Also fills the Blocked tab's count before it is opened. Only while connected: otherwise the
     // controller answers with a toast the page already says.
     function load() {
-        if (!root.controller || !root.connected)
+        if (!root.controller || !root.friendsState.connected)
             return
         root.controller.refresh()
         root.controller.refreshBlocked()
@@ -56,26 +50,19 @@ Item {
     }
 
     onShownChanged: if (root.shown) root.load()
-    onConnectedChanged: if (root.shown) root.load()
     Component.onCompleted: if (root.shown) root.load()
 
     Connections {
-        target: root.controller
-        function onActionFinished(action) {
-            if (action === "refresh")
-                root.retrying = false
-        }
-        // A refresh dropped because friends was turned off meanwhile is never answered: the flag lasts while it is
-        // failing.
-        function onChanged() {
-            if (root.controller.state !== "error")
-                root.retrying = false
+        target: root.friendsState
+        function onConnectedChanged() {
+            if (root.shown)
+                root.load()
         }
     }
 
     ColumnLayout {
         id: content
-        visible: root.showsLists
+        visible: root.friendsState.showsLists
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: parent.left
@@ -85,25 +72,11 @@ Item {
         width: Math.min(root.width - root.sideMargin * 2, root.readableWidth)
         spacing: Theme.space.lg
 
-        NoticeBar {
-            id: staleBar
+        FriendsStaleBar {
             Layout.fillWidth: true
-            visible: root.stale
-            text: root.updatedAt.length > 0
-                  ? qsTr("Can't update friends right now. Showing them as of %1.").arg(root.updatedAt)
-                  : qsTr("Can't update friends right now.")
-            actionText: root.retrying ? qsTr("Trying…") : qsTr("Try again")
-            onActionTriggered: {
-                if (root.retrying)
-                    return
-                root.retrying = true
-                root.controller.refresh()
-            }
-
-            HoverHandler { id: staleHover }
-            ToolTip.visible: staleHover.hovered && !!root.controller && root.controller.error.length > 0
-            ToolTip.delay: 500
-            ToolTip.text: root.controller ? root.controller.error : ""
+            visible: root.friendsState.stale
+            controller: root.controller
+            updatedAt: root.updatedAt
         }
 
         FriendsNotice {
@@ -117,7 +90,7 @@ Item {
             Layout.fillWidth: true
             controller: root.controller
             face: root.myFace
-            online: root.connected
+            online: root.friendsState.connected
         }
 
         TabStrip {
@@ -145,27 +118,26 @@ Item {
                 controller: root.controller
                 menu: personMenu
                 joinFlow: root.joinFlow
-                stale: root.stale
-                actionsEnabled: root.connected
+                stale: root.friendsState.stale
+                actionsEnabled: root.friendsState.connected
                 onJoinRequested: (friend) => root.joinRequested(friend)
             }
             FriendsRequestsTab {
                 controller: root.controller
                 menu: personMenu
-                actionsEnabled: root.connected
+                actionsEnabled: root.friendsState.connected
             }
             FriendsBlockedTab {
                 controller: root.controller
-                actionsEnabled: root.connected
+                actionsEnabled: root.friendsState.connected
             }
         }
     }
 
     FriendsPageState {
         anchors.fill: parent
-        visible: !root.showsLists
-        controller: root.controller
-        phase: root.phase
+        visible: !root.friendsState.showsLists
+        friendsState: root.friendsState
         onNavigateRequested: (target) => root.navigateRequested(target)
     }
 

@@ -6,17 +6,15 @@ import QtQuick
 import QtQuick.Controls
 import Kite.Theme
 
-// One settings section: a page heading over a scrolling column of groups, kept to a readable width
-// on wide windows. The scroll bar overlays the cards, and the bottom rows fade out (ScrollFade).
+// One settings section: a page heading over a scrolling column of groups, centred up to the page's
+// maximum content width like the other pages. The scroll bar overlays the cards, and the bottom rows
+// fade out (ScrollFade).
 Item {
     id: root
 
     property string title
     property string description
     default property alias groups: column.data
-
-    // Past this the label-left/control-right layout stops reading as one line.
-    readonly property int readableWidth: 760
 
     Accessible.name: title
 
@@ -32,7 +30,8 @@ Item {
 
         Column {
             id: column
-            width: Math.min(flick.width, root.readableWidth)
+            width: Math.min(flick.width, Theme.layout.maxContentWidth)
+            x: Math.round((flick.width - width) / 2)
             y: Theme.space.xs
             spacing: Theme.space.xl
 
@@ -40,22 +39,17 @@ Item {
                 width: parent.width
                 spacing: Theme.space.xxs
 
-                Text {
+                Copy {
                     text: root.title
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.heading.pixelSize
-                    font.weight: Theme.type.heading.weight
+                    role: "heading"
                 }
 
-                Text {
+                Copy {
                     visible: root.description.length > 0
                     width: parent.width
                     text: root.description
+                    tone: "secondary"
                     wrapMode: Text.Wrap
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                     lineHeight: Theme.type.label.lineHeight
                 }
             }

@@ -36,7 +36,6 @@ Item {
     readonly property real logoShare: 0.52
     readonly property real aspect: root.height > 0 ? root.width / root.height : 1
     readonly property bool cardShaped: root.aspect <= 3
-    readonly property int glyphSize: 40
     readonly property int glyphMinHeight: 72
     clip: true
 
@@ -50,7 +49,7 @@ Item {
             visible: root.glyph.length > 0 && !photo.visible && !packWash.visible
                      && root.height >= root.glyphMinHeight
             iconName: root.glyph
-            size: root.glyphSize
+            size: Theme.icon.xl
             color: Theme.palette.textTertiary
         }
     }

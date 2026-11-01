@@ -37,8 +37,8 @@ Row {
             padding: 0
             display: AbstractButton.IconOnly
             icon.source: Icons.url(option.modelData.icon)
-            icon.width: Theme.icon.sm + 2
-            icon.height: Theme.icon.sm + 2
+            icon.width: Theme.icon.mid
+            icon.height: Theme.icon.mid
             // Mirrors `active` for the look and for accessibility; the
             // button must not toggle it itself, which would drop the binding.
             checked: option.active

@@ -6,7 +6,7 @@ import Kite.Theme
 
 /*
  * A section heading on the Home page ("Continue playing", "Library"), one height for every heading. Classic: bold, in
- * the heading face; Sahne: semibold at 18 with the count (`detail`) beside it; Sade and Gece: a small uppercase,
+ * the heading face; Sahne: semibold (section size) with the count (`detail`) beside it; Sade and Gece: a small uppercase,
  * letter-spaced label with the count after a dot.
  */
 Item {
@@ -19,34 +19,29 @@ Item {
 
     readonly property string look: Theme.look
     readonly property bool isLabel: root.look === "calm" || root.look === "night"
-    readonly property int stageSize: 18
     readonly property int detailGap: Theme.space.md
 
     implicitHeight: root.isLabel ? Theme.type.overline.lineHeightPx
                   : root.look === "stage" ? Theme.type.heading.lineHeightPx
                   : Theme.control.heightSm
 
-    Text {
+    Copy {
         id: title
         visible: !root.isLabel
         anchors.verticalCenter: parent.verticalCenter
         width: Math.min(implicitWidth, root.width - (counter.visible ? counter.width + root.detailGap : 0))
         text: root.text
+        role: root.look === "stage" ? "section" : "heading"
         elide: Text.ElideRight
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.heading
-        font.pixelSize: root.look === "stage" ? root.stageSize : Theme.type.heading.pixelSize
-        font.weight: root.look === "stage" ? Font.DemiBold : Font.Bold
     }
-    Text {
+    Copy {
         id: counter
         visible: root.look === "stage" && root.detail.length > 0
         x: title.width + root.detailGap
         anchors.baseline: title.baseline
         text: root.detail
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.caption.pixelSize
+        role: "caption"
+        tone: "tertiary"
         font.weight: Font.Medium
     }
 

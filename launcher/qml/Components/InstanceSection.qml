@@ -121,12 +121,9 @@ Column {
                             smooth: true
                             mipmap: true
                         }
-                        Text {
+                        Copy {
                             anchors.verticalCenter: parent.verticalCenter
                             text: dragSource.name
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.Medium
                         }
                     }
@@ -177,13 +174,10 @@ Column {
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
 
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
+                    role: "title"
                 }
 
                 Tag {
@@ -192,17 +186,16 @@ Column {
                     text: root.model ? String(root.model.count) : ""
                 }
             }
-            background: Rectangle {
+            background: StateFill {
                 x: -Theme.space.sm
                 y: Theme.space.xs
                 width: parent.width + Theme.space.sm * 2
                 height: parent.height - Theme.space.xs * 2
                 radius: Theme.radius.sm
-                color: header.down ? Theme.palette.pressedOverlay
-                     : header.hovered ? Theme.palette.hoverOverlay : "transparent"
-                border.width: header.visualFocus ? Theme.focus.width : 0
-                border.color: Theme.palette.focusRing
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                hovered: header.hovered
+                down: header.down
+
+                FocusFrame { around: 0; visible: header.visualFocus }
             }
         }
 

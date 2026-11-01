@@ -107,7 +107,7 @@ Item {
         root.expandedKey = ""
     }
 
-    Rectangle {
+    BoxSurface {
         id: card
         anchors.left: parent.left
         anchors.right: parent.right
@@ -115,10 +115,6 @@ Item {
         height: Math.min(parent.height, tableHeader.height + list.contentHeight + list.topMargin
                                         + list.bottomMargin + border.width * 2)
         visible: list.count > 0
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
         clip: true
 
         Rectangle {
@@ -169,30 +165,27 @@ Item {
                             root.selectAll()
                     }
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: qsTr("Name")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                     font.weight: Font.DemiBold
                 }
-                Text {
+                Copy {
                     visible: root.showVersionColumn
                     Layout.preferredWidth: root.versionColumnWidth
                     text: qsTr("Version")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                     font.weight: Font.DemiBold
                 }
-                Text {
+                Copy {
                     Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth
                     horizontalAlignment: Text.AlignRight
                     text: qsTr("Actions")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                     font.weight: Font.DemiBold
                 }
             }
@@ -242,7 +235,7 @@ Item {
         visible: !!root.model && root.model.totalCount > 0 && root.model.count === 0
         title: qsTr("No matches")
         body: root.model ? qsTr("Nothing here matches “%1”.").arg(root.model.filterText) : ""
-        MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 
     ConfirmDialog {

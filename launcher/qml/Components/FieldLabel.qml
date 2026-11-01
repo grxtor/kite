@@ -3,14 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import Kite.Theme
 
 /*
  * The small caption above a form field ("Name", "Version") in a dialog.
  */
-Text {
-    color: Theme.palette.textSecondary
-    font.family: Theme.font.family
-    font.pixelSize: Theme.type.label.pixelSize
+Copy {
+    role: "label"
+    tone: "secondary"
     font.weight: Font.Medium
 }

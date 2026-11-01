@@ -16,8 +16,9 @@ HomeRowBase {
     readonly property int tileSize: 44
     readonly property int playSize: 38
     readonly property int padding: Theme.space.lg
+    readonly property int rowHeight: 76
 
-    implicitHeight: 76
+    implicitHeight: root.rowHeight
 
     HomeGlass {
         id: pane
@@ -43,14 +44,11 @@ HomeRowBase {
             Layout.minimumWidth: 0
             spacing: Theme.space.xxs + 1
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.row.name
+                role: "bodyStrong"
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
             }
             HomeRowMeta {
                 Layout.fillWidth: true

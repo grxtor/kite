@@ -75,7 +75,7 @@ Item {
         x: root.hero.columnX
         y: root.stageHeight - root.leadBottom - implicitHeight
         width: (root.showsWorlds ? worlds.x - root.worldsInset : root.width - root.hero.columnX) - x
-        nameSize: 48
+        nameSize: Theme.type.hero.pixelSize
         ink: root.hero.hasBackdrop ? Theme.media.text : Theme.palette.textPrimary
         inkSecondary: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textSecondary
         eyebrowInk: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textTertiary

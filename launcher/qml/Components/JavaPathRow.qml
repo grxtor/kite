@@ -124,12 +124,11 @@ SettingRow {
 
             Rectangle {
                 id: outcome
+                readonly property string tone: root.testing ? "info" : root.result && root.result.ok ? "success" : "danger"
                 width: parent.width
                 height: outcomeText.implicitHeight + Theme.space.md * 2
                 radius: Theme.radius.lg
-                color: root.testing ? Theme.palette.infoSubtle
-                     : root.result && root.result.ok ? Theme.palette.successSubtle
-                     : Theme.palette.dangerSubtle
+                color: Theme.tone(outcome.tone).soft
 
                 RowLayout {
                     anchors.fill: parent
@@ -146,16 +145,14 @@ SettingRow {
                         visible: !root.testing
                         iconName: root.result && root.result.ok ? "check" : "alert-triangle"
                         size: Theme.icon.md
-                        color: root.result && root.result.ok ? Theme.palette.success : Theme.palette.danger
+                        color: Theme.tone(outcome.tone).ink
                     }
-                    Text {
+                    Copy {
                         id: outcomeText
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
-                        lineHeight: Theme.type.label.lineHeight
+                        role: "label"
+                        lineHeight: spec.lineHeight
                         text: {
                             if (root.testing)
                                 return qsTr("Checking this Java…")

@@ -19,7 +19,7 @@ Item {
 
     property var host: null
 
-    Dialog {
+    AppDialog {
     id: root
 
     readonly property var request: wrapper.host ? wrapper.host.current : null
@@ -54,21 +54,29 @@ Item {
     // Set before a button answers, so onClosed does not answer twice.
     property bool answered: false
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal"
-                    || kind === "optionalMods" ? 620 : 460,
-                    parent ? parent.width - Theme.space.xxl * 2 : 460)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
+    size: kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal"
+          || kind === "optionalMods" ? "md" : "sm"
     title: request ? request.title : ""
+    icon: root.request ? root.severityIcon(root.request.severity) : ""
+    iconColor: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
 
-    header: DialogHeader {
-        title: root.title
-        icon: root.request ? root.severityIcon(root.request.severity) : ""
-        iconColor: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
+    // Why the accepting button is off, for the kinds where that is not obvious.
+    readonly property string primaryReason: {
+        if (!request)
+            return ""
+        if (kind === "blockedMods")
+            return allFound ? "" : qsTr("Continue turns on once every file has been downloaded.")
+        if (kind === "untrustedMods")
+            return trustBox.checked ? "" : trustDelay.running ? qsTr("Take a moment to read the list.")
+                                                              : qsTr("Tick “I trust these files” to continue.")
+        if (kind === "profileSetup") {
+            if (request.profileSubmitting || request.profileNameStatus === "available")
+                return ""
+            if (profileNameField.text.trim().length === 0)
+                return qsTr("Type the username you want to use.")
+            return request.profileNameError.length === 0 ? qsTr("Checking that the username is free…") : ""
+        }
+        return ""
     }
 
     onRequestChanged: {
@@ -156,12 +164,10 @@ Item {
                             size: Theme.icon.sm
                             color: modelData.found ? Theme.palette.success : Theme.palette.textTertiary
                         }
-                        Text {
+                        Copy {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.fileName
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.label.pixelSize
+                            role: "label"
                         }
                     }
                     Button {
@@ -188,13 +194,11 @@ Item {
             Layout.fillWidth: true
             visible: root.kind === "untrustedMods"
             spacing: Theme.space.sm
-            Rectangle {
+            BoxSurface {
                 width: parent.width
                 height: Math.min(180, fileList.contentHeight + Theme.space.md)
                 radius: Theme.radius.md
                 color: "transparent"
-                border.width: 1
-                border.color: Theme.palette.border
                 ListView {
                     id: fileList
                     anchors.fill: parent
@@ -272,13 +276,12 @@ Item {
                     size: Theme.icon.sm
                     color: root.request && root.request.profileNameStatus === "available" ? Theme.palette.success : Theme.palette.danger
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.request ? (root.request.profileNameStatus === "available"
                                           ? qsTr("Available") : root.request.profileNameError) : ""
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "secondary"
                 }
             }
         }
@@ -329,13 +332,13 @@ Item {
                         accountPicker.play()
                     }
 
-                    background: Rectangle {
+                    background: StateFill {
                         radius: Theme.radius.md
-                        color: accountRow.selected ? Theme.palette.surfaceHover
-                             : accountRow.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        hovered: accountRow.hovered
+                        active: accountRow.selected
+                        activeFill: Theme.palette.surfaceHover
                         border.width: 1
                         border.color: accountRow.selected ? Theme.neutral.borderHover : Theme.palette.border
-                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                     }
 
                     contentItem: RowLayout {
@@ -346,13 +349,10 @@ Item {
                             size: accountPicker.faceSize
                             source: modelData.faceId ? "image://accountface/" + modelData.faceId : ""
                         }
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: modelData.name
                             elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
                             font.weight: Font.Medium
                         }
                         Tag {
@@ -400,13 +400,11 @@ Item {
 
             readonly property var mods: root.kind === "optionalMods" && root.request ? root.request.optionalMods : null
 
-            Rectangle {
+            BoxSurface {
                 width: parent.width
                 height: Math.min(320, modsList.contentHeight + Theme.space.sm * 2)
                 radius: Theme.radius.md
                 color: "transparent"
-                border.width: 1
-                border.color: Theme.palette.border
                 ListView {
                     id: modsList
                     anchors.fill: parent
@@ -434,17 +432,16 @@ Item {
                                 checked: modRow.selected
                                 onToggled: modsList.model.toggle(modRow.index)
                             }
-                            Text {
+                            Copy {
                                 width: parent.width
                                 visible: modRow.description.length > 0
                                 leftPadding: Theme.space.xl + Theme.space.xs
                                 text: modRow.description
+                                role: "caption"
+                                tone: "tertiary"
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
                                 elide: Text.ElideRight
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.caption.pixelSize
                             }
                         }
                     }
@@ -498,6 +495,15 @@ Item {
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
                 }
             }
+        }
+
+        Copy {
+            Layout.fillWidth: true
+            visible: text.length > 0
+            text: root.primaryReason
+            role: "caption"
+            tone: "tertiary"
+            wrapMode: Text.Wrap
         }
     }
 

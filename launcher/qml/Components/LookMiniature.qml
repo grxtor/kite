@@ -25,8 +25,8 @@ Rectangle {
     readonly property color ink: root.colors.textPrimary
     readonly property color inkSoft: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.55)
     readonly property color inkFaint: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.3)
-    readonly property color glass: Qt.rgba(1, 1, 1, 0.07)
-    readonly property color glassEdge: Qt.rgba(1, 1, 1, 0.1)
+    readonly property color glass: Theme.media.glass
+    readonly property color glassEdge: Theme.media.glassEdge
 
     radius: Theme.radius.md
     color: root.night ? Theme.sky.zenith : root.colors.canvas

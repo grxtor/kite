@@ -13,7 +13,7 @@ import Kite.Theme
  * an optional link. A row that cannot be left out (`checkable: false`) shows a
  * download mark where the checkbox goes, so the columns stay lined up.
  */
-Rectangle {
+BoxSurface {
     id: root
 
     property bool checkable: true
@@ -27,10 +27,8 @@ Rectangle {
     signal toggled(bool checked)
 
     implicitHeight: Theme.control.heightLg + Theme.space.sm
+    sunken: true
     radius: Theme.radius.sm
-    color: Theme.palette.surfaceSunken
-    border.width: 1
-    border.color: Theme.palette.border
 
     RowLayout {
         anchors.fill: parent
@@ -64,23 +62,19 @@ Rectangle {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
             spacing: 1
-            Text {
+            Copy {
                 width: parent.width
                 text: root.title
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 font.weight: Font.Medium
             }
-            Text {
+            Copy {
                 width: parent.width
                 visible: text.length > 0
                 text: root.subtitle
+                role: "caption"
+                tone: root.subtitleWarning ? "warning" : "tertiary"
                 elide: Text.ElideRight
-                color: root.subtitleWarning ? Theme.palette.warning : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
             }
         }
 

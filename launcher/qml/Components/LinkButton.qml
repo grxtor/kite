@@ -38,12 +38,11 @@ AbstractButton {
         anchors.rightMargin: -control.chevronBearing
         spacing: Theme.space.xxs
 
-        Text {
+        Copy {
             anchors.verticalCenter: parent.verticalCenter
             text: control.text
+            role: "label"
             color: control.ink
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
             font.weight: Theme.type.label.weight
             Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
         }

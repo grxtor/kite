@@ -38,13 +38,12 @@ SettingsScroll {
     title: qsTr("About")
     description: qsTr("The version you are running, where to get help, and the people and licences behind Kite.")
 
-    Text {
+    Copy {
         width: parent.width
         text: qsTr("Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.")
         wrapMode: Text.Wrap
-        color: Theme.palette.textSecondary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        role: "label"
+        tone: "secondary"
     }
 
     SettingsGroup {

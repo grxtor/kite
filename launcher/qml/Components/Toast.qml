@@ -4,6 +4,7 @@
 
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Kite.Theme
 
 /*
@@ -39,8 +40,9 @@ GlassSurface {
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
     anchors.bottomMargin: Theme.space.xl
-    width: Math.min(row.implicitWidth + Theme.space.lg * 2, parent.width - Theme.space.xxl * 2)
-    height: Theme.control.heightLg
+    width: Math.min(row.implicitWidth + Theme.space.lg * 2, Theme.layout.dialogMd, parent.width - Theme.space.xxl * 2)
+    // A long message wraps and the toast grows upward.
+    height: Math.max(Theme.control.heightLg, row.implicitHeight + Theme.space.md * 2)
     radius: Theme.radius.lg
     level: Theme.elevation.md
     opacity: shown ? 1 : 0
@@ -74,43 +76,41 @@ GlassSurface {
         }
     }
 
-    readonly property color toneColor: tone === "danger" ? Theme.palette.danger
-                                       : tone === "success" ? Theme.palette.success : Theme.palette.accentText
+    readonly property color toneColor: Theme.tone(root.tone === "danger" || root.tone === "success" ? root.tone : "accent").ink
 
-    Row {
+    RowLayout {
         id: row
         anchors.centerIn: parent
+        width: root.width - Theme.space.lg * 2
         spacing: Theme.space.sm
 
         MeshIcon {
-            anchors.verticalCenter: parent.verticalCenter
+            Layout.alignment: Qt.AlignVCenter
             iconName: root.tone === "danger" ? "alert-triangle" : root.tone === "success" ? "check" : "info"
-            size: Theme.icon.sm + 2
+            size: Theme.icon.mid
             color: root.toneColor
         }
-        Text {
+        Copy {
             id: label
-            anchors.verticalCenter: parent.verticalCenter
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
             font.weight: Font.Medium
+            wrapMode: Text.Wrap
+            maximumLineCount: 4
             elide: Text.ElideRight
         }
 
         AbstractButton {
             id: actionButton
             visible: root.actionText.length > 0
-            anchors.verticalCenter: parent.verticalCenter
+            Layout.alignment: Qt.AlignVCenter
             hoverEnabled: true
             leftPadding: Theme.space.sm
-            implicitHeight: label.implicitHeight
 
-            contentItem: Text {
+            contentItem: Copy {
                 text: root.actionText
                 color: actionButton.hovered ? Theme.palette.textPrimary : Theme.palette.accentText
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 font.weight: Font.DemiBold
             }
             background: Item {}

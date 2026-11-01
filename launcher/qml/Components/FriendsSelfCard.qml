@@ -88,13 +88,12 @@ Rectangle {
                     pixelSize: Theme.type.title.pixelSize
                     weight: Theme.type.title.weight
                 }
-                Text {
+                Copy {
                     width: parent.width
                     text: root.statusLine
                     elide: Text.ElideRight
-                    color: !root.online || root.visibility === "invisible" ? Theme.palette.textTertiary : Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: !root.online || root.visibility === "invisible" ? "tertiary" : "secondary"
                 }
             }
         }
@@ -125,15 +124,14 @@ Rectangle {
                     onClicked: root.submit()
                 }
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 Layout.preferredWidth: root.addFieldWidth
                 visible: root.typedName.length > 0 && !root.nameValid
                 text: qsTr("A Minecraft name has 1 to 16 letters, numbers or underscores.")
                 wrapMode: Text.Wrap
-                color: Theme.palette.danger
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "danger"
             }
         }
     }

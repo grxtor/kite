@@ -15,13 +15,12 @@ EmptyState {
     property string myName
 
     upperThird: true
+    iconName: "users"
     extraShown: root.myName.length > 0
     title: qsTr("No friends yet")
     body: root.myName.length > 0
           ? qsTr("Your friends need Kite too. Add them by their Minecraft name, or send them yours so they can add you:")
           : qsTr("Your friends need Kite too. Add them by their Minecraft name.")
-
-    SoftIconCircle { iconName: "users" }
 
     extra: CopyName {
         chip: true

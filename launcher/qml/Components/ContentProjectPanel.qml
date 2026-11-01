@@ -11,7 +11,7 @@ import Kite.Theme
  * The project picked in ContentBrowserView: a compact header, three lines of description, then its versions (the
  * newest compatible one preselected) and Install. Shown beside the results only once something is picked.
  */
-Rectangle {
+BoxSurface {
     id: root
 
     // The ContentBrowserView.
@@ -27,11 +27,6 @@ Rectangle {
     readonly property int descriptionLinesExpanded: 12
     // Below this height the description gives its room to the versions; Install always stays in view.
     readonly property int roomForDescription: 420
-
-    radius: Theme.radius.lg
-    color: Theme.palette.surface
-    border.width: 1
-    border.color: Theme.palette.border
 
     onProjectChanged: descriptionText.expanded = false
 
@@ -66,23 +61,19 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     text: root.project ? root.project.title : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: Theme.type.subheading.pixelSize
-                    font.weight: Theme.type.subheading.weight
+                    role: "subheading"
                 }
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     visible: text.length > 0
                     text: root.project && root.project.author ? qsTr("by %1").arg(root.project.author) : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
             IconButton {
@@ -93,7 +84,7 @@ Rectangle {
             }
         }
 
-        Text {
+        Copy {
             id: descriptionText
             property bool expanded: false
             Layout.fillWidth: true
@@ -102,9 +93,8 @@ Rectangle {
             wrapMode: Text.Wrap
             maximumLineCount: expanded ? root.descriptionLinesExpanded : root.descriptionLines
             elide: Text.ElideRight
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: "secondary"
             lineHeight: Theme.type.label.lineHeight
             MouseArea {
                 anchors.fill: parent
@@ -116,20 +106,16 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: qsTr("Versions")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                role: "bodyStrong"
             }
-            Text {
+            Copy {
                 visible: root.owner.versions.length > 0
                 text: qsTr("%n available", "", root.owner.versions.length)
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "tertiary"
             }
         }
 
@@ -164,7 +150,7 @@ Rectangle {
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: text.length > 0
             readonly property var d: root.download
@@ -176,11 +162,10 @@ Rectangle {
             wrapMode: Text.Wrap
             maximumLineCount: 2
             elide: Text.ElideRight
-            color: root.owner.installNote.length > 0 || (d && d.failed) ? Theme.palette.danger
-                 : d && d.succeeded && !root.owner.selectedChecking ? Theme.palette.success
-                 : Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: root.owner.installNote.length > 0 || (d && d.failed) ? "danger"
+                : d && d.succeeded && !root.owner.selectedChecking ? "success"
+                : "secondary"
         }
         LaunchProgressBar {
             Layout.fillWidth: true

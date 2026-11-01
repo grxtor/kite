@@ -49,9 +49,7 @@ T.Dialog {
         bottomPadding: 0
     }
 
-    T.Overlay.modal: Rectangle {
-        color: Theme.palette.scrim
-    }
+    T.Overlay.modal: ModalScrim {}
 
     T.Overlay.modeless: Rectangle {
         color: "transparent"

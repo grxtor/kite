@@ -18,32 +18,15 @@ Column {
 
     spacing: Theme.space.sm
 
-    Text {
-        visible: root.title.length > 0
-        text: root.title
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.heading
-        font.pixelSize: Theme.type.title.pixelSize
-        font.weight: Font.Bold
-    }
-
-    Text {
-        visible: root.description.length > 0
+    GroupHeading {
         width: parent.width
-        text: root.description
-        wrapMode: Text.Wrap
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        title: root.title
+        description: root.description
     }
 
-    Rectangle {
+    BoxSurface {
         width: parent.width
         height: rowsColumn.height
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
 
         Column {
             id: rowsColumn

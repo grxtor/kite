@@ -48,14 +48,6 @@ Menu {
     function refresh() {
         root.options = root.optionsFor && root.instanceId.length > 0
                 ? root.optionsFor(root.instanceId) : ({})
-        // A submenu has no `visible` to bind: its entry is a MenuItem found by its subMenu.
-        for (var i = 0; i < root.count; ++i) {
-            var item = root.itemAt(i)
-            if (item && item.subMenu === playAsMenu) {
-                item.visible = root.offersPlayAs
-                item.height = root.offersPlayAs ? item.implicitHeight : 0
-            }
-        }
     }
     onAboutToShow: root.refresh()
 
@@ -75,14 +67,18 @@ Menu {
         icon.source: Icons.url("play")
         onTriggered: root.launchModeRequested(root.instanceId, "offline")
     }
-    MenuItem {
+    MenuEntry {
         text: qsTr("Play demo")
         icon.source: Icons.url("clock")
         visible: root.supportsDemo
-        height: visible ? implicitHeight : 0
         onTriggered: root.launchModeRequested(root.instanceId, "demo")
     }
 
+    SubmenuEntry {
+        menu: root
+        submenu: playAsMenu
+        shown: root.offersPlayAs
+    }
     Menu {
         id: playAsMenu
         title: qsTr("Play as")
@@ -105,18 +101,14 @@ Menu {
 
     // While on, Play installs the performance mods first. Only for an instance with a loader on a
     // version the mods exist for.
-    MenuItem {
+    MenuEntry {
         text: qsTr("Kite Performance")
         checkable: true
         checked: root.performance
         visible: root.performanceAvailable
-        height: visible ? implicitHeight : 0
         onTriggered: root.performanceChosen(root.instanceId, checked)
     }
-    MenuSeparator {
-        visible: root.performanceAvailable
-        height: visible ? implicitHeight : 0
-    }
+    MenuDivider { visible: root.performanceAvailable }
 
     Menu {
         id: profilerMenu

@@ -8,7 +8,8 @@ import Kite.Theme
 /*
  * The bottom edge of a scrolling page: while there is more content below the
  * fold, the last visible rows fade into the canvas. Place it as a sibling after
- * the Flickable, anchored to the same bottom edge, and point `flickable` at it.
+ * the Flickable and point `flickable` at it; it spans its parent's width along the
+ * bottom edge (the top with `atTop`). Set the anchors again for any other place.
  */
 Rectangle {
     id: root
@@ -23,6 +24,10 @@ Rectangle {
     // The top edge instead, while content is scrolled up above it; anchor it to the Flickable's top.
     property bool atTop: false
 
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: root.atTop ? parent.top : undefined
+    anchors.bottom: root.atTop ? undefined : parent.bottom
     height: Theme.space.xxl
     // From originY, not 0: a view with a header starts its content above zero, and the fade stayed
     // on with everything in view.

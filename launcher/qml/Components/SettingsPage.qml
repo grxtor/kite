@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
@@ -77,46 +78,72 @@ Item {
         anchors.rightMargin: Theme.space.xl + Theme.space.xs
         spacing: Theme.space.xl
 
-        // The same selection grammar as the main sidebar, via NavSelectionIndicator.
+        // The same selection grammar as the main sidebar, via NavSelectionIndicator. It scrolls, so
+        // every section stays reachable in a short window.
         Item {
-            id: sectionNavHost
             Layout.alignment: Qt.AlignTop
+            Layout.fillHeight: true
             Layout.preferredWidth: 208
             Layout.topMargin: Theme.space.xs
-            implicitHeight: sectionColumn.implicitHeight
 
-            readonly property Item selectedItem: {
-                for (var i = 0; i < sectionRepeater.count; ++i) {
-                    var item = sectionRepeater.itemAt(i)
-                    if (item && item.modelData.id === root.section)
-                        return item
+            Flickable {
+                id: sectionNavHost
+                anchors.fill: parent
+                contentWidth: width
+                contentHeight: sectionColumn.height + Theme.space.xl
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
+
+                ScrollBar.vertical: ScrollBar {}
+
+                readonly property Item selectedItem: {
+                    for (var i = 0; i < sectionRepeater.count; ++i) {
+                        var item = sectionRepeater.itemAt(i)
+                        if (item && item.modelData.id === root.section)
+                            return item
+                    }
+                    return null
                 }
-                return null
-            }
 
-            NavSelectionIndicator {
-                target: sectionNavHost.selectedItem
-            }
+                // A section opened by a route can lie below the fold.
+                onSelectedItemChanged: {
+                    var item = sectionNavHost.selectedItem
+                    if (!item)
+                        return
+                    if (item.y < contentY)
+                        contentY = item.y
+                    else if (item.y + item.height > contentY + height)
+                        contentY = item.y + item.height - height
+                }
 
-            Column {
-                id: sectionColumn
-                width: parent.width
-                spacing: Theme.space.xxs
+                NavSelectionIndicator {
+                    target: sectionNavHost.selectedItem
+                }
 
-                Repeater {
-                    id: sectionRepeater
-                    model: root.sections
-                    delegate: NavItem {
-                        required property var modelData
-                        required property int index
-                        width: parent.width
-                        visible: root.sectionShown(index)
-                        iconName: modelData.icon
-                        label: modelData.label
-                        selected: root.section === modelData.id
-                        onClicked: root.section = modelData.id
+                Column {
+                    id: sectionColumn
+                    width: sectionNavHost.width
+                    spacing: Theme.space.xxs
+
+                    Repeater {
+                        id: sectionRepeater
+                        model: root.sections
+                        delegate: NavItem {
+                            required property var modelData
+                            required property int index
+                            width: parent.width
+                            visible: root.sectionShown(index)
+                            iconName: modelData.icon
+                            label: modelData.label
+                            selected: root.section === modelData.id
+                            onClicked: root.section = modelData.id
+                        }
                     }
                 }
+            }
+
+            ScrollFade {
+                flickable: sectionNavHost
             }
         }
 
@@ -147,6 +174,7 @@ Item {
             SettingsAppearanceSection {
                 languages: root.languages
                 selectLanguage: root.selectLanguage
+                onOpenPathRequested: (path) => root.openPathRequested(path)
             }
             SettingsCommandsSection {}
             SettingsPluginsListSection {

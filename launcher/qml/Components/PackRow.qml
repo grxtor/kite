@@ -60,10 +60,12 @@ Item {
     }
     clip: true
 
-    Rectangle {
+    StateFill {
         anchors.fill: parent
-        color: row.selected || hover.hovered ? Theme.palette.surfaceHover : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast } }
+        card: true
+        rest: "transparent"
+        hovered: hover.hovered
+        active: row.selected
     }
     Rectangle {
         anchors.left: parent.left
@@ -74,17 +76,14 @@ Item {
         visible: !row.lastRow
     }
 
-    component FactLabel: Text {
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+    component FactLabel: Copy {
+        role: "label"
+        tone: "tertiary"
     }
-    component FactValue: Text {
+    component FactValue: Copy {
         Layout.fillWidth: true
         elide: Text.ElideMiddle
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        role: "label"
     }
 
     HoverHandler { id: hover }
@@ -146,24 +145,21 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
-                Text {
+                Copy {
                     width: parent.width
                     text: row.name
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
+                    role: "title"
                     font.family: Theme.font.family
-                    font.pixelSize: Theme.type.title.pixelSize
-                    font.weight: Theme.type.title.weight
                 }
-                Text {
+                Copy {
                     width: parent.width
                     visible: text.length > 0
                     text: owner.showVersionColumn ? row.byline
                           : (row.version ? String(row.version) : row.byline)
                     elide: Text.ElideRight
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 }
             }
 
@@ -173,23 +169,19 @@ Item {
                 Layout.maximumWidth: owner.versionColumnWidth
                 spacing: Theme.space.xxs
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
-                Text {
+                Copy {
                     width: parent.width
                     visible: text.length > 0
                     text: row.version ? String(row.version) : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
                     font.weight: Font.Medium
                 }
-                Text {
+                Copy {
                     width: parent.width
                     text: row.model.fileName || ""
                     elide: Text.ElideMiddle
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "tertiary"
                 }
             }
 
@@ -246,15 +238,14 @@ Item {
         anchors.rightMargin: Theme.space.lg
         spacing: Theme.space.sm
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: row.model.description || qsTr("No description.")
             wrapMode: Text.Wrap
             maximumLineCount: 6
             elide: Text.ElideRight
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: "secondary"
             lineHeight: Theme.type.label.lineHeight
         }
 
@@ -265,14 +256,13 @@ Item {
 
             Repeater {
                 model: row.problems
-                Text {
+                Copy {
                     required property string modelData
                     Layout.fillWidth: true
                     text: modelData
                     wrapMode: Text.Wrap
-                    color: row.problemBlocking ? Theme.palette.danger : Theme.palette.warning
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: row.problemBlocking ? "danger" : "warning"
                     font.weight: Font.Medium
                 }
             }
@@ -360,29 +350,24 @@ Item {
             icon.source: Icons.url("external-link")
             onTriggered: Qt.openUrlExternally(row.homepage)
         }
-        MenuItem {
-            // A hidden item still takes its row in a Menu; zero it.
+        MenuEntry {
             visible: owner.kind === "mods" || owner.kind === "coremods"
-            height: visible ? implicitHeight : 0
             text: qsTr("Open configs folder")
             icon.source: Icons.url("folder")
             onTriggered: owner.openFolderRequested(owner.controller ? owner.controller.configsDir : "")
         }
-        MenuSeparator {
+        MenuDivider {
             visible: owner.updatable
-            height: visible ? implicitHeight : 0
         }
-        MenuItem {
+        MenuEntry {
             visible: owner.updatable
-            height: visible ? implicitHeight : 0
             enabled: owner.unlocked && row.source.length > 0
             text: qsTr("Change version…")
             icon.source: Icons.url("layers")
             onTriggered: owner.changeVersionRequested(row.key)
         }
-        MenuItem {
+        MenuEntry {
             visible: owner.updatable
-            height: visible ? implicitHeight : 0
             enabled: row.source.length > 0
             text: qsTr("Reset metadata…")
             icon.source: Icons.url("refresh")

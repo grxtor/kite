@@ -36,12 +36,14 @@ AbstractButton {
         onTriggered: root.tipReady = true
     }
 
-    background: Rectangle {
+    background: StateFill {
+        card: true
+        rest: "transparent"
+        hovered: root.hovered || root.visualFocus
+        active: root.selected
         radius: Theme.radius.md
-        color: root.hovered || root.selected || root.visualFocus ? Theme.palette.surfaceHover : "transparent"
-        border.width: root.visualFocus ? Theme.focus.width : 0
-        border.color: Theme.palette.focusRing
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        FocusFrame { around: 0; visible: root.visualFocus }
     }
 
     contentItem: Item {

@@ -34,6 +34,32 @@ QtObject {
         return root.calendarDate(new Date(ms))
     }
 
+    // Always an age, never lastPlayed()'s calendar date after a month ("today", "5 days ago", "2 months ago", "1 year
+    // ago"); takes ms since the epoch, a Date or an ISO date string, and gives "" when it is none of those.
+    function ageText(dateOrMs) {
+        var ms = typeof dateOrMs === "string" ? Date.parse(dateOrMs) : Number(dateOrMs)
+        if (!(ms > 0))
+            return ""
+        var days = Math.floor((Date.now() - ms) / 86400000)
+        if (days < 1)
+            return qsTr("today")
+        if (days === 1)
+            return qsTr("yesterday")
+        if (days < 30)
+            return qsTr("%1 days ago").arg(days)
+        if (days < 365) {
+            var months = Math.max(1, Math.floor(days / 30))
+            return months === 1 ? qsTr("1 month ago") : qsTr("%1 months ago").arg(months)
+        }
+        var years = Math.floor(days / 365)
+        return years === 1 ? qsTr("1 year ago") : qsTr("%1 years ago").arg(years)
+    }
+
+    // "fabric" -> "Fabric": the first letter upper-cased, the rest as it is.
+    function titleCase(word) {
+        return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
+    }
+
     // Older than a month: "Sep 15", plus the year when it is not this year. Never the locale's numeric form, which
     // differs per locale.
     function calendarDate(date) {

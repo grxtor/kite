@@ -26,8 +26,7 @@ Item {
     // InstanceList's coverImage role; unused here, required so the card takes the same roles as
     // other delegates.
     required property string coverImage
-    // A platform pack's logo (InstanceList's packArt role) across the square; not required, so
-    // static review pages need not pass it.
+    // A platform pack's logo (InstanceList's packArt role) across the square; not required.
     property string packArt: ""
     // Empty while nothing launches; progress is 0..1, negative when the launch cannot say how far
     // along it is.
@@ -35,8 +34,6 @@ Item {
     required property real launchProgress
 
     property bool selected: false
-    // Lets a static review page (Gallery.qml) show the hover state.
-    property bool forceHovered: false
 
     signal clicked()
     signal playRequested()
@@ -45,21 +42,15 @@ Item {
     // null for a right-click or the Menu key, which open at the pointer.
     signal menuRequested(Item anchor)
 
-    readonly property bool hovered: forceHovered || hoverHandler.hovered
+    readonly property bool hovered: hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
     readonly property int inset: Theme.space.sm
     readonly property int textInset: Theme.space.md
     readonly property int squareSize: Math.max(0, width - inset * 2)
-    readonly property real iconShare: 0.82
-    readonly property int iconSize: Math.round(squareSize * iconShare)
-    readonly property string drawnKey: Icons.displayKey(root.iconKey, root.instanceId)
-    readonly property bool iconFills: Icons.fillsTile(root.drawnKey)
     readonly property int squareRadius: Theme.radius.md
     readonly property int playSize: Theme.control.height
     readonly property int cornerInset: Theme.space.sm
     readonly property int runningDotSize: 7
-    readonly property string iconSource: Icons.instanceIcon(root.drawnKey)
 
     implicitWidth: 180
     implicitHeight: inset + squareSize + Theme.space.sm + Theme.type.title.lineHeightPx
@@ -76,34 +67,15 @@ Item {
 
     HoverHandler { id: hoverHandler }
 
-    Rectangle {
+    InstanceSurface {
         id: card
         anchors.fill: parent
-        radius: Theme.radius.lg
-        color: root.hovered || root.selected ? Theme.palette.surfaceHover : Theme.palette.surface
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        Shadow {
-            radius: card.radius
-            level: Theme.elevation.sm
-            opacity: root.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        }
-
-        // ReleaseWithinBounds grabs on press, so the page's click-to-deselect handler never sees a
-        // card click.
-        TapHandler {
-            acceptedButtons: Qt.LeftButton
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked() }
-            onDoubleTapped: root.playRequested()
-        }
-        TapHandler {
-            acceptedButtons: Qt.RightButton
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
-        }
+        hovered: root.hovered
+        selected: root.selected
+        focused: root.activeFocus
+        onClicked: { root.forceActiveFocus(); root.clicked() }
+        onDoubleClicked: root.playRequested()
+        onContextRequested: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
 
         InstanceTile {
             id: square
@@ -112,32 +84,15 @@ Item {
             width: root.squareSize
             height: root.squareSize
             radius: root.squareRadius
-            matte: root.showsPackArt || root.iconFills ? card.color : "transparent"
+            matte: art.showsPackArt || art.iconFills ? card.color : "transparent"
             lifted: root.hovered
 
-            // The provider renders at the requested size, so it stays sharp at any card width.
-            Image {
-                anchors.centerIn: parent
-                visible: !root.showsPackArt
-                width: root.iconFills ? parent.width : root.iconSize
-                height: width
-                source: root.iconSource
-                sourceSize: Qt.size(width, height)
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                mipmap: true
-            }
-
-            Image {
-                id: packLogo
-                anchors.fill: parent
-                visible: root.showsPackArt
-                source: root.packArt
-                sourceSize: Qt.size(width * 2, height * 2)
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                mipmap: true
-                asynchronous: true
+            InstanceArt {
+                id: art
+                instanceId: root.instanceId
+                iconKey: root.iconKey
+                packArt: root.packArt
+                iconShare: 0.82
             }
 
             KiteShape {
@@ -177,17 +132,15 @@ Item {
                     id: runningRow
                     anchors.centerIn: parent
                     spacing: Theme.space.xs
-                    Rectangle {
+                    RunningDot {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: root.runningDotSize; height: width; radius: width / 2
-                        color: root.launching ? Theme.palette.warning : Theme.palette.success
+                        size: root.runningDotSize
+                        launching: root.launching
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.launching ? qsTr("Starting…") : qsTr("Running")
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
+                        role: "caption"
                         font.weight: Font.DemiBold
                     }
                 }
@@ -208,7 +161,7 @@ Item {
             }
         }
 
-        Text {
+        Copy {
             id: title
             anchors.top: square.bottom
             anchors.topMargin: Theme.space.sm
@@ -220,10 +173,8 @@ Item {
             verticalAlignment: Text.AlignVCenter
             text: root.name
             elide: Text.ElideRight
-            color: Theme.palette.textPrimary
+            role: "title"
             font.family: Theme.font.family
-            font.pixelSize: Theme.type.title.pixelSize
-            font.weight: Theme.type.title.weight
 
             HoverHandler { id: titleHover; enabled: title.truncated }
             ToolTip.visible: title.truncated && titleHover.hovered
@@ -238,7 +189,7 @@ Item {
             anchors.right: title.right
             height: Theme.type.label.lineHeightPx
 
-            Text {
+            Copy {
                 id: versionText
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
@@ -246,20 +197,18 @@ Item {
                 width: Math.min(implicitWidth, parent.width - moreButton.width)
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "secondary"
             }
 
-            Text {
+            Copy {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
                 text: root.launching && root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
-                color: Theme.palette.textSecondary
+                role: "label"
+                tone: "secondary"
                 font.features: ({ "tnum": 1 })
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
         }
     }
@@ -277,25 +226,5 @@ Item {
         focusPolicy: Qt.NoFocus
         Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
         onClicked: root.menuRequested(moreButton)
-    }
-
-    Rectangle {
-        anchors.fill: card
-        radius: card.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-    }
-
-    Rectangle {
-        // Outset so it never competes with the selected state.
-        anchors.fill: card
-        anchors.margins: -Theme.space.xs
-        radius: card.radius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus && !root.selected
     }
 }

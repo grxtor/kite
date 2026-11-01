@@ -30,11 +30,9 @@ Item {
 
     property string view: "live"
 
-    property var matches: []
-    property int current: -1
     // Set by the live Upload button, so the Other logs view (which shares the
     // uploader) does not also announce the link.
-    property bool uploading: false
+    property alias uploading: linkToast.pending
 
     // The log picker shrinks down to this before the row pushes past its column; Copy and Upload
     // keep only their icons on a narrow tab.
@@ -51,7 +49,6 @@ Item {
         root.view = "other"
     }
 
-    readonly property int findDelayMs: 150
     readonly property int growDelayMs: 500
 
     // For the "review=<name>" dev route: the Other logs view, or the find bar with a query.
@@ -62,27 +59,13 @@ Item {
             findBar.text = "Loading"
     }
 
-    function recomputeMatches() {
-        var found = []
-        if (root.log && findBar.text.length > 0 && typeof root.log.findLines === "function")
-            found = root.log.findLines(findBar.text)
-        root.matches = found
-        root.current = found.length > 0 ? 0 : -1
-    }
+    onModelChanged: finder.schedule()
 
-    function step(delta) {
-        if (root.matches.length === 0)
-            return
-        follow.checked = false
-        root.current = (root.current + delta + root.matches.length) % root.matches.length
-    }
-
-    onModelChanged: findDelay.restart()
-
-    Timer {
-        id: findDelay
-        interval: root.findDelayMs
-        onTriggered: root.recomputeMatches()
+    LogMatches {
+        id: finder
+        onSearch: setMatches(root.log && findBar.text.length > 0 && typeof root.log.findLines === "function"
+                             ? root.log.findLines(findBar.text) : [])
+        onStepped: follow.checked = false
     }
 
     Timer {
@@ -91,10 +74,10 @@ Item {
         onTriggered: {
             if (findBar.text.length === 0 || !root.log)
                 return
-            var keep = root.current
+            var keep = finder.current
             var found = root.log.findLines(findBar.text)
-            root.matches = found
-            root.current = found.length === 0 ? -1 : Math.min(Math.max(keep, 0), found.length - 1)
+            finder.matches = found
+            finder.current = found.length === 0 ? -1 : Math.min(Math.max(keep, 0), found.length - 1)
         }
     }
 
@@ -104,23 +87,11 @@ Item {
         onActivated: findBar.focusField()
     }
 
-    Connections {
-        target: root.uploader
-        ignoreUnknownSignals: true
-        function onUploaded(url) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            clipboard.copyText(url)
-            toast.show(qsTr("Link copied to your clipboard."), "success", qsTr("Open"),
-                       () => Qt.openUrlExternally(url))
-        }
-        function onFailed(message) {
-            if (!root.uploading)
-                return
-            root.uploading = false
-            toast.show(message, "danger")
-        }
+    UploadLinkToast {
+        id: linkToast
+        uploader: root.uploader
+        clipboardItem: clipboard
+        toastItem: toast
     }
 
     ColumnLayout {
@@ -146,11 +117,11 @@ Item {
                 id: findBar
                 Layout.fillWidth: true
                 searchEnabled: !!root.model
-                matchCount: root.matches.length
-                current: root.current
-                onTextChanged: findDelay.restart()
-                onNext: root.step(1)
-                onPrevious: root.step(-1)
+                matchCount: finder.matches.length
+                current: finder.current
+                onTextChanged: finder.schedule()
+                onNext: finder.step(1)
+                onPrevious: finder.step(-1)
             }
 
             Switch {
@@ -158,26 +129,22 @@ Item {
                 checked: true
                 text: qsTr("Follow")
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 enabled: !!root.model
                 text: qsTr("Copy all")
                 icon.source: Icons.url("copy")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     clipboard.copyText(root.log.text())
                     toast.show(qsTr("Log copied."), "success")
                 }
             }
-            Button {
+            CompactButton {
+                compact: root.compact
                 visible: !!root.uploader
                 enabled: !!root.model && !!root.uploader && !root.uploader.busy
                 text: root.uploading ? qsTr("Uploading…") : qsTr("Upload")
                 icon.source: Icons.url("arrow-up")
-                display: root.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                ToolTip.visible: root.compact && hovered
-                ToolTip.text: text
                 onClicked: {
                     root.uploading = true
                     root.uploader.uploadText(root.log.text())
@@ -205,21 +172,17 @@ Item {
                         icon.source: Icons.url("x")
                         onTriggered: {
                             root.log.clear()
-                            root.matches = []
-                            root.current = -1
+                            finder.clear()
                         }
                     }
                 }
             }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             LogLines {
                 id: lines
@@ -228,8 +191,8 @@ Item {
                 model: root.model
                 wrap: findBar.wrap
                 follow: follow.checked
-                matches: root.matches
-                current: root.current
+                matches: finder.matches
+                current: finder.current
                 onScrolledAway: follow.checked = false
                 onReachedEnd: follow.checked = true
                 onCountChanged: if (findBar.text.length > 0) growDelay.restart()
@@ -241,7 +204,7 @@ Item {
                 visible: !root.model || lines.count === 0
                 title: qsTr("No log yet")
                 body: qsTr("Play this instance to see the game's output here as it runs.")
-                MeshIcon { iconName: "terminal"; size: 40; color: Theme.palette.textTertiary }
+                MeshIcon { iconName: "terminal"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
         }
     }

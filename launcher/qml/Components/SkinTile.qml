@@ -37,13 +37,12 @@ AbstractButton {
     ToolTip.delay: 500
     ToolTip.text: tile.name
 
-    background: Rectangle {
+    background: StateFill {
         radius: Theme.radius.md
-        color: tile.selected ? Theme.palette.accentSubtle
-             : tile.hovered ? Theme.palette.hoverOverlay : "transparent"
+        hovered: tile.hovered
+        active: tile.selected
         border.width: 1
         border.color: tile.selected ? Theme.palette.accent : Theme.palette.border
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
     contentItem: Item {
         Image {
@@ -63,7 +62,7 @@ AbstractButton {
             anchors.fill: sprite
             visible: !tile.ready
         }
-        Text {
+        Copy {
             anchors.top: sprite.bottom
             anchors.topMargin: Theme.space.xs
             anchors.left: parent.left
@@ -71,10 +70,9 @@ AbstractButton {
             anchors.margins: Theme.space.xs
             horizontalAlignment: Text.AlignHCenter
             text: tile.name
+            role: "caption"
+            tone: tile.ready ? "primary" : "tertiary"
             elide: Text.ElideRight
-            color: tile.ready ? Theme.palette.textPrimary : Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
         }
         MeshIcon {
             anchors.top: parent.top

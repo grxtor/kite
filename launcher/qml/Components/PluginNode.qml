@@ -115,20 +115,18 @@ Item {
 
     Component {
         id: headingNode
-        Text {
+        Copy {
             leftPadding: root.pad
             text: root.props.text || ""
             wrapMode: Text.Wrap
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize
+            role: "title"
             font.weight: Font.Bold
         }
     }
 
     Component {
         id: textNode
-        Text {
+        Copy {
             leftPadding: root.pad
             rightPadding: root.pad
             topPadding: root.inCard ? Theme.space.sm : 0
@@ -136,9 +134,7 @@ Item {
             text: root.props.text || ""
             textFormat: Text.PlainText
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            tone: "secondary"
         }
     }
 
@@ -290,14 +286,13 @@ Item {
                 spacing: Theme.space.md
                 Repeater {
                     model: root.props.columns || []
-                    delegate: Text {
+                    delegate: Copy {
                         required property string modelData
                         width: 120
                         text: modelData
                         elide: Text.ElideRight
-                        color: Theme.palette.textTertiary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
+                        role: "caption"
+                        tone: "tertiary"
                         font.weight: Font.DemiBold
                     }
                 }
@@ -315,26 +310,26 @@ Item {
                     hoverEnabled: true
                     onClicked: { parent.selectedId = modelData.id; root.send("select", modelData.id) }
                     onDoubleClicked: root.send("activate", modelData.id)
-                    background: Rectangle {
+                    background: StateFill {
                         radius: Theme.radius.sm
-                        color: listRow.selected ? Theme.palette.surfaceHover
-                             : listRow.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        hovered: listRow.hovered
+                        active: listRow.selected
+                        activeFill: Theme.palette.surfaceHover
                     }
                     contentItem: Row {
                         leftPadding: Theme.space.sm
                         spacing: Theme.space.md
                         Repeater {
                             model: listRow.modelData.cells || []
-                            delegate: Text {
+                            delegate: Copy {
                                 required property string modelData
                                 required property int index
                                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                                 width: index === 0 && (listRow.modelData.cells || []).length === 1 ? listRow.width - Theme.space.md : 120
                                 text: modelData
                                 elide: Text.ElideRight
-                                color: index === 0 ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: index === 0 ? "primary" : "secondary"
                             }
                         }
                     }
@@ -347,14 +342,12 @@ Item {
         id: linkNode
         Item {
             implicitHeight: linkText.implicitHeight + (root.inCard ? Theme.space.sm * 2 : 0)
-            Text {
+            Copy {
                 id: linkText
                 x: root.pad
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.props.text || root.props.href || ""
-                color: Theme.palette.accentText
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
+                tone: "accent"
                 font.underline: linkHover.hovered
                 HoverHandler { id: linkHover; cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: root.send("click", root.props.href || "") }

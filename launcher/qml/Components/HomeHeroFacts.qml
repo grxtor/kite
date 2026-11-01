@@ -77,20 +77,17 @@ Row {
             id: lines
             spacing: Theme.space.xxs
 
-            Text {
+            Copy {
                 id: labelText
                 text: fact.label
+                role: "caption"
                 color: fact.inkLabel
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
             }
-            Text {
+            Copy {
                 id: valueText
                 text: fact.value
+                role: "bodyStrong"
                 color: fact.link && linkHover.hovered ? Theme.palette.accentText : fact.ink
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
                 font.features: ({ "tnum": 1 })
 
                 Behavior on color {

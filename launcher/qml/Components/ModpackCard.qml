@@ -43,28 +43,7 @@ AbstractButton {
 
     // Always an age after "Updated" ("5 days ago"): Format.lastPlayed() switches to a calendar date
     // after a month, which mixed the two in one column.
-    readonly property string updatedText: {
-        var ms = Date.parse(root.updated || "")
-        if (!(ms > 0))
-            return ""
-        var days = Math.floor((Date.now() - ms) / (24 * 60 * 60 * 1000))
-        if (days < 1)
-            return qsTr("today")
-        if (days === 1)
-            return qsTr("yesterday")
-        if (days < 30)
-            return qsTr("%1 days ago").arg(days)
-        if (days < 365) {
-            var months = Math.max(1, Math.floor(days / 30))
-            return months === 1 ? qsTr("1 month ago") : qsTr("%1 months ago").arg(months)
-        }
-        var years = Math.floor(days / 365)
-        return years === 1 ? qsTr("1 year ago") : qsTr("%1 years ago").arg(years)
-    }
-
-    function titleCase(word) {
-        return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word
-    }
+    readonly property string updatedText: Format.ageText(root.updated)
 
     implicitHeight: Math.max(root.logoSize, textColumn.implicitHeight) + root.cardPadding * 2
     padding: root.cardPadding
@@ -163,7 +142,7 @@ AbstractButton {
                 Layout.fillWidth: true
                 implicitHeight: root.titleLine
 
-                Text {
+                Copy {
                     id: titleText
                     width: Math.min(implicitWidth, parent.width)
                     height: root.titleLine
@@ -171,26 +150,22 @@ AbstractButton {
                     verticalAlignment: Text.AlignVCenter
                     text: root.title
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.heading
-                    font.pixelSize: root.titleSize
-                    font.weight: Theme.type.subheading.weight
+                    role: "subheading"
 
                     HoverHandler { id: titleHover; enabled: titleText.truncated }
                     ToolTip.visible: titleText.truncated && titleHover.hovered
                     ToolTip.delay: 500
                     ToolTip.text: root.title
                 }
-                Text {
+                Copy {
                     x: titleText.width + Theme.space.xs
                     width: Math.max(0, parent.width - x)
                     anchors.baseline: titleText.baseline
                     visible: !root.skeleton && root.author.length > 0 && width > 0
                     text: qsTr("by %1").arg(root.author)
                     elide: Text.ElideRight
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 }
                 Skeleton {
                     anchors.verticalCenter: parent.verticalCenter
@@ -205,7 +180,7 @@ AbstractButton {
                 Layout.fillWidth: true
                 implicitHeight: root.pitchLine * root.pitchLines
 
-                Text {
+                Copy {
                     anchors.fill: parent
                     visible: !root.skeleton
                     text: root.description
@@ -214,9 +189,7 @@ AbstractButton {
                     elide: Text.ElideRight
                     lineHeightMode: Text.FixedHeight
                     lineHeight: root.pitchLine
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
+                    tone: "secondary"
                 }
                 Skeleton {
                     y: (root.pitchLine - height) / 2
@@ -242,7 +215,7 @@ AbstractButton {
                         model: (root.categories || []).slice(0, root.maxTags)
                         delegate: Tag {
                             required property var modelData
-                            text: root.titleCase(String(modelData))
+                            text: Format.titleCase(String(modelData))
                         }
                     }
                 }
@@ -265,12 +238,10 @@ AbstractButton {
                     size: Theme.icon.sm
                     color: Theme.palette.textSecondary
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("%1 downloads").arg(Format.compactNumber(root.downloads))
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
                     font.weight: Font.DemiBold
                 }
             }
@@ -284,12 +255,11 @@ AbstractButton {
                     size: Theme.icon.sm
                     color: Theme.palette.textTertiary
                 }
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Updated %1").arg(root.updatedText)
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 }
             }
             Skeleton {

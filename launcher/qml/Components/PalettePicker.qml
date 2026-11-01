@@ -7,11 +7,10 @@ import Kite.Theme
 
 /*
  * The colour schemes side by side, each drawn as a miniature launcher in its own
- * colours for the current light or dark mode. A Grid of equal tiles, never a
- * wrapping Flow: four in a row while they fit at a readable size, otherwise two
- * rows of two, never three and a lone fourth.
+ * colours for the current light or dark mode. A PickerGrid of equal tiles, never a
+ * wrapping Flow.
  */
-Grid {
+PickerGrid {
     id: root
 
     property string current: Theme.scheme
@@ -24,18 +23,14 @@ Grid {
         { id: "diamond", label: qsTr("Diamond"), note: qsTr("Navy and diamond blue") }
     ]
 
-    // The narrowest tile whose longest note still fits on one line; below it the tiles go two by two.
-    readonly property int minTileWidth: 160
     readonly property int tileHeight: 150
     readonly property int previewHeight: 86
     readonly property int miniSidebarWidth: 34
     readonly property int miniGap: 6
-    readonly property bool fitsInOneRow: (width - spacing * (schemes.length - 1)) / schemes.length >= minTileWidth
-    readonly property real tileWidth: (width - spacing * (columns - 1)) / columns
 
-    width: parent ? parent.width : implicitWidth
-    columns: root.fitsInOneRow ? root.schemes.length : 2
-    spacing: Theme.space.md
+    tileCount: root.schemes.length
+    // The narrowest tile whose longest note still fits on one line.
+    minTileWidth: 160
 
     Repeater {
         model: root.schemes

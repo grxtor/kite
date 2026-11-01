@@ -33,7 +33,6 @@ AbstractButton {
     property int cornerRadius: Theme.radius.md
     property int badge: 0
     property string badgeTone: "accent"
-    readonly property int badgeCap: 99
     // What the rail is drawn on, so the pill's ring can cut it clear of the icon it overlaps.
     property color surround: "transparent"
 
@@ -55,25 +54,16 @@ AbstractButton {
         y: Math.round((control.height - implicitHeight) / 2)
     }
 
-    background: Rectangle {
+    background: StateFill {
         width: control.collapsed ? control.railSquare : control.width
         height: control.collapsed ? control.railSquare : control.height
         x: control.collapsed ? control.iconAxis - width / 2 : 0
         y: control.collapsed ? (control.height - height) / 2 : 0
         radius: control.cornerRadius
-        color: control.down ? Theme.palette.pressedOverlay
-             : control.hovered ? Theme.palette.hoverOverlay : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        hovered: control.hovered
+        down: control.down
 
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -Theme.space.xxs
-            radius: parent.radius + Theme.space.xxs
-            color: "transparent"
-            border.width: 2
-            border.color: Theme.palette.focusRing
-            visible: control.visualFocus
-        }
+        FocusFrame { around: Theme.space.xxs; visible: control.visualFocus }
     }
 
     readonly property color ink: control.selected ? Theme.palette.accentText
@@ -88,7 +78,7 @@ AbstractButton {
             color: control.ink
         }
 
-        Text {
+        Copy {
             x: control.labelX - control.leftPadding
             width: Math.max(0, parent.width - x - (pill.visible && !control.collapsed ? pill.width + Theme.space.md + Theme.space.sm : 0))
             anchors.verticalCenter: parent.verticalCenter
@@ -96,38 +86,21 @@ AbstractButton {
             text: control.label
             elide: Text.ElideRight
             color: control.ink
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
             font.weight: control.selected ? Font.DemiBold : Font.Medium
         }
     }
 
-    // The count, over the background and contentItem so it sits on the icon's corner outside their
-    // layout. textOnAccent on accent; canvas on the success green.
-    Rectangle {
+    // The count, over the background and contentItem so it sits on the icon's corner outside their layout.
+    CountPill {
         id: pill
-        visible: control.badge > 0
-        width: Math.max(height, pillText.implicitWidth + Theme.space.sm + Theme.focus.width * 2)
-        height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.focus.width * 2
-        radius: Theme.radius.pill
-        border.width: Theme.focus.width
-        border.color: control.selected ? Theme.palette.surfaceRaised : control.surround
-        color: control.badgeTone === "success" ? Theme.palette.success : Theme.palette.accent
+        count: control.badge
+        tone: control.badgeTone
+        ringColor: control.selected ? Theme.palette.surfaceRaised : control.surround
         // Rail: on the icon's bottom-right corner, out far enough to cover neither a glyph's top
         // nor the kite's nose at the selection's top-right. Labelled: the row's end.
         x: control.collapsed ? control.iconAxis + Theme.icon.md / 2 + Theme.space.xs - width / 2
                              : control.width - width - Theme.space.md
         y: control.collapsed ? (control.height + Theme.icon.md) / 2 + Theme.space.xs - height / 2
                              : (control.height - height) / 2
-
-        Text {
-            id: pillText
-            anchors.centerIn: parent
-            text: control.badge > control.badgeCap ? control.badgeCap + "+" : String(control.badge)
-            color: control.badgeTone === "success" ? Theme.palette.canvas : Theme.palette.textOnAccent
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.caption.pixelSize
-            font.weight: Font.DemiBold
-        }
     }
 }

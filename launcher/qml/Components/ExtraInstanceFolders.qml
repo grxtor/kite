@@ -26,44 +26,28 @@ Column {
     visible: !!folders
     spacing: Theme.space.sm
 
-    Text {
-        text: qsTr("More instance folders")
-        color: Theme.palette.textPrimary
-        font.family: Theme.font.heading
-        font.pixelSize: Theme.type.title.pixelSize
-        font.weight: Font.Bold
-    }
-    Text {
+    GroupHeading {
         width: parent.width
-        text: qsTr("Instances in these folders show up in the library too. New instances are still made in the main folder.")
-        wrapMode: Text.Wrap
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        title: qsTr("More instance folders")
+        description: qsTr("Instances in these folders show up in the library too. New instances are still made in the main folder.")
     }
 
-    Rectangle {
+    BoxSurface {
         width: parent.width
         height: rows.height
-        radius: Theme.radius.lg
-        color: Theme.palette.surface
-        border.width: 1
-        border.color: Theme.palette.border
 
         Column {
             id: rows
             width: parent.width
 
-            Text {
+            Copy {
                 visible: root.dirs.length === 0
                 width: parent.width
                 height: Theme.control.heightLg + Theme.space.xl
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: Theme.space.lg
                 text: qsTr("No extra folders.")
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
+                tone: "tertiary"
             }
 
             Repeater {

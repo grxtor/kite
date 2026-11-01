@@ -12,7 +12,7 @@ import Kite.Theme
  * version to the newest one that runs on this instance, with a link to what
  * changed, to tick and update. Closing it while it checks gives up on the check.
  */
-Dialog {
+AppDialog {
     id: root
 
     // ContentUpdateController, and the check it is showing (TaskWatcher).
@@ -26,7 +26,6 @@ Dialog {
     readonly property var updates: root.controller ? root.controller.updates : null
     readonly property bool checking: !!root.controller && root.controller.checking
     readonly property int count: root.updates ? root.updates.count : 0
-    readonly property int preferredWidth: 600
     readonly property int maxHeight: 580
 
     function show(watcher) {
@@ -40,20 +39,8 @@ Dialog {
         return root.updates.checkedCount === root.updates.count ? Qt.Checked : Qt.PartiallyChecked
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: qsTr("Updates")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "refresh"
-    }
 
     onClosed: {
         if (root.checking && root.controller)
@@ -68,14 +55,13 @@ Dialog {
             Layout.fillWidth: true
             visible: root.checking
             spacing: Theme.space.sm
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.watcher && root.watcher.status.length > 0 ? root.watcher.status
                                                                        : qsTr("Checking for updates…")
+                role: "label"
+                tone: "secondary"
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             LaunchProgressBar {
                 Layout.fillWidth: true
@@ -83,16 +69,11 @@ Dialog {
             }
         }
 
-        Text {
+        PanelNote {
             Layout.fillWidth: true
             visible: !root.checking
             text: root.count === 0 ? qsTr("Everything is up to date.")
                   : qsTr("Newer versions that run on this instance. Untick any you want to keep as they are.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: Theme.type.label.lineHeight
         }
 
         ListView {

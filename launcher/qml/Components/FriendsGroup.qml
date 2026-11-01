@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls
 import Kite.Theme
 
 /*
@@ -39,16 +38,10 @@ Column {
             friend: modelData
             stale: root.stale
 
-            Button {
-                visible: Format.friendJoinable(row.modelData)
-                buttonSize: "sm"
-                text: qsTr("Join")
+            FriendJoinButton {
+                friend: row.modelData
+                joinFlow: root.joinFlow
                 icon.source: Icons.url("play")
-                Accessible.name: qsTr("Join %1 on %2").arg(row.modelData.name).arg(row.modelData.host)
-                // Worked out as the pointer arrives, so it is never an old answer.
-                ToolTip.visible: hovered
-                ToolTip.delay: 500
-                ToolTip.text: hovered && root.joinFlow ? root.joinFlow.tip(row.modelData) : ""
                 onClicked: root.joinRequested(row.modelData)
             }
             FriendMoreButton {

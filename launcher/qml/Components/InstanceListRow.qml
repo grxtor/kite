@@ -15,11 +15,6 @@ import Kite.Theme
 Item {
     id: root
 
-    // The pulse stops with the window, an off-screen page and "Reduce motion".
-    readonly property bool motionEnabled: root.visible
-                                          && Qt.application.state === Qt.ApplicationActive
-                                          && !SettingsStore.bool("UiReduceMotion")
-
     required property string instanceId
     required property string name
     required property string iconKey
@@ -36,7 +31,6 @@ Item {
     property string packArt: ""
 
     property bool selected: false
-    property bool forceHovered: false
 
     signal clicked()
     signal playRequested()
@@ -45,16 +39,10 @@ Item {
     // null for a right-click or the Menu key, which open at the pointer.
     signal menuRequested(Item anchor)
 
-    readonly property bool hovered: forceHovered || hoverHandler.hovered
+    readonly property bool hovered: hoverHandler.hovered
     readonly property bool launching: launchStatus.length > 0
-    readonly property bool showsPackArt: root.packArt.length > 0 && packLogo.status === Image.Ready
     readonly property int squareSize: Theme.control.heightLg
-    readonly property real iconShare: 0.84
-    readonly property int iconSize: Math.round(squareSize * iconShare)
-    readonly property string drawnKey: Icons.displayKey(root.iconKey, root.instanceId)
-    readonly property bool iconFills: Icons.fillsTile(root.drawnKey)
     readonly property int runningDotSize: 9
-    readonly property string iconSource: Icons.instanceIcon(root.drawnKey)
     readonly property int versionColumnWidth: 168
     readonly property int lastPlayedColumnWidth: 104
     readonly property int playTimeColumnWidth: 84
@@ -76,32 +64,15 @@ Item {
 
     HoverHandler { id: hoverHandler }
 
-    Rectangle {
+    InstanceSurface {
         id: surface
         anchors.fill: parent
-        radius: Theme.radius.lg
-        color: root.hovered || root.selected ? Theme.palette.surfaceHover : Theme.palette.surface
-
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        Shadow {
-            radius: surface.radius
-            level: Theme.elevation.sm
-            opacity: root.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        }
-
-        TapHandler {
-            acceptedButtons: Qt.LeftButton
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked() }
-            onDoubleTapped: root.playRequested()
-        }
-        TapHandler {
-            acceptedButtons: Qt.RightButton
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
-        }
+        hovered: root.hovered
+        selected: root.selected
+        focused: root.activeFocus
+        onClicked: { root.forceActiveFocus(); root.clicked() }
+        onDoubleClicked: root.playRequested()
+        onContextRequested: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
 
         RowLayout {
             anchors.fill: parent
@@ -113,66 +84,40 @@ Item {
                 Layout.preferredWidth: root.squareSize
                 Layout.preferredHeight: root.squareSize
                 radius: Theme.radius.md
-                matte: root.showsPackArt || root.iconFills ? surface.color : "transparent"
+                matte: art.showsPackArt || art.iconFills ? surface.color : "transparent"
                 lifted: root.hovered
 
-                Image {
-                    anchors.centerIn: parent
-                    visible: !root.showsPackArt
-                    width: root.iconFills ? parent.width : root.iconSize
-                    height: width
-                    source: root.iconSource
-                    sourceSize: Qt.size(width, height)
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
-                    mipmap: true
-                }
-                Image {
-                    id: packLogo
-                    anchors.fill: parent
-                    visible: root.showsPackArt
-                    source: root.packArt
-                    sourceSize: Qt.size(width * 2, height * 2)
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true
-                    mipmap: true
-                    asynchronous: true
+                InstanceArt {
+                    id: art
+                    instanceId: root.instanceId
+                    iconKey: root.iconKey
+                    packArt: root.packArt
                 }
 
                 // Pulses while running, amber while the launch is still starting the game; over the
                 // logo's corner matte.
-                Rectangle {
+                RunningDot {
                     z: 2
                     visible: root.isRunning || root.launching
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.margins: -Theme.space.xxs
-                    width: root.runningDotSize
-                    height: width
-                    radius: width / 2
-                    color: root.launching ? Theme.palette.warning : Theme.palette.success
+                    size: root.runningDotSize
+                    launching: root.launching
+                    pulsing: true
                     border.width: 2
                     border.color: surface.color
-
-                    SequentialAnimation on opacity {
-                        running: (root.isRunning || root.launching) && root.motionEnabled
-                        loops: Animation.Infinite
-                        NumberAnimation { from: 1.0; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 0.45; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
-                    }
                 }
             }
 
-            Text {
+            Copy {
                 id: nameText
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 text: root.name
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
+                role: "title"
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Theme.type.title.weight
 
                 HoverHandler { id: nameHover; enabled: nameText.truncated }
                 ToolTip.visible: nameText.truncated && nameHover.hovered
@@ -180,39 +125,36 @@ Item {
                 ToolTip.text: root.name
             }
 
-            Text {
+            Copy {
                 visible: root.showVersionColumn
                 Layout.preferredWidth: root.versionColumnWidth
                 Layout.minimumWidth: 0
                 text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
-                color: Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "secondary"
             }
 
-            Text {
+            Copy {
                 visible: root.showStatsColumns
                 Layout.preferredWidth: root.lastPlayedColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: !root.launching ? Format.lastPlayed(root.lastLaunch)
                     : root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
                 elide: Text.ElideRight
-                color: root.launching ? Theme.palette.textSecondary : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: root.launching ? "secondary" : "tertiary"
                 font.features: ({ "tnum": 1 })
             }
 
-            Text {
+            Copy {
                 // "Show play time per instance" (Settings > Minecraft).
                 visible: root.showStatsColumns && SettingsStore.bool("ShowGameTime")
                 Layout.preferredWidth: root.playTimeColumnWidth
                 horizontalAlignment: Text.AlignRight
                 text: Format.playTime(root.totalTimePlayed)
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
+                role: "label"
+                tone: "tertiary"
                 font.features: ({ "tnum": 1 })
             }
 
@@ -258,24 +200,5 @@ Item {
                 }
             }
         }
-    }
-
-    Rectangle {
-        anchors.fill: surface
-        radius: surface.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-    }
-
-    Rectangle {
-        anchors.fill: surface
-        anchors.margins: -Theme.space.xs
-        radius: surface.radius + Theme.space.xs
-        color: "transparent"
-        border.width: Theme.focus.width
-        border.color: Theme.palette.focusRing
-        visible: root.activeFocus && !root.selected
     }
 }

@@ -20,6 +20,9 @@ SettingsScroll {
 
     readonly property int languageBoxWidth: 260
 
+    // Show a folder in the file manager; SettingsPage passes it up to Main.qml.
+    signal openPathRequested(string path)
+
     title: qsTr("Appearance")
     description: qsTr("The launcher's own language and colour scheme.")
     SettingsGroup {
@@ -128,8 +131,28 @@ SettingsScroll {
             label: qsTr("Picture")
             description: qsTr("Add your own by putting a picture in the catpacks folder inside Kite's data folder.")
             visible: !!LauncherStore.catPacks
-            CatPackPicker {
+            Column {
                 width: parent.width
+                spacing: Theme.space.md
+
+                // A picture dropped into the folder shows once Kite is the front window again.
+                Connections {
+                    target: Qt.application
+                    function onStateChanged() {
+                        if (Qt.application.state === Qt.ApplicationActive && LauncherStore.catPacks)
+                            LauncherStore.catPacks.refresh()
+                    }
+                }
+                Component.onCompleted: { if (LauncherStore.catPacks) LauncherStore.catPacks.refresh() }
+
+                CatPackPicker {
+                    width: parent.width
+                }
+                Button {
+                    text: qsTr("Open folder")
+                    icon.source: Icons.url("folder")
+                    onClicked: root.openPathRequested(LauncherStore.catPacks.folder)
+                }
             }
         }
     }

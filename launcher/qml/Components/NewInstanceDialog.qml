@@ -9,7 +9,7 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /* A new instance: "create" (version and optional loader) or "import" (a local .zip/.mrpack or a URL). */
-Dialog {
+AppDialog {
     id: root
 
     // NewInstanceController; set when the dialog opens so the version list is fetched lazily.
@@ -45,6 +45,13 @@ Dialog {
     readonly property int versionListRows: 4
     readonly property int versionListMinHeight: versionListRows * Theme.control.height + Theme.space.xs * 2 + 2
     readonly property int kindColumnWidth: 296
+    // Why Create or Import is off, in a line; "" when it is on (or the drop zone already says why).
+    readonly property string createBlocker: !root.controller ? ""
+        : root.controller.selectedMinecraftVersion.length === 0 ? qsTr("Pick a Minecraft version.")
+        : nameField.text.trim().length === 0 ? qsTr("Give the instance a name.") : ""
+    readonly property string importBlocker: !root.controller ? ""
+        : root.importSource.trim().length === 0 ? qsTr("Choose a modpack file or paste a link.")
+        : nameField.text.trim().length === 0 ? qsTr("Give the instance a name.") : ""
     // Loader logos come from knownModLoaders() via the instanceicon provider; `fit` evens out how
     // big square and airy marks read.
     readonly property var loaders: [
@@ -178,21 +185,12 @@ Dialog {
         }
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(860, parent ? parent.width - Theme.space.xxl * 2 : 860)
+    size: "xl"
     // Taller windows get a taller version list up to this; a short one scrolls the form.
     readonly property int maxHeight: 760
     height: Math.min(root.maxHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    modal: true
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
     title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
-
-    header: DialogHeader {
-        title: root.title
-    }
 
     // root.mode is left alone: a pick made right after open() must not be reset.
     onAboutToShow: {
@@ -301,7 +299,7 @@ Dialog {
                         sourceSize: Qt.size(width, height)
                         fillMode: Image.PreserveAspectFit
                     }
-                    Rectangle {
+                    BoxSurface {
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
                         anchors.margins: Theme.space.xxs
@@ -309,12 +307,10 @@ Dialog {
                         height: width
                         radius: Theme.radius.sm
                         color: Theme.palette.surfaceOverlay
-                        border.width: 1
-                        border.color: Theme.palette.border
                         MeshIcon {
                             anchors.centerIn: parent
                             iconName: "edit"
-                            size: Theme.icon.sm - 4
+                            size: Theme.icon.xxs
                             color: Theme.palette.textSecondary
                         }
                     }
@@ -326,13 +322,7 @@ Dialog {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignBottom
                 spacing: Theme.space.xs
-                Text {
-                    text: qsTr("Name")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                    font.weight: Font.Medium
-                }
+                FieldLabel { text: qsTr("Name") }
                 TextField {
                     id: nameField
                     width: parent.width
@@ -347,13 +337,7 @@ Dialog {
                 Layout.preferredWidth: 220
                 Layout.alignment: Qt.AlignBottom
                 spacing: Theme.space.xs
-                Text {
-                    text: qsTr("Group")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                    font.weight: Font.Medium
-                }
+                FieldLabel { text: qsTr("Group") }
                 TextField {
                     id: groupField
                     width: parent.width
@@ -393,14 +377,12 @@ Dialog {
             spacing: Theme.space.md
 
             // Matches the version column's heading height so both lists start level.
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.control.heightSm
                 verticalAlignment: Text.AlignVCenter
                 text: qsTr("Type")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.heading
-                font.pixelSize: Theme.type.title.pixelSize
+                role: "title"
                 font.weight: Font.Bold
             }
 
@@ -458,12 +440,10 @@ Dialog {
             Layout.preferredHeight: Theme.control.heightSm
             spacing: Theme.space.sm
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: qsTr("Minecraft version")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.heading
-                font.pixelSize: Theme.type.title.pixelSize
+                role: "title"
                 font.weight: Font.Bold
             }
             IconButton {
@@ -495,15 +475,12 @@ Dialog {
             }
         }
 
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: root.versionListMinHeight
             Layout.preferredHeight: root.versionListMinHeight
-            radius: Theme.radius.lg
             color: "transparent"
-            border.width: 1
-            border.color: Theme.palette.border
 
             ListView {
                 id: versions
@@ -530,22 +507,21 @@ Dialog {
                     enabled: root.versionFits(version)
                     onClicked: root.controller.selectMinecraftVersion(version)
 
-                    background: Rectangle {
+                    background: StateFill {
                         radius: Theme.radius.md
-                        color: versionRow.selected ? Theme.palette.surfaceHover
-                             : versionRow.hovered ? Theme.palette.hoverOverlay : "transparent"
+                        hovered: versionRow.hovered
+                        active: versionRow.selected
+                        activeFill: Theme.palette.surfaceHover
                         border.width: 1
                         border.color: versionRow.selected ? Theme.neutral.borderHover : "transparent"
                     }
 
                     contentItem: RowLayout {
                         spacing: Theme.space.md
-                        Text {
+                        Copy {
                             Layout.leftMargin: Theme.space.md
                             text: versionRow.version
-                            color: versionRow.enabled ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.body.pixelSize
+                            tone: versionRow.enabled ? "primary" : "tertiary"
                             font.weight: versionRow.selected ? Font.Bold : Font.Medium
                         }
                         // Releases need no badge; a snapshot or old beta/alpha gets one.
@@ -561,13 +537,12 @@ Dialog {
                         }
                         Item { Layout.fillWidth: true }
                         // One width for every date, so the tick stands in one column.
-                        Text {
+                        Copy {
                             Layout.preferredWidth: dateSample.advanceWidth
                             horizontalAlignment: Text.AlignRight
                             text: versionRow.time ? Format.calendarDate(new Date(versionRow.time)) : ""
-                            color: Theme.palette.textTertiary
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.type.caption.pixelSize
+                            role: "caption"
+                            tone: "tertiary"
                         }
                         // Faded rather than hidden, so the dates keep their column.
                         MeshIcon {
@@ -603,16 +578,15 @@ Dialog {
                 running: !!root.controller && root.controller.minecraftVersions.loading
                 visible: running
             }
-            Text {
+            Copy {
                 anchors.centerIn: parent
                 width: parent.width - Theme.space.xxl * 2
                 horizontalAlignment: Text.AlignHCenter
                 visible: !!root.controller && root.controller.minecraftVersions.error.length > 0
                 text: root.controller ? root.controller.minecraftVersions.error : ""
+                role: "label"
+                tone: "danger"
                 wrapMode: Text.Wrap
-                color: Theme.palette.danger
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
         }
 
@@ -676,16 +650,14 @@ Dialog {
                     MeshIcon {
                         Layout.alignment: Qt.AlignHCenter
                         iconName: "package"
-                        size: Theme.icon.lg + Theme.space.md
+                        size: Theme.icon.xl
                         color: Theme.palette.textTertiary
                     }
 
-                    Text {
+                    Copy {
                         Layout.alignment: Qt.AlignHCenter
                         text: qsTr("Drop a .zip or .mrpack file here")
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
+                        tone: "secondary"
                     }
 
                     RowLayout {
@@ -713,27 +685,25 @@ Dialog {
                         }
                     }
 
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         visible: !root.creating && root.importSource.trim().length > 0
                                  && !!root.controller
                                  && !root.controller.isImportSourceValid(root.importSource.trim())
                         text: qsTr("This doesn't look like a modpack file or link. Pick a .zip, .mrpack or .jar file, or paste a direct download link.")
-                        color: Theme.palette.danger
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.caption.pixelSize
+                        role: "caption"
+                        tone: "danger"
                     }
                 }
             }
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: qsTr("Packs exported from CurseForge, FTB, ATLauncher or Technic import the same way, from their .zip file.")
-                color: Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.caption.pixelSize
+                role: "caption"
+                tone: "tertiary"
             }
         } // import pane
         } // StackLayout
@@ -756,16 +726,15 @@ Dialog {
             Layout.fillWidth: true
             visible: root.creating || (!!root.watcher && root.watcher.failed)
             spacing: Theme.space.xs
-            Text {
+            Copy {
                 width: parent.width
+                role: "label"
+                tone: root.watcher && root.watcher.failed ? "danger" : "secondary"
                 text: root.watcher && root.watcher.failed ? (root.watcher.error ||
                           (root.mode === "import" ? qsTr("Importing the instance failed.") : qsTr("Creating the instance failed.")))
                     : root.watcher ? (root.watcher.status ||
                           (root.mode === "import" ? qsTr("Importing…") : qsTr("Creating…"))) : ""
                 elide: Text.ElideRight
-                color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             LaunchProgressBar {
                 width: Math.min(parent.width, 320)
@@ -774,7 +743,16 @@ Dialog {
             }
         }
 
-        Item { Layout.fillWidth: true; Layout.leftMargin: Theme.space.xl; visible: !root.creating && !(root.watcher && root.watcher.failed) }
+        Copy {
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
+            visible: !root.creating && !(root.watcher && root.watcher.failed)
+            text: root.mode === "import" ? root.importBlocker : root.createBlocker
+            role: "label"
+            tone: "tertiary"
+            elide: Text.ElideRight
+        }
 
         Button {
             Layout.bottomMargin: Theme.space.xl

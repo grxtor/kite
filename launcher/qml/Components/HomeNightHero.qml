@@ -15,7 +15,7 @@ Item {
     required property Item hero
 
     readonly property int topInset: 52
-    readonly property int nameSize: 46
+    readonly property int nameSize: Theme.type.heroSm.pixelSize
     readonly property int maxWidth: 620
     readonly property color accentInk: Theme.palette.accentText
 

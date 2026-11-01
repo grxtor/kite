@@ -56,13 +56,14 @@ Item {
         onTapped: root.clicked()
     }
 
-    Rectangle {
+    StateFill {
         anchors.fill: parent
+        card: true
+        rest: "transparent"
+        hovered: root.hovered || root.visualFocus
         radius: Theme.radius.md
-        color: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : "transparent"
-        border.width: root.visualFocus ? Theme.focus.width : 0
-        border.color: Theme.palette.focusRing
-        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        FocusFrame { around: 0; visible: root.visualFocus }
     }
 
     RowLayout {
@@ -91,14 +92,12 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             spacing: Theme.space.xxs
 
-            Text {
+            Copy {
                 width: parent.width
                 text: root.name
                 elide: Text.ElideRight
-                color: root.presence === "offline" ? Theme.palette.textSecondary : Theme.palette.textPrimary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.bodyStrong.pixelSize
-                font.weight: Theme.type.bodyStrong.weight
+                role: "bodyStrong"
+                tone: root.presence === "offline" ? "secondary" : "primary"
             }
 
             Row {
@@ -117,21 +116,17 @@ Item {
                     elide: Text.ElideMiddle
                     elideWidth: Math.max(0, detailRow.width - (suffix.visible ? suffix.implicitWidth + detailRow.spacing : 0))
                 }
-                Text {
+                Copy {
                     text: detailMetrics.elidedText
-                    color: root.detailTone === "primary" ? Theme.palette.textPrimary
-                         : root.detailTone === "faint" ? Theme.palette.textTertiary
-                         : Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: root.detailTone === "faint" ? "tertiary" : root.detailTone
                 }
-                Text {
+                Copy {
                     id: suffix
                     visible: root.detailSuffix.length > 0
                     text: "· " + root.detailSuffix
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 }
             }
         }

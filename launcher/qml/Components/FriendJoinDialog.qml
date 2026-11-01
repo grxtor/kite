@@ -12,7 +12,7 @@ import Kite.Theme
  * Enter never starts the wrong version, plus instances on other versions to try; a row only selects and "Join
  * anyway" starts.
  */
-Dialog {
+AppDialog {
     id: root
 
     property string friendName
@@ -46,28 +46,19 @@ Dialog {
     readonly property bool canJoin: list.currentIndex >= 0 && list.currentIndex < root.rows.length
                                     && root.rows[list.currentIndex].canLaunch
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    readonly property int preferredWidth: root.none ? 520 : 440
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    size: root.none ? "md" : "sm"
+    closeOnOutsidePress: true
+    title: root.none ? qsTr("No Minecraft %1 instance").arg(root.version)
+                     : qsTr("Join with which instance?")
 
     // With none on the friend's version nothing is selected: the listed instances are a fallback.
     onAboutToShow: list.currentIndex = root.none ? -1 : root.firstReady()
     onOpened: root.none ? createButton.forceActiveFocus() : list.forceActiveFocus()
 
-    header: DialogHeader {
-        title: root.none ? qsTr("No Minecraft %1 instance").arg(root.version)
-                         : qsTr("Join with which instance?")
-    }
-
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             // The name is whatever the friend called it (up to 64 characters): not markup, a tag would fetch a
@@ -79,30 +70,24 @@ Dialog {
                                                    .arg(root.friendName).arg(root.host).arg(root.version).arg(root.instanceName)
                 : qsTr("%1 is on %2 with Minecraft %3.")
                   .arg(root.friendName).arg(root.host).arg(root.version)
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            tone: "secondary"
             lineHeight: Theme.type.label.lineHeight
         }
 
-        Text {
+        Copy {
             visible: root.none && root.others.length > 0
             Layout.fillWidth: true
             text: qsTr("Or join with another version (may not connect)")
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: "tertiary"
             font.weight: Font.DemiBold
         }
 
-        Rectangle {
+        BoxSurface {
             visible: root.rows.length > 0
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(root.rows.length, root.maxRows) * root.rowHeight + Theme.space.xs * 2
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             ListView {
                 id: list
@@ -194,23 +179,20 @@ Dialog {
                             Layout.minimumWidth: 0
                             spacing: Theme.space.xxs
 
-                            Text {
+                            Copy {
                                 width: parent.width
                                 text: choice.modelData.name
                                 elide: Text.ElideRight
+                                role: "bodyStrong"
                                 color: choice.current ? Theme.palette.accentText
                                      : root.none ? Theme.palette.textSecondary : Theme.palette.textPrimary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.body.pixelSize
-                                font.weight: Theme.type.bodyStrong.weight
                             }
-                            Text {
+                            Copy {
                                 width: parent.width
                                 text: choice.detail
                                 elide: Text.ElideRight
-                                color: Theme.palette.textTertiary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: "tertiary"
                             }
                         }
                         StatusBadge {

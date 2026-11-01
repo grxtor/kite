@@ -212,12 +212,9 @@ Item {
             Layout.preferredHeight: Theme.control.height
             spacing: Theme.space.lg
 
-            Text {
+            Copy {
                 text: qsTr("Add content")
-                color: Theme.palette.textPrimary
-                font.family: Theme.font.heading
-                font.pixelSize: Theme.type.heading.pixelSize
-                font.weight: Theme.type.heading.weight
+                role: "heading"
                 Accessible.role: Accessible.Heading
             }
             ChipGroup {
@@ -229,14 +226,12 @@ Item {
                 }
             }
             Item { Layout.fillWidth: true }
-            Rectangle {
+            BoxSurface {
                 visible: root.activeDownloads > 0
                 implicitWidth: downloadsRow.implicitWidth + Theme.space.md * 2
                 implicitHeight: Theme.control.heightSm
                 radius: Theme.radius.sm
                 color: Theme.palette.surfaceRaised
-                border.width: 1
-                border.color: Theme.palette.border
                 Row {
                     id: downloadsRow
                     anchors.centerIn: parent
@@ -247,12 +242,10 @@ Item {
                         height: Theme.icon.sm
                         running: parent.visible
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("%n installing", "", root.activeDownloads)
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
                         font.weight: Font.DemiBold
                     }
                 }
@@ -306,11 +299,9 @@ Item {
                 Accessible.name: qsTr("Sort by")
                 onActivated: { root.browser.sortIndex = currentValue; root.runSearch() }
             }
-            Button {
+            FiltersButton {
                 id: filtersButton
-                readonly property int active: root.browser ? root.browser.activeFilterCount : 0
-                text: active > 0 ? qsTr("Filters (%1)").arg(active) : qsTr("Filters")
-                icon.source: Icons.url("filter")
+                count: root.browser ? root.browser.activeFilterCount : 0
                 onClicked: filterPopup.opened ? filterPopup.close() : filterPopup.open()
 
                 ContentFilterPopup {
@@ -334,17 +325,13 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: 0
 
-                Rectangle {
+                BoxSurface {
                     id: resultsCard
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
                     height: Math.min(parent.height, results.contentHeight + results.topMargin + results.bottomMargin + border.width * 2)
                     visible: results.count > 0 || (!!root.browser && root.browser.searching)
-                    radius: Theme.radius.lg
-                    color: Theme.palette.surface
-                    border.width: 1
-                    border.color: Theme.palette.border
                     clip: true
 
                     ListView {
@@ -397,7 +384,7 @@ Item {
                     title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
                     body: root.browser && root.browser.error.length > 0 ? root.browser.error
                                                                          : qsTr("Try other words, fewer filters, or the other site.")
-                    MeshIcon { iconName: "search"; size: 40; color: Theme.palette.textTertiary }
+                    MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
                 }
             }
 

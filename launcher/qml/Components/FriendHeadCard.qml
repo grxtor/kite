@@ -26,7 +26,6 @@ Popup {
     readonly property var friend: root.find(root.controller ? root.controller.friends : [], root.friendUuid)
     readonly property bool known: root.friend.uuid !== undefined
     readonly property var status: Format.friendStatus(root.friend)
-    readonly property bool joinable: root.known && Format.friendJoinable(root.friend)
 
     readonly property int cardWidth: 232
     readonly property int headSize: 24
@@ -91,13 +90,11 @@ Popup {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Theme.space.xxs
 
-                Text {
+                Copy {
                     width: parent.width
                     text: root.known ? root.friend.name : ""
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
                     font.weight: Font.DemiBold
                 }
                 Text {
@@ -119,32 +116,24 @@ Popup {
             }
         }
 
-        Button {
-            id: join
+        FriendJoinButton {
             Layout.fillWidth: true
-            visible: root.joinable
             enabled: root.actionsEnabled
-            buttonSize: "sm"
-            text: qsTr("Join")
-            Accessible.name: root.known ? qsTr("Join %1 on %2").arg(root.friend.name).arg(root.friend.host) : ""
-            // Worked out as the pointer arrives, so it is never an old answer.
-            ToolTip.visible: join.hovered
-            ToolTip.delay: 500
-            ToolTip.text: join.hovered && root.joinFlow && root.joinable ? root.joinFlow.tip(root.friend) : ""
+            friend: root.friend
+            joinFlow: root.joinFlow
             onClicked: {
                 root.close()
                 root.joinRequested(root.friend)
             }
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: root.known && Format.friendJoinOff(root.friend)
             text: root.known ? qsTr("%1 doesn't let friends join").arg(root.friend.name) : ""
             wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: "tertiary"
         }
     }
 }

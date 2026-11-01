@@ -25,7 +25,7 @@ Rectangle {
     implicitHeight: Math.max(label.implicitHeight + Theme.space.md * 2,
                              action.visible ? action.implicitHeight + Theme.space.sm * 2 : 0)
     radius: Theme.radius.lg
-    color: root.tone === "info" ? Theme.palette.infoSubtle : Theme.palette.warningSubtle
+    color: Theme.tone(root.tone).soft
     clip: true
 
     LaunchProgressBar {
@@ -46,14 +46,13 @@ Rectangle {
         anchors.rightMargin: action.visible ? Theme.space.sm : Theme.space.md
         spacing: Theme.space.md
 
-        Text {
+        Copy {
             id: label
             Layout.fillWidth: true
             text: root.text
+            role: "label"
             wrapMode: Text.Wrap
-            color: root.tone === "info" ? Theme.palette.info : Theme.palette.warning
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            color: Theme.tone(root.tone).ink
             font.weight: Font.Medium
         }
 

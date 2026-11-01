@@ -55,7 +55,7 @@ Item {
             item.capeTexture = Qt.binding(() => root.capeTexture)
             item.elytra = Qt.binding(() => root.elytra)
             item.plainColor = Qt.binding(() => silhouette.color)
-            item.turnDuration = Qt.binding(() => SettingsStore.bool("UiReduceMotion") ? 0 : Theme.motion.slow)
+            item.turnDuration = Qt.binding(() => Theme.motion.slow)
             item.turnEasing = Theme.motion.easing
             item.shadowColor = Qt.binding(() => Theme.palette.shadow)
         }

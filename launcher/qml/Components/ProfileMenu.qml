@@ -99,23 +99,19 @@ Popup {
                 Layout.minimumWidth: 0
                 spacing: 1
 
-                Text {
+                Copy {
                     width: parent.width
                     text: root.name
+                    role: "bodyStrong"
                     elide: Text.ElideRight
-                    color: Theme.palette.textPrimary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.bodyStrong.pixelSize
-                    font.weight: Theme.type.bodyStrong.weight
                 }
-                Text {
+                Copy {
                     width: parent.width
                     text: root.kind === "Microsoft" ? qsTr("Microsoft account")
                         : root.kind === "Offline" ? qsTr("Offline account") : root.kind
+                    role: "caption"
+                    tone: "tertiary"
                     elide: Text.ElideRight
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
                 }
             }
         }
@@ -147,14 +143,11 @@ Popup {
                                   + "?rev=" + root.faceRevision
                                 : ""
                     }
-                    Text {
+                    Copy {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         text: switchRow.modelData.name
                         elide: Text.ElideRight
-                        color: Theme.palette.textPrimary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.body.pixelSize
                     }
                     // Defensive: otherAccounts excludes the default row, but if it is ever listed
                     // it should read as the active one.
@@ -172,6 +165,8 @@ Popup {
 
         ItemDelegate {
             Layout.fillWidth: true
+            // Offline accounts have no skin control on the Accounts page.
+            visible: root.kind !== "Offline"
             hoverEnabled: true
             text: qsTr("Skin and cape")
             icon.source: Icons.url("image")

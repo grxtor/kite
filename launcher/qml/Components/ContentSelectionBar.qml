@@ -12,7 +12,7 @@ import Kite.Theme
  * with them. Enable, Disable and Remove are off while the game holds the files (with the reason on hover); Export
  * always works. Its ⋯ menu checks just these for updates or forgets where they came from.
  */
-Rectangle {
+BoxSurface {
     id: root
 
     property var list: null
@@ -37,10 +37,7 @@ Rectangle {
     }
 
     implicitHeight: Theme.control.height + Theme.space.sm * 2
-    radius: Theme.radius.lg
     color: Theme.palette.surfaceRaised
-    border.width: 1
-    border.color: Theme.palette.border
 
     RowLayout {
         anchors.fill: parent
@@ -65,15 +62,12 @@ Rectangle {
                 }
             }
         }
-        Text {
+        Copy {
             Layout.leftMargin: Theme.space.xs
             Layout.fillWidth: true
             text: qsTr("%1 selected").arg(root.list ? root.list.selectedKeys.length : 0)
             elide: Text.ElideRight
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.bodyStrong.pixelSize
-            font.weight: Theme.type.bodyStrong.weight
+            role: "bodyStrong"
         }
 
         HoverReason {

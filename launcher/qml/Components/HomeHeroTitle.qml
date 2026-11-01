@@ -38,7 +38,7 @@ ColumnLayout {
                                          ? qsTr("Played %1").arg(Format.lastPlayed(root.lastLaunch))
                                          : qsTr("Never played")
 
-    readonly property int metaIconSize: 16
+    readonly property int metaIconSize: Theme.icon.xs
 
     component MetaFact: Row {
         property string iconName
@@ -118,22 +118,20 @@ ColumnLayout {
         }
     }
 
-    Row {
+    // The play time drops to a second line rather than run under Play when the column is narrow.
+    Flow {
         Layout.fillWidth: true
         visible: !root.iconMeta
         spacing: Theme.space.sm
 
         Row {
             id: identity
-            anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.space.sm
 
-            Text {
+            Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.versionText
                 color: root.inkSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
             }
             MeshIcon {
                 anchors.verticalCenter: parent.verticalCenter
@@ -142,27 +140,22 @@ ColumnLayout {
                 size: Theme.icon.sm
                 color: Theme.palette.warning
             }
-            Text {
+            Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.hasCrashed
                 text: qsTr("Crashed last time")
-                color: Theme.palette.warning
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
+                tone: "warning"
             }
         }
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
+        Copy {
             visible: root.showsWhen && !root.hasCrashed
             text: "•  " + root.playedText
             color: root.inkSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            // The gap to the play time; at the end of a line it is not seen.
+            rightPadding: Theme.space.sm
         }
         Row {
-            anchors.verticalCenter: parent.verticalCenter
             visible: root.showsWhen && root.playTimeText.length > 0
-            leftPadding: Theme.space.sm
             spacing: Theme.space.xs
             MeshIcon {
                 anchors.verticalCenter: parent.verticalCenter
@@ -170,12 +163,10 @@ ColumnLayout {
                 size: Theme.icon.sm
                 color: root.inkSecondary
             }
-            Text {
+            Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.playTimeText
                 color: root.inkSecondary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 font.features: ({ "tnum": 1 })
             }
         }
@@ -188,15 +179,14 @@ ColumnLayout {
         visible: root.launching
         spacing: Theme.space.xs
 
-        Text {
+        Copy {
             width: parent.width
             text: root.launchProgress >= 0
                   ? qsTr("%1  •  %2%").arg(root.launchStatus).arg(Math.round(root.launchProgress * 100))
                   : root.launchStatus
+            role: "label"
             elide: Text.ElideRight
             color: root.inkSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
         }
         LaunchProgressBar {
             width: parent.width

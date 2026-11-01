@@ -26,7 +26,7 @@ AbstractButton {
     readonly property int nameSize: control.compact ? Theme.type.label.pixelSize : Theme.type.bodyStrong.pixelSize
     readonly property int metaSize: control.compact ? Theme.type.caption.pixelSize : Theme.type.label.pixelSize
     readonly property color nameInk: control.glass ? Theme.media.text : Theme.palette.textPrimary
-    readonly property color metaInk: control.glass ? Qt.rgba(1, 1, 1, 0.55) : Theme.palette.textSecondary
+    readonly property color metaInk: control.glass ? Theme.media.textFaint : Theme.palette.textSecondary
     readonly property bool hasIcon: control.iconUrl.length > 0 && worldIcon.status !== Image.Error
     readonly property int squareSize: Theme.control.height
     readonly property int rowHeight: control.squareSize + Theme.space.sm * 2
@@ -47,16 +47,14 @@ AbstractButton {
         id: card
         radius: Theme.radius.md
         color: control.glass ? "transparent" : Theme.palette.canvas
-        border.width: control.visualFocus ? Theme.focus.width : 0
-        border.color: Theme.palette.focusRing
 
-        Rectangle {
+        StateFill {
             anchors.fill: parent
             radius: parent.radius
-            color: control.down ? Theme.palette.pressedOverlay
-                 : control.hovered ? Theme.palette.hoverOverlay : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            hovered: control.hovered
+            down: control.down
         }
+        FocusFrame { around: 0; visible: control.visualFocus }
     }
 
     contentItem: Item {

@@ -22,6 +22,7 @@ qt_add_qml_module(Kite_qml_theme
         Shadow.qml
         GlassSurface.qml
         KiteShape.qml
+        WindowDragZone.qml
     SOURCES
         ThemeService.h
         ThemeService.cpp

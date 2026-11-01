@@ -15,7 +15,7 @@ import Kite.Theme
  * listed. Dependencies no provider had a compatible version of are named
  * underneath.
  */
-Dialog {
+AppDialog {
     id: root
 
     // ContentInstallReview, already `ready`.
@@ -24,7 +24,6 @@ Dialog {
 
     property bool started: false
     readonly property bool picked: !!root.review && root.review.primaryCount > 0
-    readonly property int preferredWidth: 560
     readonly property int maxHeight: 560
 
     function show(review) {
@@ -39,20 +38,8 @@ Dialog {
         return root.review.checkedDependencyCount === root.review.dependencyCount ? Qt.Checked : Qt.PartiallyChecked
     }
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(root.preferredWidth, parent ? parent.width - Theme.space.xxl * 2 : root.preferredWidth)
     height: Math.min(root.maxHeight, implicitHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
-    closePolicy: Popup.CloseOnEscape
     title: !root.review ? "" : root.picked ? qsTr("Install %1").arg(root.review.title) : root.review.title
-
-    header: DialogHeader {
-        title: root.title
-        icon: "download"
-    }
 
     // Anything that closes this without installing ends the review, so its resolver does not linger.
     onClosed: {
@@ -64,17 +51,12 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        PanelNote {
             Layout.fillWidth: true
             text: !root.review ? ""
                   : !root.picked ? qsTr("Mods in this instance need these, and they are not installed.")
                   : root.review.dependencyCount > 0 ? qsTr("It needs these to run. Untick any you do not want.")
                   : qsTr("Nothing else needs to come with it.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
-            lineHeight: Theme.type.label.lineHeight
         }
 
         ListView {
@@ -96,14 +78,13 @@ Dialog {
                 readonly property bool shown: root.picked && section === "true"
                 width: list.width
                 height: shown ? sectionLabel.implicitHeight + Theme.space.sm : 0
-                Text {
+                Copy {
                     id: sectionLabel
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Theme.space.xxs
                     text: parent.shown ? qsTr("Needed to run it") : ""
-                    color: Theme.palette.textTertiary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.caption.pixelSize
+                    role: "caption"
+                    tone: "tertiary"
                     font.weight: Font.DemiBold
                 }
             }

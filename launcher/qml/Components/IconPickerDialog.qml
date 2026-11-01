@@ -12,7 +12,7 @@ import Kite.Theme
  * icons folder). A plain grid of pictures; the names are file keys, not words,
  * so they are only read out to a screen reader.
  */
-Dialog {
+AppDialog {
     id: root
 
     // IconList (roles include `key` and `name`).
@@ -21,19 +21,21 @@ Dialog {
     signal picked(string key)
     signal openFolderRequested()
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(640, parent ? parent.width - Theme.space.xxl * 2 : 640)
+    size: "lg"
     height: Math.min(520, parent ? parent.height - Theme.space.xxl * 2 : 520)
-    modal: true
-    topPadding: 0
-    bottomPadding: Theme.space.sm
+    closeOnOutsidePress: true
+    closeOnPrimary: false
     title: qsTr("Choose an icon")
-
-    header: DialogHeader {
-        title: root.title
-        icon: "image"
-    }
+    primaryText: qsTr("Use icon")
+    onPrimaryClicked: { root.picked(root.current); root.close() }
+    footerLeading: [
+        Button {
+            flat: true
+            text: qsTr("Open icons folder")
+            icon.source: Icons.url("folder")
+            onClicked: root.openFolderRequested()
+        }
+    ]
 
     // The *_legacy and *_mark icons would list every icon twice, so they stay out of the picker; an
     // instance already using one keeps it.
@@ -87,12 +89,13 @@ Dialog {
             onClicked: root.current = key
             onDoubleClicked: { root.picked(key); root.close() }
 
-            background: Rectangle {
+            background: StateFill {
                 anchors.fill: parent
                 anchors.margins: root.cellInset
                 radius: Theme.radius.sm
-                color: cell.selected ? Theme.palette.surfaceHover
-                     : cell.hovered ? Theme.palette.hoverOverlay : "transparent"
+                hovered: cell.hovered
+                active: cell.selected
+                activeFill: Theme.palette.surfaceHover
                 border.width: cell.selected ? 2 : 0
                 border.color: Theme.palette.accent
             }
@@ -109,29 +112,6 @@ Dialog {
                     mipmap: true
                 }
             }
-        }
-    }
-
-    footer: Row {
-        spacing: Theme.space.sm
-        padding: Theme.space.xl
-        topPadding: 0
-        layoutDirection: Qt.RightToLeft
-
-        Button {
-            text: qsTr("Use icon")
-            highlighted: true
-            onClicked: { root.picked(root.current); root.close() }
-        }
-        Button {
-            text: qsTr("Cancel")
-            onClicked: root.close()
-        }
-        Button {
-            flat: true
-            text: qsTr("Open icons folder")
-            icon.source: Icons.url("folder")
-            onClicked: root.openFolderRequested()
         }
     }
 }

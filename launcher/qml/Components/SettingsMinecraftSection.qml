@@ -47,10 +47,6 @@ SettingsScroll {
             key: "ShowGameTime"
             label: qsTr("Show play time per instance")
         }
-        SettingSwitch {
-            key: "ShowGlobalGameTime"
-            label: qsTr("Show total play time")
-        }
     }
     SettingsGroup {
         width: parent.width

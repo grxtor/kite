@@ -30,9 +30,9 @@ AbstractButton {
         radius: Theme.radius.md
         color: root.down ? Theme.palette.pressedOverlay
              : root.hovered ? Theme.palette.surfaceHover : "transparent"
-        border.width: root.visualFocus ? Theme.focus.width : 0
-        border.color: Theme.palette.focusRing
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+
+        FocusFrame { around: 0; visible: root.visualFocus }
     }
     contentItem: RowLayout {
         spacing: Theme.space.sm
@@ -44,13 +44,11 @@ AbstractButton {
             radius: width / 2
             color: Theme.palette.accent
         }
-        Text {
+        Copy {
             Layout.fillWidth: true
             text: root.text
             elide: Text.ElideRight
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
             font.weight: Font.DemiBold
         }
         MeshIcon {

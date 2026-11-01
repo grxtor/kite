@@ -52,14 +52,13 @@ SettingRow {
                 size: Theme.icon.sm
                 color: Theme.palette.warning
             }
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.warning
                 wrapMode: Text.Wrap
-                color: Theme.palette.warning
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
-                lineHeight: Theme.type.label.lineHeight
+                role: "label"
+                tone: "warning"
+                lineHeight: spec.lineHeight
             }
         }
     }

@@ -117,15 +117,13 @@ Item {
 
             leading: [
                 Tag { text: root.controller ? root.controller.providerLabel : "" },
-                Text {
+                Copy {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                     text: root.controller && root.controller.installedVersionName.length > 0
                           ? qsTr("Installed %1").arg(root.controller.installedVersionName)
                           : qsTr("Installed version unknown")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.body.pixelSize
+                    tone: "secondary"
                 }
             ]
 
@@ -152,16 +150,15 @@ Item {
             visible: root.updating || (!!root.watcher && root.watcher.failed)
             spacing: Theme.space.md
 
-            Text {
+            Copy {
                 Layout.fillWidth: true
                 text: root.watcher
                       ? (root.watcher.failed ? (root.watcher.error || qsTr("Update failed."))
                                              : (root.watcher.status || qsTr("Updating…")))
                       : ""
-                color: root.watcher && root.watcher.failed ? Theme.palette.danger : Theme.palette.textSecondary
+                role: "label"
+                tone: root.watcher && root.watcher.failed ? "danger" : "secondary"
                 elide: Text.ElideRight
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
             LaunchProgressBar {
                 Layout.preferredWidth: 160
@@ -186,26 +183,20 @@ Item {
             onActionTriggered: root.controller.reload()
         }
 
-        Text {
+        Copy {
             Layout.fillWidth: true
             visible: !!root.controller && root.controller.hasPackId && root.controller.error.length === 0
                      && !root.controller.loading && root.versions.length === 0
             wrapMode: Text.Wrap
             text: qsTr("The catalogue lists no other versions of this pack.")
-            color: Theme.palette.textSecondary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
+            tone: "secondary"
         }
 
         // The newest is picked first, so its changelog is there to read before updating.
-        Rectangle {
+        BoxSurface {
             Layout.fillWidth: true
             visible: root.hasVersions
             implicitHeight: updateRow.implicitHeight + Theme.space.md * 2
-            radius: Theme.radius.lg
-            color: Theme.palette.surface
-            border.width: 1
-            border.color: Theme.palette.border
 
             RowLayout {
                 id: updateRow
@@ -214,11 +205,10 @@ Item {
                 anchors.rightMargin: Theme.space.md
                 spacing: Theme.space.sm
 
-                Text {
+                Copy {
                     text: qsTr("Update to")
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 }
                 ComboBox {
                     id: versionBox
@@ -237,15 +227,12 @@ Item {
             }
         }
 
-        Rectangle {
+        BoxSurface {
             id: changelogHost
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: root.hasVersions && !!root.picked
-            radius: Theme.radius.lg
-            color: Theme.palette.surfaceSunken
-            border.width: 1
-            border.color: Theme.palette.border
+            sunken: true
 
             Flickable {
                 anchors.fill: parent
@@ -293,6 +280,6 @@ Item {
         visible: !root.controller
         title: qsTr("Not a managed pack")
         body: qsTr("This instance was not installed from a catalogue Kite recognises.")
-        MeshIcon { iconName: "package"; size: 40; color: Theme.palette.textTertiary }
+        MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

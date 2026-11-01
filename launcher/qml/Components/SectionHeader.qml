@@ -27,13 +27,10 @@ Item {
         anchors.left: parent.left
         spacing: Theme.space.sm
 
-        Text {
+        Copy {
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.heading.pixelSize
-            font.weight: Theme.type.heading.weight
+            role: "heading"
         }
 
         Tag {

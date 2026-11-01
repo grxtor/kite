@@ -65,16 +65,14 @@ AbstractButton {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
             spacing: 0
-            Text {
+            Copy {
                 width: parent.width
                 text: root.entry.versionNumber || root.entry.name || ""
+                tone: root.entry.isCompatible ? "primary" : "tertiary"
                 elide: Text.ElideRight
-                color: root.entry.isCompatible ? Theme.palette.textPrimary : Theme.palette.textTertiary
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.body.pixelSize
                 font.weight: root.picked ? Font.Bold : Font.Medium
             }
-            Text {
+            Copy {
                 readonly property string games: (root.entry.gameVersions || []).slice(0, 3).join(", ")
                 readonly property string loaders: (root.entry.loaders || []).join(", ")
                 readonly property string fits: loaders.length > 0 && games.length > 0
@@ -84,19 +82,17 @@ AbstractButton {
                 text: root.entry.isCompatible ? fits
                       : fits.length > 0 ? qsTr("Not for this instance (%1)").arg(fits)
                       : qsTr("Not for this instance")
+                role: "label"
+                tone: root.entry.isCompatible ? "secondary" : "warning"
                 elide: Text.ElideRight
-                color: root.entry.isCompatible ? Theme.palette.textSecondary : Theme.palette.warning
-                font.family: Theme.font.family
-                font.pixelSize: Theme.type.label.pixelSize
             }
         }
-        Text {
+        Copy {
             Layout.rightMargin: Theme.space.sm
             visible: root.installed
             text: qsTr("Installed")
-            color: Theme.palette.success
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            role: "label"
+            tone: "success"
             font.weight: Font.DemiBold
         }
     }

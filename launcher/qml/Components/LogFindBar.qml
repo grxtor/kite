@@ -59,13 +59,12 @@ RowLayout {
         }
     }
 
-    Text {
+    Copy {
         visible: root.text.length > 0 && root.searchEnabled
         text: root.matchCount === 0 ? qsTr("No matches")
                                     : qsTr("%1 of %2").arg(root.current + 1).arg(root.matchCount)
-        color: Theme.palette.textTertiary
-        font.family: Theme.font.family
-        font.pixelSize: Theme.type.label.pixelSize
+        role: "label"
+        tone: "tertiary"
     }
 
     IconButton {

@@ -16,7 +16,7 @@ AbstractButton {
     property bool running: false
     property bool lit: false
     property int size: Theme.control.heightSm + Theme.space.xs
-    property int iconSize: Theme.icon.sm - 2
+    property int iconSize: Theme.icon.xs
     property color restFill: "transparent"
     property color restInk: Theme.palette.textTertiary
 

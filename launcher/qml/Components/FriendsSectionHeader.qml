@@ -8,15 +8,12 @@ import Kite.Theme
  * A small caps caption over a group of people ("PLAYING — 2"). The caller gives the words already in capitals, so a
  * language's own rules for them (Turkish dotted İ) are the translator's.
  */
-Text {
+Copy {
     leftPadding: Theme.space.lg
     topPadding: Theme.space.sm
     bottomPadding: Theme.space.xs
     elide: Text.ElideRight
-    color: Theme.palette.textTertiary
-    font.family: Theme.font.family
-    font.pixelSize: Theme.type.overline.pixelSize
-    font.weight: Theme.type.overline.weight
-    font.letterSpacing: Theme.type.overline.letterSpacing
+    role: "overline"
+    tone: "tertiary"
     Accessible.role: Accessible.Heading
 }

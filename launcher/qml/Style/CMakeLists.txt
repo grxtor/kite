@@ -33,6 +33,7 @@ qt_add_qml_module(Kite_qml_style
         Menu.qml
         MenuItem.qml
         MenuSeparator.qml
+        ModalScrim.qml
         Pane.qml
         Popup.qml
         PopupShadow.qml

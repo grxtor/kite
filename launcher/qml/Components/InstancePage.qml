@@ -7,7 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
-/* One instance: a header (icon, name, Play, Settings, ⋯ menu) over tabs; opens on Content. */
+/* One instance: a header (icon, name, Play, ⋯ menu) over tabs; opens on Content. */
 Item {
     id: root
 
@@ -229,12 +229,11 @@ Item {
                         size: Theme.icon.sm
                         color: Theme.palette.textTertiary
                     }
-                    Text {
+                    Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: parent.text
-                        color: Theme.palette.textSecondary
-                        font.family: Theme.font.family
-                        font.pixelSize: Theme.type.label.pixelSize
+                        role: "label"
+                        tone: "secondary"
                         font.weight: Font.Medium
                     }
                 }
@@ -262,14 +261,11 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: Theme.space.xs
 
-                        Text {
+                        Copy {
                             Layout.fillWidth: true
                             text: headerCard.name
                             elide: Text.ElideRight
-                            color: Theme.palette.textPrimary
-                            font.family: Theme.font.heading
-                            font.pixelSize: Theme.type.display.pixelSize
-                            font.weight: Theme.type.display.weight
+                            role: "display"
                         }
 
                         Flow {
@@ -304,15 +300,14 @@ Item {
                             visible: headerCard.launching
                             Layout.preferredWidth: 320
                             spacing: Theme.space.xs
-                            Text {
+                            Copy {
                                 Layout.fillWidth: true
                                 text: headerCard.launchProgress >= 0
                                       ? qsTr("%1, %2%").arg(headerCard.launchStatus).arg(Math.round(headerCard.launchProgress * 100))
                                       : headerCard.launchStatus
                                 elide: Text.ElideRight
-                                color: Theme.palette.textSecondary
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.type.label.pixelSize
+                                role: "label"
+                                tone: "secondary"
                             }
                             LaunchProgressBar {
                                 Layout.fillWidth: true
@@ -333,14 +328,6 @@ Item {
                             enabled: !headerCard.launching && (headerCard.isRunning || !!headerCard.model.canLaunch)
                             onClicked: headerCard.isRunning ? root.stopRequested(root.instanceId)
                                                              : root.playRequested(root.instanceId)
-                        }
-                        IconButton {
-                            visible: !root.isLegacy
-                            size: root.headerActionSize
-                            flat: false
-                            iconName: "settings"
-                            tip: qsTr("Instance settings")
-                            onClicked: root.tab = "settings"
                         }
                         IconButton {
                             id: moreButton
@@ -495,20 +482,11 @@ Item {
         readonly property bool offerOptions: !root.running && !!root.launchOptionsFor
         readonly property bool offerManage: root.manageable || exportFlows.canExport || exportFlows.canCreateShortcut
 
-        // A submenu has no `visible`; its MenuItem is found by subMenu. Kept in step before
-        // opening, because the ⋯ button places the menu by its width before aboutToShow.
-        function syncOptionsEntry() {
-            for (var i = 0; i < instanceMenu.count; ++i) {
-                var item = instanceMenu.itemAt(i)
-                if (item && item.subMenu === playOptionsMenu) {
-                    item.visible = instanceMenu.offerOptions
-                    item.height = instanceMenu.offerOptions ? item.implicitHeight : 0
-                }
-            }
+        SubmenuEntry {
+            menu: instanceMenu
+            submenu: playOptionsMenu
+            shown: instanceMenu.offerOptions
         }
-        onOfferOptionsChanged: syncOptionsEntry()
-        Component.onCompleted: syncOptionsEntry()
-
         LaunchOptionsMenu {
             id: playOptionsMenu
             // An icon like its neighbours', so the label lines up.
@@ -521,86 +499,72 @@ Item {
             onPerformanceChosen: (id, enabled) => root.performanceChosen(id, enabled)
             onNavigateRequested: (target) => root.navigateRequested(target)
         }
-        MenuSeparator {
+        MenuDivider {
             visible: instanceMenu.offerOptions
-            height: visible ? implicitHeight : 0
         }
         MenuItem {
             text: qsTr("Open folder")
             icon.source: Icons.url("folder")
             onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
         }
-        MenuItem {
-            // A hidden item still takes its row in a Menu; zero it as well.
+        MenuEntry {
             visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
-            height: visible ? implicitHeight : 0
             text: qsTr("Open .minecraft folder")
             icon.source: Icons.url("folder")
             onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
         }
-        MenuItem {
-            // A hidden item still takes its row in a Menu; zero it as well.
+        MenuEntry {
             visible: instanceMenu.isMinecraft
-            height: visible ? implicitHeight : 0
             text: qsTr("Open mods folder")
             icon.source: Icons.url("folder")
             onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
         }
-        MenuSeparator {
+        MenuDivider {
             visible: instanceMenu.offerManage
-            height: visible ? implicitHeight : 0
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Rename…")
             icon.source: Icons.url("edit")
             onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Change icon…")
             icon.source: Icons.url("image")
             onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Change group…")
             icon.source: Icons.url("folder-input")
             onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Duplicate…")
             icon.source: Icons.url("copy")
             onTriggered: exportFlows.canDuplicate
                          ? exportFlows.duplicateInstance(root.instanceId, instanceMenu.name, instanceMenu.group, instanceMenu.iconKey)
                          : root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
         }
-        MenuItem {
+        MenuEntry {
             visible: exportFlows.canExport
-            height: visible ? implicitHeight : 0
             text: qsTr("Export…")
             icon.source: Icons.url("archive")
             onTriggered: exportFlows.exportInstance(root.instanceId)
         }
-        MenuItem {
+        MenuEntry {
             visible: exportFlows.canCreateShortcut
-            height: visible ? implicitHeight : 0
             text: qsTr("Create shortcut…")
             icon.source: Icons.url("external-link")
             onTriggered: exportFlows.createShortcut(root.instanceId)
         }
-        MenuSeparator {
+        MenuDivider {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
         }
-        MenuItem {
+        MenuEntry {
             visible: root.manageable
-            height: visible ? implicitHeight : 0
             text: qsTr("Delete…")
             icon.source: Icons.url("trash")
             // A running game's folder is in use.

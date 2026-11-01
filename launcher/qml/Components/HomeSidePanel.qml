@@ -6,7 +6,7 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Home's side panel: "Set up Kite" until both steps are done, then Friends (unless the right-edge friends panel
+ * Home's side panel: "Set up Kite" until every step is done, then Friends (unless the right-edge friends panel
  * has them), Kite's news and recent worlds. The page decides whether there is room and hides it when it has
  * nothing (`hasContent`). Gece makes it one glass pane as tall as its content (`naturalHeight`).
  */
@@ -25,7 +25,6 @@ Item {
     // The right-edge friends panel is out with the same friends: this panel leaves them to it.
     property bool friendsInPanel: false
 
-    signal createRequested()
     signal signInRequested()
     // tab: "friends", "requests" or "add".
     signal friendsRequested(string tab)
@@ -33,14 +32,13 @@ Item {
     signal joinRequested(var friend)
     signal worldRequested(string instanceId)
 
-    readonly property int maxWorlds: 4
     readonly property bool glass: Theme.look === "night"
     readonly property int padding: Theme.look === "calm" ? Theme.space.xl + Theme.space.xs
                                  : root.glass ? Theme.space.lg + Theme.space.xs : Theme.space.lg
     readonly property int topPadding: Theme.look === "calm" ? Theme.space.xxl + Theme.space.xs - 2
                                     : root.glass ? Theme.space.lg + Theme.space.xs : Theme.space.xl
     readonly property real naturalHeight: column.y + column.height + root.topPadding
-    readonly property bool hasWorlds: worldsRepeater.count > 0
+    readonly property bool hasWorlds: worldList.hasWorlds
 
     readonly property bool showsFriends: friendsSection.shown && root.hasInstances && !root.friendsInPanel
 
@@ -84,13 +82,12 @@ Item {
             spacing: Theme.space.xl
 
             GettingStartedCard {
-                flat: Theme.look === "calm" || root.glass
                 id: gettingStarted
+                flat: Theme.look === "calm" || root.glass
                 width: parent.width
                 visible: gettingStarted.shown
                 hasInstances: root.hasInstances
                 signedIn: root.signedIn
-                onCreateRequested: root.createRequested()
                 onSignInRequested: root.signInRequested()
             }
 
@@ -108,8 +105,8 @@ Item {
             }
 
             HomeNews {
-                flat: Theme.look === "calm" || root.glass
                 id: newsList
+                flat: Theme.look === "calm" || root.glass
                 width: parent.width
                 news: root.news
             }
@@ -125,29 +122,14 @@ Item {
                     text: qsTr("Recent worlds")
                 }
 
-                Repeater {
-                    id: worldsRepeater
-                    model: root.recentWorldsModel
-                    // A plain wrapper, so `model.index` resolves despite HomeWorldTile's required properties.
-                    delegate: Item {
-                        visible: model.index < root.maxWorlds
-                        width: visible ? column.width : 0
-                        height: visible ? tile.height : 0
-
-                        HomeWorldTile {
-                            id: tile
-                            x: -Theme.space.sm
-                            width: column.width + Theme.space.sm * 2
-                            glass: root.glass
-                            worldName: model.worldName
-                            folderName: model.folderName
-                            iconUrl: model.iconUrl
-                            lastPlayed: model.lastPlayed
-                            instanceId: model.instanceId
-                            instanceName: model.instanceName
-                            onClicked: root.worldRequested(model.instanceId)
-                        }
-                    }
+                HomeWorldList {
+                    id: worldList
+                    width: parent.width
+                    spacing: Theme.space.xs
+                    worldsModel: root.recentWorldsModel
+                    glass: root.glass
+                    inset: Theme.space.sm
+                    onWorldRequested: (id) => root.worldRequested(id)
                 }
             }
         }

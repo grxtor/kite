@@ -31,9 +31,8 @@ Menu {
         root.open()
     }
 
-    MenuItem {
+    MenuEntry {
         visible: root.canRemove
-        height: visible ? implicitHeight : 0
         text: qsTr("Remove friend…")
         icon.source: Icons.url("x")
         onTriggered: root.removeRequested(root.personUuid, root.personName)

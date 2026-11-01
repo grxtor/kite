@@ -95,7 +95,9 @@ Item {
 
     // Shown only while the main column keeps sideMinMainWidth beside it. Gece's glass pane is inset,
     // so the scroll bar runs in the gap before it.
-    readonly property int sidePaneWidth: root.isNight ? 282 : 300
+    readonly property int nightSidePaneWidth: 282
+    readonly property int classicSidePaneWidth: 300
+    readonly property int sidePaneWidth: root.isNight ? root.nightSidePaneWidth : root.classicSidePaneWidth
     readonly property int sideInset: root.isNight ? Theme.space.xl + Theme.space.xs + Theme.space.xxs : 0
     readonly property int sideWidth: root.sidePaneWidth + root.sideInset * 2
     readonly property int sideMinMainWidth: 700
@@ -184,7 +186,6 @@ Item {
                 hasInstances: root.hasLibrary
                 signedIn: root.msaSignedIn
                 news: root.news
-                onCreateRequested: root.createRequested()
                 onSignInRequested: root.signInRequested()
             }
 
@@ -264,7 +265,7 @@ Item {
 
                         MeshIcon {
                             iconName: "search"
-                            size: Theme.icon.lg + Theme.space.md
+                            size: Theme.icon.xl
                             color: Theme.palette.textTertiary
                         }
                     }
@@ -275,6 +276,7 @@ Item {
 
     ScrollFade {
         anchors.left: parent.left
+        anchors.right: undefined
         anchors.bottom: parent.bottom
         width: root.mainWidth
         visible: root.hasLibrary
@@ -309,7 +311,6 @@ Item {
         onFriendsRequested: (tab) => root.friendsRequested(tab)
         onNavigateRequested: (target) => root.navigateRequested(target)
         onJoinRequested: (friend) => root.joinRequested(friend)
-        onCreateRequested: root.createRequested()
         onSignInRequested: root.signInRequested()
         onWorldRequested: (id) => root.openInstanceWorldsRequested(id)
     }

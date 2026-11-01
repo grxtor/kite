@@ -27,9 +27,7 @@ qt_add_qml_module(Kite_qml_components
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml
-        LibraryPage.qml
         LinkButton.qml
-        ContinueCard.qml
         CornerMatte.qml
         PlayButton.qml
         LaunchOptionsMenu.qml
@@ -65,7 +63,6 @@ qt_add_qml_module(Kite_qml_components
         FontFamilyRow.qml
         CatPicture.qml
         CatPackPicker.qml
-        TotalPlayTime.qml
         NewComponentDialog.qml
         InstancePage.qml
         ContentTab.qml
@@ -114,6 +111,30 @@ qt_add_qml_module(Kite_qml_components
         TabListRow.qml
         RowThumb.qml
         ConfirmDialog.qml
+        AppDialog.qml
+        Copy.qml
+        FocusFrame.qml
+        StateFill.qml
+        BoxSurface.qml
+        AccountStateBadge.qml
+        CompactButton.qml
+        FiltersButton.qml
+        FriendJoinButton.qml
+        FriendsRetry.qml
+        FriendsState.qml
+        GroupHeading.qml
+        HomeWorldList.qml
+        InstanceArt.qml
+        InstanceSurface.qml
+        JavaInstallList.qml
+        JavaInstallRow.qml
+        LogMatches.qml
+        MenuDivider.qml
+        MenuEntry.qml
+        PickerGrid.qml
+        RunningDot.qml
+        SubmenuEntry.qml
+        UploadLinkToast.qml
         DialogHeader.qml
         AccountsPage.qml
         AccountRow.qml
@@ -155,22 +176,18 @@ qt_add_qml_module(Kite_qml_components
         MemorySetting.qml
         MemoryField.qml
         MemoryStartSetting.qml
-        SegmentedControl.qml
         EmptyState.qml
         SidebarNav.qml
         SidebarEdgeHandle.qml
         NavItem.qml
         NavSelectionIndicator.qml
-        AccountChip.qml
         ProfileButton.qml
         ProfileMenu.qml
         PlayDock.qml
         TopBar.qml
-        PageToolbar.qml
         PageSlot.qml
         SectionHeader.qml
         StatusBadge.qml
-        Gallery.qml
         MeshIcon.qml
         Icons.qml
         HomePage.qml
@@ -215,7 +232,6 @@ qt_add_qml_module(Kite_qml_components
         FriendsListScroll.qml
         FriendsRequestsTab.qml
         FriendsBlockedTab.qml
-        SoftIconCircle.qml
         PanelNote.qml
         CopyName.qml
         HomeEmptyState.qml

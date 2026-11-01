@@ -91,20 +91,10 @@ SettingsScroll {
         spacing: Theme.space.sm
         visible: root.canDownload
 
-        Text {
-            text: qsTr("Downloaded Java")
-            color: Theme.palette.textPrimary
-            font.family: Theme.font.heading
-            font.pixelSize: Theme.type.title.pixelSize
-            font.weight: Font.Bold
-        }
-        Text {
+        GroupHeading {
             width: parent.width
-            text: qsTr("Java that Kite downloaded and keeps in its own folder.")
-            wrapMode: Text.Wrap
-            color: Theme.palette.textTertiary
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            title: qsTr("Downloaded Java")
+            description: qsTr("Java that Kite downloaded and keeps in its own folder.")
         }
 
         ManagedJavaList {
@@ -117,14 +107,13 @@ SettingsScroll {
             onFailed: (message) => root.removeError = message
         }
 
-        Text {
+        Copy {
             width: parent.width
             visible: root.removeError.length > 0
             text: root.removeError
             wrapMode: Text.Wrap
-            color: Theme.palette.danger
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.label.pixelSize
+            tone: "danger"
+            role: "label"
         }
 
         Row {
@@ -136,7 +125,7 @@ SettingsScroll {
             }
             Button {
                 flat: true
-                text: qsTr("Refresh")
+                text: qsTr("Detect again")
                 icon.source: Icons.url("refresh")
                 onClicked: root.java.refreshManaged()
             }

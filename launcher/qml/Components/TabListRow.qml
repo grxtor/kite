@@ -23,7 +23,7 @@ import Kite.Theme
  *         IconButton { iconName: "more" ... }
  *     }
  */
-Rectangle {
+StateFill {
     id: root
 
     property string title
@@ -32,15 +32,14 @@ Rectangle {
     readonly property alias thumb: thumb
     default property alias actions: actionRow.data
     property alias badges: badgeRow.data
-    readonly property bool hovered: hover.hovered
     signal menuRequested()
 
     implicitHeight: thumb.implicitHeight + Theme.space.md * 2
     radius: Theme.radius.lg
-    color: root.hovered ? Theme.palette.surfaceHover : Theme.palette.surface
+    card: true
+    hovered: hover.hovered
     border.width: 1
     border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-    Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
     HoverHandler { id: hover }
@@ -69,14 +68,12 @@ Rectangle {
             spacing: Theme.space.xxs
             opacity: root.dimmed ? Theme.opacity.disabled + 0.2 : 1
 
-            Text {
+            Copy {
                 width: parent.width
                 text: root.title
                 elide: Text.ElideRight
-                color: Theme.palette.textPrimary
+                role: "title"
                 font.family: Theme.font.family
-                font.pixelSize: Theme.type.title.pixelSize
-                font.weight: Theme.type.title.weight
             }
             Row {
                 id: metaRow
@@ -84,15 +81,14 @@ Rectangle {
                 visible: root.meta.length > 0 || badgeRow.visibleChildren.length > 0
                 spacing: Theme.space.sm
 
-                Text {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: text.length > 0
                     width: Math.min(implicitWidth, metaRow.width - (badgeRow.width > 0 ? badgeRow.width + metaRow.spacing : 0))
                     text: root.meta
                     elide: Text.ElideRight
-                    color: Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
+                    role: "label"
+                    tone: "secondary"
                 }
                 Row {
                     id: badgeRow
