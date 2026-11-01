@@ -74,6 +74,7 @@
 #include "minecraft/PerformanceInstanceTask.h"
 #include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/PerformanceSetupTask.h"
+#include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
 #include "modbridge/ModBridge.h"
@@ -109,6 +110,9 @@ namespace
 {
 	// loadFromModule() needs Qt 6.5. The module sets RESOURCE_PREFIX "/qt/qml".
 	const QUrl kRootUrl(QStringLiteral("qrc:/qt/qml/Kite/Main.qml"));
+
+	// Where PerformanceSetupTask lists the mods it found no build of for the new version.
+	const QString kUnmatchedSetting = QStringLiteral("KitePerformanceUnmatched");
 
 	// Function-local static: sidesteps static initialisation order.
 	QmlShell::PluginSurfaceFactory& pluginSurfaceFactory()
@@ -220,16 +224,19 @@ int QmlShell::accountCount() const
 
 void QmlShell::launchInstance(const QString& id)
 {
+	watchPerformance(id);
 	emit launchRequested(id);
 }
 
 void QmlShell::launchInstanceMode(const QString& id, const QString& mode)
 {
+	watchPerformance(id);
 	emit launchModeRequested(id, mode);
 }
 
 void QmlShell::launchInstanceAs(const QString& id, const QString& accountId)
 {
+	watchPerformance(id);
 	emit launchAsRequested(id, accountId);
 }
 
@@ -332,7 +339,7 @@ void QmlShell::setPerformanceEnabled(const QString& id, bool on)
 QStringList QmlShell::performanceExcluded(const QString& id) const
 {
 	auto instance = minecraftInstanceById(id);
-	return instance ? PerformanceSetup::parseExcluded(
+	return instance ? PerformanceSetup::parseProjects(
 						  instance->settings()
 							  ->get("KitePerformanceExcluded")
 							  .toString())
@@ -344,9 +351,70 @@ void QmlShell::setPerformanceExcluded(const QString& id,
 {
 	if (auto instance = minecraftInstanceById(id)) {
 		instance->settings()->set("KitePerformanceExcluded",
-								  PerformanceSetup::joinExcluded(projects));
+								  PerformanceSetup::joinProjects(projects));
 		emit performanceChanged(id);
 	}
+}
+
+QStringList QmlShell::performanceIncluded(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	return instance ? PerformanceSetup::parseProjects(
+						  instance->settings()
+							  ->get("KitePerformanceIncluded")
+							  .toString())
+					: QStringList();
+}
+
+void QmlShell::setPerformanceIncluded(const QString& id,
+									  const QStringList& projects)
+{
+	if (auto instance = minecraftInstanceById(id)) {
+		instance->settings()->set("KitePerformanceIncluded",
+								  PerformanceSetup::joinProjects(projects));
+		emit performanceChanged(id);
+	}
+}
+
+QStringList QmlShell::performanceUnmatched(const QString& id) const
+{
+	auto instance = minecraftInstanceById(id);
+	auto folder = instance ? instance->loaderModList() : nullptr;
+	if (!folder) {
+		return {};
+	}
+	return PerformanceSetup::installedNames(
+		*folder->metadataIndex(),
+		PerformanceSetup::parseProjects(
+			instance->settings()->get(kUnmatchedSetting).toString()));
+}
+
+void QmlShell::watchPerformance(const QString& id)
+{
+	auto instance = minecraftInstanceById(id);
+	if (!instance || m_watchedPerformance.contains(id)) {
+		return;
+	}
+	m_watchedPerformance.insert(id);
+	/* The setup runs inside a launch, which this shell does not own, so the
+	 * setting is how it tells. Every launch re-reads the instance's settings
+	 * and that announces each of them again, unchanged: only a value that
+	 * differs from the last one seen is news. */
+	connect(instance->settings().get(), &SettingsObject::SettingChanged, this,
+			[this, id, seen = instance->settings()
+								  ->get(kUnmatchedSetting)
+								  .toString()](const Setting& setting,
+											   const QVariant& value) mutable {
+				if (setting.id() != kUnmatchedSetting ||
+					value.toString() == seen) {
+					return;
+				}
+				seen = value.toString();
+				const QStringList names = performanceUnmatched(id);
+				if (!names.isEmpty()) {
+					emit performanceUnmatchedFound(id, names);
+				}
+			});
 }
 
 bool QmlShell::performanceSupported(const QString& mcVersion) const
@@ -396,6 +464,7 @@ QObject* QmlShell::speedUp(const QString& id, const QStringList& extras)
 		!PerformanceSetup::hasLoader(instance->getPackProfile()->primaryModLoader())) {
 		return nullptr;
 	}
+	watchPerformance(id);
 	instance->settings()->set("KitePerformance", true);
 	emit performanceChanged(id);
 
@@ -447,6 +516,7 @@ bool QmlShell::joinServer(const QString& id, const QString& address)
 {
 	auto instance = LAUNCHER->instances()->getInstanceById(id);
 	const bool starts = instance && instance->canLaunch();
+	watchPerformance(id);
 	emit joinServerRequested(id, address);
 	return starts;
 }

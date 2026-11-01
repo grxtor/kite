@@ -228,6 +228,31 @@ namespace
 			.toUtf8();
 	}
 
+	/* What Modrinth lists for project @p projectId when its newest upload is
+	 * unfinished: a release from January and an alpha from June, both for
+	 * Fabric on 1.21.4. */
+	QByteArray modrinthReleaseAndNewerAlpha(const QString& projectId)
+	{
+		const auto version = [&projectId](const QString& id, const QString& type,
+										  const QString& date, const QString& file) {
+			return QStringLiteral(
+					   R"({"id":"%1","project_id":"%2","name":"%1",)"
+					   R"("version_type":"%3","game_versions":["1.21.4"],)"
+					   R"("loaders":["fabric"],"date_published":"%4",)"
+					   R"("dependencies":[],"files":[{"primary":true,)"
+					   R"("filename":"%5","url":"https://cdn.example/%5",)"
+					   R"("size":10,"hashes":{"sha1":"abc"}}]})")
+				.arg(id, projectId, type, date, file);
+		};
+		return "[" +
+			   version("old", "release", "2025-01-01T00:00:00Z", "mod-release.jar")
+				   .toUtf8() +
+			   "," +
+			   version("new", "alpha", "2025-06-01T00:00:00Z", "mod-alpha.jar")
+				   .toUtf8() +
+			   "]";
+	}
+
 	/* What CurseForge lists at /mods/<id>/files: one release of Fabric on
 	 * 1.21.4 - or of @p loader, when it is another. */
 	QByteArray curseForgeFiles(const QString& displayName, const QString& file,
@@ -596,18 +621,19 @@ class ContentInstallReviewTest : public QObject
 		QTest::addColumn<QByteArray>("modrinth");
 		QTest::addColumn<QByteArray>("search");
 		QTest::addColumn<QByteArray>("files");
+		QTest::addColumn<bool>("modrinthAnswered");
 
 		QTest::newRow("Modrinth 404s, CurseForge 404s")
-			<< QByteArray() << QByteArray() << QByteArray();
+			<< QByteArray() << QByteArray() << QByteArray() << false;
 		QTest::newRow("no Modrinth version for this loader")
 			<< modrinthVersions("p", "Ghost", "ghost.jar", "forge")
-			<< QByteArray() << QByteArray();
+			<< QByteArray() << QByteArray() << true;
 		QTest::newRow("CurseForge finds nothing by that slug or title")
 			<< QByteArray() << QByteArray(R"({"data":[{"id":5,"slug":"other","name":"Other"}]})")
-			<< QByteArray();
+			<< QByteArray() << false;
 		QTest::newRow("CurseForge has it, but nothing for this loader")
 			<< QByteArray() << curseForgeHit(9, "ghost", "Ghost")
-			<< curseForgeFiles("Ghost", "ghost.jar", "Forge");
+			<< curseForgeFiles("Ghost", "ghost.jar", "Forge") << false;
 	}
 
 	void aWantedProjectNeitherProviderHasIsUnresolvedOnce()
@@ -615,6 +641,7 @@ class ContentInstallReviewTest : public QObject
 		QFETCH(QByteArray, modrinth);
 		QFETCH(QByteArray, search);
 		QFETCH(QByteArray, files);
+		QFETCH(bool, modrinthAnswered);
 		auto* net = m_launcher->canned();
 		if (!modrinth.isEmpty()) {
 			net->answer("/project/ghost/version", modrinth);
@@ -635,6 +662,130 @@ class ContentInstallReviewTest : public QObject
 		QCOMPARE(review->dependencyCount(), 0);
 		QVERIFY(review->needsReview());
 		QVERIFY(review->downloadItems().isEmpty());
+		/* Only Modrinth's own "nothing for this version" counts, once. */
+		QCOMPARE(review->notAvailable(),
+				 modrinthAnswered ? QStringList{"ghost"} : QStringList());
+	}
+
+	void aModrinthOnlyWantedProjectIsNotSearchedOnCurseForge_data()
+	{
+		QTest::addColumn<QByteArray>("modrinth");
+		QTest::addColumn<bool>("modrinthAnswered");
+
+		QTest::newRow("no Modrinth version for this loader")
+			<< modrinthVersions("p", "Ghost", "ghost.jar", "forge") << true;
+		QTest::newRow("an empty list")
+			<< QByteArray("[]") << true;
+		/* The lookup failed: it says nothing about the project. */
+		QTest::newRow("Modrinth 404s") << QByteArray() << false;
+	}
+
+	void aModrinthOnlyWantedProjectIsNotSearchedOnCurseForge()
+	{
+		QFETCH(QByteArray, modrinth);
+		QFETCH(bool, modrinthAnswered);
+		auto* net = m_launcher->canned();
+		if (!modrinth.isEmpty()) {
+			net->answer("/project/AANobbMI/version", modrinth);
+		}
+		/* Would be found by name, if it were asked for. */
+		net->answer("/mods/search", curseForgeHit(9, "AANobbMI", "AANobbMI"));
+		net->answer("/mods/9/files", curseForgeFiles("Ghost", "ghost.jar"));
+		auto review = wantedOnly({{"AANobbMI", {}, /*modrinthOnly=*/true}});
+
+		review->start();
+		QTRY_VERIFY_WITH_TIMEOUT(review->ready(), kResolveTimeoutMs);
+
+		QCOMPARE(review->unresolved(), QStringList{"AANobbMI"});
+		QCOMPARE(review->dependencyCount(), 0);
+		QCOMPARE(review->notAvailable(),
+				 modrinthAnswered ? QStringList{"AANobbMI"} : QStringList());
+		QVERIFY(m_launcher->canned()->requested().filter("/mods/").isEmpty());
+	}
+
+	void aModrinthOnlyWantedProjectModrinthHasIsInstalled()
+	{
+		m_launcher->canned()->answer(
+			"/project/AANobbMI/version",
+			modrinthVersions("AANobbMI", "Sodium", "sodium.jar"));
+		auto review = wantedOnly({{"AANobbMI", {}, /*modrinthOnly=*/true}});
+
+		review->start();
+		QTRY_VERIFY_WITH_TIMEOUT(review->ready(), kResolveTimeoutMs);
+
+		QCOMPARE(review->dependencyCount(), 1);
+		QVERIFY(review->unresolved().isEmpty());
+		QVERIFY(review->notAvailable().isEmpty());
+	}
+
+	void aWantedProjectTakesTheReleaseOverANewerAlpha()
+	{
+		m_launcher->canned()->answer("/project/AANobbMI/version",
+									 modrinthReleaseAndNewerAlpha("AANobbMI"));
+		auto review = wantedOnly({{"AANobbMI", {}, /*modrinthOnly=*/true}});
+
+		review->start();
+		QTRY_VERIFY_WITH_TIMEOUT(review->ready(), kResolveTimeoutMs);
+
+		const auto items = review->downloadItems();
+		QCOMPARE(items.size(), 1);
+		QCOMPARE(items.first().fileName, QStringLiteral("mod-release.jar"));
+	}
+
+	void aWantedProjectFromCurseForgeTakesTheReleaseOverANewerBeta()
+	{
+		auto* net = m_launcher->canned();
+		net->answer("/mods/search", curseForgeHit(4242, "cloth-config", "Cloth Config"));
+		const auto file = [](int id, int releaseType, const QString& date,
+							 const QString& name) {
+			return QStringLiteral(
+					   R"({"id":%1,"fileName":"%4","displayName":"%4",)"
+					   R"("downloadUrl":"https://cdn.example/%4","fileLength":5,)"
+					   R"("releaseType":%2,"fileDate":"%3",)"
+					   R"("gameVersions":["1.21.4","Fabric"],)"
+					   R"("hashes":[{"algo":1,"value":"abc"}],"dependencies":[]})")
+				.arg(QString::number(id), QString::number(releaseType), date, name);
+		};
+		net->answer("/mods/4242/files",
+					("{\"data\":[" +
+					 file(1, 1, "2025-01-01T00:00:00Z", "cf-release.jar") + "," +
+					 file(2, 2, "2025-06-01T00:00:00Z", "cf-beta.jar") + "]}")
+						.toUtf8());
+		auto review = wantedOnly({{"cloth-config", {}}});
+
+		review->start();
+		QTRY_VERIFY_WITH_TIMEOUT(review->ready(), kResolveTimeoutMs);
+
+		const auto items = review->downloadItems();
+		QCOMPARE(items.size(), 1);
+		QCOMPARE(items.first().fileName, QStringLiteral("cf-release.jar"));
+	}
+
+	void aDependencyTakesTheNewestWhateverItsChannel()
+	{
+		auto* net = m_launcher->canned();
+		net->answer("/version/sverid01",
+					R"({"id":"sverid01","project_id":"InstModP","name":"Installed 1.0",)"
+					R"("game_versions":["1.21.4"],"loaders":["fabric"],"files":[],)"
+					R"("dependencies":[{"project_id":"LibraryP","dependency_type":"required"}]})");
+		net->answer("/project/LibraryP/version",
+					modrinthReleaseAndNewerAlpha("LibraryP"));
+
+		ModPlatform::SelectedMod installed;
+		installed.name = "Installed Mod";
+		installed.projectId = "InstModP";
+		installed.versionId = "sverid01";
+		installed.platform = "modrinth";
+		std::unique_ptr<ContentInstallReview> review(
+			ContentInstallReview::missingDependencies(
+				{installed}, "Missing dependencies", "1.21.4", "fabric", folder()));
+
+		review->start();
+		QTRY_VERIFY_WITH_TIMEOUT(review->ready(), kResolveTimeoutMs);
+
+		const auto items = review->downloadItems();
+		QCOMPARE(items.size(), 1);
+		QCOMPARE(items.first().fileName, QStringLiteral("mod-alpha.jar"));
 	}
 
 	void aWantedProjectAnInstalledModAlreadyNeedsIsOneRow_data()

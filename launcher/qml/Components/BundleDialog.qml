@@ -31,6 +31,8 @@ AppDialog {
     property bool graphicsFailed: false
     property string current: ""
     property var excluded: []
+    // Extras ticked before; they start ticked.
+    property var included: []
     property var checkedAll: []
 
     signal installRequested(var projectIds)
@@ -77,12 +79,24 @@ AppDialog {
         }
         return out
     }
+    function keptExtras() {
+        const out = []
+        for (let i = 0; i < lists.count; ++i) {
+            const list = lists.itemAt(i)
+            for (const id of list ? list.keptExtras : []) {
+                if (out.indexOf(id) < 0)
+                    out.push(id)
+            }
+        }
+        return out
+    }
     function show() {
         root.installed = root.updater ? root.updater.installedProjects() : []
         root.optiFine = root.updater ? root.updater.hasOptiFine() : false
         if (root.performance && root.shell) {
             modeSwitch.checked = root.shell.performanceEnabled(root.instanceId)
             root.excluded = root.shell.performanceExcluded(root.instanceId)
+            root.included = root.shell.performanceIncluded(root.instanceId)
             root.graphicsBackend = root.shell.graphicsBackend(root.instanceId)
             graphicsBox.currentIndex = graphicsBox.indexOfValue(root.graphicsBackend)
         }
@@ -98,6 +112,7 @@ AppDialog {
             return
         }
         root.shell.setPerformanceExcluded(root.instanceId, root.uncheckedDefaults())
+        root.shell.setPerformanceIncluded(root.instanceId, root.keptExtras())
         root.shell.setPerformanceEnabled(root.instanceId, modeSwitch.checked)
         root.close()
         if (modeSwitch.checked && root.checkedAll.length > 0)
@@ -172,6 +187,7 @@ AppDialog {
                     mods: root.bundles ? root.bundles.mods([modelData], root.loader) : []
                     installed: root.installed
                     excluded: root.excluded
+                    included: root.included
                     onCheckedProjectsChanged: root.recount()
 
                     Copy {

@@ -23,6 +23,7 @@
 #include <QHash>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -295,15 +296,25 @@ class QmlShell : public QObject
 										 const QString& profilerKey);
 	/* Kite Performance, a mode of one instance: while on, every Play first
 	 * installs the Performance bundle's default mods, minus the Modrinth
-	 * project ids in performanceExcluded(). An instance without a mod loader
-	 * is left as it is (see createPerformanceInstance()). The setters do
-	 * nothing for an unknown or non-Minecraft id and emit
-	 * performanceChanged(). */
+	 * project ids in performanceExcluded(), plus those in performanceIncluded()
+	 * (extras the player ticked). An instance without a mod loader is left as
+	 * it is (see createPerformanceInstance()). The setters do nothing for an
+	 * unknown or non-Minecraft id and emit performanceChanged(). */
 	Q_INVOKABLE bool performanceEnabled(const QString& id) const;
 	Q_INVOKABLE void setPerformanceEnabled(const QString& id, bool on);
 	Q_INVOKABLE QStringList performanceExcluded(const QString& id) const;
 	Q_INVOKABLE void setPerformanceExcluded(const QString& id,
 											const QStringList& projects);
+	Q_INVOKABLE QStringList performanceIncluded(const QString& id) const;
+	Q_INVOKABLE void setPerformanceIncluded(const QString& id,
+											const QStringList& projects);
+	/* Names of the mods the last Minecraft version or loader change found no
+	 * build for (left at their old files, which the game will likely refuse)
+	 * that are still in the mods folder: the name each was installed under,
+	 * else its file name. Empty for an unknown id or when all matched.
+	 * Announced by performanceUnmatchedFound() once launching or speeding up
+	 * the instance has begun. */
+	Q_INVOKABLE QStringList performanceUnmatched(const QString& id) const;
 	/* Releases from 1.16 on and numbered versions (26.1.2); not 1.12.2,
 	 * 1.8.9, snapshots or betas. */
 	Q_INVOKABLE bool performanceSupported(const QString& mcVersion) const;
@@ -446,6 +457,10 @@ class QmlShell : public QObject
 	void launchAsRequested(const QString& id, const QString& accountId);
 	void killRequested(const QString& id);
 	void performanceChanged(const QString& id);
+	/// Instance @p id's Kite Performance setup found no version of the mods
+	/// @p names (performanceUnmatched()) for its new Minecraft version or
+	/// loader. Only for an instance this shell has launched or sped up.
+	void performanceUnmatchedFound(const QString& id, const QStringList& names);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
 
@@ -519,6 +534,11 @@ class QmlShell : public QObject
 	/* Running speedUp() setups by instance id; dropped when their watcher
 	 * finishes. */
 	QHash<QString, QPointer<TaskWatcher>> m_performanceSetups;
+	/* Starts announcing instance @p id's unmatched Kite Performance mods
+	 * (performanceUnmatchedFound()) once per instance; called wherever the
+	 * shell launches or speeds one up, since the setup runs inside that. */
+	void watchPerformance(const QString& id);
+	QSet<QString> m_watchedPerformance;
 
 	QStringList m_setupSteps;
 	/* Set when the hostname differs from the recorded one; keeps the "java"

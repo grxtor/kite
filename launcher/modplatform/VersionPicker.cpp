@@ -24,6 +24,8 @@
 #include <QJsonValue>
 #include <QStringList>
 
+#include "modplatform/ManagedPackVersions.h"
+
 namespace
 {
 
@@ -58,6 +60,43 @@ namespace
 		return entryLoaders.contains(loader, Qt::CaseInsensitive);
 	}
 
+	/* The best entry seen so far, for both providers: the newest by publish
+	 * date and, when asked to prefer releases, a release over any alpha or
+	 * beta, however much newer that is. */
+	class Newest
+	{
+	  public:
+		explicit Newest(bool preferRelease) : m_preferRelease(preferRelease) {}
+
+		void offer(const QJsonObject& entry, const QDateTime& date,
+				   bool release)
+		{
+			if (!m_best.isEmpty()) {
+				if (m_preferRelease && release != m_bestRelease) {
+					if (!release) {
+						return;
+					}
+				} else if (!(date.isValid() && date > m_bestDate)) {
+					return;
+				}
+			}
+			m_best = entry;
+			m_bestDate = date;
+			m_bestRelease = release;
+		}
+
+		QJsonObject best() const
+		{
+			return m_best;
+		}
+
+	  private:
+		bool m_preferRelease;
+		QJsonObject m_best;
+		QDateTime m_bestDate;
+		bool m_bestRelease = false;
+	};
+
 } // namespace
 
 bool ModPlatform::isKnownLoaderName(const QString& tag)
@@ -66,10 +105,10 @@ bool ModPlatform::isKnownLoaderName(const QString& tag)
 }
 
 QJsonObject ModPlatform::newestCurseForgeFile(const QJsonArray& files,
-											  const QString& loader)
+											  const QString& loader,
+											  bool preferRelease)
 {
-	QJsonObject best;
-	QDateTime bestDate;
+	Newest newest(preferRelease);
 
 	for (const auto& fileRaw : files) {
 		const auto file = fileRaw.toObject();
@@ -89,21 +128,20 @@ QJsonObject ModPlatform::newestCurseForgeFile(const QJsonArray& files,
 			continue;
 		}
 
-		const QDateTime date = parseDate(file, QStringLiteral("fileDate"));
-		if (best.isEmpty() || (date.isValid() && date > bestDate)) {
-			best = file;
-			bestDate = date;
-		}
+		const bool release = ManagedPack::releaseTypeFromCurseForge(
+								 file.value("releaseType").toInt()) ==
+							 ManagedPack::ReleaseType::Release;
+		newest.offer(file, parseDate(file, QStringLiteral("fileDate")), release);
 	}
 
-	return best;
+	return newest.best();
 }
 
 QJsonObject ModPlatform::newestModrinthVersion(const QJsonArray& versions,
-											   const QString& loader)
+											   const QString& loader,
+											   bool preferRelease)
 {
-	QJsonObject best;
-	QDateTime bestDate;
+	Newest newest(preferRelease);
 
 	for (const auto& versionRaw : versions) {
 		const auto version = versionRaw.toObject();
@@ -119,13 +157,13 @@ QJsonObject ModPlatform::newestModrinthVersion(const QJsonArray& versions,
 			continue;
 		}
 
-		const QDateTime date =
-			parseDate(version, QStringLiteral("date_published"));
-		if (best.isEmpty() || (date.isValid() && date > bestDate)) {
-			best = version;
-			bestDate = date;
-		}
+		const bool release = ManagedPack::releaseTypeFromModrinth(
+								 version.value("version_type").toString()) ==
+							 ManagedPack::ReleaseType::Release;
+		newest.offer(version,
+					 parseDate(version, QStringLiteral("date_published")),
+					 release);
 	}
 
-	return best;
+	return newest.best();
 }

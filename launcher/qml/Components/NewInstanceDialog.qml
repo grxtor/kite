@@ -159,17 +159,20 @@ AppDialog {
                                               !root.performanceCreate)
     }
 
-    // Sets memory and options.txt, then installs the mods in the background. Turned-off bundle
-    // defaults are excluded for good; other picks install once.
+    // Sets memory and options.txt, then installs the mods in the background. The performance bundle's
+    // turned-off defaults are excluded and its other picks included for good; other bundles' picks install once.
     function installPerformance() {
         const id = root.watcher.instanceId
         const picked = root.pickedProjects()
-        const kept = (mod) => mod.bundle === "performance" && mod.isDefault === true
+        const inPerformance = (mod) => mod.bundle === "performance"
+        const isPicked = (mod) => picked.indexOf(mod.project) >= 0
         const mods = root.catalogMods()
         root.shell.bundles.applyPresetDefaults(id, "performance")
-        root.shell.setPerformanceExcluded(id, mods.filter((mod) => kept(mod) && picked.indexOf(mod.project) < 0)
+        root.shell.setPerformanceExcluded(id, mods.filter((mod) => inPerformance(mod) && mod.isDefault === true && !isPicked(mod))
                                                  .map((mod) => mod.project))
-        root.shell.speedUp(id, mods.filter((mod) => !kept(mod) && picked.indexOf(mod.project) >= 0)
+        root.shell.setPerformanceIncluded(id, mods.filter((mod) => inPerformance(mod) && mod.isDefault !== true && isPicked(mod))
+                                                 .map((mod) => mod.project))
+        root.shell.speedUp(id, mods.filter((mod) => !inPerformance(mod) && isPicked(mod))
                                    .map((mod) => mod.project))
         root.close()
         root.openInstanceRequested(id)

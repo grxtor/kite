@@ -29,7 +29,12 @@
  * the matches, so "first" may not run here. Both pickers drop entries for
  * a different loader and take the most recently published. Not a version
  * comparison: version numbering is not semver ("1.9" would sort above
- * "1.10"), while both providers state the publish date. */
+ * "1.10"), while both providers state the publish date.
+ *
+ * With `preferRelease`, a release-channel entry wins over any newer alpha or
+ * beta; only when there is no release does the newest of any channel win.
+ * For installs nobody picked a version for; a dependency named by a file
+ * keeps the plain rule. */
 namespace ModPlatform
 {
 
@@ -38,11 +43,13 @@ namespace ModPlatform
 	 * not re-checked: the query asked for it, and CurseForge mixes game
 	 * versions and loaders in one array. */
 	QJsonObject newestCurseForgeFile(const QJsonArray& files,
-									 const QString& loader);
+									 const QString& loader,
+									 bool preferRelease = false);
 
 	/* The same for a Modrinth /project/{id}/version reply. */
 	QJsonObject newestModrinthVersion(const QJsonArray& versions,
-									  const QString& loader);
+									  const QString& loader,
+									  bool preferRelease = false);
 
 	/* Whether `tag` (compared case-insensitively) names a mod loader that
 	 * CurseForge mixes into a file's "gameVersions" alongside Minecraft

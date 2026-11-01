@@ -193,9 +193,19 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerSetting("JoinServerOnLaunch", false);
 	m_settings->registerSetting("JoinServerOnLaunchAddress", "");
 
-	// Excluded Modrinth project ids, comma-joined: the config stores strings.
+	/* Kite Performance (PerformanceSetupTask). Excluded and Included are
+	 * comma-joined Modrinth project ids, as the config stores strings: defaults
+	 * the player unticked, extras they ticked. For is the version and loader
+	 * the mods were last matched to ("1.21.5 fabric"), empty before the first
+	 * setup. Missing records catalog mods Modrinth had no build of, and when
+	 * (PerformanceSetup::missingRecord()); Unmatched lists the mods the last
+	 * re-match found no build of. */
 	m_settings->registerSetting("KitePerformance", false);
 	m_settings->registerSetting("KitePerformanceExcluded", "");
+	m_settings->registerSetting("KitePerformanceIncluded", "");
+	m_settings->registerSetting("KitePerformanceFor", "");
+	m_settings->registerSetting("KitePerformanceMissing", "");
+	m_settings->registerSetting("KitePerformanceUnmatched", "");
 
 	// Kite's mod is injected with -Dfabric.addMods; Fabric instances only.
 	m_settings->registerSetting("KiteMod", true);

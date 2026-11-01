@@ -33,6 +33,7 @@
 #include "minecraft/Component.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/VersionFilterData.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModHealth.h"
@@ -41,6 +42,8 @@
 #include "models/ContentUpdateController.h"
 #include "models/ModFolderWatch.h"
 #include "models/ModHealthModel.h"
+#include "modplatform/BundleCatalog.h"
+#include "modplatform/modrinth/ModrinthApi.h"
 #include "settings/Setting.h"
 
 namespace
@@ -55,9 +58,51 @@ namespace
 	const QString kDataPacksEnabled = QStringLiteral("GlobalDataPacksEnabled");
 	const QString kDataPacksPath = QStringLiteral("GlobalDataPacksPath");
 
+	const QString kPerformanceBundle = QStringLiteral("performance");
+	const QString kPerformanceOn = QStringLiteral("KitePerformance");
+	const QString kPerformanceExcluded =
+		QStringLiteral("KitePerformanceExcluded");
+	const QString kPerformanceIncluded =
+		QStringLiteral("KitePerformanceIncluded");
+
 	/* The mods folder and loader must stay quiet this long before the health check
 	 * runs: files are read one by one, each reporting a change. */
 	constexpr int kHealthDelayMs = 150;
+
+	// The Modrinth project of a file in @p folder, or "" if not recorded from Modrinth.
+	QString modrinthProjectOf(const ModFolderModel& folder,
+							  const QString& fileName)
+	{
+		const ModMetadataIndex::Entry entry =
+			folder.metadataIndex()->get(fileName);
+		return entry.platform == ModrinthApi::get().id() ? entry.projectId
+														 : QString();
+	}
+
+	/* A performance mod the player deleted is not Kite Performance's to bring
+	 * back: the defaults among @p removed are left out from now on, and the
+	 * extras the player ticked are no longer kept. */
+	void forgetRemovedMods(MinecraftInstance& instance,
+						   const QStringList& removed)
+	{
+		BundleCatalog catalog;
+		catalog.loadCached();
+		const QStringList defaults = PerformanceSetup::defaultProjects(
+			catalog.mods({kPerformanceBundle},
+						 instance.getPackProfile()->primaryModLoader()));
+		auto settings = instance.settings();
+		const QStringList excluded = PerformanceSetup::parseProjects(
+			settings->get(kPerformanceExcluded).toString());
+		settings->set(kPerformanceExcluded,
+					  PerformanceSetup::joinProjects(
+						  PerformanceSetup::withRemoved(excluded, removed,
+														defaults)));
+		const QStringList included = PerformanceSetup::parseProjects(
+			settings->get(kPerformanceIncluded).toString());
+		settings->set(kPerformanceIncluded,
+					  PerformanceSetup::joinProjects(
+						  PerformanceSetup::withoutRemoved(included, removed)));
+	}
 } // namespace
 
 InstanceContentController::InstanceContentController(
@@ -341,18 +386,31 @@ int InstanceContentController::remove(const QString& kind,
 		return 0;
 	}
 	const QModelIndexList indexes = proxy->sourceIndexesForKeys(keys);
+	/* Read before the files go: deleteMods() takes their records with them. */
+	const bool keepsPerformance =
+		kind == kMods && m_instance->settings()->get(kPerformanceOn).toBool();
 	QStringList paths;
+	QStringList projects;
 	for (const QModelIndex& index : indexes) {
-		paths.append(folder->at(size_t(index.row())).filename().absoluteFilePath());
+		const Mod& mod = folder->at(size_t(index.row()));
+		paths.append(mod.filename().absoluteFilePath());
+		projects.append(keepsPerformance
+							? modrinthProjectOf(*folder, mod.filename().fileName())
+							: QString());
 	}
 	if (indexes.isEmpty() || !folder->deleteMods(indexes)) {
 		return 0;
 	}
 	int removed = 0;
-	for (const QString& path : paths) {
-		if (!QFileInfo::exists(path)) {
+	QStringList removedProjects;
+	for (int i = 0; i < paths.size(); ++i) {
+		if (!QFileInfo::exists(paths.at(i))) {
 			++removed;
+			removedProjects.append(projects.at(i));
 		}
+	}
+	if (keepsPerformance && removed > 0) {
+		forgetRemovedMods(*m_instance, removedProjects);
 	}
 	folder->update();
 	return removed;

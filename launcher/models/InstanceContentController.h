@@ -101,6 +101,8 @@ class InstanceContentController : public QObject
 	Q_INVOKABLE bool changesAllowed(const QString& kind) const;
 	Q_INVOKABLE int setEnabled(const QString& kind, const QStringList& keys,
 							   bool enabled);
+	/// With Kite Performance on, removed performance defaults go to
+	/// KitePerformanceExcluded and removed extras leave KitePerformanceIncluded.
 	Q_INVOKABLE int remove(const QString& kind, const QStringList& keys);
 	/// @p fileUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE bool install(const QString& kind,

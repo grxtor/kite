@@ -9,8 +9,10 @@ import Kite.Theme
 
 /*
  * A checklist of the catalog's mods (BundleCatalog::mods()), shared by BundleDialog's Add-ons and Kite
- * Performance. Ticks start from each mod's default bar `excluded`, re-seeded when `mods` changes. Installed mods
- * are ticked, locked and left out of `checkedProjects`; a mod servers ban (`serverSafe: false`) carries a warning.
+ * Performance. Ticks start from each mod's default bar `excluded`, plus `included`, re-seeded when `mods`,
+ * `excluded` or `included` change. Installed mods are ticked, locked and left out of `checkedProjects`;
+ * `keptExtras` lists the ticked non-defaults, installed ones too. A mod servers ban (`serverSafe: false`)
+ * carries a warning.
  */
 ListView {
     id: root
@@ -18,6 +20,8 @@ ListView {
     property var mods: []
     property var installed: []
     property var excluded: []
+    // Project ids that start ticked although the catalog does not tick them.
+    property var included: []
     readonly property var checkedProjects: {
         const out = []
         for (let i = 0; i < root.mods.length; ++i) {
@@ -32,6 +36,17 @@ ListView {
         for (const mod of root.mods) {
             if (mod.isDefault === true && root.ticks[mod.project] !== true
                     && root.installed.indexOf(mod.project) < 0 && out.indexOf(mod.project) < 0)
+                out.push(mod.project)
+        }
+        return out
+    }
+    // The mods that are not the catalog's defaults and are ticked or
+    // installed: the extras Kite Performance keeps installed.
+    readonly property var keptExtras: {
+        const out = []
+        for (const mod of root.mods) {
+            if (mod.isDefault !== true && (root.ticks[mod.project] === true || root.installed.indexOf(mod.project) >= 0)
+                    && out.indexOf(mod.project) < 0)
                 out.push(mod.project)
         }
         return out
@@ -66,6 +81,7 @@ ListView {
         for (const mod of root.mods)
             next[mod.project] = next[mod.project] === true
                 || (mod.isDefault === true && root.excluded.indexOf(mod.project) < 0)
+                || root.included.indexOf(mod.project) >= 0
         root.ticks = next
     }
     function setTick(project, on) {
@@ -76,6 +92,7 @@ ListView {
 
     onModsChanged: root.seed()
     onExcludedChanged: root.seed()
+    onIncludedChanged: root.seed()
     Component.onCompleted: root.seed()
 
     clip: true

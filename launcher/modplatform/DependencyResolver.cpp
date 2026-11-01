@@ -343,11 +343,21 @@ void DependencyResolver::onWantedProjectResolved(const WantedProject& wanted,
 												 const QByteArray& data)
 {
 	/* A 404 (empty reply) and an empty version list both go to the other
-	 * provider. */
-	const QJsonArray versions = QJsonDocument::fromJson(data).array();
-	const QJsonObject newest =
-		ModPlatform::newestModrinthVersion(versions, m_loader);
+	 * provider, unless the id is a Modrinth one, which CurseForge has no use
+	 * for. Only the list is Modrinth's answer; a failed request says nothing
+	 * about the project. */
+	const QJsonDocument reply = QJsonDocument::fromJson(data);
+	const QJsonObject newest = ModPlatform::newestModrinthVersion(
+		reply.array(), m_loader, /*preferRelease=*/true);
 	if (newest.isEmpty()) {
+		if (reply.isArray() && !m_wantedNotAvailable.contains(wanted.id)) {
+			m_wantedNotAvailable.append(wanted.id);
+		}
+		if (wanted.modrinthOnly) {
+			qWarning() << "No Modrinth version of wanted project" << wanted.id;
+			listWantedUnresolved(wanted.id);
+			return;
+		}
 		qWarning() << "No Modrinth version of wanted project" << wanted.id
 				   << "- attempting cross resolve to CurseForge";
 		executeCrossResolve(QStringLiteral("curseforge"), wanted.id, wanted.id,
@@ -390,6 +400,13 @@ void DependencyResolver::nameAfterProject(const QString& projectId)
 					if (dep.platform == QLatin1String("modrinth") &&
 						dep.projectId == projectId) {
 						dep.name = title;
+						/* The version's name never matched a copy
+						 * installed from the other site, so acceptDependency()
+						 * could not see it; the project's title does. */
+						dep.maybeInstalled =
+							dep.maybeInstalled ||
+							isProjectInstalled(dep.platform, dep.projectId,
+											   title);
 						return;
 					}
 				}
@@ -532,8 +549,8 @@ void DependencyResolver::onDependencyProjectResolved(
 
 		/* Newest file for this loader; CurseForge may list a Forge build
 		 * first for a Fabric instance. */
-		const auto fileObj =
-			ModPlatform::newestCurseForgeFile(filesArr, m_loader);
+		const auto fileObj = ModPlatform::newestCurseForgeFile(
+			filesArr, m_loader, /*preferRelease=*/!wantedId.isEmpty());
 		if (fileObj.isEmpty()) {
 			qWarning() << "No file for loader" << m_loader
 					   << "among CurseForge dependency" << projectId
@@ -596,7 +613,8 @@ void DependencyResolver::onDependencyProjectResolved(
 			return;
 		}
 
-		const auto vObj = ModPlatform::newestModrinthVersion(arr, m_loader);
+		const auto vObj = ModPlatform::newestModrinthVersion(
+			arr, m_loader, /*preferRelease=*/!wantedId.isEmpty());
 		if (vObj.isEmpty()) {
 			qWarning() << "No version for loader" << m_loader
 					   << "among Modrinth dependency" << projectId
@@ -846,6 +864,11 @@ void DependencyResolver::noUsableCurseForgeFile(const QString& projectId,
 		crossResolveFromCurseForge(projectId, requiredBy);
 		return;
 	}
+	listWantedUnresolved(wantedId);
+}
+
+void DependencyResolver::listWantedUnresolved(const QString& wantedId)
+{
 	ModPlatform::UnresolvedDep unresolved;
 	unresolved.name = wantedId;
 	m_unresolvedDeps.append(unresolved);
