@@ -44,7 +44,6 @@ PickerGrid {
             width: root.tileWidth
             height: root.tileHeight
             previewHeight: root.previewHeight
-            previewOutline: card.colors.border
             label: modelData.label
             note: modelData.note
             chosen: root.current === modelData.id
@@ -55,8 +54,6 @@ PickerGrid {
                 anchors.fill: parent
                 radius: Theme.radius.md
                 color: card.colors.canvas
-                border.width: 1
-                border.color: card.colors.border
                 clip: true
 
                 Rectangle {

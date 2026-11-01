@@ -43,7 +43,6 @@ PickerGrid {
             label: modelData.label
             note: modelData.note
             chosen: root.current === modelData.id
-            previewOutline: miniature.colors.border
             onClicked: root.picked(modelData.id)
 
             LookMiniature {

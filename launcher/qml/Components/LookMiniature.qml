@@ -30,8 +30,6 @@ Rectangle {
 
     radius: Theme.radius.md
     color: root.night ? Theme.sky.zenith : root.colors.canvas
-    border.width: 1
-    border.color: root.colors.border
     clip: true
 
     component Bar: Rectangle {

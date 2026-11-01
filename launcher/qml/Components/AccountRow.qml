@@ -80,9 +80,11 @@ Item {
 
                 Row {
                     spacing: Theme.space.sm
-                    Tag {
-                        iconName: root.isMSA ? "user" : "users"
+                    Copy {
+                        anchors.verticalCenter: parent.verticalCenter
                         text: root.isMSA ? qsTr("Microsoft") : qsTr("Offline")
+                        role: "label"
+                        tone: "secondary"
                     }
                     AccountStateBadge {
                         anchors.verticalCenter: parent.verticalCenter
@@ -95,13 +97,12 @@ Item {
 
             Button {
                 visible: !root.isDefault
-                variant: "secondary"
+                variant: "ghost"
                 text: qsTr("Use this account")
                 onClicked: root.makeDefaultRequested()
             }
             IconButton {
                 id: moreButton
-                flat: false
                 iconName: "more"
                 tip: qsTr("More")
                 onClicked: rowMenu.popup(moreButton, 0, moreButton.height + Theme.space.xs)

@@ -8,9 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One Java runtime as a row: its name, where it lives, and small marks (32-bit, vendor, Recommended, In use). The
- * one row of the first-run list, the Choose Java dialog and the downloaded runtimes; a button that is `chosen` while
- * it is the Java in use. Children added to it land at the right (a ⋯ menu button).
+ * One Java runtime as a row: its name, where it lives, a line of facts (vendor, 32-bit) and at most one badge (In
+ * use, else Recommended). The one row of the first-run list, the Choose Java dialog and the downloaded runtimes; a
+ * button that is `chosen` while it is the Java in use. Children added to it land at the right (a ⋯ menu button).
  */
 AbstractButton {
     id: root
@@ -25,6 +25,9 @@ AbstractButton {
     // False for a row that only shows a runtime: no hover, press or focus.
     property bool interactive: true
     property bool showDivider: false
+    // Vendor and 32-bit as one line of secondary text beside the name, not as chips.
+    readonly property string facts: [root.vendor, root.bit32 ? qsTr("32-bit") : ""]
+                                    .filter(function(f) { return f.length > 0 }).join("  ·  ")
     default property alias trailing: layout.data
 
     Accessible.role: root.interactive ? Accessible.Button : Accessible.ListItem
@@ -66,12 +69,23 @@ AbstractButton {
             Layout.fillWidth: true
             spacing: Theme.space.xxs
 
-            Copy {
+            RowLayout {
                 width: parent.width
-                text: root.title
-                role: "bodyStrong"
-                tone: root.chosen ? "accent" : "primary"
-                elide: Text.ElideRight
+                spacing: Theme.space.sm
+                Copy {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: root.title
+                    role: "bodyStrong"
+                    tone: root.chosen ? "accent" : "primary"
+                    elide: Text.ElideRight
+                }
+                Copy {
+                    visible: root.facts.length > 0
+                    text: root.facts
+                    role: "caption"
+                    tone: "tertiary"
+                }
             }
             Text {
                 width: parent.width
@@ -82,22 +96,10 @@ AbstractButton {
                 font.pixelSize: Theme.type.caption.pixelSize
             }
         }
-        Tag {
-            visible: root.bit32
-            text: qsTr("32-bit")
-        }
-        Tag {
-            visible: root.vendor.length > 0
-            text: root.vendor
-        }
         StatusBadge {
-            visible: root.suggested
-            text: qsTr("Recommended")
-        }
-        StatusBadge {
-            visible: root.inUse
-            tone: "success"
-            text: qsTr("In use")
+            visible: root.inUse || root.suggested
+            tone: root.inUse ? "success" : "neutral"
+            text: root.inUse ? qsTr("In use") : qsTr("Recommended")
         }
     }
 }

@@ -7,9 +7,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One instance in the library grid: its icon (or a pack's logo) on a neutral
- * tile, then name and loader/version. Used directly as a delegate; the
- * required properties are filled from InstanceList's named roles.
+ * One instance in the library grid, a single surface: its icon (or a pack's
+ * logo) straight on it, then name and loader/version. A running or launching
+ * instance shows a RunningDot and its state at the start of the meta line; Play
+ * (Stop while it runs) and ⋯ sit at the end of that line. Used directly as a
+ * delegate; the required properties are filled from InstanceList's named roles.
  */
 Item {
     id: root
@@ -48,9 +50,9 @@ Item {
     readonly property int textInset: Theme.space.md
     readonly property int squareSize: Math.max(0, width - inset * 2)
     readonly property int squareRadius: Theme.radius.md
-    readonly property int playSize: Theme.control.height
-    readonly property int cornerInset: Theme.space.sm
     readonly property int runningDotSize: 7
+    // Play is shown under the pointer and while the game runs, never during a launch.
+    readonly property bool playShown: !root.launching && (root.hovered || root.isRunning)
 
     implicitWidth: 180
     implicitHeight: inset + squareSize + Theme.space.sm + Theme.type.title.lineHeightPx
@@ -63,7 +65,9 @@ Item {
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
-    Accessible.description: Format.versionLine(root.loader, root.gameVersion)
+    Accessible.description: [root.launching ? root.launchStatus : root.isRunning ? qsTr("Running") : "",
+                             Format.versionLine(root.loader, root.gameVersion)]
+                            .filter((part) => part.length > 0).join(", ")
 
     HoverHandler { id: hoverHandler }
 
@@ -93,71 +97,6 @@ Item {
                 iconKey: root.iconKey
                 packArt: root.packArt
                 iconShare: 0.82
-            }
-
-            KiteShape {
-                anchors.fill: parent
-                radius: root.squareRadius
-                color: Theme.media.chip
-                opacity: root.launching ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: Theme.motion.normal } }
-            }
-
-            LaunchProgressBar {
-                visible: root.launching
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: root.cornerInset
-                onMedia: true
-                progress: root.launchProgress
-            }
-
-            // Running chip; "Starting…" until the game is up (an instance counts as running from
-            // the moment its launch begins).
-            Rectangle {
-                visible: root.isRunning || root.launching
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: root.cornerInset
-                radius: Theme.radius.indicator
-                height: runningRow.implicitHeight + Theme.space.xs * 2
-                width: runningRow.implicitWidth + Theme.space.sm * 2
-                color: Theme.palette.surfaceOverlay
-                border.width: 1
-                border.color: Theme.palette.border
-
-                Row {
-                    id: runningRow
-                    anchors.centerIn: parent
-                    spacing: Theme.space.xs
-                    RunningDot {
-                        anchors.verticalCenter: parent.verticalCenter
-                        size: root.runningDotSize
-                        launching: root.launching
-                    }
-                    Copy {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.launching ? qsTr("Starting…") : qsTr("Running")
-                        role: "caption"
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
-
-            PlayButton {
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: root.cornerInset
-                size: root.playSize
-                running: root.isRunning
-                enabled: root.isRunning || root.canLaunch
-                opacity: !root.launching && (root.hovered || root.isRunning) ? 1 : 0
-                visible: opacity > 0
-                focusPolicy: Qt.NoFocus
-                Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
-                onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
             }
         }
 
@@ -189,13 +128,24 @@ Item {
             anchors.right: title.right
             height: Theme.type.label.lineHeightPx
 
-            Copy {
-                id: versionText
+            // An instance counts as running from the moment its launch begins; amber until the game is up.
+            RunningDot {
+                id: statusDot
+                visible: root.isRunning || root.launching
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                // Short of ⋯ (moreButton), shown or not, so nothing reflows under the pointer.
-                width: Math.min(implicitWidth, parent.width - moreButton.width)
-                text: root.launching ? root.launchStatus : Format.versionLine(root.loader, root.gameVersion)
+                size: root.runningDotSize
+                launching: root.launching
+            }
+
+            Copy {
+                id: versionText
+                x: statusDot.visible ? statusDot.width + Theme.space.xs : 0
+                anchors.verticalCenter: parent.verticalCenter
+                // Short of the buttons at the line's end; ⋯ is counted shown or not, so nothing reflows under it.
+                width: Math.max(0, Math.min(implicitWidth, (root.playShown ? playButton.x : moreButton.x) - meta.x - x - Theme.space.xs))
+                text: root.launching ? root.launchStatus
+                    : root.isRunning ? qsTr("Running") : Format.versionLine(root.loader, root.gameVersion)
                 elide: Text.ElideRight
                 role: "label"
                 tone: "secondary"
@@ -204,13 +154,38 @@ Item {
             Copy {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                visible: text.length > 0 && versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
+                visible: text.length > 0 && versionText.x + versionText.implicitWidth + Theme.space.sm + implicitWidth <= parent.width
                 text: root.launching && root.launchProgress >= 0 ? qsTr("%1%").arg(Math.round(root.launchProgress * 100)) : ""
                 role: "label"
                 tone: "secondary"
                 font.features: ({ "tnum": 1 })
             }
         }
+    }
+
+    // On the card, under the meta line, so nothing lies over the picture.
+    LaunchProgressBar {
+        visible: root.launching
+        x: root.textInset
+        width: root.width - root.textInset * 2
+        y: root.height - Theme.space.sm
+        progress: root.launchProgress
+    }
+
+    IconButton {
+        id: playButton
+        x: moreButton.x - width
+        y: moreButton.y
+        size: Theme.control.heightSm
+        iconName: root.isRunning ? "stop" : "play"
+        tip: root.isRunning ? qsTr("Stop") : qsTr("Play")
+        icon.color: root.isRunning ? Theme.palette.danger : contentColor
+        enabled: root.isRunning || root.canLaunch
+        opacity: root.playShown ? 1 : 0
+        visible: opacity > 0
+        focusPolicy: Qt.NoFocus
+        Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
+        onClicked: root.isRunning ? root.stopRequested() : root.playRequested()
     }
 
     IconButton {

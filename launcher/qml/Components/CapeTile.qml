@@ -37,17 +37,12 @@ Item {
     ToolTip.delay: 400
     ToolTip.text: root.label
 
+    // The one surface: selection tints it, the pointer lifts it; no border.
     StateFill {
-        id: card
         anchors.fill: parent
         radius: Theme.radius.md
-        rest: Theme.palette.surface
+        hovered: hover.hovered && root.enabled
         active: root.selected
-        border.width: root.selected ? 2 : 1
-        border.color: root.selected ? Theme.palette.accent
-                    : hover.hovered && root.enabled ? Theme.palette.borderStrong : Theme.palette.border
-
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     Item {

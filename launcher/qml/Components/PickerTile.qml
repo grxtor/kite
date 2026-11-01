@@ -6,11 +6,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One choice in a picker of looks or palettes: a preview drawn by the host (the
- * tile's children fill its top), the name with a round mark when chosen, and a
- * short note. `clip` only clips to the bounding box, so a CornerMatte in the
- * tile's colour rounds whatever the host draws edge to edge, and
- * `previewOutline` redraws the frame's hairline there.
+ * One choice in a picker of looks or palettes, on the card it sits in: a preview drawn by the host (the tile's
+ * children fill its top), the name and a short note. No fill or frame at rest, the hover overlay under the pointer,
+ * a bare check beside the name when chosen (the accent ring is the keyboard focus). `clip` only clips to the
+ * bounding box, so a CornerMatte in the colour behind the tile rounds whatever the host draws edge to edge.
  */
 AbstractButton {
     id: root
@@ -20,8 +19,6 @@ AbstractButton {
     property bool chosen: false
     property int previewHeight: 86
     property int previewRadius: Theme.radius.md
-    // The hairline the host draws round its preview.
-    property color previewOutline: "transparent"
     default property alias preview: previewHost.data
 
     hoverEnabled: true
@@ -30,14 +27,12 @@ AbstractButton {
     Accessible.role: Accessible.RadioButton
     Accessible.checked: root.chosen
 
-    background: Rectangle {
+    background: StateFill {
         id: fill
+        hovered: root.hovered
         radius: Theme.radius.lg
-        color: Theme.palette.surfaceRaised
-        border.width: root.chosen ? 2 : 1
-        border.color: root.chosen ? Theme.palette.accent
-                      : root.hovered ? Theme.palette.borderStrong : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast } }
+
+        FocusFrame { around: Theme.space.xxs; visible: root.visualFocus }
     }
 
     contentItem: Column {
@@ -56,9 +51,8 @@ AbstractButton {
                 clip: true
 
                 CornerMatte {
-                    matte: fill.color
+                    matte: Qt.tint(Theme.palette.surface, fill.color)
                     cornerRadius: root.previewRadius
-                    outline: root.previewOutline
                 }
             }
         }
@@ -70,26 +64,18 @@ AbstractButton {
                 spacing: Theme.space.xs
                 Copy {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - check.width - parent.spacing
+                    width: parent.width - (check.visible ? check.width + parent.spacing : 0)
                     text: root.label
                     elide: Text.ElideRight
                     role: "bodyStrong"
                 }
-                Rectangle {
+                MeshIcon {
                     id: check
-                    width: Theme.icon.md
-                    height: width
-                    radius: width / 2
-                    color: root.chosen ? Theme.palette.accent : "transparent"
-                    border.width: root.chosen ? 0 : 1
-                    border.color: Theme.palette.borderStrong
-                    MeshIcon {
-                        anchors.centerIn: parent
-                        visible: root.chosen
-                        iconName: "check"
-                        size: Theme.icon.xs
-                        color: Theme.palette.textOnAccent
-                    }
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.chosen
+                    iconName: "check"
+                    size: Theme.icon.sm
+                    color: Theme.palette.accentText
                 }
             }
             Copy {

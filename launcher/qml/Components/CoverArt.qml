@@ -127,7 +127,9 @@ Item {
         anchors.fill: parent
         visible: root.scrim === "bottom"
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(root.scrimOpaque.r, root.scrimOpaque.g, root.scrimOpaque.b, 0.18) }
+            // Held through the first line of text, which sits over the top fifth.
+            GradientStop { position: 0.0; color: Qt.rgba(root.scrimOpaque.r, root.scrimOpaque.g, root.scrimOpaque.b, 0.72) }
+            GradientStop { position: 0.2; color: Qt.rgba(root.scrimOpaque.r, root.scrimOpaque.g, root.scrimOpaque.b, 0.55) }
             GradientStop { position: 0.45; color: root.scrimClear }
             GradientStop { position: 1.0; color: Qt.rgba(root.scrimOpaque.r, root.scrimOpaque.g, root.scrimOpaque.b, 0.62) }
         }

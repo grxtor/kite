@@ -6,8 +6,8 @@ import Kite.Theme
 
 /*
  * One "Continue playing" card of the Sahne look: 156 px tall, on the raised surface or over the instance's
- * screenshot under a dark fade. A chip with what it runs (or "Crashed last time") and play time at the top; name
- * and "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
+ * screenshot under a dark fade. "Crashed last time" (only then) and play time at the top, as plain text with no
+ * chip; name and "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
  */
 HomeRowBase {
     id: root
@@ -19,7 +19,6 @@ HomeRowBase {
     readonly property bool hasPhoto: root.row.coverImage.length > 0
     readonly property color ink: root.hasPhoto ? Theme.media.text : Theme.palette.textPrimary
     readonly property color inkSecondary: root.hasPhoto ? Theme.media.textSecondary : Theme.palette.textSecondary
-    readonly property string loaderText: root.row.loader.length > 0 ? root.row.loader : qsTr("Vanilla")
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && Number(root.row.totalTimePlayed) > 0
                                            ? Format.playTime(root.row.totalTimePlayed) : ""
     readonly property string subText: [Format.versionLine(root.row.loader, root.row.gameVersion),
@@ -28,17 +27,16 @@ HomeRowBase {
 
     implicitHeight: root.cardHeight
 
-    component Chip: Rectangle {
+    component Note: Item {
         property string text
         property color ink: Theme.media.textSecondary
         property string iconName
 
-        implicitWidth: chipRow.implicitWidth + Theme.space.sm * 2
-        implicitHeight: chipRow.implicitHeight + Theme.space.xs * 2 - 1
-        radius: Theme.radius.sm - 1
+        implicitWidth: noteRow.implicitWidth
+        implicitHeight: noteRow.implicitHeight + Theme.space.xs * 2 - 1
 
         Row {
-            id: chipRow
+            id: noteRow
             anchors.centerIn: parent
             spacing: Theme.space.xs + 1
 
@@ -100,17 +98,16 @@ HomeRowBase {
             anchors.right: parent.right
             spacing: Theme.space.sm
 
-            Chip {
-                id: chip
-                text: root.row.hasCrashed ? qsTr("Crashed last time") : root.loaderText
-                iconName: root.row.hasCrashed ? "alert-triangle" : ""
-                ink: root.row.hasCrashed ? Theme.palette.warning : Theme.media.textSecondary
-                color: root.row.hasCrashed ? Theme.palette.warningSubtle
-                     : root.hasPhoto ? Theme.media.chip : Qt.rgba(1, 1, 1, 0.08)
+            Note {
+                id: note
+                visible: root.row.hasCrashed
+                text: qsTr("Crashed last time")
+                iconName: "alert-triangle"
+                ink: Theme.palette.warning
             }
             Item {
-                width: parent.width - chip.width - parent.spacing
-                height: chip.height
+                width: parent.width - (note.visible ? note.width + parent.spacing : 0)
+                height: note.height
                 visible: root.playTimeText.length > 0
 
                 Row {

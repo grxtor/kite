@@ -6,9 +6,9 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Play (or Stop, while the game runs) as a secondary button, for a page whose one
+ * Play (or Stop, while the game runs) as a button with no frame and no fill until hovered, for a page whose one
  * primary Play is elsewhere (Home's "Continue playing" rows). The glyph and label
- * turn to the accent on hover; Stop keeps the danger colour. Its top-right
+ * turn to the accent on hover, where the surface fills in; Stop keeps the danger colour. Its top-right
  * corner is cut tight, like every Play (KiteShape).
  */
 Button {
@@ -30,9 +30,7 @@ Button {
         implicitWidth: control.sizeHeight
         implicitHeight: control.sizeHeight
         radius: Theme.radius.md
-        color: control.restColor
-        borderWidth: 1
-        borderColor: control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+        color: (control.hovered && control.enabled) || control.down ? control.restColor : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         KiteShape {

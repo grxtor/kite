@@ -139,46 +139,54 @@ Item {
         }
 
         // Blocked mods: each file, whether downloaded, and a way to its download page; the folder
-        // is watched in C++.
+        // is watched in C++. Rows are hairline-separated on the dialog's own surface.
         Column {
             Layout.fillWidth: true
             visible: root.kind === "blockedMods"
             spacing: Theme.space.xs
-            Repeater {
-                model: root.kind === "blockedMods" && root.request ? root.request.blockedMods : []
-                delegate: Rectangle {
-                    required property var modelData
-                    required property int index
-                    width: parent.width
-                    height: Theme.control.heightLg
-                    radius: Theme.radius.md
-                    color: Theme.palette.surfaceRaised
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.md
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.space.sm
-                        MeshIcon {
-                            anchors.verticalCenter: parent.verticalCenter
-                            iconName: modelData.found ? "check" : "download"
-                            size: Theme.icon.sm
-                            color: modelData.found ? Theme.palette.success : Theme.palette.textTertiary
+            Column {
+                width: parent.width
+                Repeater {
+                    model: root.kind === "blockedMods" && root.request ? root.request.blockedMods : []
+                    delegate: Item {
+                        id: blockedRow
+                        required property var modelData
+                        required property int index
+                        width: parent.width
+                        height: Theme.control.heightLg
+                        Rectangle {
+                            visible: blockedRow.index > 0
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: Theme.palette.divider
                         }
-                        Copy {
+                        Row {
+                            anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.fileName
-                            role: "label"
+                            spacing: Theme.space.sm
+                            MeshIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: blockedRow.modelData.found ? "check" : "download"
+                                size: Theme.icon.sm
+                                color: blockedRow.modelData.found ? Theme.palette.success : Theme.palette.textTertiary
+                            }
+                            Copy {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: blockedRow.modelData.fileName
+                                role: "label"
+                            }
                         }
-                    }
-                    Button {
-                        anchors.right: parent.right
-                        anchors.rightMargin: Theme.space.xs
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !modelData.found
-                        flat: true
-                        text: qsTr("Download")
-                        icon.source: Icons.url("external-link")
-                        onClicked: root.request.openDownload(index)
+                        Button {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !blockedRow.modelData.found
+                            flat: true
+                            text: qsTr("Download")
+                            icon.source: Icons.url("external-link")
+                            onClicked: root.request.openDownload(blockedRow.index)
+                        }
                     }
                 }
             }
@@ -194,21 +202,33 @@ Item {
             Layout.fillWidth: true
             visible: root.kind === "untrustedMods"
             spacing: Theme.space.sm
-            BoxSurface {
+            ListView {
+                id: fileList
                 width: parent.width
-                height: Math.min(180, fileList.contentHeight + Theme.space.md)
-                radius: Theme.radius.md
-                color: "transparent"
-                ListView {
-                    id: fileList
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.sm
-                    clip: true
-                    model: root.kind === "untrustedMods" && root.request ? root.request.untrustedModsFiles : []
-                    delegate: Text {
-                        required property string modelData
-                        width: fileList.width
-                        text: modelData
+                height: Math.min(180, contentHeight)
+                clip: true
+                model: root.kind === "untrustedMods" && root.request ? root.request.untrustedModsFiles : []
+                ScrollBar.vertical: ScrollBar {}
+                delegate: Item {
+                    id: fileRow
+                    required property int index
+                    required property string modelData
+                    width: fileList.width
+                    height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.sm * 2
+                    Rectangle {
+                        visible: fileRow.index > 0
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: Theme.palette.divider
+                    }
+                    Text {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.space.sm
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: fileRow.modelData
                         elide: Text.ElideMiddle
                         color: Theme.palette.textSecondary
                         font.family: Theme.font.mono
@@ -332,13 +352,11 @@ Item {
                         accountPicker.play()
                     }
 
+                    // The selected row is the tinted surface and a bare check, so it is never read as hover.
                     background: StateFill {
                         radius: Theme.radius.md
                         hovered: accountRow.hovered
                         active: accountRow.selected
-                        activeFill: Theme.palette.surfaceHover
-                        border.width: 1
-                        border.color: accountRow.selected ? Theme.neutral.borderHover : Theme.palette.border
                     }
 
                     contentItem: RowLayout {
@@ -355,11 +373,13 @@ Item {
                             elide: Text.ElideRight
                             font.weight: Font.Medium
                         }
-                        Tag {
+                        Copy {
                             text: modelData.kind === "Microsoft" ? qsTr("Microsoft") : qsTr("Offline")
+                            role: "label"
+                            tone: "tertiary"
                         }
                         MeshIcon {
-                            Layout.rightMargin: Theme.space.sm
+                            Layout.rightMargin: Theme.space.md
                             iconName: "check"
                             size: Theme.icon.sm
                             color: Theme.palette.accentText
@@ -400,50 +420,52 @@ Item {
 
             readonly property var mods: root.kind === "optionalMods" && root.request ? root.request.optionalMods : null
 
-            BoxSurface {
+            ListView {
+                id: modsList
                 width: parent.width
-                height: Math.min(320, modsList.contentHeight + Theme.space.sm * 2)
-                radius: Theme.radius.md
-                color: "transparent"
-                ListView {
-                    id: modsList
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.sm
-                    clip: true
-                    model: optionalModsBox.mods
-                    ScrollBar.vertical: ScrollBar {}
-                    delegate: Item {
-                        id: modRow
-                        required property int index
-                        required property string name
-                        required property string description
-                        required property bool selected
-                        required property bool hidden
-                        width: ListView.view ? ListView.view.width : 0
-                        visible: !modRow.hidden
-                        height: visible ? modColumn.implicitHeight + Theme.space.xs * 2 : 0
-                        Column {
-                            id: modColumn
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            CheckBox {
-                                text: modRow.name
-                                checked: modRow.selected
-                                onToggled: modsList.model.toggle(modRow.index)
-                            }
-                            Copy {
-                                width: parent.width
-                                visible: modRow.description.length > 0
-                                leftPadding: Theme.space.xl + Theme.space.xs
-                                text: modRow.description
-                                role: "caption"
-                                tone: "tertiary"
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
-                            }
+                height: Math.min(320, contentHeight)
+                clip: true
+                model: optionalModsBox.mods
+                ScrollBar.vertical: ScrollBar {}
+                delegate: Item {
+                    id: modRow
+                    required property int index
+                    required property string name
+                    required property string description
+                    required property bool selected
+                    required property bool hidden
+                    width: ListView.view ? ListView.view.width : 0
+                    visible: !modRow.hidden
+                    height: visible ? modColumn.implicitHeight + Theme.space.xs * 2 : 0
+                    Column {
+                        id: modColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        CheckBox {
+                            text: modRow.name
+                            checked: modRow.selected
+                            onToggled: modsList.model.toggle(modRow.index)
                         }
+                        Copy {
+                            width: parent.width
+                            visible: modRow.description.length > 0
+                            leftPadding: Theme.space.xl + Theme.space.xs
+                            text: modRow.description
+                            role: "caption"
+                            tone: "tertiary"
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+                    }
+                    Rectangle {
+                        visible: modRow.index < modsList.count - 1
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: Theme.palette.divider
                     }
                 }
             }
@@ -470,17 +492,21 @@ Item {
             spacing: Theme.space.sm
             Row {
                 spacing: Theme.space.sm
-                Tag {
+                Copy {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: root.request && root.request.updateInfo ? root.request.updateInfo.currentVersion || "" : ""
+                    tone: "secondary"
                 }
                 MeshIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "chevron-right"
                     size: Theme.icon.sm
+                    color: Theme.palette.textTertiary
                 }
-                Tag {
+                Copy {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: root.request && root.request.updateInfo ? root.request.updateInfo.availableVersion || "" : ""
-                    iconName: "download"
+                    role: "bodyStrong"
                 }
             }
             ScrollView {

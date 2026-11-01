@@ -65,10 +65,6 @@ AbstractButton {
             width: control.squareSize
             height: control.squareSize
 
-            PlaceholderSurface {
-                anchors.fill: parent
-                radius: Theme.radius.md
-            }
             // The game saves icon.png at 64x64 and shows it pixel-sharp: drawn at its own size, unfiltered.
             Image {
                 id: worldIcon

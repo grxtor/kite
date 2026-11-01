@@ -29,8 +29,7 @@ AppDialog {
     readonly property int preferredHeight: 680
     readonly property int gap: Theme.space.sm
     readonly property int minCardWidth: 190
-    readonly property int cardHeight: 156
-    readonly property int barHeight: Theme.control.heightSm - Theme.space.xs
+    readonly property int cardHeight: 132
     readonly property int columns: Math.max(1, Math.floor((cards.width + root.gap) / (root.minCardWidth + root.gap)))
     readonly property real cardWidth: (cards.width - root.gap * (root.columns - 1)) / root.columns
 
@@ -170,6 +169,9 @@ AppDialog {
         required property var modelData
         readonly property bool on: root.picks.indexOf(card.modelData.project) >= 0
         readonly property var needs: card.modelData.requires || []
+        readonly property string subLine: [card.modelData.isDefault === true ? qsTr("Default") : "",
+                                           card.needs.length > 0 ? qsTr("Needs %1").arg(root.namesOf(card.needs)) : ""]
+                                          .filter((part) => part.length > 0).join("  •  ")
 
         width: root.cardWidth
         height: root.cardHeight
@@ -177,7 +179,6 @@ AppDialog {
         hoverEnabled: true
         focusPolicy: Qt.TabFocus
         padding: Theme.space.md
-        bottomPadding: root.barHeight + Theme.space.sm
 
         Accessible.role: Accessible.CheckBox
         Accessible.name: card.modelData.name
@@ -186,50 +187,14 @@ AppDialog {
 
         onClicked: root.toggle(card.modelData.project)
 
+        // The raised fill is the card's one surface; On is a bare check on it, the accent ring is the focus.
         background: StateFill {
             card: true
             rest: Theme.palette.surfaceRaised
             hovered: card.hovered
             radius: Theme.radius.md
-            border.width: 1
-            border.color: card.visualFocus ? Theme.palette.focusRing
-                        : card.hovered ? Theme.palette.borderStrong : Theme.palette.border
 
-            // One rounded strip inside the border, its top corners clipped off (two strips would
-            // double a see-through fill where they overlap).
-            Item {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: parent.border.width
-                height: root.barHeight
-                clip: true
-
-                Rectangle {
-                    y: -radius
-                    width: parent.width
-                    height: parent.height + radius
-                    radius: Theme.radius.md - 1
-                    color: card.on ? Theme.palette.successSubtle : Theme.palette.surfaceSunken
-                }
-                Row {
-                    anchors.centerIn: parent
-                    spacing: Theme.space.xs
-                    MeshIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: card.on ? "check" : "x"
-                        size: Theme.icon.xxs
-                        color: card.on ? Theme.palette.success : Theme.palette.textTertiary
-                    }
-                    Copy {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: card.on ? qsTr("On") : qsTr("Off")
-                        role: "caption"
-                        tone: card.on ? "success" : "tertiary"
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
+            FocusFrame { around: Theme.space.xxs; visible: card.visualFocus }
         }
 
         contentItem: ColumnLayout {
@@ -245,10 +210,12 @@ AppDialog {
                     matte: Theme.palette.surfaceRaised
                 }
                 Item { Layout.fillWidth: true }
-                Tag {
+                MeshIcon {
                     Layout.alignment: Qt.AlignTop
-                    visible: card.modelData.isDefault === true
-                    text: qsTr("Default")
+                    visible: card.on
+                    iconName: "check"
+                    size: Theme.icon.sm
+                    color: Theme.palette.accentText
                 }
             }
             Copy {
@@ -261,15 +228,15 @@ AppDialog {
                 Layout.fillWidth: true
                 text: card.modelData.summary || ""
                 wrapMode: Text.Wrap
-                maximumLineCount: card.needs.length > 0 ? 1 : 2
+                maximumLineCount: card.subLine.length > 0 ? 1 : 2
                 elide: Text.ElideRight
                 role: "caption"
                 tone: "secondary"
             }
             Copy {
                 Layout.fillWidth: true
-                visible: card.needs.length > 0
-                text: qsTr("Needs %1").arg(root.namesOf(card.needs))
+                visible: card.subLine.length > 0
+                text: card.subLine
                 elide: Text.ElideRight
                 role: "caption"
                 tone: "tertiary"

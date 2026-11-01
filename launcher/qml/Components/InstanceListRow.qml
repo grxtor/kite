@@ -60,7 +60,9 @@ Item {
 
     Accessible.role: Accessible.ListItem
     Accessible.name: root.name
-    Accessible.description: Format.versionLine(root.loader, root.gameVersion)
+    Accessible.description: [root.launching ? root.launchStatus : root.isRunning ? qsTr("Running") : "",
+                             Format.versionLine(root.loader, root.gameVersion)]
+                            .filter((part) => part.length > 0).join(", ")
 
     HoverHandler { id: hoverHandler }
 
@@ -93,36 +95,38 @@ Item {
                     iconKey: root.iconKey
                     packArt: root.packArt
                 }
+            }
 
-                // Pulses while running, amber while the launch is still starting the game; over the
-                // logo's corner matte.
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                spacing: Theme.space.sm
+
+                // Pulses while running, amber while the launch is still starting the game.
                 RunningDot {
-                    z: 2
                     visible: root.isRunning || root.launching
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.margins: -Theme.space.xxs
+                    Layout.preferredWidth: size
+                    Layout.preferredHeight: size
+                    Layout.alignment: Qt.AlignVCenter
                     size: root.runningDotSize
                     launching: root.launching
                     pulsing: true
-                    border.width: 2
-                    border.color: surface.color
                 }
-            }
 
-            Copy {
-                id: nameText
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                text: root.name
-                elide: Text.ElideRight
-                role: "title"
-                font.family: Theme.font.family
+                Copy {
+                    id: nameText
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: root.name
+                    elide: Text.ElideRight
+                    role: "title"
+                    font.family: Theme.font.family
 
-                HoverHandler { id: nameHover; enabled: nameText.truncated }
-                ToolTip.visible: nameText.truncated && nameHover.hovered
-                ToolTip.delay: 500
-                ToolTip.text: root.name
+                    HoverHandler { id: nameHover; enabled: nameText.truncated }
+                    ToolTip.visible: nameText.truncated && nameHover.hovered
+                    ToolTip.delay: 500
+                    ToolTip.text: root.name
+                }
             }
 
             Copy {

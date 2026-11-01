@@ -33,10 +33,13 @@ Item {
             role: "heading"
         }
 
-        Tag {
+        Copy {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.count >= 0
             text: root.count
+            role: "caption"
+            tone: "tertiary"
+            font.weight: Font.Medium
         }
 
         MeshIcon {

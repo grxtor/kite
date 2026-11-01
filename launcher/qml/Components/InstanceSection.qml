@@ -180,10 +180,13 @@ Column {
                     role: "title"
                 }
 
-                Tag {
+                Copy {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !!root.model
                     text: root.model ? String(root.model.count) : ""
+                    role: "caption"
+                    tone: "tertiary"
+                    font.weight: Font.Medium
                 }
             }
             background: StateFill {

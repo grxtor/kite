@@ -8,7 +8,7 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One "Continue playing" row on Home: icon square, name with a "New" chip until first played, what it runs and
+ * One "Continue playing" row on Home: icon square, name with a plain "New" tag until first played, what it runs and
  * when it was last played, play time, Play and ⋯. Used through a wrapper against recentModel, with the roles
  * InstanceCard reads. After a crash the sub-line says "Crashed last time" in place of when.
  */
@@ -70,6 +70,9 @@ Item {
         card: true
         hovered: root.hovered
         radius: Theme.radius.lg
+        border.width: 1
+        border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
         Shadow {
             radius: plate.radius
@@ -139,32 +142,21 @@ Item {
 
                     Copy {
                         id: nameText
-                        width: Math.min(implicitWidth, parent.width - (newChip.visible ? newChip.width + Theme.space.sm : 0))
+                        width: Math.min(implicitWidth, parent.width - (newLabel.visible ? newLabel.width + Theme.space.sm : 0))
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.name
                         role: "title"
                         elide: Text.ElideRight
                     }
-                    Rectangle {
-                        id: newChip
+                    Copy {
+                        id: newLabel
                         visible: root.isNew
                         x: nameText.width + Theme.space.sm
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.ceil(newLabel.implicitWidth) + Theme.space.sm * 2
-                        height: Math.ceil(Theme.type.caption.lineHeightPx) + Theme.space.xxs * 2
-                        radius: Theme.radius.indicator
-                        color: "transparent"
-                        border.width: 1
-                        border.color: Theme.palette.accent
-
-                        Copy {
-                            id: newLabel
-                            anchors.centerIn: parent
-                            text: qsTr("New")
-                            role: "caption"
-                            tone: "accent"
-                            font.weight: Font.DemiBold
-                        }
+                        text: qsTr("New")
+                        role: "caption"
+                        tone: "accent"
+                        font.weight: Font.DemiBold
                     }
                 }
 
@@ -236,16 +228,6 @@ Item {
                 onClicked: root.menuRequested(moreButton)
             }
         }
-    }
-
-    // Over everything so the logo's corner matte never paints across it.
-    Rectangle {
-        anchors.fill: plate
-        radius: plate.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     FocusFrame { target: plate; visible: root.activeFocus }

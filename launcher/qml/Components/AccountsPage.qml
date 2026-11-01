@@ -260,15 +260,16 @@ Item {
                                         elide: Text.ElideRight
                                     }
 
+                                    // The facts are one line of text; the state is the only badge.
                                     Row {
                                         spacing: Theme.space.sm
-                                        Tag {
-                                            iconName: root.heroIsDefault ? "check" : "user"
-                                            text: root.heroIsDefault ? qsTr("Default account") : qsTr("Suggested default")
-                                        }
-                                        Tag {
-                                            iconName: root.heroIsMSA ? "user" : "users"
-                                            text: root.heroIsMSA ? qsTr("Microsoft") : qsTr("Offline")
+                                        Copy {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: qsTr("%1  ·  %2")
+                                                .arg(root.heroIsDefault ? qsTr("Default account") : qsTr("Suggested default"))
+                                                .arg(root.heroIsMSA ? qsTr("Microsoft") : qsTr("Offline"))
+                                            role: "label"
+                                            tone: "secondary"
                                         }
                                         AccountStateBadge {
                                             anchors.verticalCenter: parent.verticalCenter
@@ -300,7 +301,7 @@ Item {
                                         Button {
                                             // Skins and capes belong to a Microsoft account.
                                             visible: root.heroIsMSA
-                                            variant: "secondary"
+                                            variant: "ghost"
                                             // "and", not "&": a Button reads "&" as a mnemonic.
                                             text: qsTr("Skin and cape")
                                             icon.source: Icons.url("image")
@@ -308,7 +309,6 @@ Item {
                                         }
                                         IconButton {
                                             id: heroMoreButton
-                                            flat: false
                                             iconName: "more"
                                             tip: qsTr("More")
                                             onClicked: heroMenu.popup(heroMoreButton, 0, heroMoreButton.height + Theme.space.xs)

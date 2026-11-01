@@ -6,8 +6,8 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The card behind an instance in the library, as a tile or as a row: surface that lifts under the pointer and when
- * selected, the hover shadow, a hairline that strengthens with hover and selection, and the keyboard focus ring.
+ * The one surface behind an instance in the library, as a tile or as a row: a fill that lifts under the pointer and
+ * when selected, its own hairline (stronger with hover and selection), the hover shadow and the keyboard focus ring.
  * The host (InstanceCard, InstanceListRow) sets `hovered`, `selected` and `focused` and answers the three taps.
  */
 StateFill {
@@ -24,6 +24,9 @@ StateFill {
     card: true
     active: root.selected
     radius: Theme.radius.lg
+    border.width: 1
+    border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+    Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 
     Shadow {
         radius: root.radius
@@ -43,17 +46,6 @@ StateFill {
         acceptedButtons: Qt.RightButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.contextRequested()
-    }
-
-    // Over the content, so a picture's corner matte never paints across the hairline.
-    Rectangle {
-        anchors.fill: parent
-        z: 1
-        radius: root.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.selected || root.hovered ? Theme.neutral.borderHover : Theme.palette.border
-        Behavior on border.color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     // Outset so it never competes with the selected state.
