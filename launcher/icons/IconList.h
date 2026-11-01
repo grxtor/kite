@@ -42,9 +42,12 @@ class IconList : public QAbstractListModel
 {
 	Q_OBJECT
   public:
-	/* QML-only role, numbered like InstanceList's QML-only roles
-	 * (Qt::UserRole + 10 and up). */
-	enum Roles { IsBuiltinRole = Qt::UserRole + 10 };
+	/* QML-only roles, numbered like InstanceList's QML-only roles
+	 * (Qt::UserRole + 10 and up). IsSmoothRole: a built-in icon shown in the
+	 * bundled set's smooth flat drawing (rounded, shaded) instead of pixels,
+	 * because no game texture stands in for it; the icon picker leaves
+	 * those out. */
+	enum Roles { IsBuiltinRole = Qt::UserRole + 10, IsSmoothRole };
 
 	explicit IconList(const QStringList& builtinPaths, QString path,
 					  QObject* parent = 0);

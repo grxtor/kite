@@ -34,6 +34,27 @@
 
 #define MAX_SIZE 1024
 
+namespace
+{
+	/* The bundled scalable icons drawn smooth and flat where the rest of the
+	 * set is pixels. GameTextureRecipes covers all but herobrine, gear and
+	 * magitech. */
+	const QSet<QString> kSmoothKeys = {
+		QStringLiteral("bee"),        QStringLiteral("brick"),
+		QStringLiteral("chicken"),    QStringLiteral("creeper"),
+		QStringLiteral("diamond"),    QStringLiteral("dirt"),
+		QStringLiteral("enderman"),   QStringLiteral("enderpearl"),
+		QStringLiteral("fox"),        QStringLiteral("gear"),
+		QStringLiteral("gold"),       QStringLiteral("grass"),
+		QStringLiteral("herobrine"),  QStringLiteral("iron"),
+		QStringLiteral("magitech"),   QStringLiteral("meat"),
+		QStringLiteral("netherstar"), QStringLiteral("planks"),
+		QStringLiteral("skeleton"),   QStringLiteral("squarecreeper"),
+		QStringLiteral("steve"),      QStringLiteral("stone"),
+		QStringLiteral("tnt"),
+	};
+} // namespace
+
 IconList::IconList(const QStringList& builtinPaths, QString path,
 				   QObject* parent)
 	: QAbstractListModel(parent)
@@ -203,6 +224,10 @@ QVariant IconList::data(const QModelIndex& index, int role) const
 			return icons[row].m_key;
 		case IsBuiltinRole:
 			return icons[row].isBuiltIn();
+		case IsSmoothRole:
+			return icons[row].isBuiltIn() &&
+				   kSmoothKeys.contains(icons[row].m_key) &&
+				   !m_gameTextures.contains(icons[row].m_key);
 		default:
 			return QVariant();
 	}
@@ -219,6 +244,7 @@ QHash<int, QByteArray> IconList::roleNames() const
 	roles.insert(Qt::DisplayRole, "name");
 	roles.insert(Qt::UserRole, "key");
 	roles.insert(IsBuiltinRole, "isBuiltin");
+	roles.insert(IsSmoothRole, "smooth");
 	return roles;
 }
 
