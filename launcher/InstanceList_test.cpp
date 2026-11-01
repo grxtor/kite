@@ -169,28 +169,37 @@ class InstanceListTest : public QObject
 				 QString());
 	}
 
-	void pickCoverPrefersCustomThenPanoramaThenNothing()
+	void pickCoverPrefersCustomThenPlatformThenPanoramaThenNothing()
 	{
 		QTemporaryDir dir;
 		QVERIFY(dir.isValid());
 		const QString custom = QDir(dir.path()).filePath("shot.png");
+		const QString platform = QDir(dir.path()).filePath("kite-cover.png");
 		const QString panorama = QDir(dir.path()).filePath("pano");
 		QVERIFY(writeFile(custom, "x", QDateTime::currentDateTime()));
+		QVERIFY(writeFile(platform, "z", QDateTime::currentDateTime()));
 		QVERIFY(writeFile(panorama, "y", QDateTime::currentDateTime()));
 
-		auto both = InstanceList::pickCover(custom, panorama);
-		QCOMPARE(both.kind, QStringLiteral("custom"));
-		QCOMPARE(both.url, QUrl::fromLocalFile(custom).toString());
+		auto all = InstanceList::pickCover(custom, platform, panorama);
+		QCOMPARE(all.kind, QStringLiteral("custom"));
+		QCOMPARE(all.url, QUrl::fromLocalFile(custom).toString());
 
-		auto onlyPanorama = InstanceList::pickCover(QString(), panorama);
+		auto noCustom = InstanceList::pickCover(QString(), platform, panorama);
+		QCOMPARE(noCustom.kind, QStringLiteral("platform"));
+		QCOMPARE(noCustom.url, QUrl::fromLocalFile(platform).toString());
+
+		auto onlyPanorama =
+			InstanceList::pickCover(QString(), QString(), panorama);
 		QCOMPARE(onlyPanorama.kind, QStringLiteral("panorama"));
 		QCOMPARE(onlyPanorama.url, QUrl::fromLocalFile(panorama).toString());
 
-		// A picked screenshot that was deleted falls through.
+		// A picked cover or fetched art that was deleted falls through.
 		const QString gone = QDir(dir.path()).filePath("gone.png");
-		QCOMPARE(InstanceList::pickCover(gone, panorama).kind,
+		QCOMPARE(InstanceList::pickCover(gone, platform, panorama).kind,
+				 QStringLiteral("platform"));
+		QCOMPARE(InstanceList::pickCover(gone, gone, panorama).kind,
 				 QStringLiteral("panorama"));
-		auto none = InstanceList::pickCover(gone, QString());
+		auto none = InstanceList::pickCover(gone, gone, QString());
 		QCOMPARE(none.kind, QString());
 		QCOMPARE(none.url, QString());
 	}
@@ -307,7 +316,6 @@ class InstanceListTest : public QObject
 		const QString notImage =
 			QDir(instRoot).filePath("screenshots/notes.txt");
 		QVERIFY(writeFile(notImage, "x", QDateTime::currentDateTime()));
-		const QString expectedUrl = QUrl::fromLocalFile(shotPath).toString();
 
 		InstanceList list(globalSettings, {instsDir.path()});
 		QCOMPARE(list.loadList(), InstanceList::NoError);
@@ -331,37 +339,203 @@ class InstanceListTest : public QObject
 		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
 				 QString());
 
-		// Only an existing image can be picked, by path or by file URL.
-		QVERIFY(!list.setCover("testinst", notImage));
-		QVERIFY(!list.setCover("testinst",
-							   QDir(instRoot).filePath("screenshots/no.png")));
-		// Outside the screenshots folder a copy of the instance could not
-		// find it again.
-		QVERIFY(!list.setCover("testinst", elsewhere));
+		// Only an existing image of the screenshots folder is copied; the
+		// rest is ignored (outside it, a copy of the instance could not
+		// find it again).
+		QVERIFY(list.setCover("testinst", notImage));
+		QVERIFY(list.setCover("testinst",
+							  QDir(instRoot).filePath("screenshots/no.png")));
+		QVERIFY(list.setCover("testinst", elsewhere));
 		QVERIFY(!list.setCover("nobody", shotPath));
-		QSignalSpy changed(&list, &InstanceList::dataChanged);
+		QTest::qWait(200);
+		QVERIFY(list.getInstanceById("testinst")->coverImage().isEmpty());
+		QVERIFY(QDir(instRoot).entryList({"kite-cover-custom*"}).isEmpty());
+
+		// The picture is copied into the instance folder and that copy is
+		// the cover.
 		QVERIFY(list.setCover("testinst", QUrl::fromLocalFile(shotPath).toString()));
-		QVERIFY(!changed.isEmpty());
-		// Only the name is stored, not the home directory.
-		QCOMPARE(list.getInstanceById("testinst")->coverImage(),
+		QTRY_VERIFY(!list.getInstanceById("testinst")->coverImage().isEmpty());
+		const QString copyName = list.getInstanceById("testinst")->coverImage();
+		QVERIFY(copyName.startsWith(QStringLiteral("kite-cover-custom")));
+		QVERIFY(copyName.endsWith(QStringLiteral(".png")));
+		const QString copyPath = QDir(instRoot).filePath(copyName);
+		QVERIFY(QFileInfo(copyPath).isFile());
+		QCOMPARE(list.getInstanceById("testinst")->coverSource(),
 				 QStringLiteral("shot.png"));
 
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
-					 expectedUrl);
+					 QUrl::fromLocalFile(copyPath).toString());
 		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
 				 QStringLiteral("custom"));
+		QCOMPARE(list.roleNames().value(InstanceList::CoverSourceRole),
+				 QByteArray("coverSource"));
+		QCOMPARE(list.data(idx, InstanceList::CoverSourceRole).toString(),
+				 QStringLiteral("shot.png"));
 
-		// Picking another screenshot replaces the cover.
+		// Deleting the screenshot leaves the cover alone.
+		QVERIFY(QFile::remove(shotPath));
+		list.setCoverDirs({}); // forgets the answer: looked up again
+		QVERIFY(list.data(idx, InstanceList::CoverKindRole).toString()
+					.isEmpty());
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+					 QStringLiteral("custom"));
+		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
+				 QUrl::fromLocalFile(copyPath).toString());
+		QCOMPARE(list.data(idx, InstanceList::CoverSourceRole).toString(),
+				 QStringLiteral("shot.png"));
+
+		// Picking another screenshot replaces the cover and its copy.
 		const QString otherPath =
 			QDir(instRoot).filePath("screenshots/newest.png");
 		QVERIFY(list.setCover("testinst", otherPath));
+		QTRY_VERIFY(list.getInstanceById("testinst")->coverImage() != copyName);
+		const QString otherCopy = list.getInstanceById("testinst")->coverImage();
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
-					 QUrl::fromLocalFile(otherPath).toString());
+					 QUrl::fromLocalFile(QDir(instRoot).filePath(otherCopy))
+						 .toString());
+		QCOMPARE(list.data(idx, InstanceList::CoverSourceRole).toString(),
+				 QStringLiteral("newest.png"));
+		QTRY_VERIFY(!QFileInfo::exists(copyPath));
+		QVERIFY(QFileInfo(QDir(instRoot).filePath(otherCopy)).isFile());
 
+		// Removing the cover deletes the copy but never a screenshot.
 		list.clearCover("testinst");
 		QVERIFY(list.getInstanceById("testinst")->coverImage().isEmpty());
+		QVERIFY(list.getInstanceById("testinst")->coverSource().isEmpty());
+		QTRY_VERIFY(!QFileInfo::exists(QDir(instRoot).filePath(otherCopy)));
+		QVERIFY(QFileInfo(otherPath).isFile());
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 					 QString());
+		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+				 QString());
+		QCOMPARE(list.data(idx, InstanceList::CoverSourceRole).toString(),
+				 QString());
+	}
+
+	void aCoverNameCannotReachOtherFilesOfTheInstance()
+	{
+		QTemporaryDir globalDir;
+		QVERIFY(globalDir.isValid());
+		QTemporaryDir instsDir;
+		QVERIFY(instsDir.isValid());
+		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
+
+		const QString instsRoot =
+			QFileInfo(instsDir.path()).canonicalFilePath();
+		const QString instRoot = QDir(instsRoot).filePath("testinst");
+		QVERIFY(QDir().mkpath(QDir(instRoot).filePath("screenshots")));
+		const QString cfg = QDir(instRoot).filePath("instance.cfg");
+		QVERIFY(writeFile(cfg,
+						   "InstanceType=NullTest\n"
+						   "CoverImage=kite-cover-custom/../instance.cfg\n",
+						   QDateTime::currentDateTime()));
+		const QString shot = QDir(instRoot).filePath("screenshots/a.png");
+		QVERIFY(writeFile(shot, "x", QDateTime::currentDateTime()));
+
+		InstanceList list(globalSettings, {instsDir.path()});
+		QCOMPARE(list.loadList(), InstanceList::NoError);
+		QVERIFY(list.setCover("testinst", shot));
+		QTRY_VERIFY(list.getInstanceById("testinst")->coverImage().startsWith(
+			QStringLiteral("kite-cover-custom-")));
+		list.clearCover("testinst");
+		QTest::qWait(200);
+		QVERIFY(QFileInfo(cfg).isFile());
+	}
+
+	void onlyTheLatestPickBecomesTheCover()
+	{
+		QTemporaryDir globalDir;
+		QVERIFY(globalDir.isValid());
+		QTemporaryDir instsDir;
+		QVERIFY(instsDir.isValid());
+		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
+
+		const QString instsRoot =
+			QFileInfo(instsDir.path()).canonicalFilePath();
+		const QString instRoot = QDir(instsRoot).filePath("testinst");
+		QVERIFY(QDir().mkpath(QDir(instRoot).filePath("screenshots")));
+		QVERIFY(writeFile(QDir(instRoot).filePath("instance.cfg"),
+						   "InstanceType=NullTest\n",
+						   QDateTime::currentDateTime()));
+		const QString first = QDir(instRoot).filePath("screenshots/a.png");
+		const QString second = QDir(instRoot).filePath("screenshots/b.png");
+		QVERIFY(writeFile(first, "x", QDateTime::currentDateTime()));
+		QVERIFY(writeFile(second, "y", QDateTime::currentDateTime()));
+
+		InstanceList list(globalSettings, {instsDir.path()});
+		QCOMPARE(list.loadList(), InstanceList::NoError);
+
+		QVERIFY(list.setCover("testinst", first));
+		QVERIFY(list.setCover("testinst", second));
+		QTRY_VERIFY(!list.getInstanceById("testinst")->coverImage().isEmpty());
+		QTest::qWait(200);
+		QCOMPARE(list.getInstanceById("testinst")->coverSource(),
+				 QStringLiteral("b.png"));
+		QCOMPARE(QDir(instRoot).entryList({"kite-cover-custom*"}).size(), 1);
+
+		// A removal after a pick wins over its late copy.
+		QVERIFY(list.setCover("testinst", first));
+		list.clearCover("testinst");
+		QTest::qWait(200);
+		QVERIFY(list.getInstanceById("testinst")->coverImage().isEmpty());
+		QVERIFY(QDir(instRoot).entryList({"kite-cover-custom*"}).isEmpty());
+
+		// Renaming the screenshot only changes where the cover says it is from.
+		QVERIFY(list.setCover("testinst", first));
+		QTRY_VERIFY(!list.getInstanceById("testinst")->coverImage().isEmpty());
+		const QString copy = list.getInstanceById("testinst")->coverImage();
+		list.renameCoverSource("testinst", "/x/screenshots/renamed.png");
+		QCOMPARE(list.getInstanceById("testinst")->coverSource(),
+				 QStringLiteral("renamed.png"));
+		QCOMPARE(list.getInstanceById("testinst")->coverImage(), copy);
+	}
+
+	void platformArtShowsUnderThePickedCoverAndAboveNothing()
+	{
+		QTemporaryDir globalDir;
+		QVERIFY(globalDir.isValid());
+		QTemporaryDir instsDir;
+		QVERIFY(instsDir.isValid());
+		SettingsObjectPtr globalSettings = makeGlobalSettings(globalDir);
+
+		const QString instsRoot =
+			QFileInfo(instsDir.path()).canonicalFilePath();
+		const QString instRoot = QDir(instsRoot).filePath("testinst");
+		QVERIFY(QDir().mkpath(QDir(instRoot).filePath("screenshots")));
+		QVERIFY(writeFile(QDir(instRoot).filePath("instance.cfg"),
+						   "InstanceType=NullTest\nPlatformCover=kite-cover.png\n",
+						   QDateTime::currentDateTime()));
+		const QString art = QDir(instRoot).filePath("kite-cover.png");
+		QVERIFY(writeFile(art, "x", QDateTime::currentDateTime()));
+		QVERIFY(writeFile(QDir(instRoot).filePath("screenshots/shot.png"), "x",
+						   QDateTime::currentDateTime()));
+
+		InstanceList list(globalSettings, {instsDir.path()});
+		QCOMPARE(list.loadList(), InstanceList::NoError);
+		list.setCoverDirs({});
+		const QModelIndex idx = list.getInstanceIndexById("testinst");
+		QVERIFY(idx.isValid());
+
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+					 QStringLiteral("platform"));
+		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
+				 QUrl::fromLocalFile(art).toString());
+
+		// A picked screenshot goes over it; removing that brings it back.
+		QVERIFY(list.setCover("testinst", QDir(instRoot).filePath(
+											  "screenshots/shot.png")));
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+					 QStringLiteral("custom"));
+		list.clearCover("testinst");
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+					 QStringLiteral("platform"));
+
+		// Deleted art leaves no cover (no network here to fetch it again).
+		QVERIFY(QFile::remove(art));
+		list.setCoverDirs({});
+		QVERIFY(list.data(idx, InstanceList::CoverKindRole).toString()
+					.isEmpty());
+		QTest::qWait(100);
 		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
 				 QString());
 	}

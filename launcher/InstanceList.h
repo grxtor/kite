@@ -35,6 +35,7 @@
 
 class QFileSystemWatcher;
 class QImage;
+class PlatformCoverFetcher;
 class InstanceTask;
 class LaunchProgressTracker;
 using InstanceId = QString;
@@ -121,12 +122,9 @@ class InstanceList : public QAbstractListModel
 		 * indeterminate, and also when nothing is happening (LaunchStatusRole
 		 * is then empty too). */
 		LaunchProgressRole,
-		/* file:// URL of the instance's cover, or empty: the screenshot the
-		 * user picked ("CoverImage" setting) while that file exists, else one
-		 * of the Minecraft version's title-screen panoramas (which one is
-		 * fixed by the instance id). Resolved on a worker
-		 * (scheduleCoverScan()), so data() answers from the cache or empty at
-		 * once. See CoverKindRole for which of the two it is. */
+		/* file:// URL of the instance's cover, or empty: the picked screenshot's
+		 * copy, else the modpack's fetched art, else a version panorama. Found
+		 * on a worker, so data() answers from the cache or empty at once. */
 		CoverImageRole,
 		/* Whether the instance's last launch crashed
 		 * (BaseInstance::hasCrashed()). setCrashed() already emits
@@ -137,10 +135,10 @@ class InstanceList : public QAbstractListModel
 		 * is no screenshot): "image://instanceicon/<key>" if its icon is an
 		 * icon file, else the logo's upstream URL (PackIconUrl), else empty. */
 		PackArtRole,
-		/* "custom" (picked screenshot), "panorama" or "" (no cover: the UI
-		 * draws a gradient from iconColor()). Always agrees with
-		 * CoverImageRole. */
-		CoverKindRole
+		// "custom", "platform", "panorama" or "" (the UI draws a gradient); agrees with CoverImageRole.
+		CoverKindRole,
+		// Screenshot a "custom" cover was copied from, or "": for marking it in the list.
+		CoverSourceRole
 	};
 	enum InstListError { NoError = 0, UnknownError };
 
@@ -258,7 +256,7 @@ class InstanceList : public QAbstractListModel
 	};
 	struct CoverInfo {
 		QString url;  ///< file:// URL, empty for none
-		QString kind; ///< "custom", "panorama" or empty
+		QString kind; ///< "custom", "platform", "panorama" or empty
 	};
 
 	/* Panorama faces an instance may get (panorama_0..3: the horizon ones;
@@ -274,21 +272,20 @@ class InstanceList : public QAbstractListModel
 	 * directly. */
 	static QString panoramaPath(const CoverDirs& dirs, const QString& mcVersion,
 								int face = 0);
-	/* The cover order: @p customPath if that file exists, else
-	 * @p panoramaPath if given, else nothing. */
+	// The cover order: custom, platform art, panorama, nothing; a path is used only if that file exists.
 	static CoverInfo pickCover(const QString& customPath,
+							   const QString& platformPath,
 							   const QString& panoramaPath);
 	/* Average of the visible pixels, weighted by opacity and
 	 * saturation as IconList::tint() does; invalid when nothing is visible. */
 	static QColor averageIconColor(const QImage& image);
 
-	/* Makes @p pathOrFileUrl (a path or a file URL naming an existing image in
-	 * the instance's screenshots folder) the cover of instance @p id; only the
-	 * file name is kept, so a copy of the instance finds its own. False for an
-	 * unknown instance or any other file. */
+	// Copies a screenshot of @p id into its folder (on a worker) as its cover; false for an unknown instance.
 	bool setCover(const QString& id, const QString& pathOrFileUrl);
-	/* Back to the panorama. */
+	// Drops the picked cover and deletes its copy.
 	void clearCover(const QString& id);
+	// The screenshot a picked cover came from got a new name (a path or a name).
+	void renameCoverSource(const QString& id, const QString& fileName);
 	/* Overrides where covers are looked up; without it the launcher's
 	 * metacache bases are used. For tests. */
 	void setCoverDirs(const CoverDirs& dirs);
@@ -354,17 +351,18 @@ class InstanceList : public QAbstractListModel
 		// What the lookup was made for; a mismatch with the instance's
 		// current values means the entry is stale.
 		QString customPath;
+		QString platformPath;
 		QString version;
 		CoverInfo info;
 	};
 	CoverDirs activeCoverDirs() const;
 	/* Starts a background lookup of the cover of @p id for the given custom
-	 * path and version unless one for @p id is running. The result goes to
-	 * m_coverCache and dataChanged is emitted, unless m_coverGeneration moved
+	 * path, platform path and version unless one for @p id is running. The
+	 * result goes to m_coverCache and dataChanged is emitted, unless m_coverGeneration moved
 	 * on meanwhile (the instance stopped running): then it is discarded and a
 	 * fresh lookup started. */
 	void scheduleCoverScan(const InstanceId& id, const QString& customPath,
-						   const QString& version);
+						   const QString& platformPath, const QString& version);
 	/* Averages the icon @p key off the GUI thread (the pixmap is taken on it,
 	 * from the event loop) for iconColor(). */
 	void scheduleIconColor(const QString& key);
@@ -401,11 +399,15 @@ class InstanceList : public QAbstractListModel
 	 * a second one for the same id. Mutable like m_coverCache. */
 	mutable QSet<InstanceId> m_coverScansPending;
 	QHash<InstanceId, int> m_coverGeneration;
+	// Bumped by every setCover()/clearCover(): only the latest pick may finish.
+	QHash<InstanceId, int> m_coverPicks;
 	/* Panorama path per Minecraft version, found ones only: a missing one may
 	 * show up after the version is first launched. */
 	QHash<QString, QString> m_panoramaCache;
 	CoverDirs m_coverDirs;
 	bool m_coverDirsSet = false;
+	// Fetches the modpack's art for instances without a picked cover.
+	PlatformCoverFetcher* m_platformCovers = nullptr;
 
 	/* iconColor()'s colour per icon key, same lazy fill as m_coverCache. */
 	mutable QHash<QString, QColor> m_iconColorCache;

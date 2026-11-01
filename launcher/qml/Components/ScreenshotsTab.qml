@@ -23,14 +23,14 @@ Item {
     property var details: null
     readonly property var uploader: details ? details.screenshotUploader : null
     readonly property bool canUpload: !!uploader && uploader.available
-    // The chosen cover as a file url, "" when there is none.
-    property string coverUrl: ""
-    // The cover is always a file of this folder, so its name tells which one it is.
-    readonly property string coverName: root.coverUrl.length > 0
-                                        ? decodeURIComponent(root.coverUrl.slice(root.coverUrl.lastIndexOf("/") + 1)) : ""
+    // File name of the screenshot the instance's own cover was copied from, "" when it has none.
+    property string coverSource: ""
+    // False once that screenshot is gone from the folder: the cover stays, so the toolbar offers to remove it.
+    property bool coverListed: false
     signal openFolderRequested(string path)
     signal coverRequested(string path)
     signal coverCleared()
+    signal coverRenamed(string path)
 
     readonly property int minTileWidth: 240
     readonly property int gap: Theme.space.md
@@ -129,11 +129,8 @@ Item {
         rows.sort(function (a, b) { return b - a })
         var failed = 0
         for (var j = 0; j < rows.length; ++j) {
-            var wasCover = root.isCover(root.model.pathAt(rows[j]))
             if (!root.model.remove(rows[j]))
                 failed++
-            else if (wasCover)
-                root.coverCleared()
         }
         root.clearSelection()
         if (failed > 0)
@@ -148,7 +145,23 @@ Item {
     }
 
     function isCover(path) {
-        return root.coverName.length > 0 && path.slice(path.lastIndexOf("/") + 1) === root.coverName
+        return root.coverSource.length > 0 && path.slice(path.lastIndexOf("/") + 1) === root.coverSource
+    }
+
+    function refreshCoverListed() {
+        var listed = false
+        for (var i = 0; root.coverSource.length > 0 && root.model && i < root.model.count && !listed; ++i)
+            listed = root.isCover(root.model.pathAt(i))
+        root.coverListed = listed
+    }
+    onCoverSourceChanged: root.refreshCoverListed()
+    onModelChanged: root.refreshCoverListed()
+    Connections {
+        target: root.model
+        ignoreUnknownSignals: true
+        function onRowsInserted() { root.refreshCoverListed() }
+        function onRowsRemoved() { root.refreshCoverListed() }
+        function onModelReset() { root.refreshCoverListed() }
     }
 
     function baseName(name) {
@@ -214,6 +227,12 @@ Item {
                         : qsTr("Move %1 screenshots to the trash?").arg(deleteConfirm.paths.length)
                     deleteConfirm.open()
                 }
+            }
+            Button {
+                visible: root.selectedCount === 0 && root.coverSource.length > 0 && !root.coverListed
+                text: qsTr("Remove cover")
+                flat: true
+                onClicked: root.coverCleared()
             }
             Button {
                 text: qsTr("Open folder")
@@ -469,7 +488,7 @@ Item {
             var wasCover = root.isCover(path)
             if (row >= 0 && root.model.rename(row, text)) {
                 if (wasCover)
-                    root.coverRequested(root.model.pathAt(row))
+                    root.coverRenamed(root.model.pathAt(row))
                 root.clearSelection()
                 close()
             } else {

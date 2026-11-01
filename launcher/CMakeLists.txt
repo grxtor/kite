@@ -825,6 +825,10 @@ set(CONTENT_DOWNLOAD_SOURCES
     modplatform/DependencyResolver.cpp
     modplatform/BundleCatalog.h
     modplatform/BundleCatalog.cpp
+    modplatform/PlatformCover.h
+    modplatform/PlatformCover.cpp
+    modplatform/PlatformCoverFetcher.h
+    modplatform/PlatformCoverFetcher.cpp
     modplatform/ContentDownloadTask.h
     modplatform/ContentDownloadTask.cpp
     modplatform/ModInstallConflictAnalyzer.h
@@ -1281,6 +1285,10 @@ add_unit_test(ContentInstallReview
     )
 add_unit_test(BundleCatalog
     SOURCES modplatform/BundleCatalog_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(PlatformCover
+    SOURCES modplatform/PlatformCover_test.cpp
     LIBS Kite_core
     )
 add_unit_test(PresetDefaults

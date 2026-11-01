@@ -114,9 +114,8 @@ Item {
     }
 
     property var headerCard: null
-    // The screenshot picked as this instance's cover, as a file url; "" when none is (the version's title screen shows).
-    readonly property string coverUrl: root.headerCard && root.headerCard.coverKind === "custom"
-                                       ? root.headerCard.coverImage : ""
+    // File name of the screenshot the instance's own cover was made from; "" when it has none.
+    readonly property string coverSource: root.headerCard ? root.headerCard.coverSource : ""
     readonly property int headerIconSize: 64
     readonly property int headerActionSize: Theme.control.heightLg
     property bool running: false
@@ -189,8 +188,7 @@ Item {
                 readonly property string name: model.name || ""
                 readonly property string iconKey: model.iconKey || ""
                 readonly property string group: model.group || ""
-                readonly property string coverImage: model.coverImage || ""
-                readonly property string coverKind: model.coverKind || ""
+                readonly property string coverSource: model.coverSource || ""
                 readonly property bool isRunning: !!model.isRunning
                 readonly property string launchStatus: model.launchStatus || ""
                 readonly property real launchProgress: model.launchProgress === undefined ? -1 : model.launchProgress
@@ -431,10 +429,11 @@ Item {
                 model: root.shotsModel
                 details: root.details
                 directory: root.details ? root.details.screenshotsDir : ""
-                coverUrl: root.coverUrl
+                coverSource: root.coverSource
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onCoverRequested: (path) => { if (root.shell) root.shell.setInstanceCover(root.instanceId, path) }
                 onCoverCleared: { if (root.shell) root.shell.clearInstanceCover(root.instanceId) }
+                onCoverRenamed: (path) => { if (root.shell) root.shell.renameInstanceCoverSource(root.instanceId, path) }
             }
 
             LogTab {

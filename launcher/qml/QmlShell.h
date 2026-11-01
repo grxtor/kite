@@ -373,12 +373,14 @@ class QmlShell : public QObject
 									  const QString& group);
 	Q_INVOKABLE void setInstanceIcon(const QString& id,
 									 const QString& iconKey);
-	/* Makes a screenshot (path or file URL) the instance's cover on Home.
-	 * False for an unknown instance or a file that is no existing image. */
+	// Copies a screenshot (path or file URL) into the instance as its cover; false for an unknown instance.
 	Q_INVOKABLE bool setInstanceCover(const QString& instanceId,
 									  const QString& pathOrFileUrl);
-	/* Back to the version's panorama. */
+	// Drops the picked cover and deletes its copy.
 	Q_INVOKABLE void clearInstanceCover(const QString& instanceId);
+	// The screenshot the cover was copied from got a new name (path or name).
+	Q_INVOKABLE void renameInstanceCoverSource(const QString& instanceId,
+											   const QString& fileName);
 	/* The average colour of instance icon @p key for the cover-less gradient;
 	 * invalid until it is averaged (iconColorRevision then bumps). */
 	Q_INVOKABLE QColor iconColor(const QString& key) const;

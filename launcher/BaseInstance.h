@@ -109,11 +109,21 @@ class BaseInstance : public QObject,
 	QString iconKey() const;
 	void setIconKey(QString val);
 
-	/* File name of the screenshot, in the instance's screenshots folder, that
-	 * the user picked as its cover, or empty. Whether the file still exists is
-	 * the reader's check. */
+	// File in the instance folder holding the screenshot picked as cover, or empty; the reader checks it exists.
 	QString coverImage() const;
-	void setCoverImage(const QString& path);
+	// The screenshot that copy was made from, only for marking it in the list.
+	QString coverSource() const;
+	void setCustomCover(const QString& fileName, const QString& sourceName);
+
+	// The modpack's own art (file in the instance folder) and when a lookup last found none (epoch seconds, 0 = never).
+	QString platformCover() const;
+	qint64 platformCoverCheckedAt() const;
+	void setPlatformCover(const QString& fileName, qint64 checkedAt = 0);
+
+	// Pack facts other launchers write (ManagedPackType/-ID/-Name), apart from Kite's own managedPack*().
+	QString legacyPackProvider() const;
+	QString legacyPackId() const;
+	QString legacyPackName() const;
 
 	QString notes() const;
 	void setNotes(QString val);

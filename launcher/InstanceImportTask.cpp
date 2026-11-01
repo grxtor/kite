@@ -1663,6 +1663,11 @@ void InstanceImportTask::carryOverUserSettings(BaseInstance& instance)
 		"lastTimePlayed",
 		"shortcuts",
 		"Profiler",
+		// The picked cover and the fetched pack art live in files that stay in the folder.
+		"CoverImage",
+		"CoverSource",
+		"PlatformCover",
+		"PlatformCoverChecked",
 		/* Per-instance overrides: each "override this?" flag travels with the
 		 * values it guards. */
 		"OverrideCommands",

@@ -5624,12 +5624,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceList</name>
     <message>
-        <location filename="../launcher/InstanceList.cpp" line="+245"/>
+        <location filename="../launcher/InstanceList.cpp" line="+275"/>
         <source>%1 Instance</source>
         <translation>%1 kurulumu</translation>
     </message>
     <message>
-        <location line="+1533"/>
+        <location line="+1638"/>
         <source>Could not remove a file the updated pack no longer includes: %1</source>
         <translation>Güncellenen paketin artık içermediği bir dosya kaldırılamadı: %1</translation>
     </message>
@@ -5736,7 +5736,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+136"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+135"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -5802,7 +5802,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-193"/>
+        <location line="-194"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -5822,7 +5822,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+173"/>
+        <location line="+174"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -7387,7 +7387,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+311"/>
+        <location filename="../launcher/qml/Main.qml" line="+317"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -11432,7 +11432,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+310"/>
+        <location line="+316"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -11682,22 +11682,22 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>%1, %2</translation>
     </message>
     <message>
-        <location line="+93"/>
+        <location line="+90"/>
         <source>Some screenshots could not be deleted.</source>
         <translation>Bazı ekran görüntüleri silinemedi.</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+40"/>
         <source>Album link copied to your clipboard.</source>
         <translation>Albüm bağlantısı panoya kopyalandı.</translation>
     </message>
     <message>
-        <location line="+194"/>
+        <location line="+200"/>
         <source>Open</source>
         <translation>Aç</translation>
     </message>
     <message>
-        <location line="-176"/>
+        <location line="-182"/>
         <source>%1 selected</source>
         <translation>%1 seçili</translation>
     </message>
@@ -11723,18 +11723,18 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     </message>
     <message>
         <location line="+6"/>
-        <location line="+186"/>
+        <location line="+192"/>
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="-181"/>
+        <location line="-187"/>
         <source>Move this screenshot to the trash?</source>
         <translation>Bu ekran görüntüsü çöp kutusuna taşınsın mı?</translation>
     </message>
     <message>
         <location line="+1"/>
-        <location line="+186"/>
+        <location line="+192"/>
         <source>Move %1 screenshots to the trash?</source>
         <translation>%1 ekran görüntüsü çöp kutusuna taşınsın mı?</translation>
     </message>
@@ -11750,7 +11750,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Görüntüyü kopyala</translation>
     </message>
     <message>
-        <location line="-218"/>
+        <location line="-240"/>
         <source>Image copied.</source>
         <translation>Görüntü kopyalandı.</translation>
     </message>
@@ -11760,7 +11760,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Görüntü kopyalanamadı.</translation>
     </message>
     <message>
-        <location line="+162"/>
+        <location line="+184"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -11830,7 +11830,8 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Kapak yap</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-166"/>
+        <location line="+166"/>
         <source>Remove cover</source>
         <translation>Kapağı kaldır</translation>
     </message>

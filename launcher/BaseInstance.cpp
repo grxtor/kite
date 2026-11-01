@@ -48,8 +48,12 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 
 	m_settings->registerSetting("name", "Unnamed Instance");
 	m_settings->registerSetting("iconKey", "default");
-	// File name of the screenshot (in screenshots/) picked as home-page cover; empty = none.
+	// The picked cover (file in the instance folder) and the screenshot it was copied from.
 	m_settings->registerSetting("CoverImage", "");
+	m_settings->registerSetting("CoverSource", "");
+	// The modpack's own art (file in the instance folder) and when a lookup last found none.
+	m_settings->registerSetting("PlatformCover", "");
+	m_settings->registerSetting("PlatformCoverChecked", 0);
 	m_settings->registerSetting("notes", "");
 	m_settings->registerSetting("lastLaunchTime", 0);
 	m_settings->registerSetting("totalTimePlayed", 0);
@@ -81,6 +85,11 @@ BaseInstance::BaseInstance(SettingsObjectPtr globalSettings,
 	 * since the user may rename the instance. Empty for instances imported
 	 * before this key existed; managedPackName() falls back. */
 	m_settings->registerSetting("PackName", "");
+
+	// Written by other launchers, only read here to find the pack's art.
+	m_settings->registerSetting("ManagedPackType", "");
+	m_settings->registerSetting("ManagedPackID", "");
+	m_settings->registerSetting("ManagedPackName", "");
 
 	auto commandSetting = m_settings->registerSetting(
 		{"OverrideCommands", "OverrideLaunchCmd"}, false);
@@ -455,13 +464,55 @@ QString BaseInstance::coverImage() const
 	return m_settings->get("CoverImage").toString();
 }
 
-void BaseInstance::setCoverImage(const QString& path)
+QString BaseInstance::coverSource() const
 {
-	if (coverImage() == path) {
+	return m_settings->get("CoverSource").toString();
+}
+
+void BaseInstance::setCustomCover(const QString& fileName,
+								  const QString& sourceName)
+{
+	if (coverImage() == fileName && coverSource() == sourceName) {
 		return;
 	}
-	m_settings->set("CoverImage", path);
+	m_settings->set("CoverImage", fileName);
+	m_settings->set("CoverSource", sourceName);
 	emit propertiesChanged(this);
+}
+
+QString BaseInstance::platformCover() const
+{
+	return m_settings->get("PlatformCover").toString();
+}
+
+qint64 BaseInstance::platformCoverCheckedAt() const
+{
+	return m_settings->get("PlatformCoverChecked").toLongLong();
+}
+
+void BaseInstance::setPlatformCover(const QString& fileName, qint64 checkedAt)
+{
+	if (platformCover() == fileName && platformCoverCheckedAt() == checkedAt) {
+		return;
+	}
+	m_settings->set("PlatformCover", fileName);
+	m_settings->set("PlatformCoverChecked", checkedAt);
+	emit propertiesChanged(this);
+}
+
+QString BaseInstance::legacyPackProvider() const
+{
+	return m_settings->get("ManagedPackType").toString().trimmed();
+}
+
+QString BaseInstance::legacyPackId() const
+{
+	return m_settings->get("ManagedPackID").toString().trimmed();
+}
+
+QString BaseInstance::legacyPackName() const
+{
+	return m_settings->get("ManagedPackName").toString().trimmed();
 }
 
 void BaseInstance::setName(QString val)

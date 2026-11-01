@@ -646,6 +646,12 @@ void QmlShell::clearInstanceCover(const QString& instanceId)
 	LAUNCHER->instances()->clearCover(instanceId);
 }
 
+void QmlShell::renameInstanceCoverSource(const QString& instanceId,
+										 const QString& fileName)
+{
+	LAUNCHER->instances()->renameCoverSource(instanceId, fileName);
+}
+
 QColor QmlShell::iconColor(const QString& key) const
 {
 	return LAUNCHER->instances()->iconColor(key);

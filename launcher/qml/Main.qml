@@ -55,6 +55,12 @@ ApplicationWindow {
         root.selectedId = id
         root.page = "instance"
     }
+    // Home opens an instance on its settings, the page people want there.
+    function openInstanceSettings(id) {
+        root.openInstance(id)
+        if (instancePage)
+            instancePage.tab = "settings"
+    }
 
     Binding {
         target: LauncherStore
@@ -650,7 +656,7 @@ ApplicationWindow {
         pickOnTap: root.page === "home"
         onItemActivated: (id) => root.page = id
         onRecentSelectRequested: (id) => root.selectedId = id
-        onRecentActivated: (id) => root.openInstance(id)
+        onRecentActivated: (id) => root.page === "home" ? root.openInstanceSettings(id) : root.openInstance(id)
         onRecentPlayRequested: (id) => root.launch(id)
         onNewInstanceRequested: root.openNewInstance()
 
@@ -839,7 +845,7 @@ ApplicationWindow {
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
-                        onOpenInstanceRequested: (id) => root.openInstance(id)
+                        onOpenInstanceRequested: (id) => root.openInstanceSettings(id)
                         onSelectRequested: (id) => root.selectedId = id
                         onSignInRequested: root.page = "accounts"
                         onFolderRequested: (id) => root.call("openInstanceFolder", id)

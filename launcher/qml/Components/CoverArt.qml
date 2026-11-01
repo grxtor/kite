@@ -8,7 +8,8 @@ import Kite.Theme
 /*
  * Art behind one instance: its cover (`source`), else a platform pack's logo (`packArt`) as a soft wash, else a soft
  * gradient from the icon's colour (`tint`), else a plain PlaceholderSurface. Never a stand-in scene. Each place sets
- * how sharp a photo is (`photoSoftness`), whether it is a chosen screenshot or the version's title screen (`kind`).
+ * how sharp a photo is (`photoSoftness`), whether it is a chosen screenshot, the pack's own art or the version's title
+ * screen (`kind`).
  * Rectangle's `clip` only clips to the bounding box and Qt < 6.5 cannot mask an Image, so the photo fills the item
  * square and a ring in `matte` (the colour behind this item) paints over the four corners.
  */
@@ -16,7 +17,7 @@ Item {
     id: root
 
     property url source: ""
-    // InstanceList's coverKind: "custom", "panorama" or "".
+    // InstanceList's coverKind: "custom", "platform", "panorama" or "".
     property string kind: "custom"
     // The icon's colour (Icons.tint); the gradient shows when there is no photo and no pack art.
     property color tint: "transparent"

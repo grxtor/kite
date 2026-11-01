@@ -56,6 +56,7 @@
 #include "icons/IconList.h"
 #include "net/HttpMetaCache.h"
 #include "screenshots/ScreenshotListModel.h"
+#include "modplatform/PlatformCoverFetcher.h"
 #include "launch/LaunchProgressTracker.h"
 #include "launch/LaunchTask.h"
 
@@ -73,6 +74,22 @@ InstanceList::InstanceList(SettingsObjectPtr settings,
 			&InstanceList::instanceDirContentsChanged);
 
 	applyInstanceDirs(resolveInstanceDirs(instDirs));
+
+	m_platformCovers = new PlatformCoverFetcher(this);
+	connect(m_platformCovers, &PlatformCoverFetcher::finished, this,
+			[this](const QString& id, PlatformCoverFetcher::Outcome outcome,
+				   const QString& fileName) {
+				InstancePtr inst = getInstanceById(id);
+				if (!inst || outcome == PlatformCoverFetcher::Outcome::Failed) {
+					return;
+				}
+				if (outcome == PlatformCoverFetcher::Outcome::Found) {
+					inst->setPlatformCover(fileName, 0);
+				} else {
+					inst->setPlatformCover(
+						QString(), QDateTime::currentSecsSinceEpoch());
+				}
+			});
 }
 
 QStringList InstanceList::resolveInstanceDirs(const QStringList& dirs) const
@@ -212,14 +229,27 @@ QModelIndex InstanceList::index(int row, int column,
 
 namespace
 {
-// The picked cover as a full path; only the file name is stored, so a copy
-// of the instance resolves it inside its own screenshots folder.
+// Copies of picked screenshots; a cover set before copies existed names the screenshot itself.
+const QString kCustomCoverPrefix = QStringLiteral("kite-cover-custom");
+
+// The picked cover as a full path.
 QString coverFilePath(const BaseInstance* inst)
 {
 	const QString name = QFileInfo(inst->coverImage()).fileName();
-	return name.isEmpty()
-			   ? QString()
+	if (name.isEmpty()) {
+		return QString();
+	}
+	return name.startsWith(kCustomCoverPrefix)
+			   ? FS::PathCombine(inst->instanceRoot(), name)
 			   : FS::PathCombine(inst->gameRoot(), "screenshots", name);
+}
+
+// The fetched modpack art as a full path.
+QString platformCoverPath(const BaseInstance* inst)
+{
+	const QString name = QFileInfo(inst->platformCover()).fileName();
+	return name.isEmpty() ? QString()
+						  : FS::PathCombine(inst->instanceRoot(), name);
 }
 } // namespace
 
@@ -292,6 +322,7 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 		case CoverKindRole: {
 			const InstanceId id = pdata->id();
 			const QString customPath = coverFilePath(pdata);
+			const QString platformPath = platformCoverPath(pdata);
 			const QString version = pdata->gameVersion();
 			CoverEntry entry;
 			auto it = m_coverCache.constFind(id);
@@ -299,16 +330,25 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 				entry = it.value();
 			}
 			if (it == m_coverCache.constEnd() ||
-				entry.customPath != customPath || entry.version != version) {
+				entry.customPath != customPath ||
+				entry.platformPath != platformPath ||
+				entry.version != version) {
 				/* Missing or made for other values: look up in the background
 				 * and answer with the old entry (or nothing) meanwhile; the
 				 * row picks up the result with its dataChanged. data() is
 				 * const, hence the const_cast: scheduling mutates
 				 * m_coverScansPending and connects a QFutureWatcher. */
 				const_cast<InstanceList*>(this)->scheduleCoverScan(
-					id, customPath, version);
+					id, customPath, platformPath, version);
 			}
 			return role == CoverImageRole ? entry.info.url : entry.info.kind;
+		}
+		case CoverSourceRole: {
+			const QString source = pdata->coverSource();
+			const QString image = pdata->coverImage();
+			return source.isEmpty() && !image.startsWith(kCustomCoverPrefix)
+					   ? image
+					   : source;
 		}
 		case HasCrashedRole: {
 			return pdata->hasCrashed();
@@ -349,6 +389,7 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(LaunchProgressRole, "launchProgress");
 	roles.insert(CoverImageRole, "coverImage");
 	roles.insert(CoverKindRole, "coverKind");
+	roles.insert(CoverSourceRole, "coverSource");
 	roles.insert(HasCrashedRole, "hasCrashed");
 	roles.insert(PackArtRole, "packArt");
 	return roles;
@@ -794,6 +835,7 @@ InstanceList::InstListError InstanceList::loadList()
 			m_coverCache.remove(removedId);
 			m_coverScansPending.remove(removedId);
 			m_coverGeneration.remove(removedId);
+			m_coverPicks.remove(removedId);
 			currentItem = removedItem.second;
 			if (back_bookmark == -1) {
 				back_bookmark = currentItem;
@@ -892,6 +934,7 @@ void InstanceList::emitIsRunningChanged(BaseInstance* inst)
 		for (const InstanceId& other : again) {
 			if (InstancePtr found = getInstanceById(other)) {
 				scheduleCoverScan(other, coverFilePath(found.get()),
+								  platformCoverPath(found.get()),
 								  found->gameVersion());
 			}
 		}
@@ -935,6 +978,7 @@ struct CoverScanResult {
 
 void InstanceList::scheduleCoverScan(const InstanceId& id,
 									 const QString& customPath,
+									 const QString& platformPath,
 									 const QString& version)
 {
 	if (m_coverScansPending.contains(id)) {
@@ -949,7 +993,8 @@ void InstanceList::scheduleCoverScan(const InstanceId& id,
 
 	auto* watcher = new QFutureWatcher<CoverScanResult>(this);
 	connect(watcher, &QFutureWatcher<CoverScanResult>::finished, this,
-			[this, id, generation, customPath, version, panoramaKey, watcher]() {
+			[this, id, generation, customPath, platformPath, version, panoramaKey,
+			 watcher]() {
 				const CoverScanResult result = watcher->result();
 				watcher->deleteLater();
 				m_coverScansPending.remove(id);
@@ -966,27 +1011,35 @@ void InstanceList::scheduleCoverScan(const InstanceId& id,
 					/* The instance stopped while this lookup was in flight, so
 					 * it saw the disk from before; a fresh one replaces it. */
 					scheduleCoverScan(id, coverFilePath(inst.get()),
+									  platformCoverPath(inst.get()),
 									  inst->gameVersion());
 					return;
 				}
 
-				m_coverCache.insert(id, {customPath, version, result.info});
+				m_coverCache.insert(
+					id, {customPath, platformPath, version, result.info});
 				const int row = getInstIndex(inst.get());
 				if (row != -1) {
 					emit dataChanged(index(row), index(row),
 									 {CoverImageRole, CoverKindRole});
 				}
+				// Shown without a picked cover or fetched art: ask the
+				// platform for the pack's own picture (once; see the fetcher).
+				if (result.info.kind != QLatin1String("custom") &&
+					result.info.kind != QLatin1String("platform")) {
+					m_platformCovers->request(inst);
+				}
 			});
 	watcher->setFuture(QtConcurrent::run(
 		QThreadPool::globalInstance(),
-		[dirs, customPath, version, face, knownPanorama]() {
+		[dirs, customPath, platformPath, version, face, knownPanorama]() {
 			CoverScanResult result;
 			result.panorama = knownPanorama;
 			if (result.panorama.isEmpty() ||
 				!QFileInfo::exists(result.panorama)) {
 				result.panorama = panoramaPath(dirs, version, face);
 			}
-			result.info = pickCover(customPath, result.panorama);
+			result.info = pickCover(customPath, platformPath, result.panorama);
 			return result;
 		}));
 }
@@ -1058,11 +1111,16 @@ QString InstanceList::panoramaPath(const CoverDirs& dirs,
 }
 
 InstanceList::CoverInfo InstanceList::pickCover(const QString& customPath,
+												const QString& platformPath,
 												const QString& panoramaPath)
 {
 	if (!customPath.isEmpty() && QFileInfo(customPath).isFile()) {
 		return {QUrl::fromLocalFile(customPath).toString(),
 				QStringLiteral("custom")};
+	}
+	if (!platformPath.isEmpty() && QFileInfo(platformPath).isFile()) {
+		return {QUrl::fromLocalFile(platformPath).toString(),
+				QStringLiteral("platform")};
 	}
 	if (!panoramaPath.isEmpty()) {
 		return {QUrl::fromLocalFile(panoramaPath).toString(),
@@ -1071,35 +1129,112 @@ InstanceList::CoverInfo InstanceList::pickCover(const QString& customPath,
 	return {};
 }
 
+namespace
+{
+// The copy's name carries a random part: a reused name would keep showing the old picture from the image cache.
+QString copyCoverFile(const QString& source, const QString& root)
+{
+	const QString name =
+		QStringLiteral("%1-%2.%3")
+			.arg(kCustomCoverPrefix,
+				 QUuid::createUuid().toString(QUuid::Id128).left(8),
+				 QFileInfo(source).suffix().toLower());
+	const QString target = FS::PathCombine(root, name);
+	const QString part = target + QStringLiteral(".part");
+	QFile::remove(part);
+	if (!QFile::copy(source, part) || !QFile::rename(part, target)) {
+		QFile::remove(part);
+		return QString();
+	}
+	return name;
+}
+
+// Only our own copies: an older cover named a screenshot, which is not ours to delete.
+void removeCoverCopy(const QString& root, const QString& name)
+{
+	const QString file = QFileInfo(name).fileName();
+	if (file != name || !file.startsWith(kCustomCoverPrefix)) {
+		return;
+	}
+	const QString path = FS::PathCombine(root, file);
+	QtConcurrent::run(QThreadPool::globalInstance(),
+					  [path]() { QFile::remove(path); });
+}
+
+// Checks the file is an image of the screenshots folder, then copies it; the copy's name, or empty. Worker only.
+QString copyScreenshotAsCover(const QString& gameRoot, const QString& root,
+							  const QString& pathOrFileUrl)
+{
+	const QUrl url(pathOrFileUrl);
+	const QFileInfo info(url.isLocalFile() ? url.toLocalFile() : pathOrFileUrl);
+	if (!info.isFile() ||
+		!ScreenshotListModel::isImageFile(info.fileName())) {
+		return QString();
+	}
+	const QString shots =
+		QFileInfo(FS::PathCombine(gameRoot, "screenshots")).canonicalFilePath();
+	if (shots.isEmpty() ||
+		QFileInfo(info.absolutePath()).canonicalFilePath() != shots) {
+		return QString();
+	}
+	return copyCoverFile(info.absoluteFilePath(), root);
+}
+} // namespace
+
 bool InstanceList::setCover(const QString& id, const QString& pathOrFileUrl)
 {
 	InstancePtr inst = getInstanceById(id);
 	if (!inst) {
 		return false;
 	}
+	// A later pick or removal makes this one stale, whatever order they finish in.
+	const int pick = ++m_coverPicks[id];
+	const QString root = inst->instanceRoot();
+	const QString gameRoot = inst->gameRoot();
 	const QUrl url(pathOrFileUrl);
-	const QString path =
-		url.isLocalFile() ? url.toLocalFile() : pathOrFileUrl;
-	const QFileInfo info(path);
-	if (!info.isFile() ||
-		!ScreenshotListModel::isImageFile(info.fileName())) {
-		return false;
-	}
-	const QString shots = QFileInfo(FS::PathCombine(inst->gameRoot(),
-													"screenshots"))
-							  .canonicalFilePath();
-	if (shots.isEmpty() ||
-		QFileInfo(info.absolutePath()).canonicalFilePath() != shots) {
-		return false;
-	}
-	inst->setCoverImage(info.fileName());
+	const QString sourceName =
+		QFileInfo(url.isLocalFile() ? url.toLocalFile() : pathOrFileUrl)
+			.fileName();
+	auto* watcher = new QFutureWatcher<QString>(this);
+	connect(watcher, &QFutureWatcher<QString>::finished, this,
+			[this, id, pick, sourceName, root, watcher]() {
+				const QString copy = watcher->result();
+				watcher->deleteLater();
+				if (copy.isEmpty()) {
+					return;
+				}
+				InstancePtr found = getInstanceById(id);
+				if (!found || m_coverPicks.value(id) != pick) {
+					removeCoverCopy(root, copy);
+					return;
+				}
+				const QString previous = found->coverImage();
+				found->setCustomCover(copy, sourceName);
+				removeCoverCopy(root, previous);
+			});
+	watcher->setFuture(QtConcurrent::run(
+		QThreadPool::globalInstance(), [gameRoot, root, pathOrFileUrl]() {
+			return copyScreenshotAsCover(gameRoot, root, pathOrFileUrl);
+		}));
 	return true;
 }
 
 void InstanceList::clearCover(const QString& id)
 {
 	if (InstancePtr inst = getInstanceById(id)) {
-		inst->setCoverImage(QString());
+		++m_coverPicks[id];
+		const QString previous = inst->coverImage();
+		inst->setCustomCover(QString(), QString());
+		removeCoverCopy(inst->instanceRoot(), previous);
+	}
+}
+
+void InstanceList::renameCoverSource(const QString& id, const QString& fileName)
+{
+	InstancePtr inst = getInstanceById(id);
+	if (inst && !inst->coverImage().isEmpty()) {
+		inst->setCustomCover(inst->coverImage(),
+							 QFileInfo(fileName).fileName());
 	}
 }
 
