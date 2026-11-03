@@ -3099,7 +3099,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FeaturedServers</name>
     <message>
-        <location filename="../launcher/servers/FeaturedServers.cpp" line="+163"/>
+        <location filename="../launcher/servers/FeaturedServers.cpp" line="+195"/>
         <source>Featured servers</source>
         <translation>Öne çıkan sunucular</translation>
     </message>
@@ -11591,12 +11591,13 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QuickJoinBar</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+125"/>
+        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+131"/>
+        <location line="+37"/>
         <source>More servers</source>
         <translation>Diğer sunucular</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="-25"/>
         <source>Join with %1</source>
         <translation>%1 ile katıl</translation>
     </message>
@@ -11615,21 +11616,11 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <source>Copy address</source>
         <translation>Adresi kopyala</translation>
     </message>
-    <message>
-        <location line="+16"/>
-        <source>%1 · %2 online</source>
-        <translation>%1 · %2 çevrimiçi</translation>
-    </message>
 </context>
 <context>
     <name>QuickJoinEntry</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinEntry.qml" line="+35"/>
-        <source>Offline</source>
-        <translation>Çevrimdışı</translation>
-    </message>
-    <message>
-        <location line="+4"/>
+        <location filename="../launcher/qml/Components/QuickJoinEntry.qml" line="+36"/>
         <source>Join %1 with %2</source>
         <translation>%2 ile %1 sunucusuna katıl</translation>
     </message>
@@ -11653,6 +11644,14 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <location line="+4"/>
         <source>Not answering right now</source>
         <translation>Şu an yanıt vermiyor</translation>
+    </message>
+</context>
+<context>
+    <name>QuickJoinSummary</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinSummary.qml" line="+30"/>
+        <source>Offline</source>
+        <translation>Çevrimdışı</translation>
     </message>
 </context>
 <context>
@@ -12091,7 +12090,7 @@ Currently installed version: %1</source>
 <context>
     <name>ServerJoinFlow</name>
     <message>
-        <location filename="../launcher/qml/Components/ServerJoinFlow.qml" line="+32"/>
+        <location filename="../launcher/qml/Components/ServerJoinFlow.qml" line="+36"/>
         <source>%1 to %2</source>
         <translation>%1 – %2</translation>
     </message>
@@ -12106,7 +12105,7 @@ Currently installed version: %1</source>
         <translation>%1 veya daha eski</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+23"/>
         <source>%1 is already running. Quit it, then press Join.</source>
         <translation>%1 zaten açık. Kapatıp Katıl&apos;a yeniden bas.</translation>
     </message>

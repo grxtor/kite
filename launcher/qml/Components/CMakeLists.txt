@@ -269,6 +269,7 @@ qt_add_qml_module(Kite_qml_components
         ServersTab.qml
         QuickJoinEntry.qml
         QuickJoinBar.qml
+        QuickJoinSummary.qml
         FriendHeads.qml
         JoinInstanceList.qml
         ServerJoinDialog.qml

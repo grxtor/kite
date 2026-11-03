@@ -49,6 +49,15 @@ Item {
         for (var i = 0; i < root.servers.length; ++i)
             root.pinger.ping(root.servers[i].address)
     }
+    // Join with… / Copy address for @p server, under @p anchor, or at the pointer without one.
+    function openServerMenu(server, anchor) {
+        serverMenu.server = server
+        serverMenu.instanceName = root.joinFlow ? root.joinFlow.instanceName(server) : ""
+        if (anchor)
+            serverMenu.popup(anchor, 0, anchor.height)
+        else
+            serverMenu.popup()
+    }
     // Entries in order while they fit; the ⋯ button takes its room once one does not.
     function measure() {
         var widths = []
@@ -108,11 +117,7 @@ Item {
                 joinFlow: root.joinFlow
                 menuOpen: serverMenu.visible && serverMenu.server.id === entry.modelData.id
                 onClicked: root.joinRequested(entry.modelData)
-                onMenuRequested: {
-                    serverMenu.server = entry.modelData
-                    serverMenu.instanceName = root.joinFlow ? root.joinFlow.instanceName(entry.modelData) : ""
-                    serverMenu.popup(entry, 0, entry.height)
-                }
+                onMenuRequested: root.openServerMenu(entry.modelData, entry)
                 onImplicitWidthChanged: Qt.callLater(root.measure)
             }
         }
@@ -124,7 +129,8 @@ Item {
             size: Theme.control.heightSm
             iconName: "more"
             tip: qsTr("More servers")
-            onClicked: overflowMenu.popup(more, 0, more.height)
+            // Opens leftward, its right edge under the button's, so it stays inside the page's column.
+            onClicked: overflowMenu.popup(more, more.width - overflowMenu.width, more.height)
         }
     }
 
@@ -154,22 +160,49 @@ Item {
     Menu {
         id: overflowMenu
 
+        // What the list is, so a single row reads as a menu.
+        MenuItem {
+            enabled: false
+            background: null
+            contentItem: Copy {
+                text: qsTr("More servers")
+                role: "caption"
+                tone: "tertiary"
+            }
+        }
+
+        // The same line as an entry; a click joins, a right-click offers the server's own menu.
         Instantiator {
             model: root.hidden
             delegate: MenuItem {
+                id: hiddenRow
                 required property var modelData
-                readonly property var status: root.statusOf(modelData.address, root.pinger ? root.pinger.revision : 0)
 
-                text: status.state === "online" && status.online >= 0
-                      ? qsTr("%1 · %2 online").arg(modelData.name)
-                                              .arg(Number(status.online).toLocaleString(Qt.locale(), "f", 0))
-                      : modelData.name
-                // A favicon keeps its own colours.
-                icon.source: status.favicon || Icons.url("server")
-                icon.color: status.favicon ? "transparent" : Theme.palette.textPrimary
-                onTriggered: root.joinRequested(modelData)
+                text: hiddenRow.modelData.name
+                contentItem: Item {
+                    implicitWidth: line.implicitWidth
+                    implicitHeight: line.implicitHeight
+
+                    QuickJoinSummary {
+                        id: line
+                        anchors.verticalCenter: parent.verticalCenter
+                        server: hiddenRow.modelData
+                        status: root.statusOf(hiddenRow.modelData.address, root.pinger ? root.pinger.revision : 0)
+                        friends: root.friendsOn(hiddenRow.modelData.address)
+                    }
+                }
+                onTriggered: root.joinRequested(hiddenRow.modelData)
+
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: {
+                        overflowMenu.close()
+                        root.openServerMenu(hiddenRow.modelData, null)
+                    }
+                }
             }
-            onObjectAdded: (index, object) => overflowMenu.insertItem(index, object)
+            // After the heading.
+            onObjectAdded: (index, object) => overflowMenu.insertItem(index + 1, object)
             onObjectRemoved: (index, object) => overflowMenu.removeItem(object)
         }
     }
