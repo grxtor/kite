@@ -1148,6 +1148,10 @@ add_unit_test(LaunchTask
     SOURCES launch/LaunchTask_test.cpp
     LIBS Kite_core
     )
+add_unit_test(LoggedProcess
+    SOURCES LoggedProcess_test.cpp
+    LIBS Kite_core
+    )
 
 add_unit_test(IdSelectionModel
     SOURCES models/IdSelectionModel_test.cpp
