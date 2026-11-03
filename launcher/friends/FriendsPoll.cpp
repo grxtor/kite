@@ -379,6 +379,7 @@ void FriendsController::applySnapshot(
 		emit changed();
 	}
 	fetchFaces();
+	notifyChanges(snapshot, m_updatedAt);
 }
 
 void FriendsController::clearData()
@@ -394,6 +395,7 @@ void FriendsController::clearData()
 	m_settings = FriendsDisplay::settingsMap({});
 	m_settingsLoaded = false;
 	m_dataProfile.clear();
+	m_noticeMemory = {};
 	if (hadUpdate) {
 		emit updatedAtChanged();
 	}

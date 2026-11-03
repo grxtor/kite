@@ -34,6 +34,7 @@
 
 #include "FriendsApi.h"
 #include "FriendsHttp.h"
+#include "FriendsNotices.h"
 #include "modbridge/ModBridgeJson.h"
 
 class BaseInstance;
@@ -146,6 +147,7 @@ class FriendsController : public QObject
 	static constexpr const char* kEnabledSetting = "FriendsEnabled";
 	static constexpr const char* kServerUrlSetting = "FriendsServerUrl";
 	static constexpr const char* kMojangUrlSetting = "FriendsMojangSessionUrl";
+	static constexpr const char* kNotifySetting = "FriendsNotifications";
 
 	enum class State { Off, NoAccount, SigningIn, Ready, Error };
 	using SessionDone = std::function<void(bool)>;
@@ -230,6 +232,12 @@ class FriendsController : public QObject
 	void fetchFaces();
 	void onFacesChanged();
 
+	// Desktop notifications (FriendsNotify.cpp)
+	/// Tells the plugins (DesktopNotifier) who came online and which requests
+	/// arrived since the last snapshot, while kNotifySetting is on.
+	void notifyChanges(const FriendsApi::FriendsSnapshot& snapshot,
+					   const QDateTime& now);
+
 	// Actions (FriendsActions.cpp)
 	/// Words the outcome with @p interpret (sets *ok, returns the message); a success re-reads the lists.
 	void act(const QString& action, const QByteArray& verb,
@@ -306,6 +314,8 @@ class FriendsController : public QObject
 	QVariantList m_blocked;
 	QVariantMap m_settings;
 	QDateTime m_updatedAt;
+	/// What the next snapshot's notices are worked out against; reset with the data.
+	FriendsNotices::Memory m_noticeMemory;
 
 	struct SelfView {
 		FriendsApi::Presence sent;
