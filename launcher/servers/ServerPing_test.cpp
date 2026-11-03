@@ -157,7 +157,8 @@ namespace
 			++ends;
 		});
 		ping.start();
-		QTest::qWaitFor([&ends] { return ends > 0; }, kWaitMs);
+		// A ping that never ends is caught by the count below.
+		(void)QTest::qWaitFor([&ends] { return ends > 0; }, kWaitMs);
 		// Exactly one ending, and nothing after it.
 		QTest::qWait(kTestTimeoutMs / 2);
 		if (ends != 1) {

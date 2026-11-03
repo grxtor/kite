@@ -47,6 +47,9 @@ class ServerPing : public QObject
 	/// three bytes each and the packet's own fields.
 	static constexpr int kMaxPacketBytes = 32767 * 3 + 16;
 	static constexpr int kDefaultTimeoutMs = 5000;
+	/// A lost DNS packet costs the resolver its 5 s retry; past this the
+	/// ping goes to the host as written, as the game does without SRV.
+	static constexpr int kSrvTimeoutMs = 1500;
 
 	/// @p host and @p port as the player wrote them (the handshake carries
 	/// them, which name-based proxies route by); @p lookupSrv first asks
@@ -74,6 +77,7 @@ class ServerPing : public QObject
 
 	void connectTo(const QString& host, quint16 port);
 	void onSrvFinished();
+	void onSrvTimeout();
 	void onConnected();
 	void onReadyRead();
 	void onClosed();
@@ -93,6 +97,7 @@ class ServerPing : public QObject
 	QDnsLookup* m_dns = nullptr;
 	QTcpSocket* m_socket = nullptr;
 	QTimer m_timeout;
+	QTimer m_srvTimeout;
 	QElapsedTimer m_clock;
 	QByteArray m_buffer;
 	ServerStatus::Status m_status;

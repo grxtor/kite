@@ -74,6 +74,9 @@ ServerPing::ServerPing(const QString& host, quint16 port, bool lookupSrv,
 	m_timeout.setSingleShot(true);
 	m_timeout.setInterval(kDefaultTimeoutMs);
 	connect(&m_timeout, &QTimer::timeout, this, &ServerPing::onTimeout);
+	m_srvTimeout.setSingleShot(true);
+	m_srvTimeout.setInterval(kSrvTimeoutMs);
+	connect(&m_srvTimeout, &QTimer::timeout, this, &ServerPing::onSrvTimeout);
 }
 
 ServerPing::~ServerPing()
@@ -129,7 +132,20 @@ void ServerPing::start()
 	m_phase = Phase::Resolving;
 	m_dns = new QDnsLookup(QDnsLookup::SRV, kSrvPrefix + m_host, this);
 	connect(m_dns, &QDnsLookup::finished, this, &ServerPing::onSrvFinished);
+	m_srvTimeout.start();
 	m_dns->lookup();
+}
+
+void ServerPing::onSrvTimeout()
+{
+	if (m_phase != Phase::Resolving) {
+		return;
+	}
+	m_dns->disconnect(this);
+	m_dns->abort();
+	m_dns->deleteLater();
+	m_dns = nullptr;
+	connectTo(m_host, m_port);
 }
 
 void ServerPing::onSrvFinished()
@@ -137,6 +153,7 @@ void ServerPing::onSrvFinished()
 	if (m_phase != Phase::Resolving) {
 		return;
 	}
+	m_srvTimeout.stop();
 	QString host = m_host;
 	quint16 port = m_port;
 	const auto records = m_dns->serviceRecords();
@@ -258,6 +275,14 @@ void ServerPing::onClosed()
 
 void ServerPing::onTimeout()
 {
+	/* A busy event loop can let the timer in before an answer that has
+	 * already come. */
+	if (m_socket && m_socket->bytesAvailable() > 0) {
+		onReadyRead();
+		if (m_phase == Phase::Done) {
+			return;
+		}
+	}
 	if (m_phase == Phase::Pong) {
 		succeed();
 	} else {
@@ -288,6 +313,7 @@ void ServerPing::fail(const QString& reason)
 void ServerPing::cleanUp()
 {
 	m_timeout.stop();
+	m_srvTimeout.stop();
 	if (m_socket) {
 		m_socket->disconnect(this);
 		m_socket->abort();
