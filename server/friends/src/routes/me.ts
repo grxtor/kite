@@ -5,12 +5,14 @@ import { badRequest } from '../errors.ts';
 import { settingsBody, statusBody } from '../schemas.ts';
 import { normalizeHost } from '../serverAddress.ts';
 import { cleanText, defaultMinecraftPort, statusView, visibleWorld, type Visibility, type World } from '../status.ts';
+import { dropUnsharedInvites } from './invites.ts';
 
 interface SettingsRow {
   visibility: Visibility;
   hide_server: boolean;
   share_ip_servers: boolean;
   allow_join: boolean;
+  allow_invites: boolean;
 }
 
 interface SettingsPatch {
@@ -18,6 +20,7 @@ interface SettingsPatch {
   hideServer?: boolean;
   shareIpServers?: boolean;
   allowJoin?: boolean;
+  allowInvites?: boolean;
 }
 
 interface StatusBody {
@@ -27,7 +30,7 @@ interface StatusBody {
   world?: { type: 'server' | 'singleplayer'; host?: string; port?: number } | null;
 }
 
-const settingsColumns = 'visibility, hide_server, share_ip_servers, allow_join';
+const settingsColumns = 'visibility, hide_server, share_ip_servers, allow_join, allow_invites';
 
 function settingsJson(row: SettingsRow) {
   return {
@@ -35,6 +38,7 @@ function settingsJson(row: SettingsRow) {
     hideServer: row.hide_server,
     shareIpServers: row.share_ip_servers,
     allowJoin: row.allow_join,
+    allowInvites: row.allow_invites,
   };
 }
 
@@ -69,13 +73,14 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
 
   app.patch<{ Body: SettingsPatch }>('/v1/me/settings', { schema: { body: settingsBody } }, async (request) => {
     const user = currentUser(request);
-    const { visibility, hideServer, shareIpServers, allowJoin } = request.body;
+    const { visibility, hideServer, shareIpServers, allowJoin, allowInvites } = request.body;
     return withTransaction(ctx.pool, async (client) => {
       const { rows } = await client.query<SettingsRow>(
         `update users set visibility = coalesce($2, visibility), hide_server = coalesce($3, hide_server),
-           share_ip_servers = coalesce($4, share_ip_servers), allow_join = coalesce($5, allow_join)
+           share_ip_servers = coalesce($4, share_ip_servers), allow_join = coalesce($5, allow_join),
+           allow_invites = coalesce($6, allow_invites)
          where uuid = $1 returning ${settingsColumns}`,
-        [user.uuid, visibility ?? null, hideServer ?? null, shareIpServers ?? null, allowJoin ?? null],
+        [user.uuid, visibility ?? null, hideServer ?? null, shareIpServers ?? null, allowJoin ?? null, allowInvites ?? null],
       );
       const settings = rows[0]!;
       // Invisible means nothing about the player's activity is kept.
@@ -83,6 +88,8 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
         await client.query('delete from presence where user_uuid = $1', [user.uuid]);
         await client.query('update users set last_seen_at = null where uuid = $1', [user.uuid]);
       }
+      if (!settings.allow_invites) await client.query('delete from invites where to_uuid = $1', [user.uuid]);
+      if (!settings.share_ip_servers) await dropUnsharedInvites(client, user.uuid);
       return settingsJson(settings);
     });
   });

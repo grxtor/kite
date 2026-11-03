@@ -35,6 +35,7 @@ export interface Settings {
   hideServer: boolean;
   shareIpServers: boolean;
   allowJoin: boolean;
+  allowInvites: boolean;
 }
 
 export interface MeBody extends UserRef {
@@ -65,9 +66,22 @@ export interface RequestEntry extends UserRef {
   createdAt: string;
 }
 
+export interface InviteEntry extends UserRef {
+  host: string;
+  port: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface InvitesBody {
+  incoming: InviteEntry[];
+  outgoing: InviteEntry[];
+}
+
 export interface FriendsBody {
   friends: FriendEntry[];
   requests: { incoming: RequestEntry[]; outgoing: RequestEntry[] };
+  invites: InvitesBody;
 }
 
 export interface ErrorBody {
@@ -121,6 +135,10 @@ const relaxedRateLimits: RateLimits = {
   friendRequestsPerHour: RELAXED_LIMIT,
   friendRequestsPerPairPerDay: RELAXED_LIMIT,
   lookupsPerMinute: RELAXED_LIMIT,
+  invitesPerHour: RELAXED_LIMIT,
+  invitesPerPairPerHour: RELAXED_LIMIT,
+  shareCodesPerHour: RELAXED_LIMIT,
+  shareCodeFetchesPerHour: RELAXED_LIMIT,
 };
 
 export async function startServer(overrides: TestConfigOverrides = {}): Promise<TestServer> {

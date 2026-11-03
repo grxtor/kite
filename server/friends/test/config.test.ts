@@ -11,6 +11,10 @@ describe('defaultRateLimits', () => {
       friendRequestsPerHour: 30,
       friendRequestsPerPairPerDay: 3,
       lookupsPerMinute: 30,
+      invitesPerHour: 30,
+      invitesPerPairPerHour: 5,
+      shareCodesPerHour: 20,
+      shareCodeFetchesPerHour: 30,
     });
   });
 });

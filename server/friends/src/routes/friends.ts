@@ -6,6 +6,7 @@ import { badRequest, HttpError, notFound } from '../errors.ts';
 import { nameBody, uuidParams } from '../schemas.ts';
 import { presenceColumns, statusView, type PresenceRow } from '../status.ts';
 import { areFriends, findUserByName, hasBlockBetween, lockPair, type UserRef } from '../users.ts';
+import { deleteInvitesBetween, liveInvites } from './invites.ts';
 
 const maxFriends = 500;
 const maxPendingOutgoing = 100;
@@ -87,6 +88,7 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
         status: statusView(row),
       })),
       requests: { incoming: incoming.rows.map(requestJson), outgoing: outgoing.rows.map(requestJson) },
+      invites: await liveInvites(ctx.pool, me, ctx.now()),
     };
   });
 
@@ -185,11 +187,19 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
   );
 
   app.delete<{ Params: { uuid: string } }>('/v1/friends/:uuid', { schema: { params: uuidParams } }, async (request, reply) => {
-    const removed = await ctx.pool.query(
-      'delete from friendships where user_a = least($1::uuid, $2::uuid) and user_b = greatest($1::uuid, $2::uuid)',
-      [currentUser(request).uuid, request.params.uuid],
-    );
-    if (removed.rowCount === 0) throw notFound('Not friends with this player');
+    const me = currentUser(request).uuid;
+    const other = request.params.uuid.toLowerCase();
+    const removed = await withTransaction(ctx.pool, async (client) => {
+      await lockPair(client, me, other);
+      const { rowCount } = await client.query(
+        'delete from friendships where user_a = least($1::uuid, $2::uuid) and user_b = greatest($1::uuid, $2::uuid)',
+        [me, other],
+      );
+      // Invites only go between friends.
+      await deleteInvitesBetween(client, me, other);
+      return rowCount ?? 0;
+    });
+    if (removed === 0) throw notFound('Not friends with this player');
     return reply.status(204).send();
   });
 }

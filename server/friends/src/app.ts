@@ -8,8 +8,10 @@ import { RateLimiter } from './rateLimit.ts';
 import { authenticator, registerAuthRoutes, registerLogoutRoute } from './routes/auth.ts';
 import { registerBlockRoutes } from './routes/blocks.ts';
 import { registerFriendRoutes } from './routes/friends.ts';
+import { registerInviteRoutes } from './routes/invites.ts';
 import { registerMeRoutes } from './routes/me.ts';
 import { registerPlayerRoutes } from './routes/players.ts';
+import { registerShareCodeRoutes } from './routes/shareCodes.ts';
 
 export interface AppDeps {
   config: Config;
@@ -24,6 +26,8 @@ async function purgeExpired(ctx: Context): Promise<void> {
   await ctx.pool.query('delete from challenges where expires_at <= $1', [now]);
   await ctx.pool.query('delete from sessions where expires_at <= $1', [now]);
   await ctx.pool.query('delete from presence where expires_at <= $1', [now]);
+  await ctx.pool.query('delete from invites where expires_at <= $1', [now]);
+  await ctx.pool.query('delete from share_codes where expires_at <= $1', [now]);
   ctx.limiter.sweep();
 }
 
@@ -72,6 +76,8 @@ export async function buildApp({ config, pool, clock = Date.now }: AppDeps): Pro
     registerFriendRoutes(scope, ctx);
     registerBlockRoutes(scope, ctx);
     registerPlayerRoutes(scope, ctx);
+    registerInviteRoutes(scope, ctx);
+    registerShareCodeRoutes(scope, ctx);
   });
 
   // An idle connection dropped by Postgres must not take the process down; the pool replaces it.

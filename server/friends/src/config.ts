@@ -5,6 +5,10 @@ export interface RateLimits {
   friendRequestsPerHour: number;
   friendRequestsPerPairPerDay: number;
   lookupsPerMinute: number;
+  invitesPerHour: number;
+  invitesPerPairPerHour: number;
+  shareCodesPerHour: number;
+  shareCodeFetchesPerHour: number;
 }
 
 export interface Config {
@@ -27,6 +31,10 @@ export const defaultRateLimits: RateLimits = {
   friendRequestsPerHour: 30,
   friendRequestsPerPairPerDay: 3,
   lookupsPerMinute: 30,
+  invitesPerHour: 30,
+  invitesPerPairPerHour: 5,
+  shareCodesPerHour: 20,
+  shareCodeFetchesPerHour: 30,
 };
 
 function positiveInt(env: Record<string, string | undefined>, key: string, fallback: number): number {

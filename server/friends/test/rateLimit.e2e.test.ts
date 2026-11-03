@@ -79,6 +79,97 @@ describe('rate limits', () => {
     });
   });
 
+  describe('invites', () => {
+    const invite = (server: TestServer, from: Player, to: Player) =>
+      server.api<ErrorBody>('PUT', `/v1/invites/${to.uuid}`, { token: from.token, body: { host: 'mc.hypixel.net' } });
+
+    async function friendsOf(server: TestServer, player: Player, count: number): Promise<Player[]> {
+      const friends: Player[] = [];
+      for (let i = 0; i < count; i += 1) {
+        const friend = await server.newPlayer();
+        await server.makeFriends(player, friend);
+        friends.push(friend);
+      }
+      return friends;
+    }
+
+    test('are limited per sender per hour', async () => {
+      const server = await start({ rateLimits: { invitesPerHour: 2 } });
+      const a = await server.newPlayer();
+      const b = await server.newPlayer();
+      const [first, second, third] = await friendsOf(server, a, 3);
+      assert.ok(first && second && third);
+      await server.makeFriends(b, third);
+
+      assert.equal((await invite(server, a, first)).status, 200);
+      assert.equal((await invite(server, a, second)).status, 200);
+      assertLimited(await invite(server, a, third), HOUR);
+      assert.equal((await invite(server, b, third)).status, 200);
+
+      server.clock.advance(HOUR + 1);
+      assert.equal((await invite(server, a, third)).status, 200);
+    });
+
+    test('refused invites count too, so the endpoint cannot be used to probe', async () => {
+      const server = await start({ rateLimits: { invitesPerHour: 2 } });
+      const a = await server.newPlayer();
+      const stranger = await server.newPlayer();
+      assert.equal((await invite(server, a, stranger)).status, 404);
+      assert.equal((await invite(server, a, stranger)).status, 404);
+      assertLimited(await invite(server, a, stranger), HOUR);
+    });
+
+    test('are limited per pair, re-invites included', async () => {
+      const server = await start({ rateLimits: { invitesPerPairPerHour: 3 } });
+      const a = await server.newPlayer();
+      const [b, c] = await friendsOf(server, a, 2);
+      assert.ok(b && c);
+      for (let i = 0; i < 3; i += 1) assert.equal((await invite(server, a, b)).status, 200, `invite ${i + 1}`);
+      assertLimited(await invite(server, a, b), HOUR);
+      assert.equal((await invite(server, a, c)).status, 200);
+      assert.equal((await invite(server, b, a)).status, 200);
+
+      server.clock.advance(HOUR + 1);
+      assert.equal((await invite(server, a, b)).status, 200);
+    });
+  });
+
+  describe('share codes', () => {
+    const manifest = { name: 'Pack', minecraftVersion: '1.21.4', loader: { type: 'vanilla' }, content: [] };
+
+    test('creating them is limited per user per hour', async () => {
+      const server = await start({ rateLimits: { shareCodesPerHour: 2 } });
+      const a = await server.newPlayer();
+      const b = await server.newPlayer();
+      const create = (player: Player) =>
+        server.api<ErrorBody>('POST', '/v1/share-codes', { token: player.token, body: manifest });
+      assert.equal((await create(a)).status, 201);
+      assert.equal((await create(a)).status, 201);
+      assertLimited(await create(a), HOUR);
+      assert.equal((await create(b)).status, 201);
+      server.clock.advance(HOUR + 1);
+      assert.equal((await create(a)).status, 201);
+    });
+
+    test('fetching them is limited per user, misses included', async () => {
+      const server = await start({ rateLimits: { shareCodeFetchesPerHour: 3 } });
+      const owner = await server.newPlayer();
+      const guesser = await server.newPlayer();
+      const created = await server.api<{ code: string }>('POST', '/v1/share-codes', { token: owner.token, body: manifest });
+      const fetch = (player: Player, code: string) =>
+        server.api<ErrorBody>('GET', `/v1/share-codes/${code}`, { token: player.token });
+
+      assert.equal((await fetch(guesser, 'KITE-2222-2222')).status, 404);
+      assert.equal((await fetch(guesser, 'KITE-3333-3333')).status, 404);
+      assert.equal((await fetch(guesser, 'not-a-code')).status, 400);
+      assertLimited(await fetch(guesser, created.body.code), HOUR);
+      assert.equal((await fetch(owner, created.body.code)).status, 200);
+
+      server.clock.advance(HOUR + 1);
+      assert.equal((await fetch(guesser, created.body.code)).status, 200);
+    });
+  });
+
   describe('auth endpoints', () => {
     test('are limited per IP', async () => {
       const server = await start({ rateLimits: { authPerMinute: 3 } });
