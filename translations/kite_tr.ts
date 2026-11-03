@@ -1427,6 +1427,117 @@ Ayrıntılar günlük dosyasında:
     </message>
 </context>
 <context>
+    <name>ContentDrop</name>
+    <message>
+        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/models/ContentDrop.cpp" line="+317"/>
+        <source>Adding world…</source>
+        <translation>Dünya ekleniyor…</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Add world</source>
+        <translation>Dünya ekle</translation>
+    </message>
+</context>
+<context>
+    <name>ContentDropFlow</name>
+    <message>
+        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/qml/Components/ContentDropFlow.qml" line="+73"/>
+        <source>“%1” is already here as %2. Replace it with the one you dropped, or keep both?</source>
+        <translation>“%1” zaten burada, %2 olarak duruyor. Bıraktığın dosyayla değiştirilsin mi, yoksa ikisi de kalsın mı?</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 mods you dropped are already here in another version. Replace them, or keep both?</source>
+        <translation>Bıraktığın %1 mod başka bir sürümüyle zaten burada. Değiştirilsin mi, yoksa ikisi de kalsın mı?</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>This instance has no mod loader yet, so its mods will not load.</source>
+        <translation>Bu kurulumda henüz mod yükleyici yok, bu yüzden modlar yüklenmez.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Adding 1 world…</source>
+        <translation>1 dünya ekleniyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Adding %1 worlds…</source>
+        <translation>%1 dünya ekleniyor…</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The world could not be added.</source>
+        <translation>Dünya eklenemedi.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Looking it up…</source>
+        <translation>Aranıyor…</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>That link cannot be installed here.</source>
+        <translation>Bu bağlantı buraya kurulamaz.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Added 1 project from the links.</source>
+        <translation>Bağlantılardan 1 proje eklendi.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Added %1 projects from the links.</source>
+        <translation>Bağlantılardan %1 proje eklendi.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Already installed</source>
+        <translation>Zaten kurulu</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Replace</source>
+        <translation>Değiştir</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Keep both</source>
+        <translation>İkisini de tut</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>Add data pack</source>
+        <translation>Veri paketi ekle</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>A data pack belongs to a world. Which one should it go into?</source>
+        <translation>Veri paketi bir dünyaya aittir. Hangisine eklensin?</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>Minecraft is running</source>
+        <translation>Minecraft çalışıyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Changing a world while Minecraft is running can damage it. Continue anyway?</source>
+        <translation>Minecraft çalışırken dünyayı değiştirmek ona zarar verebilir. Yine de devam edilsin mi?</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Continue anyway</source>
+        <translation>Yine de devam et</translation>
+    </message>
+</context>
+<context>
     <name>ContentFilterPopup</name>
     <message>
         <location filename="../launcher/qml/Components/ContentFilterPopup.qml" line="+86"/>
@@ -1497,6 +1608,65 @@ Ayrıntılar günlük dosyasında:
         <location line="+10"/>
         <source>Open source only</source>
         <translation>Yalnızca açık kaynak</translation>
+    </message>
+</context>
+<context>
+    <name>ContentLinkInstall</name>
+    <message>
+        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/models/ContentLinkInstall.cpp" line="+55"/>
+        <source>This build cannot look projects up on CurseForge.</source>
+        <translation>Bu sürüm CurseForge&apos;da proje arayamıyor.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>The game is running. Content can be added once it closes.</source>
+        <translation>Oyun çalışıyor. İçerik, oyun kapanınca eklenebilir.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>This instance&apos;s shared data pack folder is turned off.</source>
+        <translation>Bu kurulumun ortak veri paketi klasörü kapalı.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>The project could not be looked up.</source>
+        <translation>Proje aranamadı.</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>“%1” was not found for this instance.</source>
+        <translation>“%1” bu kurulum için bulunamadı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>“%1” could not be looked up. Are you online?</source>
+        <translation>“%1” aranamadı. İnternete bağlı mısın?</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>“%1” has no version for Minecraft %2.</source>
+        <translation>“%1” için Minecraft %2 sürümü yok.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>“%1” has no version for Minecraft %2 with %3.</source>
+        <translation>“%1” için Minecraft %2 ve %3 ile uyumlu sürüm yok.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <location line="+18"/>
+        <source>“%1” cannot be installed here.</source>
+        <translation>“%1” buraya kurulamaz.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Added “%1”.</source>
+        <translation>“%1” eklendi.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>“%1” could not be installed.</source>
+        <translation>“%1” kurulamadı.</translation>
     </message>
 </context>
 <context>
@@ -2603,6 +2773,167 @@ Ayrıntılar günlük dosyasında:
         <location line="+1"/>
         <source>Browse Modrinth</source>
         <translation>Modrinth&apos;e göz at</translation>
+    </message>
+</context>
+<context>
+    <name>DropOverlay</name>
+    <message>
+        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/qml/Components/DropOverlay.qml" line="+17"/>
+        <source>Drop to add %1</source>
+        <translation>Eklemek için bırak: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Drop to add</source>
+        <translation>Eklemek için bırak</translation>
+    </message>
+</context>
+<context>
+    <name>DroppedContent</name>
+    <message>
+        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/minecraft/mod/DroppedContent.cpp" line="+325"/>
+        <source>1 mod</source>
+        <translation>1 mod</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 mods</source>
+        <translation>%1 mod</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>1 resource pack</source>
+        <translation>1 kaynak paketi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 resource packs</source>
+        <translation>%1 kaynak paketi</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>1 data pack</source>
+        <translation>1 veri paketi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 data packs</source>
+        <translation>%1 veri paketi</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>1 shader pack</source>
+        <translation>1 gölgelendirici paketi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 shader packs</source>
+        <translation>%1 gölgelendirici paketi</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>1 world</source>
+        <translation>1 dünya</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 worlds</source>
+        <translation>%1 dünya</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>1 modpack</source>
+        <translation>1 mod paketi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 modpacks</source>
+        <translation>%1 mod paketi</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>, </source>
+        <translation>, </translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 and %2</source>
+        <translation>%1 ve %2</translation>
+    </message>
+    <message>
+        <location line="+74"/>
+        <source>“%1” is built for %2, not %3.</source>
+        <translation>“%1”, %3 için değil %2 için yapılmış.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>“%1” is made for another Minecraft version than %2.</source>
+        <translation>“%1”, %2 dışında bir Minecraft sürümü için yapılmış.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>“%1” is made for Minecraft %2, not %3.</source>
+        <translation>“%1”, Minecraft %3 için değil %2 için yapılmış.</translation>
+    </message>
+    <message>
+        <location line="+100"/>
+        <source>Added %1.</source>
+        <translation>%1 eklendi.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Replaced 1 older version.</source>
+        <translation>1 eski sürüm değiştirildi.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Replaced %1 older versions.</source>
+        <translation>%1 eski sürüm değiştirildi.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>%1 of them may not work in this instance.</source>
+        <translation>Bunların %1 tanesi bu kurulumda çalışmayabilir.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>“%1” could not be added.</source>
+        <translation>“%1” eklenemedi.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>%1 files could not be added.</source>
+        <translation>%1 dosya eklenemedi.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>The game is running: 1 file can be added once it closes.</source>
+        <translation>Oyun çalışıyor: 1 dosya, oyun kapanınca eklenebilir.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>The game is running: %1 files can be added once it closes.</source>
+        <translation>Oyun çalışıyor: %1 dosya, oyun kapanınca eklenebilir.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Skipped “%1”: it is not a mod, pack or world.</source>
+        <translation>“%1” atlandı: mod, paket ya da dünya değil.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Skipped %1 files that are not mods, packs or worlds.</source>
+        <translation>Mod, paket ya da dünya olmayan %1 dosya atlandı.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Nothing new: that is already here.</source>
+        <translation>Yeni bir şey yok: bu zaten burada.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Nothing to add.</source>
+        <translation>Eklenecek bir şey yok.</translation>
     </message>
 </context>
 <context>
@@ -14717,7 +15048,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/WorldsTab.qml" line="-38"/>
+        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/qml/Components/WorldsTab.qml" line="-38"/>
         <location line="+240"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>
@@ -14893,12 +15224,7 @@ inheritsFrom eksik</translation>
         <translation>Tüm dosyalar (*)</translation>
     </message>
     <message>
-        <location line="+26"/>
-        <source>Drop a world here to add it</source>
-        <translation>Eklemek için bir dünyayı buraya bırak</translation>
-    </message>
-    <message>
-        <location line="+24"/>
+        <location line="+21"/>
         <source>No worlds yet</source>
         <translation>Henüz dünya yok</translation>
     </message>
