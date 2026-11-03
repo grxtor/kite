@@ -24,6 +24,8 @@
 #include <QJsonObject>
 #include <QSet>
 
+#include <algorithm>
+
 #include "Logging.h"
 #include "Version.h"
 #include "core/LauncherContext.h"
@@ -39,6 +41,21 @@ namespace
 	QString textOf(const QJsonObject& object, const char* key)
 	{
 		return object.value(QLatin1String(key)).toString().trimmed();
+	}
+
+	QStringList linesOf(const QJsonObject& server)
+	{
+		QStringList lines;
+		for (const QJsonValue& line : server.value("versions").toArray()) {
+			lines.append(line.toString().trimmed());
+		}
+		return lines;
+	}
+
+	/// @p version is @p line or a release of it ("1.8.9" of "1.8").
+	bool onLine(const QString& version, const QString& line)
+	{
+		return version == line || version.startsWith(line + QLatin1Char('.'));
 	}
 
 	QString problemWith(const QJsonObject& root)
@@ -62,6 +79,13 @@ namespace
 			ids.insert(id);
 			if (ServerPinger::keyOf(textOf(server, "address")).isEmpty()) {
 				return QStringLiteral("The server %1 has no address.").arg(id);
+			}
+			const QJsonValue versions = server.value("versions");
+			if (!versions.isUndefined() &&
+				(!versions.isArray() || linesOf(server).contains(QString()))) {
+				return QStringLiteral("The versions of %1 are not a list of "
+									  "release lines.")
+					.arg(id);
 			}
 		}
 		return QString();
@@ -119,6 +143,7 @@ QVariantList FeaturedServers::servers() const
 			{"note", MetaCatalog::localized(server.value("note"), shownIn)},
 			{"minVersion", textOf(server, "minVersion")},
 			{"maxVersion", textOf(server, "maxVersion")},
+			{"versions", linesOf(server)},
 		});
 	}
 	return result;
@@ -126,7 +151,8 @@ QVariantList FeaturedServers::servers() const
 
 bool FeaturedServers::versionFits(const QString& version,
 								  const QString& minVersion,
-								  const QString& maxVersion)
+								  const QString& maxVersion,
+								  const QStringList& lines)
 {
 	if (version.isEmpty()) {
 		return false;
@@ -135,8 +161,14 @@ bool FeaturedServers::versionFits(const QString& version,
 	if (!minVersion.isEmpty() && game < Version(minVersion)) {
 		return false;
 	}
-	return maxVersion.isEmpty() || game <= Version(maxVersion) ||
-		   version.startsWith(maxVersion + QLatin1Char('.'));
+	if (!maxVersion.isEmpty() && Version(maxVersion) < game &&
+		!onLine(version, maxVersion)) {
+		return false;
+	}
+	return lines.isEmpty() ||
+		   std::any_of(lines.cbegin(), lines.cend(), [&version](const QString& line) {
+			   return onLine(version, line);
+		   });
 }
 
 bool FeaturedServers::loadCached()

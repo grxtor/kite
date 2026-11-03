@@ -23,20 +23,23 @@
 #include <QJsonArray>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QVariantList>
 
 #include "net/NetJob.h"
 
 /* The big servers Home offers to join in one click. The built-in list
  * (:/kite/servers.json) is replaced by meta.kiteclient.com's copy via
- * refresh(). Each entry: id, name, address, an optional {"en", "tr"} note and
- * an optional minVersion/maxVersion of Minecraft. */
+ * refresh(). Each entry: id, name, address, an optional {"en", "tr"} note,
+ * an optional minVersion/maxVersion of Minecraft and optional versions: the
+ * release lines it takes when they have gaps (["1.8", "1.21", "26"] for
+ * 1.8.x, 1.21.x and 26.x). */
 class FeaturedServers : public QObject
 {
 	Q_OBJECT
 
 	/// id, name, address, note ("" if none), minVersion, maxVersion ("" for
-	/// no limit), in the list's order.
+	/// no limit), versions ([] for any line), in the list's order.
 	Q_PROPERTY(QVariantList servers READ servers NOTIFY changed)
 
   public:
@@ -51,11 +54,13 @@ class FeaturedServers : public QObject
 	QVariantList servers() const;
 
 	/// Whether Minecraft @p version can join a server that takes
-	/// @p minVersion to @p maxVersion (either "" for no limit). A maximum of
-	/// "1.21" takes every 1.21.x.
+	/// @p minVersion to @p maxVersion (either "" for no limit) and, unless
+	/// @p lines is empty, one of those release lines. A maximum of "1.21"
+	/// takes every 1.21.x, and so does a line of "1.21".
 	Q_INVOKABLE static bool versionFits(const QString& version,
 										const QString& minVersion,
-										const QString& maxVersion);
+										const QString& maxVersion,
+										const QStringList& lines = {});
 
 	/// Replaces the list with the copy refresh() last downloaded, if valid;
 	/// no network.

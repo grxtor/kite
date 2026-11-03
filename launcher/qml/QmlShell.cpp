@@ -648,7 +648,8 @@ QVariantList QmlShell::otherInstances(const QString& mcVersion) const
 }
 
 QVariantList QmlShell::instancesForServer(const QString& minVersion,
-										  const QString& maxVersion) const
+										  const QString& maxVersion,
+										  const QStringList& lines) const
 {
 	const auto all = minecraftInstances();
 	const QList<JoinChoice> choices = choicesOf(all);
@@ -656,7 +657,7 @@ QVariantList QmlShell::instancesForServer(const QString& minVersion,
 	QList<int> order;
 	for (int i = 0; i < choices.size(); ++i) {
 		fits.append(FeaturedServers::versionFits(choices.at(i).version,
-												 minVersion, maxVersion));
+												 minVersion, maxVersion, lines));
 		order.append(i);
 	}
 	std::stable_sort(order.begin(), order.end(), [&](int a, int b) {

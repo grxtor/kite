@@ -24,8 +24,12 @@ Item {
 
     visible: false
 
-    // The server's versions in words: "1.8 or newer", "1.8 to 1.12", "1.12 or older"; "" for any.
+    // The server's versions in words: "1.8.x, 1.21.x, 26.x", "1.8 or newer", "1.8 to 1.12", "1.12 or older"; ""
+    // for any.
     function rangeOf(server) {
+        var lines = server.versions || []
+        if (lines.length > 0)
+            return lines.map((line) => line + ".x").join(", ")
         var low = server.minVersion || ""
         var high = server.maxVersion || ""
         if (low.length > 0 && high.length > 0)
@@ -35,7 +39,8 @@ Item {
         return high.length > 0 ? qsTr("%1 or older").arg(high) : ""
     }
     function instancesFor(server) {
-        return root.shell ? root.shell.instancesForServer(server.minVersion || "", server.maxVersion || "") : []
+        return root.shell ? root.shell.instancesForServer(server.minVersion || "", server.maxVersion || "",
+                                                          server.versions || []) : []
     }
     function selectedIn(instances) {
         return instances.find((one) => one.id === root.selectedId) || null

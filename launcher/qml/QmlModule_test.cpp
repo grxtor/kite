@@ -79,7 +79,8 @@ class FakeShell : public QObject
 	}
 
 	/// QmlShell::instancesForServer() stand-in: whatever the test set.
-	Q_INVOKABLE QVariantList instancesForServer(const QString&, const QString&) const
+	Q_INVOKABLE QVariantList instancesForServer(const QString&, const QString&,
+												const QStringList&) const
 	{
 		return serverInstances;
 	}
@@ -303,7 +304,7 @@ class QmlModuleTest : public QObject
 		QVERIFY(root);
 		const QString hypixel = QStringLiteral(
 			"({ id: 'hypixel', name: 'Hypixel', address: 'mc.hypixel.net', "
-			"minVersion: '1.8', maxVersion: '' })");
+			"minVersion: '1.8', maxVersion: '', versions: [] })");
 
 		root->setProperty("selectedId", QStringLiteral("new"));
 		evaluate(root.get(), QStringLiteral("serverJoin.join(%1)").arg(hypixel));

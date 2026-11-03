@@ -18,6 +18,7 @@
  */
 
 #include <QSignalSpy>
+#include <QStringList>
 #include <QTest>
 
 #include "servers/FeaturedServers.h"
@@ -30,7 +31,9 @@ namespace
 			{ "id": "big", "name": "Big Network", "address": "play.big.example",
 			  "note": { "en": "Mini games", "tr": "Mini oyunlar" }, "minVersion": "1.8" },
 			{ "id": "old", "name": "Old Days", "address": "old.example:25570",
-			  "note": { "en": "English only" }, "minVersion": "1.7.10", "maxVersion": "1.12" }
+			  "note": { "en": "English only" }, "minVersion": "1.7.10", "maxVersion": "1.12" },
+			{ "id": "gaps", "name": "Two Lines", "address": "gaps.example",
+			  "versions": ["1.8", "1.21"] }
 		]
 	})";
 } // namespace
@@ -40,19 +43,28 @@ class FeaturedServersTest : public QObject
 	Q_OBJECT
 
   private slots:
-	void theBuiltInListIsHypixelThenCubeCraft()
+	void theBuiltInListIsTheSixInOrder()
 	{
 		FeaturedServers featured;
-		const QVariantList servers = featured.servers();
-		QCOMPARE(servers.size(), 2);
-		const QVariantMap hypixel = servers.at(0).toMap();
-		QCOMPARE(hypixel.value("id").toString(), QString("hypixel"));
+		QStringList ids;
+		for (const QVariant& server : featured.servers()) {
+			ids.append(server.toMap().value("id").toString());
+		}
+		QCOMPARE(ids, QStringList({"hypixel", "cubecraft", "wynncraft", "manacube",
+								   "gommehd", "mineberry"}));
+		const QVariantMap hypixel = featured.servers().first().toMap();
 		QCOMPARE(hypixel.value("address").toString(), QString("mc.hypixel.net"));
 		QCOMPARE(hypixel.value("minVersion").toString(), QString("1.8"));
 		QCOMPARE(hypixel.value("maxVersion").toString(), QString());
-		const QVariantMap cubeCraft = servers.at(1).toMap();
-		QCOMPARE(cubeCraft.value("id").toString(), QString("cubecraft"));
-		QCOMPARE(cubeCraft.value("address").toString(), QString("play.cubecraft.net"));
+		QCOMPARE(hypixel.value("versions").toStringList(),
+				 QStringList({"1.8", "1.21", "26"}));
+		// Every one says what it is, in both languages.
+		for (const QString& language : {QString("en_US"), QString("tr_TR")}) {
+			featured.setLanguage(language);
+			for (const QVariant& server : featured.servers()) {
+				QVERIFY(!server.toMap().value("note").toString().isEmpty());
+			}
+		}
 	}
 
 	void loadsAList()
@@ -64,7 +76,7 @@ class FeaturedServersTest : public QObject
 		QVERIFY2(featured.loadFromJson(kList, &error), qPrintable(error));
 		QCOMPARE(changed.count(), 1);
 		const QVariantList servers = featured.servers();
-		QCOMPARE(servers.size(), 2);
+		QCOMPARE(servers.size(), 3);
 		const QVariantMap big = servers.at(0).toMap();
 		QCOMPARE(big.value("name").toString(), QString("Big Network"));
 		QCOMPARE(big.value("address").toString(), QString("play.big.example"));
@@ -72,6 +84,9 @@ class FeaturedServersTest : public QObject
 		const QVariantMap old = servers.at(1).toMap();
 		QCOMPARE(old.value("minVersion").toString(), QString("1.7.10"));
 		QCOMPARE(old.value("maxVersion").toString(), QString("1.12"));
+		QVERIFY(old.value("versions").toStringList().isEmpty());
+		QCOMPARE(servers.at(2).toMap().value("versions").toStringList(),
+				 QStringList({"1.8", "1.21"}));
 	}
 
 	void notesFollowTheLanguage()
@@ -96,13 +111,17 @@ class FeaturedServersTest : public QObject
 			R"({"formatVersion": 1, "servers": [{"id": "a", "name": "A"}]})",
 			R"({"formatVersion": 1, "servers": [{"id": "a", "name": "A", "address": "a.example"},
 			                                    {"id": "a", "name": "B", "address": "b.example"}]})",
+			R"({"formatVersion": 1, "servers": [{"id": "a", "name": "A", "address": "a.example",
+			                                     "versions": "1.8"}]})",
+			R"({"formatVersion": 1, "servers": [{"id": "a", "name": "A", "address": "a.example",
+			                                     "versions": ["1.8", ""]}]})",
 		};
 		for (const QByteArray& json : broken) {
 			QString error;
 			QVERIFY2(!featured.loadFromJson(json, &error), json.constData());
 			QVERIFY(!error.isEmpty());
 		}
-		QCOMPARE(featured.servers().size(), 2);
+		QCOMPARE(featured.servers().size(), 3);
 	}
 
 	void versionsFitTheRange()
@@ -118,6 +137,20 @@ class FeaturedServersTest : public QObject
 		QVERIFY(FeaturedServers::versionFits("1.0", "", ""));
 		// An instance whose version is not known yet fits nothing.
 		QVERIFY(!FeaturedServers::versionFits("", "", ""));
+	}
+
+	void releaseLinesLeaveGaps()
+	{
+		const QStringList lines = {"1.8", "1.21", "26"};
+		QVERIFY(FeaturedServers::versionFits("1.8.9", "1.8", "", lines));
+		QVERIFY(FeaturedServers::versionFits("1.8", "1.8", "", lines));
+		QVERIFY(FeaturedServers::versionFits("1.21.4", "1.8", "", lines));
+		QVERIFY(FeaturedServers::versionFits("26.3", "1.8", "", lines));
+		QVERIFY(!FeaturedServers::versionFits("1.12.2", "1.8", "", lines));
+		QVERIFY(!FeaturedServers::versionFits("1.20.1", "1.8", "", lines));
+		// "1.2" is not the line of "1.21".
+		QVERIFY(FeaturedServers::versionFits("1.2.5", "", "", {"1.2"}));
+		QVERIFY(!FeaturedServers::versionFits("1.21", "", "", {"1.2"}));
 	}
 };
 

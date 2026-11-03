@@ -370,11 +370,12 @@ class QmlShell : public QObject
 	 * first. */
 	Q_INVOKABLE QVariantList otherInstances(const QString& mcVersion) const;
 	/* Every Minecraft instance, same maps plus `fits`: whether a server
-	 * taking @p minVersion to @p maxVersion (FeaturedServers::versionFits)
-	 * lets its version in. Those that fit first, each group most recently
-	 * played first. */
+	 * taking @p minVersion to @p maxVersion and @p lines
+	 * (FeaturedServers::versionFits) lets its version in. Those that fit
+	 * first, each group most recently played first. */
 	Q_INVOKABLE QVariantList instancesForServer(const QString& minVersion,
-												const QString& maxVersion) const;
+												const QString& maxVersion,
+												const QStringList& lines) const;
 	/// Relative paths resolve against the data folder (the working directory).
 	Q_INVOKABLE void openPath(const QString& path);
 
