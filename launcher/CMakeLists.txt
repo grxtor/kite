@@ -43,6 +43,11 @@ set(CORE_SOURCES
     models/ScreenshotUploader.cpp
     models/WorldTools.h
     models/WorldTools.cpp
+    models/WorldCopyTask.h
+    models/ContentDrop.h
+    models/ContentDrop.cpp
+    models/ContentLinkInstall.h
+    models/ContentLinkInstall.cpp
     models/LegacyUpgrade.h
     models/LegacyUpgrade.cpp
     models/KeyValueFilterModel.h

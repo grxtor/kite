@@ -49,6 +49,7 @@ class BackupController;
 class WorldDataPacksController;
 class ManagedPackController;
 class InstanceContentController;
+class ContentDrop;
 class LogUploader;
 class ScreenshotUploader;
 
@@ -108,6 +109,8 @@ class InstanceDetails : public QObject
 	Q_PROPERTY(bool isLegacy READ isLegacy CONSTANT)
 	/// Created lazily.
 	Q_PROPERTY(QObject* content READ content CONSTANT)
+	/// Created lazily: files, folders and links dropped on this instance.
+	Q_PROPERTY(QObject* drop READ drop CONSTANT)
 	Q_PROPERTY(QObject* logUploader READ logUploader CONSTANT)
 	/// `available` is false in a build without an Imgur client id.
 	Q_PROPERTY(QObject* screenshotUploader READ screenshotUploader CONSTANT)
@@ -161,6 +164,7 @@ class InstanceDetails : public QObject
 	bool isMinecraft() const;
 	QObject* content() const;
 
+	QObject* drop() const;
 	QObject* logUploader() const;
 	QObject* screenshotUploader() const;
 	/// @p fileUrlOrPath: a file:// URL or a local path. Unpacks off the GUI
@@ -222,6 +226,7 @@ class InstanceDetails : public QObject
 	/// Set once isSupported() has run; the answer cannot change.
 	mutable bool m_managedPackChecked = false;
 	mutable InstanceContentController* m_content = nullptr;
+	mutable ContentDrop* m_drop = nullptr;
 	LogUploader* m_logUploader = nullptr;
 	ScreenshotUploader* m_screenshotUploader = nullptr;
 };

@@ -59,6 +59,7 @@
 #include "models/NewsModel.h"
 #include "models/IdSelectionModel.h"
 #include "models/InstanceDetails.h"
+#include "models/ContentDrop.h"
 #include "models/InstanceExportController.h"
 #include "models/InstanceShortcutController.h"
 #include "models/JavaController.h"
@@ -1318,6 +1319,21 @@ QObject* QmlShell::exportController(const QString& id)
 		expose(m_exportController->files());
 	}
 	return expose(m_exportController.get());
+}
+
+QObject* QmlShell::contentDrop(const QString& id)
+{
+	auto it = m_contentDrops.find(id);
+	if (it == m_contentDrops.end()) {
+		auto instance = LAUNCHER->instances()->getInstanceById(id);
+		if (!instance || !dynamic_cast<MinecraftInstance*>(instance.get())) {
+			return nullptr;
+		}
+		it = m_contentDrops
+				 .emplace(id, std::make_unique<ContentDrop>(instance))
+				 .first;
+	}
+	return expose(it->second.get());
 }
 
 QObject* QmlShell::shortcutController(const QString& id)
