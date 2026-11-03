@@ -41,10 +41,16 @@ class PresetDefaultsTest : public QObject
 		QTest::newRow("3 GiB rounds down") << 3 * kGiB << 1536;
 		QTest::newRow("tiny machines get the floor") << 1 * kGiB << 1024;
 		QTest::newRow("4 GiB") << 4 * kGiB << 2048;
+		QTest::newRow("6 GiB is half") << 6 * kGiB << 3072;
+		QTest::newRow("unknown RAM gets the floor") << quint64(0) << 1024;
 		QTest::newRow("8 GiB") << 8 * kGiB << 3072;
+		QTest::newRow("8 GB reported short") << 7 * kGiB + 800 << 3072;
 		QTest::newRow("12 GiB") << 12 * kGiB << 3072;
 		QTest::newRow("16 GiB") << 16 * kGiB << 4096;
+		QTest::newRow("16 GB reported short") << 15 * kGiB + 800 << 4096;
+		QTest::newRow("24 GiB") << 24 * kGiB << 4096;
 		QTest::newRow("32 GiB") << 32 * kGiB << 6144;
+		QTest::newRow("32 GB reported short") << 31 * kGiB + 600 << 6144;
 		QTest::newRow("64 GiB") << 64 * kGiB << 6144;
 	}
 	void maxMemory()
@@ -54,6 +60,38 @@ class PresetDefaultsTest : public QObject
 		QCOMPARE(PresetDefaults::maxMemoryMiB(ramMiB), expected);
 		QVERIFY(quint64(PresetDefaults::maxMemoryMiB(ramMiB)) <=
 				qMax(ramMiB / 2, quint64(1024)));
+	}
+
+	/* Never above half the RAM, and never less for a machine with more. */
+	void maxMemoryHalfCapAndOrder()
+	{
+		int previous = 0;
+		for (quint64 ramMiB = 2 * kGiB; ramMiB <= 64 * kGiB; ramMiB += 64) {
+			const int max = PresetDefaults::maxMemoryMiB(ramMiB);
+			const QByteArray ram = QByteArray::number(ramMiB);
+			QVERIFY2(quint64(max) <= ramMiB / 2, ram.constData());
+			QVERIFY2(max >= previous, ram.constData());
+			previous = max;
+		}
+	}
+
+	void minMemory_data()
+	{
+		QTest::addColumn<quint64>("ramMiB");
+		QTest::addColumn<int>("expected");
+		QTest::newRow("unknown RAM") << quint64(0) << 512;
+		QTest::newRow("4 GiB") << 4 * kGiB << 512;
+		QTest::newRow("8 GiB") << 8 * kGiB << 512;
+		QTest::newRow("16 GB reported short") << 15 * kGiB + 800 << 1024;
+		QTest::newRow("32 GiB") << 32 * kGiB << 1024;
+	}
+	void minMemory()
+	{
+		QFETCH(quint64, ramMiB);
+		QFETCH(int, expected);
+		QCOMPARE(PresetDefaults::minMemoryMiB(ramMiB), expected);
+		QVERIFY(PresetDefaults::minMemoryMiB(ramMiB) <
+				PresetDefaults::maxMemoryMiB(ramMiB));
 	}
 
 	void legacyOptions_data()

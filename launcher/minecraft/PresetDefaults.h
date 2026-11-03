@@ -25,11 +25,17 @@
 
 // What a recommended-instance preset sets besides its mods: the game's memory
 // and the first options.txt. Plain functions, testable without an instance.
+// The memory pair is also the launcher-wide default.
 namespace PresetDefaults
 {
-	/// The most memory (MiB) a preset gives the game on a machine with
-	/// @p systemRamMiB: never more than half the RAM.
+	/// The most memory (MiB) the game gets on a machine with @p systemRamMiB:
+	/// 3 GiB for 8 GB, 4 GiB for 16 GB, 6 GiB for 32 GB and more, never more
+	/// than half the RAM (1 GiB at the least).
 	int maxMemoryMiB(quint64 systemRamMiB);
+
+	/// The memory (MiB) the game starts with on that machine; below
+	/// maxMemoryMiB().
+	int minMemoryMiB(quint64 systemRamMiB);
 
 	/// Whether @p mcVersion reads the pre-1.13 options.txt keys: any 1.x
 	/// below 1.13, a weekly snapshot before 17w43a, and anything else that
