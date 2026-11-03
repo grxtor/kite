@@ -1,0 +1,7 @@
+{
+ "note": "Kite's own CheckJava line",
+ "verify": false,
+ "docs": {
+  "log": "The java binary \"/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java\" couldn't be found. Please fix the java path override in the instance's settings or disable it.\n"
+ }
+}

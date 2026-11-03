@@ -1,0 +1,82 @@
+# source: <kite-data>/instances/CreateSkiesSeas-1.20.1/minecraft/crash-reports/crash-2026-09-07_10.24.39-fml.txt
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+---- Minecraft Crash Report ----
+// Would you like a cupcake?
+
+Time: 2026-09-07 10:24:39
+Description: Mod loading error has occurred
+
+java.lang.Exception: Mod Loading has failed
+	at net.minecraftforge.logging.CrashReportExtender.dumpModLoadingCrashReport(CrashReportExtender.java:60) ~[forge-1.20.1-47.3.0-universal.jar%23331!/:?] {re:classloading}
+	at net.minecraftforge.client.loading.ClientModLoader.completeModLoading(ClientModLoader.java:138) ~[forge-1.20.1-47.3.0-universal.jar%23331!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at net.minecraft.client.Minecraft.lambda$new$4(Minecraft.java:571) ~[client-1.20.1-20230612.114412-srg.jar%23326!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.Util.m_137521_(Util.java:421) ~[client-1.20.1-20230612.114412-srg.jar%23326!/:?] {re:classloading}
+	at net.minecraft.client.Minecraft.lambda$new$5(Minecraft.java:564) ~[client-1.20.1-20230612.114412-srg.jar%23326!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraftforge.client.loading.ForgeLoadingOverlay.m_88315_(ForgeLoadingOverlay.java:146) ~[forge-1.20.1-47.3.0-universal.jar%23331!/:?] {re:classloading}
+	at net.minecraft.client.renderer.GameRenderer.m_109093_(GameRenderer.java:954) ~[client-1.20.1-20230612.114412-srg.jar%23326!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.Minecraft.m_91383_(Minecraft.java:1146) ~[client-1.20.1-20230612.114412-srg.jar%23326!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.Minecraft.m_91374_(Minecraft.java:718) ~[client-1.20.1-20230612.114412-srg.jar%23326!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.main.Main.main(Main.java:218) ~[minecraft-1.20.1-client.jar:?] {re:classloading,pl:runtimedistcleaner:A}
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?] {}
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?] {}
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?] {}
+	at java.lang.reflect.Method.invoke(Method.java:569) ~[?:?] {}
+	at net.minecraftforge.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:111) ~[fmlloader-1.20.1-47.3.0.jar:?] {}
+	at net.minecraftforge.fml.loading.targets.CommonLaunchHandler.clientService(CommonLaunchHandler.java:99) ~[fmlloader-1.20.1-47.3.0.jar:?] {}
+	at net.minecraftforge.fml.loading.targets.CommonClientLaunchHandler.lambda$makeService$0(CommonClientLaunchHandler.java:25) ~[fmlloader-1.20.1-47.3.0.jar:?] {}
+	at cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30) ~[modlauncher-10.0.9.jar:?] {}
+	at cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53) ~[modlauncher-10.0.9.jar:?] {}
+	at cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71) ~[modlauncher-10.0.9.jar:?] {}
+	at cpw.mods.modlauncher.Launcher.run(Launcher.java:108) ~[modlauncher-10.0.9.jar:?] {}
+	at cpw.mods.modlauncher.Launcher.main(Launcher.java:78) ~[modlauncher-10.0.9.jar:?] {}
+	at cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) ~[modlauncher-10.0.9.jar:?] {}
+...
+Suspected Mods: NONE
+Stacktrace:
+-- MOD createcasing --
+Details:
+	Mod File: /Users/<user>/Library/Application Support/PrismLauncher/instances/CreateSkiesSeas-1.20.1/minecraft/mods/CreateCasing-1.20.1-1.6.2-fix1.jar
+	Failure message: Mod createcasing requires create 0.5.1.h or above
+		Currently, create is 0.5.1.f
+	Exception message: MISSING EXCEPTION MESSAGE
+-- MOD valkyrienskies --
+Details:
+	Mod File: /Users/<user>/Library/Application Support/PrismLauncher/instances/CreateSkiesSeas-1.20.1/minecraft/mods/valkyrienskies-120-2.4.11.jar
+	Failure message: Mod valkyrienskies only supports create 6.0.6 or above
+		Currently, create is 0.5.1.f
+	Exception message: MISSING EXCEPTION MESSAGE
+-- MOD interiors --
+Details:
+	Mod File: /Users/<user>/Library/Application Support/PrismLauncher/instances/CreateSkiesSeas-1.20.1/minecraft/mods/interiors-0.5.6+forge-mc1.20.1-build.104.jar
+	Failure message: Mod interiors requires create 0.5.1.h or above
+		Currently, create is 0.5.1.f
+	Exception message: MISSING EXCEPTION MESSAGE
+-- MOD supplementaries --
+Details:
+	Mod File: /Users/<user>/Library/Application Support/PrismLauncher/instances/CreateSkiesSeas-1.20.1/minecraft/mods/supplementaries-1.20-3.1.43-forge.jar
+	Failure message: Mod supplementaries only supports create 6.0.0 or above
+		Currently, create is 0.5.1.f
+	Exception message: MISSING EXCEPTION MESSAGE
+-- MOD create_radar --
+Details:
+	Mod File: /Users/<user>/Library/Application Support/PrismLauncher/instances/CreateSkiesSeas-1.20.1/minecraft/mods/create_radar-0.1.56mc1.20.1.jar
+	Failure message: Mod create_radar requires create 0.5.1.i or above
+		Currently, create is 0.5.1.f
+	Exception message: MISSING EXCEPTION MESSAGE
+-- MOD vsch --
+Details:
+	Mod File: /Users/<user>/Library/Application Support/PrismLauncher/instances/CreateSkiesSeas-1.20.1/minecraft/mods/starlance-1.2.0.jar
+	Failure message: Mod vsch requires valkyrienskies below 2.3.0-beta.6
+		Currently, valkyrienskies is 2.4.11
+	Exception message: MISSING EXCEPTION MESSAGE
+Details:
+	Minecraft Version: 1.20.1
+	Operating System: Mac OS X (aarch64) version 26.6.2
+	Java Version: 17.0.15, Microsoft
+	Memory: 673871024 bytes (642 MiB) / 2147483648 bytes (2048 MiB) up to 6442450944 bytes (6144 MiB)
+	Graphics card #0 name: Apple M4
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	JVM Flags: 2 total; -Xms2048m -Xmx6144m

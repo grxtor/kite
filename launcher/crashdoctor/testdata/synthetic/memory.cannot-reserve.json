@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "Error occurred during initialization of VM\nCould not reserve enough space for 8388608KB object heap\nProcess exited with code 1.\n"
+ }
+}

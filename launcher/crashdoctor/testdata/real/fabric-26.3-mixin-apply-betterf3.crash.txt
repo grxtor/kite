@@ -1,0 +1,52 @@
+# source: <kite-data>/instances/MC-26.3-Animations/.minecraft/crash-reports/crash-2026-09-30_22.39.24-client.txt
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+---- Minecraft Crash Report ----
+// You should try our sister game, Minceraft!
+
+Time: 2026-09-30 22:39:24
+Description: Initializing game
+
+java.lang.RuntimeException: Mixin transformation of net.minecraft.client.gui.components.DebugScreenOverlay failed
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.getPostMixinClassByteArray(KnotClassDelegate.java:440)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.tryLoadClass(KnotClassDelegate.java:336)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.loadClass(KnotClassDelegate.java:231)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassLoader.loadClass(KnotClassLoader.java:119)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490)
+	at knot//net.minecraft.client.gui.Hud.<init>(Hud.java:200)
+	at knot//net.minecraft.client.Minecraft.<init>(Minecraft.java:703)
+	at knot//net.minecraft.client.main.Main.main(Main.java:278)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:517)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+Caused by: org.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError: An unexpected critical error was encountered
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:380)
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClass(MixinTransformer.java:237)
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClassBytes(MixinTransformer.java:202)
+	at knot//dev.jfronny.libjf.unsafe.asm.AsmTransformer.transformClassBytes(AsmTransformer.java:137)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.getPostMixinClassByteArray(KnotClassDelegate.java:435)
+	... 10 more
+Caused by: org.spongepowered.asm.mixin.throwables.MixinApplyError: Mixin [betterf3.fabric.mixins.json:FabricDebugMixin from mod betterf3] from phase [DEFAULT] in config [betterf3.fabric.mixins.json] FAILED during APPLY
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.handleMixinError(MixinProcessor.java:685)
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.handleMixinApplyError(MixinProcessor.java:636)
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:367)
+	... 14 more
+...
+Caused by: org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException: Invalid descriptor on betterf3.fabric.mixins.json:FabricDebugMixin from mod betterf3->@Inject::drawText(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Ljava/util/List;ZLorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V! Expected (Lnet/minecraft/client/gui/GuiGraphicsExtractor;Ljava/util/List;ZILorg/
+Details:
+Details:
+	Minecraft Version: 26.3
+	Operating System: Mac OS X (aarch64) version 27.0
+	Java Version: 25.0.1, Eclipse Adoptium
+	Memory: 675874320 bytes (644 MiB) / 1073741824 bytes (1024 MiB) up to 4294967296 bytes (4096 MiB)
+	Graphics card #0 name: Apple M4
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MiB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	JVM Flags: 2 total; -Xms1024m -Xmx4096m
+	Loaded Shaderpack: ComplementaryReimagined_r5.8.1.zip
+	Launched Version: MeshMC
+	Backend library: LWJGL version 3.4.3-snapshot
+	Window size: <not initialized>
+	Is Modded: Definitely; Client brand changed to 'fabric'
+	Type: Client

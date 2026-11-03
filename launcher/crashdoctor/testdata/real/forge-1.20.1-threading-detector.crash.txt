@@ -1,0 +1,50 @@
+# source: <kite-data>/instances/CreateSkiesSeas-1.20.1/minecraft/crash-reports/crash-2026-09-07_14.00.28-server.txt
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+---- Minecraft Crash Report ----
+// I just don't know what went wrong :(
+
+Time: 2026-09-07 14:00:28
+Description: Accessing LegacyRandomSource from multiple threads
+
+java.lang.IllegalStateException: Accessing LegacyRandomSource from multiple threads
+	at net.minecraft.util.ThreadingDetector.m_199417_(ThreadingDetector.java:84) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,re:classloading,pl:mixin:APP:cupboard.mixins.json:ThreadingDetectorMixin,pl:mixin:A}
+	at net.minecraft.world.level.levelgen.LegacyRandomSource.m_64707_(LegacyRandomSource.java:49) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:classloading}
+	at net.minecraft.world.level.levelgen.BitRandomSource.m_188503_(BitRandomSource.java:27) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:classloading,re:mixin}
+	at net.minecraft.util.Mth.m_216287_(Mth.java:734) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:classloading,re:mixin}
+	at net.minecraft.world.level.NaturalSpawner.m_47062_(NaturalSpawner.java:280) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,xf:fml:forge:forge_method_redirector,re:classloading,xf:fml:forge:forge_method_redirector,pl:mixin:APP:alexscaves.mixins.json:NaturalSpawnerMixin,pl:mixin:APP:enhancedcelestials.mixins.json:MixinWorldEntitySpawner,pl:mixin:APP:enhancedcelestials.mixins.json:ac
+	at net.minecraft.world.level.NaturalSpawner.m_47045_(NaturalSpawner.java:116) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,xf:fml:forge:forge_method_redirector,re:classloading,xf:fml:forge:forge_method_redirector,pl:mixin:APP:alexscaves.mixins.json:NaturalSpawnerMixin,pl:mixin:APP:enhancedcelestials.mixins.json:MixinWorldEntitySpawner,pl:mixin:APP:enhancedcelestials.mixins.json:ac
+	at net.minecraft.world.level.NaturalSpawner.m_47029_(NaturalSpawner.java:108) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,xf:fml:forge:forge_method_redirector,re:classloading,xf:fml:forge:forge_method_redirector,pl:mixin:APP:alexscaves.mixins.json:NaturalSpawnerMixin,pl:mixin:APP:enhancedcelestials.mixins.json:MixinWorldEntitySpawner,pl:mixin:APP:enhancedcelestials.mixins.json:ac
+	at net.minecraft.server.level.ServerChunkCache.m_8490_(ServerChunkCache.java:358) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.server.level.ServerChunkCache.m_201698_(ServerChunkCache.java:312) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.server.level.ServerLevel.m_8793_(ServerLevel.java:305) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:APP:cupboard.mixins.json:ServerAddEntityMixin,pl:mixin:APP:citadel.mixins.json:ServerLevelMixin,pl:mixin:APP:glitchcore.mixins.json:MixinServerLevel,pl:mixin:APP:sereneseasons.mixins.json:MixinSe
+	at net.minecraft.server.MinecraftServer.m_5703_(MinecraftServer.java:893) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.server.MinecraftServer.m_5705_(MinecraftServer.java:814) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.client.server.IntegratedServer.m_5705_(IntegratedServer.java:89) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:runtimedistcleaner:A,re:classloading,pl:runtimedistcleaner:A}
+	at net.minecraft.server.MinecraftServer.m_130011_(MinecraftServer.java:661) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.server.MinecraftServer.m_206580_(MinecraftServer.java:251) ~[client-1.20.1-20230612.114412-srg.jar%23330!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at java.lang.Thread.run(Thread.java:840) ~[?:?] {re:mixin}
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Server thread
+...
+Suspected Mods: NONE
+Stacktrace:
+Details:
+Details:
+Details:
+	Minecraft Version: 1.20.1
+	Operating System: Mac OS X (aarch64) version 26.6.2
+	Java Version: 17.0.15, Microsoft
+	Memory: 461927584 bytes (440 MiB) / 3615490048 bytes (3448 MiB) up to 6442450944 bytes (6144 MiB)
+	Graphics card #0 name: Apple M4
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	JVM Flags: 2 total; -Xms2048m -Xmx6144m
+	Is Modded: Definitely; Client brand changed to 'forge'; Server brand changed to 'forge'
+	Launched Version: 1.20.1

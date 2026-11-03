@@ -1,0 +1,50 @@
+# source: <kite-data>/instances/MC-26.3-Animations/.minecraft/crash-reports/crash-2026-09-24_14.08.42-client.txt
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+---- Minecraft Crash Report ----
+// I just don't know what went wrong :(
+
+Time: 2026-09-24 14:08:42
+Description: Initializing game
+
+java.lang.RuntimeException: Could not execute entrypoint stage 'client' due to errors, provided by 'server_waypoint' at '_959.server_waypoint.fabric.ServerWaypointFabricClient'!
+	at net.fabricmc.loader.impl.FabricLoaderImpl.lambda$invokeEntrypoints$0(FabricLoaderImpl.java:413)
+	at net.fabricmc.loader.impl.util.ExceptionUtil.gatherExceptions(ExceptionUtil.java:33)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.invokeEntrypoints(FabricLoaderImpl.java:411)
+	at net.fabricmc.loader.impl.game.minecraft.Hooks.startClient(Hooks.java:53)
+	at knot//net.minecraft.client.Minecraft.<init>(Minecraft.java:469)
+	at knot//net.minecraft.client.main.Main.main(Main.java:278)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:517)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+	at org.prismlauncher.launcher.impl.StandardLauncher.launch(StandardLauncher.java:115)
+	at org.prismlauncher.EntryPoint.listen(EntryPoint.java:129)
+	at org.prismlauncher.EntryPoint.main(EntryPoint.java:70)
+Caused by: java.lang.NoSuchFieldError: Class com.mojang.blaze3d.platform.InputConstants$Type does not have member field 'com.mojang.blaze3d.platform.InputConstants$Type KEYSYM'
+	at knot//_959.server_waypoint.fabric.ServerWaypointFabricClient.onInitializeClient(ServerWaypointFabricClient.java:31)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.invokeEntrypoints(FabricLoaderImpl.java:409)
+	... 9 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+...
+Details:
+Details:
+	Minecraft Version: 26.3
+	Operating System: Mac OS X (aarch64) version 27.0
+	Java Version: 25.0.1, Eclipse Adoptium
+	Memory: 645054816 bytes (615 MiB) / 1073741824 bytes (1024 MiB) up to 6442450944 bytes (6144 MiB)
+	Graphics card #0 name: Apple M4
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MiB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	JVM Flags: 3 total; -XX:StackShadowPages=32 -Xms1024m -Xmx6144m
+	Launched Version: 26.3
+	Backend library: LWJGL version 3.4.3-snapshot
+	Window size: <not initialized>
+	Is Modded: Definitely; Client brand changed to 'fabric'
+	Type: Client

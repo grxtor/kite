@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "Mod File /Users/<user>/Library/Application Support/Kite/Kite/instances/x/minecraft/mods/jei-1.20.1-forge-15.3.0.4.jar needs language provider javafml:[47,) to load\n§7We have found 46.0.14\n"
+ }
+}

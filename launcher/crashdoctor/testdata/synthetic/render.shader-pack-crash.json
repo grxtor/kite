@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": true,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\nDescription: Rendering overlay\n\nnet.irisshaders.iris.gl.shader.ShaderCompileException: composite1.fsh: composite1.fsh: 0(87) : error C1503: undefined variable \"shadowcolor1\"\n\tat net.irisshaders.iris.gl.shader.ShaderWorkarounds.safeShaderSource(ShaderWorkarounds.java:42)\n"
+ }
+}

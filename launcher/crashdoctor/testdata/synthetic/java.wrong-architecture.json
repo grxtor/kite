@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[Render thread/INFO]: [STDERR]: java.lang.UnsatisfiedLinkError: /Users/<user>/Library/Application Support/Kite/Kite/instances/1.8.9/natives/liblwjgl.dylib: dlopen(/Users/<user>/Library/Application Support/Kite/Kite/instances/1.8.9/natives/liblwjgl.dylib, 0x0001): tried: '/Users/<user>/Library/Application Support/Kite/Kite/instances/1.8.9/natives/liblwjgl.dylib' (mach-o file, but is an incompatible architecture (have 'x86_64', need 'arm64'))\nProcess exited with code 1.\n"
+ }
+}

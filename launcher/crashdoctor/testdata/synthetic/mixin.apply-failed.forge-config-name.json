@@ -1,0 +1,7 @@
+{
+ "note": "Forge mixin errors name the config, not the mod",
+ "verify": false,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\nDescription: Initializing game\n\norg.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError: An unexpected critical error was encountered\nCaused by: org.spongepowered.asm.mixin.throwables.MixinApplyError: Mixin [cobblemon-common.mixins.json:LivingEntityMixin] from phase [DEFAULT] in config [cobblemon-common.mixins.json] FAILED during APPLY\n"
+ }
+}

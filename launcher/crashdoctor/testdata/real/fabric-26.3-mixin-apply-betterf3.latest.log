@@ -1,0 +1,10 @@
+# source: <kite-data>/instances/MC-26.3-Animations/.minecraft/logs/2026-09-30-5.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[22:39:21] [Render thread/ERROR]: Mixin apply for mod betterf3 failed betterf3.fabric.mixins.json:FabricDebugMixin from mod betterf3 -> net.minecraft.client.gui.components.DebugScreenOverlay: org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException Invalid descriptor on betterf3.fabric.mixins.json:FabricDebugMixin from mod betterf3->@Inject::drawText(Lnet/minecraft/client/gui/Gui
+org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException: Invalid descriptor on betterf3.fabric.mixins.json:FabricDebugMixin from mod betterf3->@Inject::drawText(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Ljava/util/List;ZLorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V! Expected (Lnet/minecraft/client/gui/GuiGraphicsExtractor;Ljava/util/List;ZILorg/spongepower
+	at org.spongepowered.asm.mixin.injection.callback.CallbackInjector.inject(CallbackInjector.java:563)
+	at org.spongepowered.asm.mixin.injection.callback.CallbackInjector.inject(CallbackInjector.java:493)
+	at org.spongepowered.asm.mixin.injection.code.Injector.inject(Injector.java:284)
+	at org.spongepowered.asm.mixin.injection.struct.InjectionInfo.inject(InjectionInfo.java:503)
+	at org.spongepowered.asm.mixin.transformer.MixinTargetContext.applyInjections(MixinTargetContext.java:1470)
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.applyInjections(MixinApplicatorStandard.java:832)

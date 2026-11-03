@@ -1,0 +1,7 @@
+{
+ "note": "26.2+ Vulkan renderer; wording unconfirmed",
+ "verify": true,
+ "docs": {
+  "log": "[Render thread/ERROR]: Failed to initialize Vulkan: VK_ERROR_INCOMPATIBLE_DRIVER\nProcess exited with code 1.\n"
+ }
+}

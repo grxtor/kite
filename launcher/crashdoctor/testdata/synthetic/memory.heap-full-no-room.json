@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "Exception in thread \"Render thread\" java.lang.OutOfMemoryError: Java heap space\n\tat java.base/java.nio.HeapByteBuffer.<init>(HeapByteBuffer.java:71)\nProcess exited with code 1.\n"
+ }
+}

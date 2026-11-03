@@ -1,0 +1,54 @@
+# source: <kite-data>/instances/CreateSkiesSeas-1.20.1/minecraft/crash-reports/crash-2026-09-07_13.39.26-client.txt
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+---- Minecraft Crash Report ----
+// Ouch. That hurt :(
+
+Time: 2026-09-07 13:39:26
+Description: mouseClicked event handler
+
+java.lang.IllegalStateException: Failed to load registries due to above errors
+	at net.minecraft.resources.RegistryDataLoader.m_247207_(RegistryDataLoader.java:77) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,re:classloading,pl:mixin:APP:zeta.mixins.json:RegistryDataLoaderMixin,pl:mixin:A}
+	at net.minecraft.server.WorldLoader.m_246152_(WorldLoader.java:54) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading}
+	at net.minecraft.server.WorldLoader.m_245736_(WorldLoader.java:58) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading}
+	at net.minecraft.server.WorldLoader.m_214362_(WorldLoader.java:31) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading}
+	at net.minecraft.client.gui.screens.worldselection.CreateWorldScreen.m_232896_(CreateWorldScreen.java:125) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading,pl:runtimedistcleaner:A,re:mixin,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.screens.worldselection.WorldSelectionList.m_233213_(WorldSelectionList.java:167) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.screens.worldselection.WorldSelectionList.<init>(WorldSelectionList.java:93) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.screens.worldselection.SelectWorldScreen.m_7856_(SelectWorldScreen.java:54) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading}
+	at net.minecraft.client.gui.screens.Screen.m_6575_(Screen.java:321) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:computing_frames,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:quark.mixins.json:client.ScreenMixin,pl:mixin:A,pl:runtimedistcleaner:A}
+	at net.minecraft.client.Minecraft.m_91152_(Minecraft.java:1007) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:A,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.screens.TitleScreen.m_279796_(TitleScreen.java:159) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:computing_frames,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.components.Button.m_5691_(Button.java:38) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.components.AbstractButton.m_5716_(AbstractButton.java:55) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.components.AbstractWidget.m_6375_(AbstractWidget.java:175) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.gui.components.events.ContainerEventHandler.m_6375_(ContainerEventHandler.java:38) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:computing_frames,re:mixin,re:classloading}
+	at net.minecraft.client.gui.screens.TitleScreen.m_6375_(TitleScreen.java:294) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:computing_frames,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:runtimedistcleaner:A}
+	at net.minecraft.client.MouseHandler.m_168084_(MouseHandler.java:92) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:pointblank.mixins.json:MouseHandlerMixin,pl:mixin:APP:ichunutil.mixins.json:client.MouseHandlerMixin,pl:mixin:APP:supplementaries-common.mixins.json:MouseHandlerMixin,pl:
+	at net.minecraft.client.gui.screens.Screen.m_96579_(Screen.java:437) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:computing_frames,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:quark.mixins.json:client.ScreenMixin,pl:mixin:A,pl:runtimedistcleaner:A}
+	at net.minecraft.client.MouseHandler.m_91530_(MouseHandler.java:89) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:pointblank.mixins.json:MouseHandlerMixin,pl:mixin:APP:ichunutil.mixins.json:client.MouseHandlerMixin,pl:mixin:APP:supplementaries-common.mixins.json:MouseHandlerMixin,pl:m
+	at net.minecraft.client.MouseHandler.m_168091_(MouseHandler.java:189) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:pointblank.mixins.json:MouseHandlerMixin,pl:mixin:APP:ichunutil.mixins.json:client.MouseHandlerMixin,pl:mixin:APP:supplementaries-common.mixins.json:MouseHandlerMixin,pl
+	at net.minecraft.util.thread.BlockableEventLoop.execute(BlockableEventLoop.java:102) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,re:computing_frames,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B}
+	at net.minecraft.client.MouseHandler.m_91565_(MouseHandler.java:188) ~[client-1.20.1-20230612.114412-srg.jar%23328!/:?] {re:mixin,pl:accesstransformer:B,pl:runtimedistcleaner:A,re:classloading,pl:accesstransformer:B,pl:mixin:APP:pointblank.mixins.json:MouseHandlerMixin,pl:mixin:APP:ichunutil.mixins.json:client.MouseHandlerMixin,pl:mixin:APP:supplementaries-common.mixins.json:MouseHandlerMixin,pl:
+	at org.lwjgl.glfw.GLFWMouseButtonCallbackI.callback(GLFWMouseButtonCallbackI.java:43) ~[lwjgl-glfw-3.3.1.jar%2373!/:build 7] {}
+...
+Suspected Mods: NONE
+Stacktrace:
+Details:
+Details:
+Details:
+	Minecraft Version: 1.20.1
+	Operating System: Mac OS X (aarch64) version 26.6.2
+	Java Version: 17.0.15, Microsoft
+	Memory: 1684013056 bytes (1606 MiB) / 3498049536 bytes (3336 MiB) up to 6442450944 bytes (6144 MiB)
+	Graphics card #0 name: Apple M4
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	JVM Flags: 2 total; -Xms2048m -Xmx6144m
+	Launched Version: 1.20.1
+	Backend library: LWJGL version 3.3.1 build 7
+	Window size: 1708x960
+	GL Caps: Using framebuffer using OpenGL 3.2
+	Is Modded: Definitely; Client brand changed to 'forge'
+	Type: Client (map_client.txt)

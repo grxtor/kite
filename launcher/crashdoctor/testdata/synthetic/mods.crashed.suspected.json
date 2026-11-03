@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\nDescription: Ticking player\n\njava.lang.NullPointerException: Cannot read field \"level\" because \"this.owner\" is null\n\tat TRANSFORMER/artifacts@9.5.13/artifacts.item.UmbrellaItem.tick(UmbrellaItem.java:61)\n\nSuspected Mods: \n\tArtifacts (artifacts), Version: 9.5.13\n\t\tat TRANSFORMER/artifacts@9.5.13/artifacts.item.UmbrellaItem.tick(UmbrellaItem.java:61)\n"
+ }
+}

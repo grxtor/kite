@@ -19,6 +19,7 @@
  */
 
 #include "MinecraftInstance.h"
+#include "crashdoctor/CrashDoctorService.h"
 #include "minecraft/launch/CreateGameFolders.h"
 #include "minecraft/launch/ExtractNatives.h"
 #include "minecraft/launch/PrintInstanceInfo.h"
@@ -1237,6 +1238,8 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		}
 	}
 	m_launchProcess = process;
+	// Says why, if this run ends in a crash.
+	CrashDoctorService::instance()->watch(m_launchProcess);
 	emit launchTaskChanged(m_launchProcess);
 	return m_launchProcess;
 }

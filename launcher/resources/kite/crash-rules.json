@@ -1,0 +1,2809 @@
+{
+	"formatVersion": 1,
+	"catalogVersion": 1,
+	"classHints": [
+		{
+			"prefix": "net.fabricmc.fabric.api",
+			"mod": "fabric-api",
+			"name": "Fabric API"
+		},
+		{
+			"prefix": "net.fabricmc.fabric.impl",
+			"mod": "fabric-api",
+			"name": "Fabric API"
+		},
+		{
+			"prefix": "net.fabricmc.language.kotlin",
+			"mod": "fabric-language-kotlin",
+			"name": "Fabric Language Kotlin"
+		},
+		{
+			"prefix": "thedarkcolour.kotlinforforge",
+			"mod": "kotlinforforge",
+			"name": "Kotlin for Forge"
+		},
+		{
+			"prefix": "me.shedaniel.clothconfig2",
+			"mod": "cloth-config",
+			"name": "Cloth Config"
+		},
+		{
+			"prefix": "me.shedaniel.autoconfig",
+			"mod": "cloth-config",
+			"name": "Cloth Config"
+		},
+		{
+			"prefix": "dev.architectury",
+			"mod": "architectury",
+			"name": "Architectury API"
+		},
+		{
+			"prefix": "com.terraformersmc.modmenu",
+			"mod": "modmenu",
+			"name": "Mod Menu"
+		},
+		{
+			"prefix": "dev.isxander.yacl3",
+			"mod": "yet_another_config_lib_v3",
+			"name": "YetAnotherConfigLib"
+		},
+		{
+			"prefix": "software.bernie.geckolib",
+			"mod": "geckolib",
+			"name": "GeckoLib"
+		},
+		{
+			"prefix": "mod.azure.azurelib",
+			"mod": "azurelib",
+			"name": "AzureLib"
+		},
+		{
+			"prefix": "top.theillusivec4.curios",
+			"mod": "curios",
+			"name": "Curios API"
+		},
+		{
+			"prefix": "dev.emi.trinkets",
+			"mod": "trinkets",
+			"name": "Trinkets"
+		},
+		{
+			"prefix": "mezz.jei",
+			"mod": "jei",
+			"name": "Just Enough Items"
+		},
+		{
+			"prefix": "dev.emi.emi",
+			"mod": "emi",
+			"name": "EMI"
+		},
+		{
+			"prefix": "me.shedaniel.rei",
+			"mod": "roughlyenoughitems",
+			"name": "Roughly Enough Items"
+		},
+		{
+			"prefix": "net.blay09.mods.balm",
+			"mod": "balm",
+			"name": "Balm"
+		},
+		{
+			"prefix": "fuzs.puzzleslib",
+			"mod": "puzzleslib",
+			"name": "Puzzles Lib"
+		},
+		{
+			"prefix": "fuzs.forgeconfigapiport",
+			"mod": "forgeconfigapiport",
+			"name": "Forge Config API Port"
+		},
+		{
+			"prefix": "net.minecraftforge.fml.config",
+			"mod": "forgeconfigapiport",
+			"name": "Forge Config API Port"
+		},
+		{
+			"prefix": "com.teamresourceful.resourcefullib",
+			"mod": "resourcefullib",
+			"name": "Resourceful Lib"
+		},
+		{
+			"prefix": "net.darkhax.bookshelf",
+			"mod": "bookshelf",
+			"name": "Bookshelf"
+		},
+		{
+			"prefix": "dev.ftb.mods.ftblibrary",
+			"mod": "ftblibrary",
+			"name": "FTB Library"
+		},
+		{
+			"prefix": "net.mehvahdjukaar.moonlight",
+			"mod": "moonlight",
+			"name": "Moonlight Lib"
+		},
+		{
+			"prefix": "com.simibubi.create",
+			"mod": "create",
+			"name": "Create"
+		},
+		{
+			"prefix": "io.github.fabricators_of_create.porting_lib",
+			"mod": "porting_lib",
+			"name": "Porting Lib"
+		},
+		{
+			"prefix": "com.github.L_Ender.lionfishapi",
+			"mod": "lionfishapi",
+			"name": "Lionfish API"
+		},
+		{
+			"prefix": "com.github.L_Ender.cataclysm",
+			"mod": "cataclysm",
+			"name": "L_Ender's Cataclysm"
+		},
+		{
+			"prefix": "com.mcwbridges",
+			"mod": "mcwbridges",
+			"name": "Macaw's Bridges"
+		},
+		{
+			"prefix": "com.mcwroofs",
+			"mod": "mcwroofs",
+			"name": "Macaw's Roofs"
+		},
+		{
+			"prefix": "com.mcwfences",
+			"mod": "mcwfences",
+			"name": "Macaw's Fences and Walls"
+		},
+		{
+			"prefix": "com.mcwdoors",
+			"mod": "mcwdoors",
+			"name": "Macaw's Doors"
+		},
+		{
+			"prefix": "com.mcwwindows",
+			"mod": "mcwwindows",
+			"name": "Macaw's Windows"
+		},
+		{
+			"prefix": "com.mcwlights",
+			"mod": "mcwlights",
+			"name": "Macaw's Lights and Lamps"
+		},
+		{
+			"prefix": "com.mcwfurnitures",
+			"mod": "mcwfurnitures",
+			"name": "Macaw's Furniture"
+		},
+		{
+			"prefix": "com.mcwpaths",
+			"mod": "mcwpaths",
+			"name": "Macaw's Paths and Pavings"
+		},
+		{
+			"prefix": "com.mcwtrpdoors",
+			"mod": "mcwtrpdoors",
+			"name": "Macaw's Trapdoors"
+		},
+		{
+			"prefix": "dev.kosmx.playerAnim",
+			"mod": "playeranimator",
+			"name": "playerAnimator"
+		},
+		{
+			"prefix": "com.zigythebird.playeranim",
+			"mod": "player_animation_library",
+			"name": "Player Animation Library"
+		},
+		{
+			"prefix": "traben.entity_texture_features",
+			"mod": "entity_texture_features",
+			"name": "Entity Texture Features"
+		},
+		{
+			"prefix": "com.cobblemon",
+			"mod": "cobblemon",
+			"name": "Cobblemon"
+		},
+		{
+			"prefix": "net.caffeinemc.mods.sodium",
+			"mod": "sodium",
+			"name": "Sodium"
+		},
+		{
+			"prefix": "me.jellysquid.mods.sodium",
+			"mod": "sodium",
+			"name": "Sodium"
+		},
+		{
+			"prefix": "org.embeddedt.embeddium",
+			"mod": "embeddium",
+			"name": "Embeddium"
+		},
+		{
+			"prefix": "net.irisshaders.iris",
+			"mod": "iris",
+			"name": "Iris"
+		},
+		{
+			"prefix": "net.coderbot.iris",
+			"mod": "iris",
+			"name": "Iris"
+		},
+		{
+			"prefix": "dev.tr7zw.notenoughanimations",
+			"mod": "notenoughanimations",
+			"name": "Not Enough Animations"
+		},
+		{
+			"prefix": "dev.tr7zw.transition",
+			"mod": "transition",
+			"name": "Transition"
+		},
+		{
+			"prefix": "com.jamieswhiteshirt.reachentityattributes",
+			"mod": "reach-entity-attributes",
+			"name": "Reach Entity Attributes"
+		},
+		{
+			"prefix": "io.wispforest.owo",
+			"mod": "owo",
+			"name": "oωo (owo-lib)"
+		},
+		{
+			"prefix": "com.mojang.datafixers",
+			"mod": "",
+			"name": ""
+		},
+		{
+			"prefix": "org.valkyrienskies",
+			"mod": "valkyrienskies",
+			"name": "Valkyrien Skies"
+		},
+		{
+			"prefix": "vazkii.patchouli",
+			"mod": "patchouli",
+			"name": "Patchouli"
+		},
+		{
+			"prefix": "dev.latvian.mods.kubejs",
+			"mod": "kubejs",
+			"name": "KubeJS"
+		},
+		{
+			"prefix": "dev.latvian.mods.rhino",
+			"mod": "rhino",
+			"name": "Rhino"
+		},
+		{
+			"prefix": "org.violetmoon.zeta",
+			"mod": "zeta",
+			"name": "Zeta"
+		},
+		{
+			"prefix": "com.tterrag.registrate",
+			"mod": "",
+			"name": ""
+		},
+		{
+			"prefix": "snownee.jade",
+			"mod": "jade",
+			"name": "Jade"
+		},
+		{
+			"prefix": "mcp.mobius.waila",
+			"mod": "jade",
+			"name": "Jade"
+		},
+		{
+			"prefix": "xaero.common",
+			"mod": "xaerominimap",
+			"name": "Xaero's Minimap"
+		},
+		{
+			"prefix": "journeymap",
+			"mod": "journeymap",
+			"name": "JourneyMap"
+		},
+		{
+			"prefix": "net.puzzlemc",
+			"mod": "puzzle",
+			"name": "Puzzle"
+		},
+		{
+			"prefix": "com.llamalad7.mixinextras",
+			"mod": "",
+			"name": ""
+		},
+		{
+			"prefix": "org.spongepowered.asm",
+			"mod": "",
+			"name": ""
+		},
+		{
+			"prefix": "org.lwjgl",
+			"mod": "",
+			"name": ""
+		}
+	],
+	"rules": [
+		{
+			"id": "kite.performance-wrong-version",
+			"priority": 96,
+			"key": "mod",
+			"when": {
+				"inSet": {
+					"mod": "performanceMods"
+				}
+			},
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "- Mod '(?<modName>[^\\n]{1,80}?)' \\((?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires (?<range>[^\\n]+?) of (?:mod )?'Minecraft' \\(minecraft\\), but only the wrong versions? (?:is|are) present: (?<found>[^!\\n]+)!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) (?:requires|only supports) minecraft (?<range>[^\\n]*)\\n\\s*Currently, minecraft is (?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Mixin \\[[^\\]:\\s]+:[\\w.$]+ from mod (?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\] from phase \\[\\w+\\] in config \\[[^\\]]+\\] FAILED during \\w+",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"modName": "modName",
+				"range": "text",
+				"found": "version"
+			},
+			"suppresses": [
+				{
+					"rule": "mods.wrong-minecraft",
+					"same": {
+						"mod": "mod"
+					}
+				},
+				{
+					"rule": "mixin.apply-failed",
+					"same": {
+						"mod": "mod"
+					}
+				}
+			],
+			"title": {
+				"en": "Kite Performance left {modName} on the old version",
+				"tr": "Kite Performans'ın eklediği {modName} bu sürüme uymuyor"
+			},
+			"groupTitle": {
+				"en": "{count} Kite Performance mods don't fit Minecraft {mc}",
+				"tr": "Kite Performans'ın {count} modu {mc} sürümüne uymuyor"
+			},
+			"explanation": {
+				"en": "You changed the Minecraft version and {modName} stayed on the file for the old one. Let Kite look for the {mc} build again; if there still isn't one, turn the mod off and the game starts.",
+				"tr": "Sürümü değiştirince {modName} eski sürümün dosyasında kaldı. Kite {mc} için yeniden baksın; hâlâ yoksa modu kapat, oyun açılır."
+			},
+			"groupExplanation": {
+				"en": "You changed the Minecraft version and these mods stayed on the files for the old one. Let Kite look for the {mc} builds again; turn off the ones that still have none.",
+				"tr": "Sürümü değiştirince bu modlar eski sürümün dosyalarında kaldı. Kite {mc} için yeniden baksın; hâlâ olmayanları kapat."
+			},
+			"fixes": [
+				{
+					"action": "rematchPerformanceMods",
+					"label": {
+						"en": "Find builds for {mc}",
+						"tr": "{mc} için yeniden bul"
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {modName}",
+						"tr": "{modName} modunu kapat"
+					},
+					"params": {
+						"target": "{mod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "kite.kite-mod-wrong-version",
+			"priority": 95,
+			"key": "mod",
+			"match": {
+				"any": [
+					{
+						"re": "- Mod 'Kite' \\((?<mod>kite)\\) (?<kiteVersion>\\S+) requires (?<range>[^\\n]+?) of (?:mod )?'Minecraft' \\(minecraft\\), but only the wrong versions? (?:is|are) present: (?<found>[^!\\n]+)!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"kiteVersion": "version",
+				"range": "text",
+				"found": "version"
+			},
+			"suppresses": [
+				"mods.wrong-minecraft"
+			],
+			"title": {
+				"en": "Kite's in-game mod isn't ready for {mc}",
+				"tr": "Kite'ın oyun içi modu {mc} için hazır değil"
+			},
+			"explanation": {
+				"en": "Kite added its own mod (friends, in-game menu) built for {range}, and this instance is on {found}. Turn it off for this instance; the game starts the same without it.",
+				"tr": "Kite kendi modunu (arkadaşlar, oyun içi menü) {range} için ekledi, bu kurulum {found}. Bu kurulumda kapat, oyun onsuz da aynı açılır."
+			},
+			"fixes": [
+				{
+					"action": "turnOffKiteMod",
+					"label": {
+						"en": "Turn off Kite's mod here",
+						"tr": "Kite modunu burada kapat"
+					}
+				}
+			]
+		},
+		{
+			"id": "java.needs-newer",
+			"priority": 92,
+			"match": {
+				"any": [
+					{
+						"re": "(?<cls>[\\w/$.]{1,200}) has been compiled by a more recent version of the Java Runtime \\(class file version (?<cfv>\\d{2})(?:\\.\\d+)?\\), this version of the Java Runtime only recognizes class file versions up to (?<cfvRuntime>\\d{2})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "- Mod '(?<modName>[^\\n]{1,80}?)' \\((?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires (?:version |any version after |any version >= ?|any version between )?(?<javaMajor>\\d{1,2})(?:\\.[\\d.]+)?\\b[^\\n]*? of (?:mod )?'[^\\n]*?' \\(java\\)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"cls": "className",
+				"cfv": "classFileVersion",
+				"cfvRuntime": "classFileVersion",
+				"javaMajor": "javaMajor",
+				"mod": "modId",
+				"modName": "modName"
+			},
+			"coalesce": {
+				"javaMajor": [
+					"cfv"
+				],
+				"javaRuntime": [
+					"cfvRuntime"
+				]
+			},
+			"require": [
+				"javaMajor"
+			],
+			"title": {
+				"en": "Needs Java {javaMajor}",
+				"tr": "Java {javaMajor} lazım"
+			},
+			"explanation": {
+				"en": "This instance starts with Java {javaRuntime|javaNow}, but {modName|cls} is made for Java {javaMajor}. Kite can download Java {javaMajor} and use it for this instance only.",
+				"tr": "Bu kurulum Java {javaRuntime|javaNow} ile açılıyor ama {modName|cls} Java {javaMajor} için yapılmış. Kite Java {javaMajor} indirip sadece bu kurulumda kullansın."
+			},
+			"fixes": [
+				{
+					"action": "useJavaForInstance",
+					"label": {
+						"en": "Use Java {javaMajor}",
+						"tr": "Java {javaMajor} ile aç"
+					},
+					"params": {
+						"major": "{javaMajor}"
+					}
+				}
+			]
+		},
+		{
+			"id": "java.too-new-for-version",
+			"priority": 88,
+			"when": {
+				"java": "aboveRecommended"
+			},
+			"match": {
+				"any": [
+					{
+						"re": "Unsupported class file major version (?<javaMajor>\\d{2})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "class jdk\\.internal\\.loader\\.ClassLoaders\\$AppClassLoader cannot be cast to class java\\.net\\.URLClassLoader",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"javaMajor": "classFileVersion"
+			},
+			"title": {
+				"en": "Java {javaNow} is too new for Minecraft {mc}",
+				"tr": "Java {javaNow}, Minecraft {mc} için fazla yeni"
+			},
+			"explanation": {
+				"en": "Minecraft {mc} and its mod loader expect Java {javaRecommended}. Let Kite pick the right Java for this version again.",
+				"tr": "Minecraft {mc} ve mod yükleyicisi Java {javaRecommended} bekliyor. Kite bu sürüme uygun Java'yı yeniden seçsin."
+			},
+			"fixes": [
+				{
+					"action": "useRecommendedJava",
+					"label": {
+						"en": "Use Java {javaRecommended}",
+						"tr": "Java {javaRecommended} ile aç"
+					}
+				}
+			]
+		},
+		{
+			"id": "java.not-installed",
+			"priority": 86,
+			"match": {
+				"any": [
+					{
+						"re": "Java (?<javaMajor>\\d{1,2}) is required but not installed",
+						"in": [
+							"log"
+						]
+					},
+					{
+						"re": "No installed Java (?<javaMajor>\\d{1,2}) found",
+						"in": [
+							"log"
+						]
+					}
+				],
+				"none": [
+					{
+						"re": "Using Java vendor: ",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"javaMajor": "javaMajor"
+			},
+			"title": {
+				"en": "Java {javaMajor} isn't installed",
+				"tr": "Java {javaMajor} kurulu değil"
+			},
+			"explanation": {
+				"en": "Minecraft {mc} needs Java {javaMajor} and Kite didn't find it (automatic downloads are off). Allow the download for this instance and it comes with the next launch.",
+				"tr": "Minecraft {mc} Java {javaMajor} istiyor, Kite bilgisayarda bulamadı (otomatik indirme kapalı). Bu kurulum için indirmeye izin ver, sonraki açılışta iner."
+			},
+			"fixes": [
+				{
+					"action": "installJava",
+					"label": {
+						"en": "Allow the Java {javaMajor} download",
+						"tr": "Java {javaMajor} indirmesine izin ver"
+					},
+					"params": {
+						"major": "{javaMajor}"
+					}
+				}
+			]
+		},
+		{
+			"id": "java.override-broken",
+			"priority": 87,
+			"match": {
+				"any": [
+					{
+						"re": "The java binary \\\"(?<path>[^\\\"\\n]{1,300})\\\" couldn't be found\\. Please fix the java path override",
+						"in": [
+							"log"
+						]
+					},
+					{
+						"re": "^Could not start java:",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"path": "text"
+			},
+			"title": {
+				"en": "The Java set for this instance doesn't start",
+				"tr": "Bu kuruluma seçilen Java açılmıyor"
+			},
+			"explanation": {
+				"en": "This instance is set to a Java that is missing or broken. Let Kite choose the Java for Minecraft {mc} again.",
+				"tr": "Bu kurulumun ayarında silinmiş ya da bozuk bir Java var. Kite Minecraft {mc} için Java'yı yeniden seçsin."
+			},
+			"fixes": [
+				{
+					"action": "useRecommendedJava",
+					"label": {
+						"en": "Let Kite choose",
+						"tr": "Kite seçsin"
+					}
+				},
+				{
+					"action": "openJavaSettings",
+					"label": {
+						"en": "Java settings",
+						"tr": "Java ayarları"
+					}
+				}
+			]
+		},
+		{
+			"id": "java.wrong-architecture",
+			"priority": 89,
+			"when": {
+				"os": [
+					"macos"
+				]
+			},
+			"match": {
+				"any": [
+					{
+						"re": "(?:lwjgl|glfw|openal|jemalloc|jinput)[\\w.-]{0,40}\\.(?:dylib|jnilib)[^\\n]*?incompatible architecture \\(have '(?<have>\\w{3,8})', need '(?<need>\\w{3,8})'\\)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"have": "text",
+				"need": "text"
+			},
+			"title": {
+				"en": "Java and Minecraft's libraries are for different chips",
+				"tr": "Java ile oyunun kütüphaneleri farklı çip için"
+			},
+			"explanation": {
+				"en": "The game's libraries are for {have} and the Java running them is for {need} (one of them goes through Rosetta). Let Kite pick a Java that matches this version's libraries.",
+				"tr": "Oyunun kütüphaneleri {have} için, onları açan Java {need} için (biri Rosetta'dan geçiyor). Kite bu sürümün kütüphanelerine uyan Java'yı seçsin."
+			},
+			"fixes": [
+				{
+					"action": "useMatchingArchJava",
+					"label": {
+						"en": "Use the matching Java",
+						"tr": "Uyan Java'ya geç"
+					}
+				}
+			]
+		},
+		{
+			"id": "jvm.bad-custom-args",
+			"priority": 88,
+			"when": {
+				"customJvmArgs": true
+			},
+			"match": {
+				"any": [
+					{
+						"re": "Unrecognized VM option '(?<opt>[^\\n]{1,80}?)'",
+						"in": [
+							"log"
+						]
+					},
+					{
+						"re": "Improperly specified VM option '(?<opt>[^\\n]{1,80}?)'",
+						"in": [
+							"log"
+						]
+					},
+					{
+						"re": "^Unrecognized option: (?<opt>\\S{1,80})",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"opt": "text"
+			},
+			"title": {
+				"en": "Java doesn't accept a custom setting",
+				"tr": "Java özel bir ayarı kabul etmiyor"
+			},
+			"explanation": {
+				"en": "Your custom Java arguments include \"{opt}\", which Java {javaNow} doesn't know (often copied from an old guide). Turn the custom arguments off for this instance; Kite's own ones stay.",
+				"tr": "Özel Java ayarlarında \"{opt}\" var, Java {javaNow} bunu tanımıyor (genelde eski bir rehberden kopyalanır). Bu kurulumda özel ayarları kapat, Kite'ınkiler kalır."
+			},
+			"fixes": [
+				{
+					"action": "clearCustomJvmArgs",
+					"label": {
+						"en": "Turn off custom arguments",
+						"tr": "Özel ayarları kapat"
+					}
+				},
+				{
+					"action": "openJavaSettings",
+					"label": {
+						"en": "Java settings",
+						"tr": "Java ayarları"
+					}
+				}
+			]
+		},
+		{
+			"id": "memory.heap-full",
+			"priority": 85,
+			"when": {
+				"memoryRoom": true
+			},
+			"match": {
+				"any": [
+					{
+						"re": "java\\.lang\\.OutOfMemoryError: (?<kind>Java heap space|GC overhead limit exceeded|Direct buffer memory)",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr",
+							"log"
+						]
+					},
+					{
+						"re": "Cannot reserve \\d+ bytes of direct buffer memory",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					}
+				]
+			},
+			"captures": {
+				"kind": "text"
+			},
+			"title": {
+				"en": "The game ran out of memory",
+				"tr": "RAM yetmedi"
+			},
+			"explanation": {
+				"en": "Minecraft used all {memoryMb} MB it was given. Give it {suggestedMemoryMb} MB; your computer has {systemMemoryMb} MB, so there is room.",
+				"tr": "Oyun kendisine verilen {memoryMb} MB'ın hepsini doldurdu. {suggestedMemoryMb} MB ver; bilgisayarında {systemMemoryMb} MB var, yer var."
+			},
+			"fixes": [
+				{
+					"action": "setMemory",
+					"label": {
+						"en": "Give it {suggestedMemoryMb} MB",
+						"tr": "{suggestedMemoryMb} MB ver"
+					},
+					"params": {
+						"maxMb": "{suggestedMemoryMb}"
+					}
+				},
+				{
+					"action": "openMemorySettings",
+					"label": {
+						"en": "Memory settings",
+						"tr": "Bellek ayarları"
+					}
+				}
+			]
+		},
+		{
+			"id": "memory.heap-full-no-room",
+			"priority": 84,
+			"when": {
+				"memoryRoom": false
+			},
+			"match": {
+				"any": [
+					{
+						"re": "java\\.lang\\.OutOfMemoryError: (?<kind>Java heap space|GC overhead limit exceeded|Direct buffer memory)",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr",
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"kind": "text"
+			},
+			"title": {
+				"en": "The game ran out of memory",
+				"tr": "RAM yetmedi"
+			},
+			"explanation": {
+				"en": "Minecraft already has {memoryMb} MB of your {systemMemoryMb} MB; giving more would slow the whole computer down. Fewer or lighter mods (or a lower render distance) is the way out.",
+				"tr": "Oyuna zaten {systemMemoryMb} MB'ın {memoryMb} MB'ı verilmiş; daha fazlası bilgisayarı yavaşlatır. Mod sayısını azaltmak ya da görüş mesafesini düşürmek gerek."
+			},
+			"fixes": [
+				{
+					"action": "openContentTab",
+					"label": {
+						"en": "Show mods",
+						"tr": "Modları göster"
+					}
+				}
+			]
+		},
+		{
+			"id": "memory.cannot-reserve",
+			"priority": 87,
+			"match": {
+				"any": [
+					{
+						"re": "Could not reserve enough space for (?:\\d+KB )?object heap",
+						"in": [
+							"log"
+						]
+					},
+					{
+						"re": "Invalid maximum heap size: -Xmx(?<asked>\\S{1,12})",
+						"in": [
+							"log"
+						]
+					},
+					{
+						"re": "Initial heap size set to a larger value than the maximum heap size",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"asked": "text"
+			},
+			"title": {
+				"en": "Java couldn't set aside {memoryMb} MB",
+				"tr": "Java {memoryMb} MB'ı ayıramadı"
+			},
+			"explanation": {
+				"en": "The memory setting is more than Java can take right now (too little free RAM, or a 32-bit Java). Lower it to {lowerMemoryMb} MB.",
+				"tr": "Bellek ayarı Java'nın şu an alabileceğinden fazla (boş RAM az ya da Java 32-bit). {lowerMemoryMb} MB'a indir."
+			},
+			"fixes": [
+				{
+					"action": "setMemory",
+					"label": {
+						"en": "Use {lowerMemoryMb} MB",
+						"tr": "{lowerMemoryMb} MB yap"
+					},
+					"params": {
+						"maxMb": "{lowerMemoryMb}"
+					}
+				},
+				{
+					"action": "openMemorySettings",
+					"label": {
+						"en": "Memory settings",
+						"tr": "Bellek ayarları"
+					}
+				}
+			]
+		},
+		{
+			"id": "memory.system-out",
+			"priority": 83,
+			"match": {
+				"any": [
+					{
+						"re": "There is insufficient memory for the Java Runtime Environment to continue",
+						"in": [
+							"hsErr",
+							"log"
+						]
+					},
+					{
+						"re": "Native memory allocation \\((?:mmap|malloc)\\) failed",
+						"in": [
+							"hsErr",
+							"log"
+						]
+					},
+					{
+						"re": "java\\.lang\\.OutOfMemoryError: unable to create (?:new )?native thread",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					},
+					{
+						"re": "^Process crashed with exitcode 9\\.$",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "The computer ran out of memory",
+				"tr": "Bilgisayarın belleği bitti"
+			},
+			"explanation": {
+				"en": "Java asked the system for more memory and didn't get it: other apps are using it. Close what you don't need, or lower the game's memory to {lowerMemoryMb} MB.",
+				"tr": "Java sistemden bellek istedi, alamadı; başka uygulamalar kullanıyor. Gereksizleri kapat ya da oyunun belleğini {lowerMemoryMb} MB'a indir."
+			},
+			"fixes": [
+				{
+					"action": "setMemory",
+					"label": {
+						"en": "Use {lowerMemoryMb} MB",
+						"tr": "{lowerMemoryMb} MB yap"
+					},
+					"params": {
+						"maxMb": "{lowerMemoryMb}"
+					}
+				}
+			]
+		},
+		{
+			"id": "fabric.missing-fabric-api",
+			"priority": 83,
+			"key": "mod",
+			"match": {
+				"any": [
+					{
+						"re": "- Mod '(?<byName>[^\\n]{1,80}?)' \\((?<by>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires [^\\n]+? of (?:mod )?(?:'Fabric API' \\()?(?<mod>fabric-api|fabric)\\)?, which is missing!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Could not find required mod: (?<by>[a-z0-9][a-z0-9_.-]{0,63}) requires \\{(?<mod>fabric|fabric-api) @",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"by": "modId",
+				"byName": "modName"
+			},
+			"suppresses": [
+				{
+					"rule": "mods.missing-dependency",
+					"same": {
+						"mod": "mod"
+					}
+				}
+			],
+			"title": {
+				"en": "Fabric API is missing",
+				"tr": "Fabric API eksik"
+			},
+			"explanation": {
+				"en": "{byName} needs Fabric API to run and it isn't installed. Kite can install the build for {mc}.",
+				"tr": "{byName} çalışmak için Fabric API istiyor, kurulu değil. Kite {mc} için olanı yüklesin."
+			},
+			"fixes": [
+				{
+					"action": "installMissingDependency",
+					"label": {
+						"en": "Install Fabric API",
+						"tr": "Fabric API'yi yükle"
+					},
+					"params": {
+						"mod": "fabric-api"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.missing-dependency",
+			"priority": 82,
+			"key": "mod",
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "- Mod '(?<byName>[^\\n]{1,80}?)' \\((?<by>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires (?<range>[^\\n]+?) of (?:mod )?(?:'(?<modName>[^\\n]{1,80}?)' \\()?(?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\)?, which is missing!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Could not find required mod: (?<by>[a-z0-9][a-z0-9_.-]{0,63}) requires \\{(?<mod>[a-z0-9][a-z0-9_.-]{0,63}) @",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<by>[a-z0-9][a-z0-9_.-]{0,63}) requires (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) (?<range>[^\\n]*)\\n\\s*Currently, \\k<mod> is not installed",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Mod ID: '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})', Requested by: '(?<by>[a-z0-9][a-z0-9_.-]{0,63})', Expected range: '(?<range>[^'\\n]*)', Actual version: '\\[MISSING\\]'",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"modName": "modName",
+				"by": "modId",
+				"byName": "modName",
+				"range": "text"
+			},
+			"exclude": {
+				"mod": [
+					"minecraft",
+					"java",
+					"fabricloader",
+					"quilt_loader",
+					"forge",
+					"neoforge",
+					"fml",
+					"javafml",
+					"mixinextras",
+					"none"
+				]
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{byName|by} needs {modName|mod}",
+				"tr": "{byName|by}, {modName|mod} modunu istiyor"
+			},
+			"groupTitle": {
+				"en": "{count} mods are missing",
+				"tr": "{count} mod eksik"
+			},
+			"explanation": {
+				"en": "{byName|by} doesn't start without {modName|mod} ({range}). Kite can find it on Modrinth and install the build for {mc}.",
+				"tr": "{byName|by}, {modName|mod} olmadan açılmıyor ({range}). Kite Modrinth'te bulup {mc} için olanı yüklesin."
+			},
+			"groupExplanation": {
+				"en": "These mods don't start without the mods they need. Kite can find them on Modrinth and install the builds for {mc}.",
+				"tr": "Bu modlar istedikleri modlar olmadan açılmıyor. Kite Modrinth'te bulup {mc} için olanları yüklesin."
+			},
+			"fixes": [
+				{
+					"action": "installMissingDependency",
+					"label": {
+						"en": "Install {modName|mod}",
+						"tr": "{modName|mod} modunu yükle"
+					},
+					"params": {
+						"mod": "{mod}"
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {byName|by}",
+						"tr": "{byName|by} modunu kapat"
+					},
+					"params": {
+						"target": "{by}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.missing-library-class",
+			"priority": 79,
+			"key": "clsMod",
+			"when": {
+				"installed": {
+					"clsMod": false
+				}
+			},
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "-- MOD (?<by>[a-z0-9][a-z0-9_.-]{0,63}) --\\n(?:[^\\n]*\\n){0,3}?[^\\n]*Caused by \\d+: java\\.lang\\.NoClassDefFoundError: (?<cls>[\\w/$.]{3,200})",
+						"in": [
+							"crashReport"
+						]
+					},
+					{
+						"re": "java\\.lang\\.NoClassDefFoundError: (?<cls>[\\w/$.]{3,200})",
+						"in": [
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"by": "modId",
+				"cls": "className"
+			},
+			"hints": {
+				"cls": "classHints"
+			},
+			"require": [
+				"clsMod"
+			],
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{clsModName} is missing",
+				"tr": "{clsModName} eksik"
+			},
+			"groupTitle": {
+				"en": "{count} libraries are missing",
+				"tr": "{count} kütüphane modu eksik"
+			},
+			"explanation": {
+				"en": "A mod looks for {clsModName} and it isn't installed. Kite can install it for {mc}.",
+				"tr": "Bir mod {clsModName} arıyor, kurulu değil. Kite {mc} için yüklesin."
+			},
+			"groupExplanation": {
+				"en": "Some mods look for library mods that aren't installed. Kite can install them for {mc}.",
+				"tr": "Bazı modlar kurulu olmayan kütüphane modlarını arıyor. Kite {mc} için hepsini yüklesin."
+			},
+			"fixes": [
+				{
+					"action": "installMissingDependency",
+					"label": {
+						"en": "Install {clsModName}",
+						"tr": "{clsModName} modunu yükle"
+					},
+					"params": {
+						"mod": "{clsMod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.library-version-mismatch",
+			"priority": 74,
+			"key": "clsMod",
+			"when": {
+				"installed": {
+					"clsMod": true
+				}
+			},
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "-- MOD (?<by>[a-z0-9][a-z0-9_.-]{0,63}) --\\n(?:[^\\n]*\\n){0,3}?[^\\n]*Caused by \\d+: java\\.lang\\.NoClassDefFoundError: (?<cls>[\\w/$.]{3,200})",
+						"in": [
+							"crashReport"
+						]
+					},
+					{
+						"re": "java\\.lang\\.AbstractMethodError: Receiver class (?<byCls>[\\w.$]{3,200}) does not define or inherit an implementation of the resolved method '(?:abstract )?(?<cls>[\\w.$]{3,200})",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					}
+				]
+			},
+			"captures": {
+				"by": "modId",
+				"cls": "className",
+				"byCls": "className"
+			},
+			"hints": {
+				"cls": "classHints",
+				"byCls": "classHints"
+			},
+			"require": [
+				"clsMod"
+			],
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "Mods expect another version of {clsModName}",
+				"tr": "Modlar {clsModName} için başka sürüm bekliyor"
+			},
+			"explanation": {
+				"en": "{clsModName} is installed, but a mod uses a part of it that this version doesn't have. Update {clsModName} and the mods that use it to the builds for {mc}.",
+				"tr": "{clsModName} kurulu ama bir mod onun bu sürümde olmayan bir parçasını kullanıyor. {clsModName} ve onu kullanan modları {mc} için en yeni sürüme güncelle."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update {clsModName}",
+						"tr": "{clsModName} güncelle"
+					},
+					"params": {
+						"mods": [
+							"{clsMod}",
+							"{byClsMod}",
+							"{by}"
+						]
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.wrong-minecraft",
+			"priority": 80,
+			"key": "mod",
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "- Mod '(?<modName>[^\\n]{1,80}?)' \\((?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires (?<range>[^\\n]+?) of (?:mod )?'Minecraft' \\(minecraft\\), but only the wrong versions? (?:is|are) present: (?<found>[^!\\n]+)!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) (?:requires|only supports) minecraft (?<range>[^\\n]*)\\n\\s*Currently, minecraft is (?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Mod ID: 'minecraft', Requested by: '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})', Expected range: '(?<range>[^'\\n]*)', Actual version: '(?<found>[^'\\n]*)'",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "The mod (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) does not wish to run in Minecraft version (?:Minecraft )?(?<found>[\\w.]+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"modName": "modName",
+				"range": "text",
+				"found": "version"
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{modName|mod} is for another Minecraft version",
+				"tr": "{modName|mod} başka bir Minecraft sürümü için"
+			},
+			"groupTitle": {
+				"en": "{count} mods are for another Minecraft version",
+				"tr": "{count} mod başka Minecraft sürümü için"
+			},
+			"explanation": {
+				"en": "{modName|mod} is made for Minecraft {range} and this instance is {found|mc}. Get the build for {mc}, or turn the mod off.",
+				"tr": "{modName|mod}, Minecraft {range} için yapılmış, bu kurulum {found|mc}. {mc} için olanı yükle ya da modu kapat."
+			},
+			"groupExplanation": {
+				"en": "These mods are made for another Minecraft version than {mc}. Get their {mc} builds, or turn them off.",
+				"tr": "Bu modlar {mc} değil, başka bir Minecraft sürümü için yapılmış. {mc} için olanları yükle ya da kapat."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Get the {mc} build",
+						"tr": "{mc} sürümünü yükle"
+					},
+					"params": {
+						"mods": [
+							"{mod}"
+						]
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {modName|mod}",
+						"tr": "{modName|mod} modunu kapat"
+					},
+					"params": {
+						"target": "{mod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.entrypoint-wrong-version",
+			"priority": 78,
+			"key": "mod",
+			"match": {
+				"all": [
+					{
+						"re": "Could not execute entrypoint stage '\\w+' due to errors, provided by '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})'",
+						"in": [
+							"crashReport",
+							"log"
+						]
+					},
+					{
+						"re": "Caused by: java\\.lang\\.(?:NoSuchMethodError|NoSuchFieldError|AbstractMethodError|IncompatibleClassChangeError|NoClassDefFoundError)[^\\n]*?(?:net[./]minecraft|com[./]mojang)",
+						"in": [
+							"crashReport",
+							"logTail"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId"
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{mod} isn't made for Minecraft {mc}",
+				"tr": "{mod}, Minecraft {mc} için yapılmamış"
+			},
+			"explanation": {
+				"en": "{mod} looked for a part of Minecraft that {mc} no longer has, so it was built for another version. Get the {mc} build, or turn it off.",
+				"tr": "{mod}, Minecraft'ın {mc} sürümünde artık olmayan bir parçasını aradı; başka sürüm için yapılmış. {mc} için olanı yükle ya da kapat."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Get the {mc} build",
+						"tr": "{mc} sürümünü yükle"
+					},
+					"params": {
+						"mods": [
+							"{mod}"
+						]
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {mod}",
+						"tr": "{mod} modunu kapat"
+					},
+					"params": {
+						"target": "{mod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.dependency-wrong-version",
+			"priority": 78,
+			"key": [
+				"by",
+				"mod"
+			],
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "- Mod '(?<byName>[^\\n]{1,80}?)' \\((?<by>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires (?<range>[^\\n]+?) of (?:mod )?'(?<modName>[^\\n]{1,80}?)' \\((?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\), but only the wrong versions? (?:is|are) present: (?<found>[^!\\n]+)!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<by>[a-z0-9][a-z0-9_.-]{0,63}) (?:requires|only supports) (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) (?<range>[^\\n]*)\\n\\s*Currently, \\k<mod> is (?!not installed)(?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Mod ID: '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})', Requested by: '(?<by>[a-z0-9][a-z0-9_.-]{0,63})', Expected range: '(?<range>[^'\\n]*)', Actual version: '(?!\\[MISSING\\])(?<found>[^'\\n]*)'",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"modName": "modName",
+				"by": "modId",
+				"byName": "modName",
+				"range": "text",
+				"found": "version"
+			},
+			"exclude": {
+				"mod": [
+					"minecraft",
+					"java",
+					"fabricloader",
+					"quilt_loader",
+					"forge",
+					"neoforge",
+					"fml",
+					"javafml",
+					"mixinextras",
+					"none"
+				]
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{byName|by} needs another version of {modName|mod}",
+				"tr": "{byName|by}, {modName|mod} için başka sürüm istiyor"
+			},
+			"groupTitle": {
+				"en": "{count} mods need other versions",
+				"tr": "{count} mod başka sürüm istiyor"
+			},
+			"explanation": {
+				"en": "{byName|by} wants {modName|mod} {range}, and {found} is installed. Update {modName|mod} to the build for {mc}.",
+				"tr": "{byName|by}, {modName|mod} için {range} istiyor, sende {found} var. {modName|mod} modunu {mc} için güncelle."
+			},
+			"groupExplanation": {
+				"en": "These mods want other versions of the mods they use. Update those to the builds for {mc}.",
+				"tr": "Bu modlar kullandıkları modların başka sürümlerini istiyor. Onları {mc} için güncelle."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update {modName|mod}",
+						"tr": "{modName|mod} güncelle"
+					},
+					"params": {
+						"mods": [
+							"{mod}"
+						]
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {byName|by}",
+						"tr": "{byName|by} modunu kapat"
+					},
+					"params": {
+						"target": "{by}"
+					}
+				}
+			]
+		},
+		{
+			"id": "forge.dependency-needs-older",
+			"priority": 79,
+			"key": [
+				"by",
+				"mod"
+			],
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "\\bMod (?<by>[a-z0-9][a-z0-9_.-]{0,63}) (?:requires|only supports) (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) (?<range>below [^\\n]*|[^\\n]* or below)\\n\\s*Currently, \\k<mod> is (?!not installed)(?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"by": "modId",
+				"range": "text",
+				"found": "version"
+			},
+			"exclude": {
+				"mod": [
+					"minecraft",
+					"java",
+					"fabricloader",
+					"quilt_loader",
+					"forge",
+					"neoforge",
+					"fml",
+					"javafml",
+					"mixinextras",
+					"none"
+				]
+			},
+			"suppresses": [
+				"mods.crashed",
+				{
+					"rule": "mods.dependency-wrong-version",
+					"same": {
+						"by": "by",
+						"mod": "mod"
+					}
+				}
+			],
+			"title": {
+				"en": "{by} doesn't work with this {mod} yet",
+				"tr": "{by}, bu {mod} sürümüyle henüz çalışmıyor"
+			},
+			"explanation": {
+				"en": "{by} only works with {mod} {range}, and {found} is newer. Update {by}; if there's no newer build, turn it off.",
+				"tr": "{by} sadece {mod} {range} ile çalışıyor, sendeki {found} daha yeni. {by} modunu güncelle, yeni sürümü yoksa kapat."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update {by}",
+						"tr": "{by} güncelle"
+					},
+					"params": {
+						"mods": [
+							"{by}"
+						]
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {by}",
+						"tr": "{by} modunu kapat"
+					},
+					"params": {
+						"target": "{by}"
+					}
+				}
+			]
+		},
+		{
+			"id": "loader.too-old",
+			"priority": 81,
+			"match": {
+				"any": [
+					{
+						"re": "- Mod '(?<modName>[^\\n]{1,80}?)' \\((?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ requires (?<range>[^\\n]+?) of (?:mod )?'Fabric Loader' \\(fabricloader\\), but only the wrong versions? (?:is|are) present: (?<found>[^!\\n]+)!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) requires (?<ldr>neoforge|forge) (?<range>[^\\n]*)\\n\\s*Currently, \\k<ldr> is (?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Mod File (?<jar>[^\\n]{1,200}?\\.jar) needs language provider (?<lp>[\\w-]+):(?<range>\\S+) to load\\n\\s*We have found (?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"modName": "modName",
+				"range": "text",
+				"found": "version",
+				"jar": "jarFile",
+				"ldr": "text",
+				"lp": "text"
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "The mod loader is too old for a mod",
+				"tr": "Mod yükleyici bir mod için eski"
+			},
+			"explanation": {
+				"en": "A mod needs {loader} {range} and this instance has {found}. Update the loader to the newest build for Minecraft {mc}.",
+				"tr": "Bir mod {loader} {range} istiyor, bu kurulumda {found} var. Yükleyiciyi Minecraft {mc} için en yeni sürüme güncelle."
+			},
+			"fixes": [
+				{
+					"action": "updateLoader",
+					"label": {
+						"en": "Update the loader",
+						"tr": "Yükleyiciyi güncelle"
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off the mod",
+						"tr": "Modu kapat"
+					},
+					"params": {
+						"target": "{jar}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.incompatible-pair",
+			"priority": 79,
+			"key": [
+				"a",
+				"b"
+			],
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "- Mod '(?<aName>[^\\n]{1,80}?)' \\((?<a>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ is incompatible with (?<range>[^\\n]+?) of (?:mod )?'(?<bName>[^\\n]{1,80}?)' \\((?<b>[a-z0-9][a-z0-9_.-]{0,63})\\), yet (?:a )?conflicting versions? (?:is|are) present",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<a>[a-z0-9][a-z0-9_.-]{0,63}) is incompatible with (?<b>[a-z0-9][a-z0-9_.-]{0,63}) (?<range>[^\\n]*)\\n\\s*Currently, \\k<b> is (?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"a": "modId",
+				"aName": "modName",
+				"b": "modId",
+				"bName": "modName",
+				"range": "text",
+				"found": "version"
+			},
+			"exclude": {
+				"b": [
+					"optifabric",
+					"optifine"
+				]
+			},
+			"title": {
+				"en": "{aName} and {bName} don't work together",
+				"tr": "{aName} ile {bName} birlikte çalışmıyor"
+			},
+			"explanation": {
+				"en": "The makers of {aName} say it breaks with {bName}. Keep the one you need and turn the other off.",
+				"tr": "{aName} modunu yapanlar {bName} ile bozulduğunu söylüyor. Hangisi lazımsa onu bırak, ötekini kapat."
+			},
+			"fixes": [
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {bName}",
+						"tr": "{bName} modunu kapat"
+					},
+					"params": {
+						"target": "{b}"
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {aName}",
+						"tr": "{aName} modunu kapat"
+					},
+					"params": {
+						"target": "{a}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.duplicate",
+			"priority": 84,
+			"key": "mod",
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "Mod ID: '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})' from mod files: (?<files>[^\\n]{1,400})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) is present in multiple files: (?<files>[^\\n]{1,400})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Duplicate versions for mod ID '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})'",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "ModResolutionException: duplicate mod (?<mod>[a-z0-9][a-z0-9_.-]{0,63})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Duplicate mod: (?<mod>[a-z0-9][a-z0-9_.-]{0,63})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"files": "text"
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{mod} is installed twice",
+				"tr": "{mod} iki kere kurulmuş"
+			},
+			"explanation": {
+				"en": "The mods folder has more than one file of {mod} ({files}). Kite keeps the newest and turns the others off.",
+				"tr": "mods klasöründe {mod} modunun birden fazla dosyası var ({files}). Kite en yenisini bırakıp ötekileri kapatsın."
+			},
+			"fixes": [
+				{
+					"action": "removeDuplicateMod",
+					"label": {
+						"en": "Keep the newest",
+						"tr": "En yenisini bırak"
+					},
+					"params": {
+						"mod": "{mod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.wrong-loader",
+			"priority": 60,
+			"key": "jar",
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "File (?<jar>[^\\n]{1,200}?\\.jar) is a (?<other>Fabric|Quilt|LiteLoader) mod and cannot be loaded",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "File (?<jar>[^\\n]{1,200}?\\.jar) is for (?<other>Minecraft Forge) or an older version of NeoForge",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "File (?<jar>[^\\n]{1,200}?\\.jar) is for an old version of (?<other>Minecraft Forge)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"jar": "jarFile",
+				"other": "text"
+			},
+			"title": {
+				"en": "{jar} is a {other} mod",
+				"tr": "{jar} bir {other} modu"
+			},
+			"groupTitle": {
+				"en": "{count} mods are for another loader",
+				"tr": "{count} mod başka bir yükleyici için"
+			},
+			"explanation": {
+				"en": "This instance runs {loader}, and {jar} only works with {other}. Turn it off and get the {loader} build if there is one.",
+				"tr": "Bu kurulum {loader} kullanıyor, {jar} sadece {other} ile çalışır. Kapat, varsa {loader} sürümünü yükle."
+			},
+			"groupExplanation": {
+				"en": "This instance runs {loader}, and these files are for another loader. Turn them off and get the {loader} builds if there are any.",
+				"tr": "Bu kurulum {loader} kullanıyor, bu dosyalar başka bir yükleyici için. Kapat, varsa {loader} sürümlerini yükle."
+			},
+			"fixes": [
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn it off",
+						"tr": "Kapat"
+					},
+					"params": {
+						"target": "{jar}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mixin.apply-failed",
+			"priority": 76,
+			"key": "mod",
+			"match": {
+				"any": [
+					{
+						"re": "Mixin \\[(?<config>[^\\]:\\s]{1,120}):(?<mixin>[\\w.$]{1,160}) from mod (?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\] from phase \\[\\w+\\] in config \\[[^\\]]+\\] FAILED during \\w+",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					},
+					{
+						"re": "/ERROR\\]: Mixin apply for mod (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) failed",
+						"in": [
+							"logTail"
+						]
+					},
+					{
+						"re": "Mixin \\[(?<config>[^\\]:\\s]{1,120}):(?<mixin>[\\w.$]{1,160})\\] from phase \\[\\w+\\] in config \\[[^\\]]+\\] FAILED during \\w+",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"config": "mixinConfig",
+				"mixin": "className"
+			},
+			"coalesce": {
+				"mod": [
+					"configMod"
+				]
+			},
+			"require": [
+				"mod"
+			],
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{mod} couldn't change the game's code",
+				"tr": "{mod}, oyunun kodunu değiştiremedi"
+			},
+			"explanation": {
+				"en": "{mod} tried to change a part of Minecraft and it didn't fit: usually the mod is for another version, or another mod changes the same part. Update it, or turn it off.",
+				"tr": "{mod}, Minecraft'ın bir parçasını değiştirmeye çalıştı ama tutmadı; genelde mod başka sürüm için ya da başka bir mod aynı yeri değiştiriyor. Güncelle ya da kapat."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update {mod}",
+						"tr": "{mod} güncelle"
+					},
+					"params": {
+						"mods": [
+							"{mod}"
+						]
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {mod}",
+						"tr": "{mod} modunu kapat"
+					},
+					"params": {
+						"target": "{mod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "mods.crashed",
+			"priority": 58,
+			"key": "mod",
+			"match": {
+				"each": true,
+				"any": [
+					{
+						"re": "Could not execute entrypoint stage '\\w+' due to errors, provided by '(?<mod>[a-z0-9][a-z0-9_.-]{0,63})'",
+						"in": [
+							"crashReport",
+							"log"
+						]
+					},
+					{
+						"re": "^[\\w.$]+(?:Exception|Error)\\b[^\\n]*\\n(?:\\s+at [^\\n]*\\n){0,4}?\\s+at [^\\n]*?\\bhandler\\$[a-z0-9]{3,8}\\$(?<mod>[a-z0-9_]{1,64})\\$",
+						"in": [
+							"crashReport"
+						]
+					},
+					{
+						"re": "-- MOD (?<mod>[a-z0-9][a-z0-9_.-]{0,63}) --\\n(?:[^\\n]*\\n){0,8}?[^\\n]*Failure message: [^\\n]{1,200}",
+						"in": [
+							"crashReport"
+						]
+					},
+					{
+						"re": "^Suspected Mods?:[ \\t]*(?:\\n[ \\t]+)?(?<modName>[^\\n(]{1,80}?) \\((?<mod>[a-z0-9][a-z0-9_.-]{0,63})\\)",
+						"in": [
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"mod": "modId",
+				"modName": "modName"
+			},
+			"exclude": {
+				"mod": [
+					"minecraft",
+					"java",
+					"fabricloader",
+					"quilt_loader",
+					"forge",
+					"neoforge",
+					"fml",
+					"javafml",
+					"mixinextras",
+					"none"
+				]
+			},
+			"title": {
+				"en": "{modName|mod} crashed the game",
+				"tr": "Oyunu {modName|mod} çökertti"
+			},
+			"groupTitle": {
+				"en": "{count} mods failed",
+				"tr": "{count} mod hata verdi"
+			},
+			"explanation": {
+				"en": "The crash happened in {modName|mod}. It's usually a build for another version or a missing update: update it, or turn it off to play.",
+				"tr": "Çökme {modName|mod} modunda oldu. Genelde başka sürümün dosyası ya da eksik bir güncellemedir; güncelle ya da oynamak için kapat."
+			},
+			"groupExplanation": {
+				"en": "The crash happened in these mods. It's usually a build for another version or a missing update: update them, or turn them off to play.",
+				"tr": "Çökme bu modlarda oldu. Genelde başka sürümün dosyası ya da eksik bir güncellemedir; güncelle ya da oynamak için kapat."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update {modName|mod}",
+						"tr": "{modName|mod} güncelle"
+					},
+					"params": {
+						"mods": [
+							"{mod}"
+						]
+					}
+				},
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off {modName|mod}",
+						"tr": "{modName|mod} modunu kapat"
+					},
+					"params": {
+						"target": "{mod}"
+					}
+				}
+			]
+		},
+		{
+			"id": "render.optifine-conflict",
+			"priority": 85,
+			"match": {
+				"any": [
+					{
+						"re": "- Mod '(?<aName>[^\\n]{1,80}?)' \\((?<a>[a-z0-9][a-z0-9_.-]{0,63})\\) \\S+ is incompatible with [^\\n]+? of (?:mod )?'[^'\\n]+' \\((?<b>optifabric)\\)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "File (?<jar>[^\\n]{0,200}?OptiFine[^\\n]{0,80}?\\.jar) is an incompatible version of OptiFine",
+						"in": [
+							"log",
+							"crashReport"
+						],
+						"i": true
+					},
+					{
+						"re": "(?:sodium|embeddium|rubidium)[^\\n]{0,80}(?:detected|found|is incompatible with)[^\\n]{0,40}optifine",
+						"in": [
+							"crashReport",
+							"logTail"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"a": "modId",
+				"aName": "modName",
+				"b": "modId",
+				"jar": "jarFile"
+			},
+			"suppresses": [
+				"mods.incompatible-pair",
+				"mods.crashed",
+				"mixin.apply-failed"
+			],
+			"title": {
+				"en": "OptiFine doesn't work with Sodium",
+				"tr": "OptiFine, Sodium ile birlikte çalışmaz"
+			},
+			"explanation": {
+				"en": "Both rewrite how the game draws, so they can't run together. Turn OptiFine off: Sodium does the speed and Iris does the shaders.",
+				"tr": "İkisi de oyunun çizimini baştan yazıyor, aynı anda olmaz. OptiFine'ı kapat: hızı Sodium, gölgelendiricileri Iris yapar."
+			},
+			"fixes": [
+				{
+					"action": "disableMod",
+					"label": {
+						"en": "Turn off OptiFine",
+						"tr": "OptiFine'ı kapat"
+					},
+					"params": {
+						"target": "optifine"
+					}
+				}
+			]
+		},
+		{
+			"id": "render.iris-sodium-mismatch",
+			"priority": 84,
+			"match": {
+				"any": [
+					{
+						"re": "- Mod '(?:Iris|Oculus)[^'\\n]*' \\((?<a>iris|oculus)\\) \\S+ requires (?<range>[^\\n]+?) of (?:mod )?'[^'\\n]+' \\((?<b>sodium|embeddium)\\), but only the wrong versions? (?:is|are) present: (?<found>[^!\\n]+)!",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "\\bMod (?<a>iris|oculus) requires (?<b>sodium|embeddium|rubidium) (?<range>[^\\n]*)\\n\\s*Currently, \\k<b> is (?<found>\\S+)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"a": "modId",
+				"b": "modId",
+				"range": "text",
+				"found": "version"
+			},
+			"suppresses": [
+				{
+					"rule": "mods.dependency-wrong-version",
+					"same": {
+						"mod": "b"
+					}
+				},
+				{
+					"rule": "mods.missing-dependency",
+					"same": {
+						"mod": "b"
+					}
+				}
+			],
+			"title": {
+				"en": "Iris and Sodium versions don't match",
+				"tr": "Iris ile Sodium sürümleri uyuşmuyor"
+			},
+			"explanation": {
+				"en": "{a} only works with one exact {b} ({range}); {found} is installed. Update both to the builds for {mc}.",
+				"tr": "{a} sadece belli bir {b} sürümüyle çalışır ({range}), sende {found} var. İkisini de {mc} için güncelle."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update both",
+						"tr": "İkisini de güncelle"
+					},
+					"params": {
+						"mods": [
+							"{a}",
+							"{b}"
+						]
+					}
+				}
+			]
+		},
+		{
+			"id": "render.shader-pack-crash",
+			"priority": 66,
+			"match": {
+				"any": [
+					{
+						"re": "(?:ShaderCompileException|Shader compilation failed|Failed to (?:load|compile) (?:the )?shader ?pack)[^\\n]*",
+						"in": [
+							"crashReport",
+							"logTail"
+						],
+						"i": true
+					}
+				],
+				"all": [
+					{
+						"re": "(?:net\\.irisshaders|net\\.coderbot\\.iris|oculus)",
+						"in": [
+							"crashReport",
+							"logTail"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "The shader pack crashed the game",
+				"tr": "Gölgelendirici paketi oyunu çökertti"
+			},
+			"explanation": {
+				"en": "The selected shader pack didn't work with your graphics card or this Iris version. Turn shaders off so the game opens, then try another pack.",
+				"tr": "Seçili gölgelendirici paketi ekran kartınla ya da bu Iris sürümüyle çalışmadı. Oyunun açılması için gölgelendiricileri kapat, sonra başka paket dene."
+			},
+			"fixes": [
+				{
+					"action": "turnOffShaders",
+					"label": {
+						"en": "Turn off shaders",
+						"tr": "Gölgelendiricileri kapat"
+					}
+				}
+			]
+		},
+		{
+			"id": "gpu.no-opengl",
+			"priority": 77,
+			"match": {
+				"any": [
+					{
+						"re": "WGL: The driver does not appear to support OpenGL",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "(?:GLFW error |\\[0x)(?:65542|10006)\\b",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Pixel format not accelerated",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "WGL: OpenGL profile requested but WGL_ARB_create_context_profile is unavailable",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "GLX: (?:No GLXFBConfigs returned|Failed to create context)",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "The graphics driver can't run Minecraft",
+				"tr": "Ekran kartı sürücüsü Minecraft'ı açamıyor"
+			},
+			"explanation": {
+				"en": "Minecraft couldn't get OpenGL from the graphics driver: the driver is missing, too old, or the game ran on the built-in graphics. Update the driver from your GPU maker's site; on laptops, let Kite use the faster graphics card.",
+				"tr": "Minecraft ekran kartı sürücüsünden OpenGL alamadı: sürücü yok, çok eski ya da oyun dahili ekran kartında açıldı. Sürücüyü üreticinin sitesinden güncelle; dizüstündeysen Kite güçlü ekran kartını kullansın."
+			},
+			"fixes": [
+				{
+					"action": "useDedicatedGpu",
+					"label": {
+						"en": "Use the faster graphics card",
+						"tr": "Güçlü ekran kartını kullan"
+					}
+				}
+			]
+		},
+		{
+			"id": "gpu.driver-native-crash",
+			"priority": 72,
+			"match": {
+				"any": [
+					{
+						"re": "^#\\s+C\\s+\\[(?<lib>(?:atio6axx|atioglxx|amdxx64|amdvlk64|ig\\w{0,12}icd\\w{0,4}|igxelpicd64|nvoglv\\w{0,4}|nvwgf2umx|libnvidia-glcore|libnvidia-eglcore|radeonsi_dri|iris_dri|i965_dri|libGLX_mesa|AppleMetalOpenGLRenderer|AGXMetal\\w{0,12}|libvulkan_\\w{1,16})[\\w.]{0,16})\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"title": {
+				"en": "The graphics driver crashed",
+				"tr": "Ekran kartı sürücüsü çöktü"
+			},
+			"explanation": {
+				"en": "Java crashed inside the graphics driver ({lib}), not in Minecraft or a mod. Update the driver; if it keeps happening, turn off shaders or switch the graphics card.",
+				"tr": "Java, Minecraft'ta ya da bir modda değil, ekran kartı sürücüsünün içinde ({lib}) çöktü. Sürücüyü güncelle; sürerse gölgelendiricileri kapat ya da ekran kartını değiştir."
+			},
+			"fixes": [
+				{
+					"action": "useDedicatedGpu",
+					"label": {
+						"en": "Use the faster graphics card",
+						"tr": "Güçlü ekran kartını kullan"
+					}
+				},
+				{
+					"action": "turnOffShaders",
+					"label": {
+						"en": "Turn off shaders",
+						"tr": "Gölgelendiricileri kapat"
+					}
+				}
+			]
+		},
+		{
+			"id": "gpu.vulkan-failed",
+			"priority": 78,
+			"when": {
+				"minecraft": {
+					"min": "26.2"
+				}
+			},
+			"match": {
+				"any": [
+					{
+						"re": "(?:Failed to (?:create|initiali[sz]e) (?:the )?Vulkan|vkCreate(?:Instance|Device) failed|VK_ERROR_(?:INCOMPATIBLE_DRIVER|INITIALIZATION_FAILED|EXTENSION_NOT_PRESENT|DEVICE_LOST))",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"title": {
+				"en": "Vulkan didn't start on this computer",
+				"tr": "Vulkan bu bilgisayarda açılmadı"
+			},
+			"explanation": {
+				"en": "Minecraft {mc} tried the Vulkan renderer and the graphics driver refused it. Switch this instance to OpenGL; it looks the same.",
+				"tr": "Minecraft {mc} Vulkan ile çizmeyi denedi, ekran kartı sürücüsü kabul etmedi. Bu kurulumu OpenGL'e al; görüntü aynı."
+			},
+			"fixes": [
+				{
+					"action": "setGraphicsBackend",
+					"label": {
+						"en": "Switch to OpenGL",
+						"tr": "OpenGL'e geç"
+					},
+					"params": {
+						"backend": "opengl"
+					}
+				}
+			]
+		},
+		{
+			"id": "natives.missing",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "Failed to locate library: (?<lib>[\\w.-]{1,60}\\.(?:dylib|so|dll))",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "no (?<lib>lwjgl\\w{0,12}) in java\\.library\\.path",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "java\\.lang\\.UnsatisfiedLinkError: (?:Can't load library: )?[^\\n]*?(?<lib>(?:lib)?(?:lwjgl|glfw|openal|jemalloc)[\\w.-]{0,30}\\.(?:dylib|so|dll))",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				],
+				"none": [
+					{
+						"re": "incompatible architecture \\(have",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"title": {
+				"en": "Some game files are missing",
+				"tr": "Oyun dosyalarından biri eksik"
+			},
+			"explanation": {
+				"en": "Minecraft couldn't find {lib}, one of the files that talk to the screen and sound. Let Kite check and download the game files again.",
+				"tr": "Minecraft ekran ve sesle konuşan dosyalardan {lib} dosyasını bulamadı. Kite oyun dosyalarını kontrol edip yeniden indirsin."
+			},
+			"fixes": [
+				{
+					"action": "repairGameFiles",
+					"label": {
+						"en": "Repair game files",
+						"tr": "Oyun dosyalarını onar"
+					}
+				}
+			]
+		},
+		{
+			"id": "macos.first-thread",
+			"priority": 74,
+			"when": {
+				"os": [
+					"macos"
+				]
+			},
+			"match": {
+				"any": [
+					{
+						"re": "GLFW may only be used on the main thread",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "Please run the JVM with -XstartOnFirstThread",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "macOS wants the game on the main thread",
+				"tr": "macOS oyunu ana iş parçacığında istiyor"
+			},
+			"explanation": {
+				"en": "On a Mac this Minecraft version has to start with a special Java flag, and this launch didn't get it (usually a custom version file). Kite can add the flag for this instance.",
+				"tr": "Mac'te bu Minecraft sürümü özel bir Java ayarıyla açılmalı, bu açılışta yoktu (genelde özel bir sürüm dosyası yüzünden). Kite bu kurulum için o ayarı eklesin."
+			},
+			"fixes": [
+				{
+					"action": "setMacFirstThread",
+					"label": {
+						"en": "Add the macOS flag",
+						"tr": "macOS ayarını ekle"
+					}
+				},
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Upload the log",
+						"tr": "Günlüğü yükle"
+					}
+				}
+			]
+		},
+		{
+			"id": "config.corrupt",
+			"priority": 80,
+			"key": "file",
+			"match": {
+				"any": [
+					{
+						"re": "Failed loading config file (?<file>[\\w.\\-/ ]{1,120}\\.toml) of type \\w+ for modid (?<mod>[a-z0-9][a-z0-9_.-]{0,63})",
+						"in": [
+							"log",
+							"crashReport"
+						]
+					},
+					{
+						"re": "(?:ParsingException|MalformedJsonException|JsonSyntaxException)[^\\n]*\\n(?:[^\\n]*\\n){0,12}?[^\\n]*config[/\\\\](?<file>[\\w.\\-/ ]{1,120}\\.(?:toml|json5?))",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					},
+					{
+						"re": "config[/\\\\](?<file>[\\w.\\-/ ]{1,120}\\.(?:toml|json5?))[^\\n]{0,80}\\n(?:[^\\n]*\\n){0,4}?[^\\n]*(?:ParsingException: Not enough data available|MalformedJsonException|JsonSyntaxException)",
+						"in": [
+							"logTail",
+							"crashReport",
+							"hsErr"
+						]
+					}
+				]
+			},
+			"captures": {
+				"file": "configFile",
+				"mod": "modId"
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "A settings file is broken: {file}",
+				"tr": "Bir ayar dosyası bozuk: {file}"
+			},
+			"explanation": {
+				"en": "{file} is empty or half-written, usually after the game or the computer shut down suddenly. Kite moves it aside and the mod writes a fresh one with default settings.",
+				"tr": "{file} boş ya da yarım yazılmış; genelde oyun ya da bilgisayar aniden kapanınca olur. Kite onu kenara alsın, mod varsayılan ayarlarla yenisini yazar."
+			},
+			"fixes": [
+				{
+					"action": "resetConfigFile",
+					"label": {
+						"en": "Reset {file}",
+						"tr": "{file} dosyasını sıfırla"
+					},
+					"params": {
+						"file": "{file}"
+					}
+				}
+			]
+		},
+		{
+			"id": "options.corrupt",
+			"priority": 45,
+			"match": {
+				"any": [
+					{
+						"re": "Failed to (?:load|parse) options(?:\\.txt)?",
+						"in": [
+							"logTail",
+							"crashReport"
+						]
+					}
+				],
+				"all": [
+					{
+						"re": "(?:NumberFormatException|IllegalArgumentException|JsonParseException|NullPointerException)",
+						"in": [
+							"logTail",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "The game's options file is broken",
+				"tr": "Oyunun ayar dosyası (options.txt) bozuk"
+			},
+			"explanation": {
+				"en": "Minecraft couldn't read options.txt. Kite can set it aside so the game starts with default options (keys and video settings go back to default; you can undo).",
+				"tr": "Minecraft options.txt dosyasını okuyamadı. Kite onu kenara alsın, oyun varsayılan ayarlarla açılsın (tuşlar ve görüntü ayarları sıfırlanır, geri alabilirsin)."
+			},
+			"fixes": [
+				{
+					"action": "resetOptions",
+					"label": {
+						"en": "Reset options",
+						"tr": "Ayarları sıfırla"
+					}
+				}
+			]
+		},
+		{
+			"id": "world.corrupt",
+			"priority": 70,
+			"match": {
+				"any": [
+					{
+						"re": "(?:Exception reading|Failed to (?:load|read)|Caught exception reading)[^\\n]*?saves[/\\\\](?<world>[^/\\\\\\n]{1,80})[/\\\\]level\\.dat",
+						"in": [
+							"logTail",
+							"crashReport"
+						]
+					},
+					{
+						"re": "(?:Exception reading|Failed to (?:load|read)|Caught exception reading)[^\\n]*?level\\.dat",
+						"in": [
+							"logTail",
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"world": "text"
+			},
+			"title": {
+				"en": "A world's save file is damaged",
+				"tr": "Bir dünyanın kayıt dosyası bozuk"
+			},
+			"explanation": {
+				"en": "The world {world} couldn't be read, usually after a sudden shutdown. If you have a Kite backup, restore it; Minecraft also keeps level.dat_old in the world folder.",
+				"tr": "{world} dünyası okunamadı; genelde ani kapanmadan sonra olur. Kite yedeğin varsa geri yükle; Minecraft dünya klasöründe level.dat_old da tutar."
+			},
+			"fixes": [
+				{
+					"action": "openBackups",
+					"label": {
+						"en": "Open backups",
+						"tr": "Yedekleri aç"
+					}
+				},
+				{
+					"action": "openWorldsFolder",
+					"label": {
+						"en": "Open worlds folder",
+						"tr": "Dünyalar klasörünü aç"
+					}
+				}
+			]
+		},
+		{
+			"id": "world.ticking-entity",
+			"priority": 64,
+			"match": {
+				"all": [
+					{
+						"re": "^Description: Ticking (?<what>entity|block entity)",
+						"in": [
+							"crashReport"
+						]
+					}
+				],
+				"any": [
+					{
+						"re": "Entity Type: (?<ns>[a-z0-9_.-]{1,64}):(?<thing>[a-z0-9_/.-]{1,80})",
+						"in": [
+							"crashReport"
+						]
+					},
+					{
+						"re": "Block type ID: (?<ns>[a-z0-9_.-]{1,64}):(?<thing>[a-z0-9_/.-]{1,80})",
+						"in": [
+							"crashReport"
+						]
+					},
+					{
+						"re": "Name: (?<ns>[a-z0-9_.-]{1,64}):(?<thing>[a-z0-9_/.-]{1,80}) // ",
+						"in": [
+							"crashReport"
+						]
+					}
+				]
+			},
+			"captures": {
+				"what": "text",
+				"ns": "modId",
+				"thing": "text"
+			},
+			"exclude": {
+				"ns": [
+					"minecraft"
+				]
+			},
+			"suppresses": [
+				"mods.crashed"
+			],
+			"title": {
+				"en": "{ns}:{thing} crashes the world",
+				"tr": "{ns}:{thing} dünyayı çökertiyor"
+			},
+			"explanation": {
+				"en": "Something from {ns} ({thing}) errors every time the world runs it. Update {ns}; if it keeps happening, restore a backup from before it started.",
+				"tr": "{ns} modundan bir şey ({thing}) dünya her çalıştığında hata veriyor. {ns} modunu güncelle; sürerse sorun başlamadan önceki yedeği geri yükle."
+			},
+			"fixes": [
+				{
+					"action": "updateMod",
+					"label": {
+						"en": "Update {ns}",
+						"tr": "{ns} güncelle"
+					},
+					"params": {
+						"mods": [
+							"{ns}"
+						]
+					}
+				},
+				{
+					"action": "openBackups",
+					"label": {
+						"en": "Open backups",
+						"tr": "Yedekleri aç"
+					}
+				}
+			]
+		},
+		{
+			"id": "disk.full",
+			"priority": 93,
+			"match": {
+				"any": [
+					{
+						"re": "No space left on device",
+						"in": [
+							"log",
+							"crashReport",
+							"hsErr"
+						]
+					},
+					{
+						"re": "There is not enough space on the disk",
+						"in": [
+							"log",
+							"crashReport",
+							"hsErr"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "The disk is full",
+				"tr": "Disk dolu"
+			},
+			"explanation": {
+				"en": "The game couldn't write its files because the disk has no free space. Free some space and play again; Kite can't do that part for you.",
+				"tr": "Oyun dosyalarını yazamadı çünkü diskte boş yer kalmamış. Biraz yer aç ve tekrar oyna; o kısmı Kite yapamaz."
+			},
+			"fixes": [
+				{
+					"action": "openInstanceFolder",
+					"label": {
+						"en": "Open the instance folder",
+						"tr": "Kurulum klasörünü aç"
+					}
+				}
+			]
+		},
+		{
+			"id": "world.threading-detector",
+			"priority": 42,
+			"match": {
+				"any": [
+					{
+						"re": "Accessing (?<what>\\w{1,40}) from multiple threads",
+						"in": [
+							"crashReport",
+							"logTail"
+						]
+					}
+				]
+			},
+			"captures": {
+				"what": "text"
+			},
+			"title": {
+				"en": "Two mods clash while the world generates",
+				"tr": "Dünya oluşurken iki mod çakışıyor"
+			},
+			"explanation": {
+				"en": "A mod touched the world from the wrong thread ({what}); Minecraft stops to protect the save. It's usually a world-generation or speed-up mod added recently. Send the log to find which one.",
+				"tr": "Bir mod dünyaya yanlış iş parçacığından dokundu ({what}); Minecraft dünyayı korumak için durdu. Genelde yeni eklenen bir dünya oluşturma ya da hızlandırma modudur. Hangisi olduğunu bulmak için günlüğü gönder."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Upload the log",
+						"tr": "Günlüğü yükle"
+					}
+				}
+			]
+		},
+		{
+			"id": "exit.windows-access-violation",
+			"priority": 35,
+			"when": {
+				"os": [
+					"windows"
+				],
+				"exitCode": [
+					-1073741819,
+					3221225477
+				]
+			},
+			"match": {
+				"any": [
+					{
+						"re": "(?:Process crashed with exitcode|Process exited with code) (?:-1073741819|3221225477)",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "The game crashed outside Java",
+				"tr": "Oyun Java'nın dışında çöktü"
+			},
+			"explanation": {
+				"en": "Windows closed the game because native code broke (code 0xC0000005), most often the graphics driver or an overlay (Discord, recording apps). Update the driver and turn overlays off.",
+				"tr": "Windows oyunu kapattı çünkü yerel kod bozuldu (kod 0xC0000005); çoğunlukla ekran kartı sürücüsü ya da bir kaplama (Discord, ekran kaydı uygulaması). Sürücüyü güncelle, kaplamaları kapat."
+			},
+			"fixes": [
+				{
+					"action": "useDedicatedGpu",
+					"label": {
+						"en": "Use the faster graphics card",
+						"tr": "Güçlü ekran kartını kullan"
+					}
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[Render thread/ERROR]: GLFW error collected during initialization: GLFW error 65542: WGL: The driver does not appear to support OpenGL.\n[Render thread/ERROR]: Unable to launch\njava.lang.IllegalStateException: GLFW error before init: [0x10006]WGL: The driver does not appear to support OpenGL.\n"
+ }
+}

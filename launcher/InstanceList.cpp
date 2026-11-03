@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "InstanceList.h"
+#include "crashdoctor/CrashDoctorService.h"
 #include "BaseInstance.h"
 #include "InstanceTask.h"
 #include "settings/INISettingsObject.h"
@@ -74,6 +75,17 @@ InstanceList::InstanceList(SettingsObjectPtr settings,
 			&InstanceList::instanceDirContentsChanged);
 
 	applyInstanceDirs(resolveInstanceDirs(instDirs));
+
+	const auto crashCauseChanged = [this](const QString& id) {
+		const QModelIndex row = getInstanceIndexById(id);
+		if (row.isValid()) {
+			emit dataChanged(row, row, {CrashCauseRole});
+		}
+	};
+	connect(CrashDoctorService::instance(), &CrashDoctorService::analysed, this,
+			crashCauseChanged);
+	connect(CrashDoctorService::instance(), &CrashDoctorService::forgotten, this,
+			crashCauseChanged);
 
 	m_platformCovers = new PlatformCoverFetcher(this);
 	connect(m_platformCovers, &PlatformCoverFetcher::finished, this,
@@ -353,6 +365,11 @@ QVariant InstanceList::data(const QModelIndex& index, int role) const
 		case HasCrashedRole: {
 			return pdata->hasCrashed();
 		}
+		case CrashCauseRole: {
+			return pdata->hasCrashed()
+					   ? CrashDoctorService::instance()->topCause(pdata->id())
+					   : QString();
+		}
 		case PackArtRole: {
 			if (!pdata->isManagedPack()) {
 				return QString();
@@ -391,6 +408,7 @@ QHash<int, QByteArray> InstanceList::roleNames() const
 	roles.insert(CoverKindRole, "coverKind");
 	roles.insert(CoverSourceRole, "coverSource");
 	roles.insert(HasCrashedRole, "hasCrashed");
+	roles.insert(CrashCauseRole, "crashCause");
 	roles.insert(PackArtRole, "packArt");
 	return roles;
 }

@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": true,
+ "docs": {
+  "log": "[Server thread/ERROR]: Exception reading /Users/<user>/Library/Application Support/Kite/Kite/instances/x/.minecraft/saves/Yeni Dunya/level.dat\njava.io.EOFException: Unexpected end of ZLIB input stream\n"
+ }
+}

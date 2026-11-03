@@ -1,0 +1,8 @@
+# source: <kite-data>/instances/MC-26.3-Animations/.minecraft/logs/2026-10-29-6.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[23:37:57] [Render thread/ERROR]: Registry loading errors:
+> Errors in registry minecraft:recipe:
+>> Errors in element minecraft:bolt_armor_trim_smithing_template_smithing_trim:
+java.lang.IllegalStateException: Failed to parse minecraft:bolt_armor_trim_smithing_template_smithing_trim from pack vanilla
+	at knot//net.minecraft.resources.RegistryLoadTask$PendingRegistration.loadFromResource(RegistryLoadTask.java:111)
+	at knot//net.minecraft.resources.ResourceManagerRegistryLoadTask.mixinextras$bridge$loadFromResource$17(ResourceManagerRegistryLoadTask.java)

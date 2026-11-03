@@ -1,0 +1,54 @@
+# source: <kite-data>/instances/CreateSkiesSeas-1.20.1/minecraft/crash-reports/crash-2026-09-07_14.11.10-client.txt
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+---- Minecraft Crash Report ----
+// Embeddium instance tainted by mods: [fusion, valkyrienskies, supplementaries]
+// Please do not reach out for Embeddium support without removing these mods first.
+// -------
+// Would you like a cupcake?
+
+Time: 2026-09-07 14:11:10
+Description: Rendering item
+
+java.lang.AbstractMethodError: Receiver class com.github.L_Ender.cataclysm.client.model.item.The_Annihilator_Model does not define or inherit an implementation of the resolved method 'abstract com.github.L_Ender.lionfishapi.client.model.tools.BasicModelPart root()' of abstract class com.github.L_Ender.lionfishapi.client.model.tools.BasicEntityModel.
+	at com.github.L_Ender.lionfishapi.client.model.tools.BasicEntityModel.m_7695_(BasicEntityModel.java:25) ~[lionfishapi-3.0.jar%23303!/:3.0] {re:classloading}
+	at com.github.L_Ender.cataclysm.client.render.CMItemstackRenderer.m_108829_(CMItemstackRenderer.java:371) ~[L_Enders_Cataclysm-2.45-%201.20.1.jar%23301!/:2.45- 1.20.1] {re:classloading,pl:runtimedistcleaner:A}
+	at net.minecraft.client.renderer.entity.ItemRenderer.m_115143_(ItemRenderer.java:151) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.client.gui.GuiGraphics.m_280405_(GuiGraphics.java:483) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:APP:mixins.vminus.json:client.GuiGraphicsAccessor,pl:mixin:APP:mixins.vminus.json:client.GuiGraphicsMixin,pl:mixin:APP:glitchcore.forge.mixins.json:client.MixinGuiGraphics,pl:mixin:APP:iceberg.mi
+	at net.minecraft.client.gui.GuiGraphics.m_280053_(GuiGraphics.java:466) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:APP:mixins.vminus.json:client.GuiGraphicsAccessor,pl:mixin:APP:mixins.vminus.json:client.GuiGraphicsMixin,pl:mixin:APP:glitchcore.forge.mixins.json:client.MixinGuiGraphics,pl:mixin:APP:iceberg.mi
+	at net.minecraft.client.gui.GuiGraphics.m_280203_(GuiGraphics.java:458) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:APP:mixins.vminus.json:client.GuiGraphicsAccessor,pl:mixin:APP:mixins.vminus.json:client.GuiGraphicsMixin,pl:mixin:APP:glitchcore.forge.mixins.json:client.MixinGuiGraphics,pl:mixin:APP:iceberg.mi
+	at net.minecraft.client.gui.components.toasts.RecipeToast.m_7172_(RecipeToast.java:48) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:classloading,pl:accesstransformer:B}
+	at net.minecraft.client.gui.components.toasts.ToastComponent$ToastInstance.m_280442_(ToastComponent.java:155) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:classloading,pl:accesstransformer:B}
+	at net.minecraft.client.gui.components.toasts.ToastComponent.m_279745_(ToastComponent.java:33) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:classloading,pl:accesstransformer:B}
+	at java.util.ArrayList.removeIf(ArrayList.java:1672) ~[?:?] {re:mixin}
+	at java.util.ArrayList.removeIf(ArrayList.java:1660) ~[?:?] {re:mixin}
+	at net.minecraft.client.gui.components.toasts.ToastComponent.m_94920_(ToastComponent.java:32) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:classloading,pl:accesstransformer:B}
+	at com.anthonyhilyard.advancementplaques.ui.ToastComponentWrapper.m_94920_(ToastComponentWrapper.java:76) ~[AdvancementPlaques-1.20.1-forge-1.6.7.jar%23243!/:1.6.7] {re:classloading}
+	at net.minecraft.client.renderer.GameRenderer.m_109093_(GameRenderer.java:996) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.client.Minecraft.m_91383_(Minecraft.java:1146) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.client.Minecraft.m_91374_(Minecraft.java:718) ~[client-1.20.1-20230612.114412-srg.jar%23340!/:?] {re:mixin,pl:accesstransformer:B,re:classloading,pl:accesstransformer:B,pl:mixin:A}
+	at net.minecraft.client.main.Main.main(Main.java:218) ~[minecraft-1.20.1-client.jar:?] {re:mixin,re:classloading,pl:mixin:APP:flywheel.mixins.json:ClientMainMixin,pl:mixin:A}
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?] {}
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?] {}
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?] {}
+...
+Suspected Mods: 
+	Cataclysm Mod (cataclysm), Version: 2.45
+Details:
+Details:
+Details:
+Details:
+	Minecraft Version: 1.20.1
+	Operating System: Mac OS X (aarch64) version 26.6.2
+	Java Version: 17.0.15, Microsoft
+	Memory: 1493037056 bytes (1423 MiB) / 3804233728 bytes (3628 MiB) up to 6442450944 bytes (6144 MiB)
+	Graphics card #0 name: Apple M4
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	JVM Flags: 2 total; -Xms2048m -Xmx6144m
+	Launched Version: 1.20.1
+	Backend library: LWJGL version 3.3.1 build 7
+	Window size: 4096x2560
+	GL Caps: Using framebuffer using OpenGL 3.2
+	Is Modded: Definitely; Client brand changed to 'forge'; Server brand changed to 'forge'

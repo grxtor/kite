@@ -1,0 +1,7 @@
+{
+ "note": "harmless macOS GLFW warning",
+ "verify": false,
+ "docs": {
+  "log": "[Render thread/WARN]: GLFW error 65544: Cocoa: Failed to find service port for display\n[Render thread/INFO]: Sound engine started\nProcess exited with code 1.\n"
+ }
+}

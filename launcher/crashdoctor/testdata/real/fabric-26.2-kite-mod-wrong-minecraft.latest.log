@@ -1,0 +1,17 @@
+# source: <kite-data>/instances/MC-26.2-Meteor/.minecraft/logs/latest.log
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[21:45:42] [main/INFO]: Reason: [HARD_DEP kite 0.1.0 {depends minecraft @ [~26.3]}]
+[21:45:42] [main/INFO]: Fix: add [], remove [], replace [[kite 0.1.0] -> add:kite 1 ([(-∞,∞)])]
+[21:45:42] [main/ERROR]: Incompatible mods found!
+net.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!
+A potential solution has been determined, this may resolve your problem:
+	 - Replace mod 'Kite' (kite) 0.1.0 with any version that is compatible with:
+		 - minecraft 26.2
+More details:
+	 - Mod 'Kite' (kite) 0.1.0 requires any version between 26.3 (inclusive) and 26.4- (exclusive) of 'Minecraft' (minecraft), but only the wrong version is present: 26.2!
+	at net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202)
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:66)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+

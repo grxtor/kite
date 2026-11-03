@@ -1,0 +1,16 @@
+# source: <kite-data>/instances/MC-26.3-Animations/.minecraft/logs/2026-09-30-3.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[22:25:14] [main/INFO]: Reason: [HARD_DEP emotecraft 3.5.0-a.build.169 {depends player_animation_library @ [>=1.2.7+mc.26.3]}]
+[22:25:14] [main/INFO]: Fix: add [], remove [], replace [[player_animation_library 1.2.6+mc.26.1] -> add:player_animation_library 1.2.7+mc.26.3 ([[1.2.7+mc.26.3,∞)])]
+[22:25:14] [main/ERROR]: Incompatible mods found!
+net.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!
+A potential solution has been determined, this may resolve your problem:
+	 - Replace mod 'Player Animation Library' (player_animation_library) 1.2.6+mc.26.1 with version 1.2.7+mc.26.3 or later.
+More details:
+	 - Mod 'Emotecraft' (emotecraft) 3.5.0-a.build.169 requires version 1.2.7+mc.26.3 or later of mod 'Player Animation Library' (player_animation_library), but only the wrong version is present: 1.2.6+mc.26.1!
+	at net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202)
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:66)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+

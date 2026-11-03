@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "Java is version 17.0.15, using 64-bit architecture, from Microsoft.\n\nException in thread \"main\" java.lang.UnsupportedClassVersionError: net/neoforged/fml/startup/Client has been compiled by a more recent version of the Java Runtime (class file version 65.0), this version of the Java Runtime only recognizes class file versions up to 61.0\n\tat java.base/java.lang.ClassLoader.defineClass1(Native Method)\nProcess exited with code 1.\n"
+ }
+}

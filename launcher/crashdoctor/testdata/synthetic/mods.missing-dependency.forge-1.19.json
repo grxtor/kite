@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[main/ERROR] [ne.mi.fm.lo.ModSorter/LOADING]: Missing or unsupported mandatory dependencies:\n\tMod ID: 'architectury', Requested by: 'rei', Expected range: '[6.5.85,)', Actual version: '[MISSING]'\n"
+ }
+}

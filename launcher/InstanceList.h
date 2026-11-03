@@ -138,7 +138,11 @@ class InstanceList : public QAbstractListModel
 		// "custom", "platform", "panorama" or "" (the UI draws a gradient); agrees with CoverImageRole.
 		CoverKindRole,
 		// Screenshot a "custom" cover was copied from, or "": for marking it in the list.
-		CoverSourceRole
+		CoverSourceRole,
+		/* The crash doctor's first cause for the last crash ("Java 21 lazım"),
+		 * or "" when it found none or the run did not crash; changes when an
+		 * analysis ends or is forgotten (CrashDoctorService). */
+		CrashCauseRole
 	};
 	enum InstListError { NoError = 0, UnknownError };
 

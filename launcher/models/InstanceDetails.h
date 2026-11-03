@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -51,6 +52,7 @@ class ManagedPackController;
 class InstanceContentController;
 class ContentDrop;
 class LogUploader;
+class CrashDoctorModel;
 class ScreenshotUploader;
 
 /*
@@ -112,6 +114,9 @@ class InstanceDetails : public QObject
 	/// Created lazily: files, folders and links dropped on this instance.
 	Q_PROPERTY(QObject* drop READ drop CONSTANT)
 	Q_PROPERTY(QObject* logUploader READ logUploader CONSTANT)
+	/// Why the last run crashed and what to do (CrashDoctorModel); null for a
+	/// non-Minecraft instance.
+	Q_PROPERTY(QObject* crashDoctor READ crashDoctor CONSTANT)
 	/// `available` is false in a build without an Imgur client id.
 	Q_PROPERTY(QObject* screenshotUploader READ screenshotUploader CONSTANT)
 
@@ -166,6 +171,7 @@ class InstanceDetails : public QObject
 
 	QObject* drop() const;
 	QObject* logUploader() const;
+	QObject* crashDoctor() const;
 	QObject* screenshotUploader() const;
 	/// @p fileUrlOrPath: a file:// URL or a local path. Unpacks off the GUI
 	/// thread; null at once if it is not a Minecraft world.
@@ -228,6 +234,7 @@ class InstanceDetails : public QObject
 	mutable InstanceContentController* m_content = nullptr;
 	mutable ContentDrop* m_drop = nullptr;
 	LogUploader* m_logUploader = nullptr;
+	CrashDoctorModel* m_crashDoctor = nullptr;
 	ScreenshotUploader* m_screenshotUploader = nullptr;
 };
 

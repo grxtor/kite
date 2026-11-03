@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[main/ERROR] [net.neoforged.fml.loading.moddiscovery.ModDiscoverer/]: Loading errors encountered:\nMod §eaccessories§r requires §6owo§r §o0.12.15 or above§r\n§7Currently, §6owo§r§7 is §onot installed§r\nMod §erei§r requires §6architectury§r §o13.0.8 or above§r\n§7Currently, §6architectury§r§7 is §onot installed§r\n"
+ }
+}
