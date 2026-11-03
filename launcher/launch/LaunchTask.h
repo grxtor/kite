@@ -20,6 +20,7 @@
  */
 
 #pragma once
+#include <QDateTime>
 #include <QProcess>
 #include <QObjectPtr.h>
 #include "LogModel.h"
@@ -80,6 +81,13 @@ class LaunchTask : public Task
 	QString playerProfile() const
 	{
 		return m_playerProfile;
+	}
+
+	/// When this launch began (executeTask()); invalid before. Files the game
+	/// writes after it (crash reports) belong to this run.
+	QDateTime startedAt() const
+	{
+		return m_startedAt;
 	}
 
 	/**
@@ -155,6 +163,7 @@ class LaunchTask : public Task
 	State state = NotStarted;
 	qint64 m_pid = -1;
 	QString m_playerProfile;
+	QDateTime m_startedAt;
 
   private: /* data */
 	QMetaObject::Connection m_stepStatusConnection;

@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include <QDir>
+#include <QFile>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -118,6 +120,34 @@ class RunningStep : public LaunchStep
 	void executeTask() override {}
 };
 
+// A step that ends well after writing @p report under the game root's
+// crash-reports, the way Forge leaves its loading error screen.
+class ReportingStep : public LaunchStep
+{
+	Q_OBJECT
+
+  public:
+	ReportingStep(LaunchTask* parent, QString gameRoot)
+		: LaunchStep(parent), m_gameRoot(std::move(gameRoot))
+	{
+	}
+
+  protected:
+	void executeTask() override
+	{
+		QDir(m_gameRoot).mkpath(QStringLiteral("crash-reports"));
+		QFile report(QDir(m_gameRoot).filePath(
+			QStringLiteral("crash-reports/crash-2026-11-04_10.00.00-fml.txt")));
+		if (report.open(QIODevice::WriteOnly)) {
+			report.write("---- Minecraft Crash Report ----\n");
+		}
+		emitSucceeded();
+	}
+
+  private:
+	QString m_gameRoot;
+};
+
 class LaunchTaskTest : public QObject
 {
 	Q_OBJECT
@@ -196,6 +226,39 @@ class LaunchTaskTest : public QObject
 		QVERIFY(task->abort());
 		QTRY_VERIFY(task->isFinished());
 		QVERIFY(!task->wasSuccessful());
+		QVERIFY(!fixture.instance->hasCrashed());
+	}
+
+	void crashReportFromThisRunIsACrash()
+	{
+		InstanceFixture fixture;
+		auto task = LaunchTask::create(fixture.instance);
+		task->appendStep(shared_qobject_ptr<LaunchStep>(
+			new ReportingStep(task.get(), fixture.instance->gameRoot())));
+		task->start();
+		QTRY_VERIFY(task->isFinished());
+		QVERIFY(task->wasSuccessful());
+		QVERIFY(fixture.instance->hasCrashed());
+	}
+
+	void olderCrashReportIsNotThisRun()
+	{
+		InstanceFixture fixture;
+		const QString reports =
+			QDir(fixture.instance->gameRoot()).filePath(QStringLiteral("crash-reports"));
+		QVERIFY(QDir().mkpath(reports));
+		QFile old(QDir(reports).filePath(QStringLiteral("crash-2026-01-01_10.00.00-client.txt")));
+		QVERIFY(old.open(QIODevice::WriteOnly));
+		old.write("old");
+		QVERIFY(old.flush());
+		QVERIFY(old.setFileTime(QDateTime::currentDateTime().addDays(-1),
+								QFileDevice::FileModificationTime));
+		old.close();
+		auto task = LaunchTask::create(fixture.instance);
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new SilentStep(task.get())));
+		task->start();
+		QTRY_VERIFY(task->isFinished());
+		QVERIFY(task->wasSuccessful());
 		QVERIFY(!fixture.instance->hasCrashed());
 	}
 };

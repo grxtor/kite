@@ -21,6 +21,7 @@
 
 #include "launch/LaunchTask.h"
 #include "MessageLevel.h"
+#include "crashdoctor/CrashFiles.h"
 #include "MMCStrings.h"
 #include "java/JavaChecker.h"
 #include "tasks/Task.h"
@@ -63,6 +64,7 @@ void LaunchTask::setWrapperCommand(QString wrapperCommand)
 
 void LaunchTask::executeTask()
 {
+	m_startedAt = QDateTime::currentDateTime();
 	m_instance->setCrashed(false);
 	if (!m_steps.size()) {
 		state = LaunchTask::Finished;
@@ -268,6 +270,14 @@ void LaunchTask::onLogLine(QString line, MessageLevel::Enum level)
 void LaunchTask::emitSucceeded()
 {
 	m_instance->setRunning(false);
+	// Forge and NeoForge show their mod loading error in the game window and
+	// write a crash report; closing that window exits with code 0. A report
+	// from this run means the game did not really start.
+	if (m_startedAt.isValid() &&
+		!CrashFiles::newestCrashReport(m_instance->gameRoot(), m_startedAt)
+			 .isEmpty()) {
+		m_instance->setCrashed(true);
+	}
 	Task::emitSucceeded();
 }
 

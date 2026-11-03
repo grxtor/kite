@@ -995,7 +995,13 @@ add_unit_test(Index
 
 # zlib, libarchive, cmark and toml++ come from the top-level CMakeLists.txt; nbt++ is built here.
 
+set(CRASHDOCTOR_SOURCES
+    crashdoctor/CrashFiles.h
+    crashdoctor/CrashFiles.cpp
+)
+
 set(LOGIC_SOURCES
+    ${CRASHDOCTOR_SOURCES}
     ${CORE_SOURCES}
     ${PATHMATCHER_SOURCES}
     ${NET_SOURCES}
