@@ -77,6 +77,7 @@
 #include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
+#include "servers/FeaturedServers.h"
 #include "servers/ServerPinger.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
@@ -644,6 +645,32 @@ QVariantList QmlShell::otherInstances(const QString& mcVersion) const
 {
 	const auto all = minecraftInstances();
 	return joinCandidates(picked(all, joinOthers(choicesOf(all), mcVersion)));
+}
+
+QVariantList QmlShell::instancesForServer(const QString& minVersion,
+										  const QString& maxVersion) const
+{
+	const auto all = minecraftInstances();
+	const QList<JoinChoice> choices = choicesOf(all);
+	QList<bool> fits;
+	QList<int> order;
+	for (int i = 0; i < choices.size(); ++i) {
+		fits.append(FeaturedServers::versionFits(choices.at(i).version,
+												 minVersion, maxVersion));
+		order.append(i);
+	}
+	std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+		return fits.at(a) != fits.at(b)
+				   ? fits.at(a)
+				   : playedBefore(choices.at(a), choices.at(b));
+	});
+	QVariantList list = joinCandidates(picked(all, order));
+	for (int i = 0; i < list.size(); ++i) {
+		QVariantMap one = list.at(i).toMap();
+		one.insert(QStringLiteral("fits"), fits.at(order.at(i)));
+		list[i] = one;
+	}
+	return list;
 }
 
 void QmlShell::openPath(const QString& path)
@@ -1312,6 +1339,20 @@ QObject* QmlShell::serverPinger() const
 		m_serverPinger = std::make_unique<ServerPinger>();
 	}
 	return expose(m_serverPinger.get());
+}
+
+QObject* QmlShell::featuredServers() const
+{
+	if (!m_featuredServers) {
+		m_featuredServers = std::make_unique<FeaturedServers>();
+		// Notes resolve on each read; only the bindings need telling.
+		connect(LAUNCHER->settings()->getSetting("Language").get(),
+				&Setting::SettingChanged, m_featuredServers.get(),
+				&FeaturedServers::changed);
+		m_featuredServers->loadCached();
+		m_featuredServers->refresh();
+	}
+	return expose(m_featuredServers.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)

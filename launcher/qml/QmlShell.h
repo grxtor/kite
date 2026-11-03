@@ -53,6 +53,7 @@ class UpdateSettingsController;
 class LibraryController;
 class LauncherLogs;
 class BundleCatalog;
+class FeaturedServers;
 class FriendsController;
 class ServerPinger;
 class CatPackList;
@@ -141,6 +142,8 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* friends READ friends CONSTANT)
 	/// Live status of Minecraft servers (ServerPinger), shared by every view.
 	Q_PROPERTY(QObject* serverPinger READ serverPinger CONSTANT)
+	/// The big servers offered for one-click joining (FeaturedServers).
+	Q_PROPERTY(QObject* featuredServers READ featuredServers CONSTANT)
 	/// Distinct groups in use, derived like the library's section headers.
 	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
 	/// Icon grid model; roles `key`, `name`, `isBuiltin`.
@@ -274,6 +277,7 @@ class QmlShell : public QObject
 	QObject* bundles() const;
 	QObject* friends() const;
 	QObject* serverPinger() const;
+	QObject* featuredServers() const;
 
 	/* The actions below emit the matching *Requested() signal; Application
 	 * connects the real work, which Kite_qml cannot see. */
@@ -365,6 +369,12 @@ class QmlShell : public QObject
 	 * @p mcVersion (1.21.x for 1.21.4) first, each group most recently played
 	 * first. */
 	Q_INVOKABLE QVariantList otherInstances(const QString& mcVersion) const;
+	/* Every Minecraft instance, same maps plus `fits`: whether a server
+	 * taking @p minVersion to @p maxVersion (FeaturedServers::versionFits)
+	 * lets its version in. Those that fit first, each group most recently
+	 * played first. */
+	Q_INVOKABLE QVariantList instancesForServer(const QString& minVersion,
+												const QString& maxVersion) const;
 	/// Relative paths resolve against the data folder (the working directory).
 	Q_INVOKABLE void openPath(const QString& path);
 
@@ -523,6 +533,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<BundleCatalog> m_bundles;
 	mutable std::unique_ptr<FriendsController> m_friends;
 	mutable std::unique_ptr<ServerPinger> m_serverPinger;
+	mutable std::unique_ptr<FeaturedServers> m_featuredServers;
 	/* Keyed by (anchor, anchorContext). Declared with the other cached models
 	 * so they are destroyed before the engine. */
 	std::map<std::pair<int, QString>, std::unique_ptr<QObject>>

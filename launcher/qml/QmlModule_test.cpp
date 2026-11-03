@@ -78,8 +78,22 @@ class FakeShell : public QObject
 		lastLaunch = id + QLatin1Char(':') + mode;
 	}
 
+	/// QmlShell::instancesForServer() stand-in: whatever the test set.
+	Q_INVOKABLE QVariantList instancesForServer(const QString&, const QString&) const
+	{
+		return serverInstances;
+	}
+	/// The last joinServer() call, as "id:address".
+	Q_INVOKABLE bool joinServer(const QString& id, const QString& address)
+	{
+		lastJoin = id + QLatin1Char(':') + address;
+		return true;
+	}
+
 	int m_accountCount = 1;
 	QString lastLaunch;
+	QVariantList serverInstances;
+	QString lastJoin;
 
   signals:
 	void importRequested(const QString& source);
@@ -266,6 +280,95 @@ class QmlModuleTest : public QObject
 			Q_ARG(QVariant, QStringLiteral("demo"))));
 		QVERIFY(shell.lastLaunch.isEmpty());
 		QCOMPARE(root->property("page").toString(), QStringLiteral("accounts"));
+	}
+
+	/* Quick join: the selected instance joins when the server takes its
+	 * Minecraft; otherwise nothing starts and the dialog lists those that fit,
+	 * saying why the selected one is not used. */
+	void serverJoinUsesTheSelectedInstanceOnlyWhenItFits()
+	{
+		const auto instance = [](const QString& id, const QString& version,
+								 bool fits) {
+			return QVariantMap{{"id", id},		   {"name", id.toUpper()},
+							   {"iconKey", ""},	   {"version", version},
+							   {"loader", ""},	   {"lastLaunch", 0},
+							   {"running", false}, {"canLaunch", true},
+							   {"fits", fits}};
+		};
+		QQmlEngine engine;
+		FakeShell shell;
+		shell.serverInstances = {instance("new", "1.21.4", true),
+								 instance("old", "1.7.10", false)};
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+		const QString hypixel = QStringLiteral(
+			"({ id: 'hypixel', name: 'Hypixel', address: 'mc.hypixel.net', "
+			"minVersion: '1.8', maxVersion: '' })");
+
+		root->setProperty("selectedId", QStringLiteral("new"));
+		evaluate(root.get(), QStringLiteral("serverJoin.join(%1)").arg(hypixel));
+		QCOMPARE(shell.lastJoin, QStringLiteral("new:mc.hypixel.net"));
+		QCOMPARE(evaluate(root.get(), QStringLiteral("serverJoin.instanceName(%1)")
+										  .arg(hypixel))
+					 .toString(),
+				 QStringLiteral("NEW"));
+
+		shell.lastJoin.clear();
+		root->setProperty("selectedId", QStringLiteral("old"));
+		QVERIFY(evaluate(root.get(), QStringLiteral("serverJoin.instanceName(%1)")
+										 .arg(hypixel))
+					.toString()
+					.isEmpty());
+		evaluate(root.get(), QStringLiteral("serverJoin.join(%1)").arg(hypixel));
+		QVERIFY(shell.lastJoin.isEmpty());
+		// The flow's only child is the Loader of its dialog.
+		auto* dialog = qvariant_cast<QObject*>(
+			evaluate(root.get(), QStringLiteral("serverJoin.children[0].item")));
+		QVERIFY(dialog);
+		QVERIFY(dialog->property("visible").toBool());
+		QCOMPARE(dialog->property("none").toBool(), false);
+		QCOMPARE(dialog->property("rows").toList().size(), 1);
+		QCOMPARE(qvariant_cast<QVariantMap>(dialog->property("refused"))
+					 .value("id")
+					 .toString(),
+				 QStringLiteral("old"));
+		QCOMPARE(dialog->property("range").toString(),
+				 QStringLiteral("1.8 or newer"));
+	}
+
+	/* The quick-join bar shows the servers that fit its width and moves the
+	 * rest into its ⋯ menu. */
+	void quickJoinBarMovesWhatDoesNotFitIntoItsMenu()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			QuickJoinBar {
+				servers: [0, 1, 2, 3, 4, 5].map((i) => ({ id: "s" + i, name: "Server " + i,
+					address: "s" + i + ".example", note: "", minVersion: "", maxVersion: "" }))
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> bar(component.create());
+		QVERIFY2(bar, qPrintable(component.errorString()));
+		const int servers = 6;
+
+		const int roomy = 10000;
+		bar->setProperty("width", roomy);
+		QTRY_VERIFY(bar->property("fullWidth").toInt() > 0);
+		QTRY_COMPARE(bar->property("fitCount").toInt(), servers);
+		QCOMPARE(bar->property("hidden").toList().size(), 0);
+		const int full = bar->property("fullWidth").toInt();
+
+		bar->setProperty("width", full / 2);
+		QTRY_VERIFY(bar->property("fitCount").toInt() < servers);
+		const int shown = bar->property("fitCount").toInt();
+		QVERIFY(shown > 0);
+		QCOMPARE(bar->property("hidden").toList().size(), servers - shown);
+		// Sized by every entry, so moving some into the menu does not shrink it.
+		QCOMPARE(bar->property("fullWidth").toInt(), full);
 	}
 
 	/* The macOS menu bar shows only natively (Cocoa), not in this offscreen
