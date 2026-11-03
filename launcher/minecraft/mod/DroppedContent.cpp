@@ -308,6 +308,7 @@ namespace DroppedContent
 				++modpacks;
 				break;
 			case Kind::Unknown:
+				++unknown;
 				break;
 		}
 	}
@@ -318,50 +319,80 @@ namespace DroppedContent
 			   modpacks;
 	}
 
+	QString describe(Kind kind, int count)
+	{
+		const auto many = [count](const QString& text) {
+			return text.arg(count);
+		};
+		if (count < 1) {
+			return QString();
+		}
+		switch (kind) {
+			case Kind::Mod:
+				return count == 1 ? QCoreApplication::translate(
+										"DroppedContent", "1 mod")
+								  : many(QCoreApplication::translate(
+										"DroppedContent", "%1 mods"));
+			case Kind::ResourcePack:
+				return count == 1
+						   ? QCoreApplication::translate("DroppedContent",
+														 "1 resource pack")
+						   : many(QCoreApplication::translate(
+								 "DroppedContent", "%1 resource packs"));
+			case Kind::DataPack:
+				return count == 1
+						   ? QCoreApplication::translate("DroppedContent",
+														 "1 data pack")
+						   : many(QCoreApplication::translate(
+								 "DroppedContent", "%1 data packs"));
+			case Kind::ShaderPack:
+				return count == 1
+						   ? QCoreApplication::translate("DroppedContent",
+														 "1 shader pack")
+						   : many(QCoreApplication::translate(
+								 "DroppedContent", "%1 shader packs"));
+			case Kind::World:
+				return count == 1 ? QCoreApplication::translate(
+										"DroppedContent", "1 world")
+								  : many(QCoreApplication::translate(
+										"DroppedContent", "%1 worlds"));
+			case Kind::Modpack:
+				return count == 1 ? QCoreApplication::translate(
+										"DroppedContent", "1 modpack")
+								  : many(QCoreApplication::translate(
+										"DroppedContent", "%1 modpacks"));
+			case Kind::Unknown:
+				break;
+		}
+		return QString();
+	}
+
+	QString describeUnknown(int count)
+	{
+		if (count < 1) {
+			return QString();
+		}
+		return count == 1
+				   ? QCoreApplication::translate(
+						 "DroppedContent", "1 file Kite doesn't recognise")
+				   : QCoreApplication::translate(
+						 "DroppedContent", "%1 files Kite doesn't recognise")
+						 .arg(count);
+	}
+
 	QString describe(const Counts& counts)
 	{
 		QStringList parts;
-		if (counts.mods == 1) {
-			parts << QCoreApplication::translate("DroppedContent", "1 mod");
-		} else if (counts.mods > 1) {
-			parts << QCoreApplication::translate("DroppedContent",
-												 "%1 mods")
-						 .arg(counts.mods);
-		}
-		if (counts.resourcePacks == 1) {
-			parts << QCoreApplication::translate("DroppedContent", "1 resource pack");
-		} else if (counts.resourcePacks > 1) {
-			parts << QCoreApplication::translate("DroppedContent",
-												 "%1 resource packs")
-						 .arg(counts.resourcePacks);
-		}
-		if (counts.dataPacks == 1) {
-			parts << QCoreApplication::translate("DroppedContent", "1 data pack");
-		} else if (counts.dataPacks > 1) {
-			parts << QCoreApplication::translate("DroppedContent",
-												 "%1 data packs")
-						 .arg(counts.dataPacks);
-		}
-		if (counts.shaderPacks == 1) {
-			parts << QCoreApplication::translate("DroppedContent", "1 shader pack");
-		} else if (counts.shaderPacks > 1) {
-			parts << QCoreApplication::translate("DroppedContent",
-												 "%1 shader packs")
-						 .arg(counts.shaderPacks);
-		}
-		if (counts.worlds == 1) {
-			parts << QCoreApplication::translate("DroppedContent", "1 world");
-		} else if (counts.worlds > 1) {
-			parts << QCoreApplication::translate("DroppedContent",
-												 "%1 worlds")
-						 .arg(counts.worlds);
-		}
-		if (counts.modpacks == 1) {
-			parts << QCoreApplication::translate("DroppedContent", "1 modpack");
-		} else if (counts.modpacks > 1) {
-			parts << QCoreApplication::translate("DroppedContent",
-												 "%1 modpacks")
-						 .arg(counts.modpacks);
+		for (const auto& [kind, count] :
+			 {std::pair{Kind::Mod, counts.mods},
+			  std::pair{Kind::ResourcePack, counts.resourcePacks},
+			  std::pair{Kind::DataPack, counts.dataPacks},
+			  std::pair{Kind::ShaderPack, counts.shaderPacks},
+			  std::pair{Kind::World, counts.worlds},
+			  std::pair{Kind::Modpack, counts.modpacks}}) {
+			if (count > 0) {
+				parts << describe(kind, count);
+			}
 		}
 		if (parts.size() < 2) {
 			return parts.value(0);

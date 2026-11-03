@@ -73,14 +73,23 @@ namespace DroppedContent
 		int shaderPacks = 0;
 		int worlds = 0;
 		int modpacks = 0;
+		/// Files that are none of the above; not part of total().
+		int unknown = 0;
 
 		void add(Kind kind);
 		int total() const;
 	};
 
 	/// "2 mods and 1 resource pack" (translated, plurals by count); empty for no
-	/// counts. Tells the overlay and the toast what a drop holds.
+	/// counts. Tells the toast what a drop did.
 	QString describe(const Counts& counts);
+
+	/// "2 mods", "1 resource pack": one kind and its count, for one line of the
+	/// drag overlay; empty for Unknown or a count of 0.
+	QString describe(Kind kind, int count);
+
+	/// "1 file Kite doesn't recognise" / "3 files Kite doesn't recognise".
+	QString describeUnknown(int count);
 
 	/// The ContentTab / InstanceContentController kind a dropped item is
 	/// installed under: "mods", "resourcepacks", "shaderpacks"; empty for worlds,

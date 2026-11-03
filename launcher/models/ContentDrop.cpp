@@ -100,7 +100,7 @@ bool ContentDrop::changesAllowed(const QString& kind) const
 					InstanceContentController::kindAllowsChangesWhileRunning(kind));
 }
 
-QString ContentDrop::describe(const QStringList& urls) const
+QVariantMap ContentDrop::preview(const QStringList& urls) const
 {
 	DroppedContent::Counts counts;
 	for (const QString& text : urls) {
@@ -119,7 +119,35 @@ QString ContentDrop::describe(const QStringList& urls) const
 		}
 		counts.add(DroppedContent::classify(text).kind);
 	}
-	return DroppedContent::describe(counts);
+
+	QVariantList rows;
+	const auto addRow = [&rows](const QString& key,
+								DroppedContent::Kind kind, int count) {
+		if (count > 0) {
+			QVariantMap row;
+			row.insert(QStringLiteral("kind"), key);
+			row.insert(QStringLiteral("text"),
+					   DroppedContent::describe(kind, count));
+			rows.append(row);
+		}
+	};
+	addRow(QStringLiteral("mods"), DroppedContent::Kind::Mod, counts.mods);
+	addRow(QStringLiteral("resourcepacks"),
+		   DroppedContent::Kind::ResourcePack, counts.resourcePacks);
+	addRow(QStringLiteral("datapacks"), DroppedContent::Kind::DataPack,
+		   counts.dataPacks);
+	addRow(QStringLiteral("shaderpacks"), DroppedContent::Kind::ShaderPack,
+		   counts.shaderPacks);
+	addRow(QStringLiteral("worlds"), DroppedContent::Kind::World,
+		   counts.worlds);
+	addRow(QStringLiteral("modpacks"), DroppedContent::Kind::Modpack,
+		   counts.modpacks);
+
+	QVariantMap result;
+	result.insert(QStringLiteral("rows"), rows);
+	result.insert(QStringLiteral("unknown"),
+				  DroppedContent::describeUnknown(counts.unknown));
+	return result;
 }
 
 QVariantList ContentDrop::worldChoices() const
@@ -136,6 +164,11 @@ QVariantList ContentDrop::worldChoices() const
 		choice.insert(QStringLiteral("name"), world.name().isEmpty()
 												  ? world.folderName()
 												  : world.name());
+		choice.insert(QStringLiteral("iconFile"), world.iconFile());
+		choice.insert(QStringLiteral("lastPlayed"),
+					  world.lastPlayed().isValid()
+						  ? world.lastPlayed().toMSecsSinceEpoch()
+						  : qint64(0));
 		choices.append(choice);
 	}
 	return choices;
@@ -168,9 +201,13 @@ QVariantMap ContentDrop::prepare(const QStringList& urls)
 	bool hasDataPack = false;
 	bool hasMod = false;
 	QVariantList conflicts;
+	QStringList dataPackNames;
 	for (const Pending& pending : m_pending) {
 		hasDataPack = hasDataPack ||
 					  pending.item.kind == DroppedContent::Kind::DataPack;
+		if (pending.item.kind == DroppedContent::Kind::DataPack) {
+			dataPackNames << pending.item.fileName;
+		}
 		hasMod = hasMod || pending.item.kind == DroppedContent::Kind::Mod;
 		if (!pending.sameMod.isEmpty()) {
 			QVariantMap conflict;
@@ -190,6 +227,7 @@ QVariantMap ContentDrop::prepare(const QStringList& urls)
 	result.insert(QStringLiteral("otherLinks"), found.otherLinks);
 	result.insert(QStringLiteral("unknown"), m_unknown);
 	result.insert(QStringLiteral("needsWorld"), hasDataPack);
+	result.insert(QStringLiteral("dataPackNames"), dataPackNames);
 	result.insert(QStringLiteral("worldChoices"),
 				  hasDataPack ? worldChoices() : QVariantList());
 	result.insert(QStringLiteral("hasWorld"), found.counts.worlds > 0);

@@ -304,6 +304,26 @@ class DroppedContentTest : public QObject
 				 QStringLiteral("3 mods, 2 resource packs and 1 shader pack"));
 	}
 
+	void oneLinePerKindForTheOverlay()
+	{
+		QCOMPARE(describe(Kind::Mod, 2), QStringLiteral("2 mods"));
+		QCOMPARE(describe(Kind::DataPack, 1), QStringLiteral("1 data pack"));
+		QCOMPARE(describe(Kind::World, 3), QStringLiteral("3 worlds"));
+		QVERIFY(describe(Kind::Mod, 0).isEmpty());
+		QVERIFY(describe(Kind::Unknown, 2).isEmpty());
+		QCOMPARE(describeUnknown(1),
+				 QStringLiteral("1 file Kite doesn't recognise"));
+		QCOMPARE(describeUnknown(4),
+				 QStringLiteral("4 files Kite doesn't recognise"));
+		QVERIFY(describeUnknown(0).isEmpty());
+
+		Counts counts;
+		counts.add(Kind::Unknown);
+		counts.add(Kind::Mod);
+		QCOMPARE(counts.unknown, 1);
+		QCOMPARE(counts.total(), 1);
+	}
+
 	void anIdenticalFileIsFoundByContent()
 	{
 		QVERIFY(writeFile(path("target/renamed.jar"), readFile(path("fabric.jar"))));

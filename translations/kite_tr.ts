@@ -1429,7 +1429,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentDrop</name>
     <message>
-        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/models/ContentDrop.cpp" line="+317"/>
+        <location filename="../launcher/models/ContentDrop.cpp" line="+355"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -1442,7 +1442,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentDropFlow</name>
     <message>
-        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/qml/Components/ContentDropFlow.qml" line="+73"/>
+        <location filename="../launcher/qml/Components/ContentDropFlow.qml" line="+73"/>
         <source>“%1” is already here as %2. Replace it with the one you dropped, or keep both?</source>
         <translation>“%1” zaten burada, %2 olarak duruyor. Bıraktığın dosyayla değiştirilsin mi, yoksa ikisi de kalsın mı?</translation>
     </message>
@@ -1452,7 +1452,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Bıraktığın %1 mod başka bir sürümüyle zaten burada. Değiştirilsin mi, yoksa ikisi de kalsın mı?</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+41"/>
         <source>This instance has no mod loader yet, so its mods will not load.</source>
         <translation>Bu kurulumda henüz mod yükleyici yok, bu yüzden modlar yüklenmez.</translation>
     </message>
@@ -1507,9 +1507,14 @@ Ayrıntılar günlük dosyasında:
         <translation>İkisini de tut</translation>
     </message>
     <message>
-        <location line="+21"/>
-        <source>Add data pack</source>
-        <translation>Veri paketi ekle</translation>
+        <location line="+27"/>
+        <source>Add “%1”</source>
+        <translation>“%1” ekle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Add %1 data packs</source>
+        <translation>%1 veri paketi ekle</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -1522,7 +1527,12 @@ Ayrıntılar günlük dosyasında:
         <translation>Veri paketi bir dünyaya aittir. Hangisine eklensin?</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+1"/>
+        <source>Data packs belong to a world. Which one should they go into?</source>
+        <translation>Veri paketleri bir dünyaya aittir. Hangisine eklensin?</translation>
+    </message>
+    <message>
+        <location line="+55"/>
         <source>Minecraft is running</source>
         <translation>Minecraft çalışıyor</translation>
     </message>
@@ -1613,7 +1623,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentLinkInstall</name>
     <message>
-        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/models/ContentLinkInstall.cpp" line="+55"/>
+        <location filename="../launcher/models/ContentLinkInstall.cpp" line="+55"/>
         <source>This build cannot look projects up on CurseForge.</source>
         <translation>Bu sürüm CurseForge&apos;da proje arayamıyor.</translation>
     </message>
@@ -2778,20 +2788,20 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>DropOverlay</name>
     <message>
-        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/qml/Components/DropOverlay.qml" line="+17"/>
-        <source>Drop to add %1</source>
-        <translation>Eklemek için bırak: %1</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location filename="../launcher/qml/Components/DropOverlay.qml" line="+24"/>
         <source>Drop to add</source>
         <translation>Eklemek için bırak</translation>
+    </message>
+    <message>
+        <location line="+86"/>
+        <source>→ you will pick a world</source>
+        <translation>→ bir dünya seçeceksin</translation>
     </message>
 </context>
 <context>
     <name>DroppedContent</name>
     <message>
-        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/minecraft/mod/DroppedContent.cpp" line="+325"/>
+        <location filename="../launcher/minecraft/mod/DroppedContent.cpp" line="+332"/>
         <source>1 mod</source>
         <translation>1 mod</translation>
     </message>
@@ -2801,7 +2811,7 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 mod</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+4"/>
         <source>1 resource pack</source>
         <translation>1 kaynak paketi</translation>
     </message>
@@ -2811,7 +2821,7 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 kaynak paketi</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+4"/>
         <source>1 data pack</source>
         <translation>1 veri paketi</translation>
     </message>
@@ -2821,7 +2831,7 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 veri paketi</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+4"/>
         <source>1 shader pack</source>
         <translation>1 gölgelendirici paketi</translation>
     </message>
@@ -2831,7 +2841,7 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 gölgelendirici paketi</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+3"/>
         <source>1 world</source>
         <translation>1 dünya</translation>
     </message>
@@ -2841,7 +2851,7 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 dünya</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+3"/>
         <source>1 modpack</source>
         <translation>1 mod paketi</translation>
     </message>
@@ -2851,7 +2861,17 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 mod paketi</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+14"/>
+        <source>1 file Kite doesn&apos;t recognise</source>
+        <translation>Kite&apos;ın tanımadığı 1 dosya</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 files Kite doesn&apos;t recognise</source>
+        <translation>Kite&apos;ın tanımadığı %1 dosya</translation>
+    </message>
+    <message>
+        <location line="+24"/>
         <source>, </source>
         <translation>, </translation>
     </message>
@@ -15048,7 +15068,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldsTab</name>
     <message>
-        <location filename="../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite/launcher/qml/Components/WorldsTab.qml" line="-38"/>
+        <location filename="../launcher/qml/Components/WorldsTab.qml" line="-38"/>
         <location line="+240"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>

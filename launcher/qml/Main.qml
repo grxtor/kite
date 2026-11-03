@@ -599,13 +599,19 @@ ApplicationWindow {
 
         readonly property bool onInstance: root.page === "instance" && !!root.openedDetails
                                            && root.openedDetails.isMinecraft && !!root.openedDetails.drop
-        // What the drag in progress holds, for the overlay.
-        property string summary: ""
+        // What the drag in progress holds, for the overlay (ContentDrop.preview()).
+        property var rows: []
+        property string unknown: ""
         // Dev route "dragover": the overlay stays up without a real drag.
         property bool previewing: false
 
+        function show(paths) {
+            const found = windowDrop.onInstance ? root.openedDetails.drop.preview(paths) : ({ rows: [], unknown: "" })
+            windowDrop.rows = found.rows
+            windowDrop.unknown = found.unknown
+        }
         function preview(paths) {
-            windowDrop.summary = windowDrop.onInstance ? root.openedDetails.drop.describe(paths) : ""
+            windowDrop.show(paths)
             windowDrop.previewing = true
         }
         // Dev route "drop": what a drop of these local files would do.
@@ -615,10 +621,7 @@ ApplicationWindow {
                 dropFlow.handle(root.openedDetails.drop, paths, instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
         }
 
-        onEntered: (drag) => {
-            windowDrop.summary = windowDrop.onInstance && drag.hasUrls
-                ? root.openedDetails.drop.describe(root.dropUrls(drag.urls)) : ""
-        }
+        onEntered: (drag) => windowDrop.show(drag.hasUrls ? root.dropUrls(drag.urls) : [])
         onDropped: (drop) => {
             if (!drop.hasUrls || drop.urls.length === 0)
                 return
@@ -1179,9 +1182,10 @@ ApplicationWindow {
     // Over the page while files are dragged across an instance's page.
     DropOverlay {
         anchors.fill: panel
-        anchors.margins: Theme.space.sm
+        radius: root.panelRadius
         visible: (windowDrop.containsDrag || windowDrop.previewing) && windowDrop.onInstance
-        summary: windowDrop.summary
+        rows: windowDrop.rows
+        unknown: windowDrop.unknown
     }
 
     Toast {

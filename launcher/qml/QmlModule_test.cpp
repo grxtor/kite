@@ -677,8 +677,8 @@ class QmlModuleTest : public QObject
 		QTest::mouseRelease(window, Qt::LeftButton, Qt::NoModifier, at + QPoint(40, 5));
 	}
 
-	/* The overlay says what the drag holds, or only "Drop to add" while that
-	 * is not known. */
+	/* The overlay's card says "Drop to add" and one line per kind dragged; the
+	 * data pack line adds that a world will be asked for. */
 	void dropOverlayNamesWhatIsDragged()
 	{
 		QQmlEngine engine;
@@ -686,17 +686,42 @@ class QmlModuleTest : public QObject
 		QQmlComponent component(&engine);
 		component.setData("import QtQuick\n"
 						  "import Kite.Components\n"
-						  "DropOverlay { width: 300; height: 100 }\n",
+						  "DropOverlay { width: 600; height: 400 }\n",
 						  QUrl(QStringLiteral("qrc:/test/Overlay.qml")));
 		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
 		std::unique_ptr<QObject> overlay(component.create());
 		QVERIFY2(overlay, qPrintable(component.errorString()));
 
-		QCOMPARE(overlay->property("message").toString(),
+		QCOMPARE(overlay->property("title").toString(),
 				 QStringLiteral("Drop to add"));
-		overlay->setProperty("summary", QStringLiteral("2 mods and 1 resource pack"));
-		QCOMPARE(overlay->property("message").toString(),
-				 QStringLiteral("Drop to add 2 mods and 1 resource pack"));
+
+		QVariantMap mods;
+		mods.insert(QStringLiteral("kind"), QStringLiteral("mods"));
+		mods.insert(QStringLiteral("text"), QStringLiteral("2 mods"));
+		QVariantMap data;
+		data.insert(QStringLiteral("kind"), QStringLiteral("datapacks"));
+		data.insert(QStringLiteral("text"), QStringLiteral("1 data pack"));
+		overlay->setProperty("rows", QVariantList{mods, data});
+		overlay->setProperty("unknown",
+							 QStringLiteral("1 file Kite doesn't recognise"));
+
+		// Every line is drawn: the title, both rows, the world hint and the
+		// unknown-file line.
+		QStringList texts;
+		std::function<void(QQuickItem*)> visit = [&](QQuickItem* item) {
+			const QString text = item->property("text").toString();
+			if (!text.isEmpty() && item->isVisible())
+				texts << text;
+			for (QQuickItem* child : item->childItems())
+				visit(child);
+		};
+		visit(qobject_cast<QQuickItem*>(overlay.get()));
+		QVERIFY2(texts.contains(QStringLiteral("Drop to add")), qPrintable(texts.join('|')));
+		QVERIFY(texts.contains(QStringLiteral("2 mods")));
+		QVERIFY(texts.contains(QStringLiteral("1 data pack")));
+		QVERIFY(texts.contains(QStringLiteral("1 file Kite doesn't recognise")));
+		QVERIFY2(texts.filter(QStringLiteral("pick a world")).size() == 1,
+				 qPrintable(texts.join('|')));
 	}
 
 	/* A drop with nothing to ask is installed at once and reported in one

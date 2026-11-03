@@ -50,7 +50,10 @@ class MinecraftInstance;
  *   otherLinks    any other http(s) links, for Import as before
  *   unknown       names of files that are none of the above
  *   needsWorld    data packs are in the drop: chooseWorld() before commit()
- *   worldChoices  [{folder, name}] of the instance's worlds, for the picker
+ *   dataPackNames file names of the data packs, for the picker's title
+ *   worldChoices  [{folder, name, iconFile, lastPlayed}] of the instance's
+ *                 worlds (lastPlayed in ms since the epoch, 0 if never), for
+ *                 the picker
  *   hasWorld      a world is in the drop (adding one while the game runs asks)
  *   conflicts     [{name, existing}] other versions of mods already installed:
  *                 resolveConflicts() before commit()
@@ -66,9 +69,11 @@ class ContentDrop : public QObject
 	explicit ContentDrop(InstancePtr instance, QObject* parent = nullptr);
 	~ContentDrop() override;
 
-	/// What @p urls hold, for the overlay while dragging ("2 mods and 1 resource
-	/// pack"); empty when nothing is recognisable. Reads, never changes.
-	Q_INVOKABLE QString describe(const QStringList& urls) const;
+	/// What @p urls hold, for the overlay while dragging: {rows: [{kind, text}],
+	/// unknown}. `kind` is mods, resourcepacks, datapacks, shaderpacks, worlds
+	/// or modpacks, `text` "2 mods"; `unknown` says how many files are none of
+	/// them ("" for none). Reads, never changes.
+	Q_INVOKABLE QVariantMap preview(const QStringList& urls) const;
 
 	/// Reads a drop and keeps it for commit(); replaces any earlier one.
 	Q_INVOKABLE QVariantMap prepare(const QStringList& urls);

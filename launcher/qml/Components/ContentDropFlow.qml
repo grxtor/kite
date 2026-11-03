@@ -90,6 +90,7 @@ Item {
         }
         const dialog = root.dialogOf(worldLoader)
         dialog.choices = choices
+        dialog.names = root.plan.dataPackNames
         dialog.open()
     }
 
@@ -208,45 +209,86 @@ Item {
         }
     }
 
+    // Up to this many worlds are listed as rows to pick from; more go in a drop-down.
+    readonly property int worldRowLimit: 6
+
     Loader {
         id: worldLoader
         active: false
         sourceComponent: AppDialog {
             id: worldDialog
             property var choices: []
+            property var names: []
+            property int chosen: 0
             property bool answered: false
+            readonly property bool asRows: worldDialog.choices.length <= root.worldRowLimit
 
-            title: qsTr("Add data pack")
-            size: "sm"
+            title: worldDialog.names.length === 1 ? qsTr("Add “%1”").arg(worldDialog.names[0])
+                                                  : qsTr("Add %1 data packs").arg(worldDialog.names.length)
+            size: "md"
             closeOnOutsidePress: true
             primaryText: qsTr("Add")
-            primaryEnabled: picker.currentIndex >= 0
             onOpened: {
                 worldDialog.answered = false
-                picker.currentIndex = 0
+                worldDialog.chosen = 0
             }
             onPrimaryClicked: {
                 worldDialog.answered = true
-                root.drop.chooseWorld(worldDialog.choices[picker.currentIndex].folder)
+                root.drop.chooseWorld(worldDialog.choices[worldDialog.chosen].folder)
                 root.askRunning()
             }
             onClosed: if (!worldDialog.answered) root.giveUp()
 
             contentItem: Column {
-                spacing: Theme.space.sm
+                spacing: Theme.space.md
 
                 Copy {
                     width: parent.width
-                    text: qsTr("A data pack belongs to a world. Which one should it go into?")
+                    text: worldDialog.names.length === 1
+                          ? qsTr("A data pack belongs to a world. Which one should it go into?")
+                          : qsTr("Data packs belong to a world. Which one should they go into?")
                     tone: "secondary"
                     wrapMode: Text.Wrap
                     lineHeight: 1.3
                 }
-                ComboBox {
-                    id: picker
+
+                Column {
                     width: parent.width
+                    spacing: Theme.space.sm
+                    visible: worldDialog.asRows
+
+                    Repeater {
+                        model: worldDialog.asRows ? worldDialog.choices : []
+                        delegate: TabListRow {
+                            id: worldRow
+                            required property int index
+                            required property var modelData
+
+                            width: parent.width
+                            title: worldRow.modelData.name
+                            meta: Format.lastPlayed(worldRow.modelData.lastPlayed)
+                            thumb.source: Format.fileUrl(worldRow.modelData.iconFile)
+                            thumb.glyph: "globe"
+                            thumb.fill: true
+                            thumb.pixelArt: true
+                            active: worldDialog.chosen === worldRow.index
+                            border.color: worldRow.active ? Theme.palette.accent
+                                                          : worldRow.hovered ? Theme.neutral.borderHover : Theme.palette.border
+                            Accessible.role: Accessible.RadioButton
+                            Accessible.name: worldRow.title
+                            Accessible.checked: worldRow.active
+                            TapHandler { onTapped: worldDialog.chosen = worldRow.index }
+                        }
+                    }
+                }
+
+                ComboBox {
+                    width: parent.width
+                    visible: !worldDialog.asRows
                     model: worldDialog.choices
                     textRole: "name"
+                    currentIndex: worldDialog.chosen
+                    onActivated: (index) => worldDialog.chosen = index
                 }
             }
         }
