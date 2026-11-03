@@ -300,35 +300,6 @@ Item {
         onAccepted: root.addWorlds([selectedFile])
     }
 
-    DropArea {
-        id: drop
-        anchors.fill: parent
-        keys: ["text/uri-list"]
-        onDropped: (event) => {
-            if (event.hasUrls) {
-                // The event is gone once this handler returns, but the question may still be open.
-                var urls = event.urls
-                root.guarded(() => root.addWorlds(urls))
-            }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            visible: drop.containsDrag
-            radius: Theme.radius.lg
-            color: Theme.palette.accentSubtle
-            border.width: 1
-            border.color: Theme.palette.accent
-
-            Copy {
-                anchors.centerIn: parent
-                text: qsTr("Drop a world here to add it")
-                role: "bodyStrong"
-                tone: "accent"
-            }
-        }
-    }
-
     Connections {
         target: root.watcher
         ignoreUnknownSignals: true

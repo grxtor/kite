@@ -88,12 +88,16 @@ Item {
     }
 
     property var afterLoader: null
-    function needsLoaderFirst(action) {
-        if (root.kind !== "mods" || !root.content || root.content.hasModLoader)
+    // True when the instance has no mod loader: asks to install one and runs @p action once it has.
+    function needsLoader(action) {
+        if (!root.content || root.content.hasModLoader)
             return false
         root.afterLoader = action
         loaderPrompt.open()
         return true
+    }
+    function needsLoaderFirst(action) {
+        return root.kind === "mods" && root.needsLoader(action)
     }
     function withLoader(action) {
         if (!root.needsLoaderFirst(action))
@@ -498,20 +502,6 @@ Item {
         enabled: root.visible && packList.selecting && !searchField.activeFocus
                  && !exportDialog.visible && !bulkConfirm.visible && !healthDialog.visible
         onActivated: packList.clearSelection()
-    }
-
-    DropArea {
-        anchors.fill: parent
-        enabled: root.isMinecraft && root.unlocked
-        keys: ["text/uri-list"]
-        onDropped: (drop) => {
-            if (!drop.hasUrls)
-                return
-            const urls = drop.urls
-            if (!root.needsLoaderFirst(() => root.installFiles(urls)))
-                root.installFiles(urls)
-            drop.accept(Qt.CopyAction)
-        }
     }
 
     EmptyState {

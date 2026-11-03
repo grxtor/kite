@@ -30,6 +30,12 @@ Item {
     readonly property var pagePlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(1, instanceId) : null
     readonly property var settingsPlugins: pluginSurfacesFor && instanceId.length > 0 ? pluginSurfacesFor(2, instanceId) : null
 
+    // For a drop on this page: asks for a mod loader first when there is none. True when it took over, to
+    // run @p action once a loader is in.
+    function needsLoaderFirst(action) {
+        return contentTab.needsLoader(action)
+    }
+
     signal backRequested()
     // Open another instance (the Mods tab's new Kite Performance one).
     signal openInstanceRequested(string id)

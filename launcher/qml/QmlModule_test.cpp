@@ -89,6 +89,71 @@ class FakeShell : public QObject
 	QObject m_newInstance;
 };
 
+/* Stands in for ContentDrop: ContentDropFlow only talks to it through these. */
+class FakeDrop : public QObject
+{
+	Q_OBJECT
+
+  public:
+	Q_INVOKABLE QVariantMap prepare(const QStringList& urls)
+	{
+		prepared = urls;
+		return plan;
+	}
+	Q_INVOKABLE QVariantMap commit()
+	{
+		++commits;
+		QVariantMap done;
+		done.insert(QStringLiteral("text"), QStringLiteral("Added 1 mod."));
+		done.insert(QStringLiteral("tone"), QStringLiteral("success"));
+		done.insert(QStringLiteral("worldTask"), QVariant());
+		done.insert(QStringLiteral("worlds"), 0);
+		return done;
+	}
+	Q_INVOKABLE void chooseWorld(const QString& folder)
+	{
+		world = folder;
+	}
+	Q_INVOKABLE void resolveConflicts(const QString& mode)
+	{
+		conflicts = mode;
+	}
+	Q_INVOKABLE void cancel()
+	{
+		++cancels;
+	}
+	Q_INVOKABLE QObject* installLink(const QString&)
+	{
+		return nullptr;
+	}
+
+	QVariantMap plan;
+	QStringList prepared;
+	QString world;
+	QString conflicts;
+	int commits = 0;
+	int cancels = 0;
+
+	/* What prepare() answers for a drop of one mod and nothing else. */
+	static QVariantMap quietPlan()
+	{
+		QVariantMap plan;
+		plan.insert(QStringLiteral("empty"), false);
+		plan.insert(QStringLiteral("modpack"), QString());
+		plan.insert(QStringLiteral("extraModpacks"), 0);
+		plan.insert(QStringLiteral("links"), QStringList());
+		plan.insert(QStringLiteral("otherLinks"), QStringList());
+		plan.insert(QStringLiteral("unknown"), QStringList());
+		plan.insert(QStringLiteral("needsWorld"), false);
+		plan.insert(QStringLiteral("worldChoices"), QVariantList());
+		plan.insert(QStringLiteral("hasWorld"), false);
+		plan.insert(QStringLiteral("conflicts"), QVariantList());
+		plan.insert(QStringLiteral("needsLoader"), false);
+		plan.insert(QStringLiteral("running"), false);
+		return plan;
+	}
+};
+
 class QmlModuleTest : public QObject
 {
 	Q_OBJECT
@@ -559,6 +624,160 @@ class QmlModuleTest : public QObject
 						  QStringLiteral("newInstanceDialog.presetSource"))
 					 .toString(),
 				 source);
+	}
+
+	std::unique_ptr<QObject> createFlow(QQmlEngine& engine)
+	{
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData("import QtQuick\n"
+						  "import Kite.Components\n"
+						  "ContentDropFlow {}\n",
+						  QUrl(QStringLiteral("qrc:/test/Flow.qml")));
+		if (!component.isReady()) {
+			qWarning() << component.errorString();
+			return nullptr;
+		}
+		return std::unique_ptr<QObject>(component.create());
+	}
+
+	void handle(QObject* flow, FakeDrop* drop, const QStringList& urls,
+				const QVariant& gate = QVariant())
+	{
+		QVERIFY(QMetaObject::invokeMethod(
+			flow, "handle", Q_ARG(QVariant, QVariant::fromValue<QObject*>(drop)),
+			Q_ARG(QVariant, QVariant(urls)), Q_ARG(QVariant, gate)));
+	}
+
+	/* The overlay says what the drag holds, or only "Drop to add" while that
+	 * is not known. */
+	void dropOverlayNamesWhatIsDragged()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData("import QtQuick\n"
+						  "import Kite.Components\n"
+						  "DropOverlay { width: 300; height: 100 }\n",
+						  QUrl(QStringLiteral("qrc:/test/Overlay.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> overlay(component.create());
+		QVERIFY2(overlay, qPrintable(component.errorString()));
+
+		QCOMPARE(overlay->property("message").toString(),
+				 QStringLiteral("Drop to add"));
+		overlay->setProperty("summary", QStringLiteral("2 mods and 1 resource pack"));
+		QCOMPARE(overlay->property("message").toString(),
+				 QStringLiteral("Drop to add 2 mods and 1 resource pack"));
+	}
+
+	/* A drop with nothing to ask is installed at once and reported in one
+	 * toast. */
+	void aPlainDropIsInstalledAndReported()
+	{
+		QQmlEngine engine;
+		auto flow = createFlow(engine);
+		QVERIFY(flow);
+		QSignalSpy notified(flow.get(), SIGNAL(notify(QString, QString)));
+		FakeDrop drop;
+		drop.plan = FakeDrop::quietPlan();
+
+		handle(flow.get(), &drop, {QStringLiteral("file:///tmp/a.jar")});
+
+		QCOMPARE(drop.prepared, QStringList{QStringLiteral("file:///tmp/a.jar")});
+		QCOMPARE(drop.commits, 1);
+		QCOMPARE(notified.count(), 1);
+		QCOMPARE(notified.first().at(0).toString(), QStringLiteral("Added 1 mod."));
+		QCOMPARE(notified.first().at(1).toString(), QStringLiteral("success"));
+	}
+
+	/* A modpack goes to Import, and a drop of nothing else does not install. */
+	void aModpackGoesToImport()
+	{
+		QQmlEngine engine;
+		auto flow = createFlow(engine);
+		QVERIFY(flow);
+		QSignalSpy imports(flow.get(), SIGNAL(importRequested(QString)));
+		QSignalSpy notified(flow.get(), SIGNAL(notify(QString, QString)));
+		FakeDrop drop;
+		drop.plan = FakeDrop::quietPlan();
+		drop.plan.insert(QStringLiteral("empty"), true);
+		drop.plan.insert(QStringLiteral("modpack"), QStringLiteral("/tmp/pack.mrpack"));
+
+		handle(flow.get(), &drop, {QStringLiteral("file:///tmp/pack.mrpack")});
+
+		QCOMPARE(imports.count(), 1);
+		QCOMPARE(imports.first().at(0).toString(), QStringLiteral("/tmp/pack.mrpack"));
+		QCOMPARE(drop.commits, 0);
+		QCOMPARE(notified.count(), 0);
+	}
+
+	/* A drop of files nobody recognises still answers, by naming them. */
+	void unknownFilesStillGetAnAnswer()
+	{
+		QQmlEngine engine;
+		auto flow = createFlow(engine);
+		QVERIFY(flow);
+		FakeDrop drop;
+		drop.plan = FakeDrop::quietPlan();
+		drop.plan.insert(QStringLiteral("empty"), true);
+		drop.plan.insert(QStringLiteral("unknown"), QStringList{QStringLiteral("notes.txt")});
+
+		handle(flow.get(), &drop, {QStringLiteral("file:///tmp/notes.txt")});
+
+		QCOMPARE(drop.commits, 1);
+	}
+
+	/* An instance without a mod loader asks for one first; the install waits
+	 * for the answer and goes ahead when the gate resumes it. */
+	void aMissingLoaderIsAskedForBeforeInstalling()
+	{
+		QQmlEngine engine;
+		auto flow = createFlow(engine);
+		QVERIFY(flow);
+		FakeDrop drop;
+		drop.plan = FakeDrop::quietPlan();
+		drop.plan.insert(QStringLiteral("needsLoader"), true);
+
+		QQmlComponent holder(&engine);
+		holder.setData("import QtQuick\n"
+					   "QtObject {\n"
+					   "  property var pending: null\n"
+					   "  function gate(action) { pending = action; return true }\n"
+					   "  function resume() { pending() }\n"
+					   "}\n",
+					   QUrl(QStringLiteral("qrc:/test/Gate.qml")));
+		QVERIFY2(holder.isReady(), qPrintable(holder.errorString()));
+		std::unique_ptr<QObject> gate(holder.create());
+		QVERIFY(gate);
+		QQmlExpression make(engine.rootContext(), gate.get(),
+							QStringLiteral("gate"));
+		handle(flow.get(), &drop, {QStringLiteral("file:///tmp/a.jar")},
+			   make.evaluate());
+		QCOMPARE(drop.commits, 0);
+
+		QVERIFY(QMetaObject::invokeMethod(gate.get(), "resume"));
+		QCOMPARE(drop.commits, 1);
+	}
+
+	/* Without a way to ask (a tile of the library), mods still go in and the
+	 * toast says why they may not load. */
+	void aMissingLoaderIsWarnedAboutWhenNobodyCanAsk()
+	{
+		QQmlEngine engine;
+		auto flow = createFlow(engine);
+		QVERIFY(flow);
+		QSignalSpy notified(flow.get(), SIGNAL(notify(QString, QString)));
+		FakeDrop drop;
+		drop.plan = FakeDrop::quietPlan();
+		drop.plan.insert(QStringLiteral("needsLoader"), true);
+
+		handle(flow.get(), &drop, {QStringLiteral("file:///tmp/a.jar")});
+
+		QCOMPARE(drop.commits, 1);
+		QCOMPARE(notified.count(), 1);
+		QVERIFY(notified.first().at(0).toString().contains(QStringLiteral("no mod loader")));
+		QCOMPARE(notified.first().at(1).toString(), QStringLiteral("warning"));
 	}
 
 	/* A file dropped on the window opens import with it, unless a drop area
