@@ -649,6 +649,34 @@ class QmlModuleTest : public QObject
 			Q_ARG(QVariant, QVariant(urls)), Q_ARG(QVariant, gate)));
 	}
 
+	/* Dragging or double-clicking the top bar reaches the window (it used to
+	 * fail with "Cannot call method 'startSystemMove' of null"). */
+	void windowDragBandReachesItsWindow()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData("import QtQuick\n"
+						  "import Kite.Components\n"
+						  "Window {\n"
+						  "  width: 300; height: 200; visible: true\n"
+						  "  WindowDragBand { anchors.fill: parent }\n"
+						  "}\n",
+						  QUrl(QStringLiteral("qrc:/test/Band.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY(window);
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+
+		QTest::failOnWarning(QRegularExpression(QStringLiteral("TypeError")));
+		const QPoint at(150, 100);
+		QTest::mouseDClick(window, Qt::LeftButton, Qt::NoModifier, at);
+		QTest::mousePress(window, Qt::LeftButton, Qt::NoModifier, at);
+		QTest::mouseMove(window, at + QPoint(40, 5));
+		QTest::mouseRelease(window, Qt::LeftButton, Qt::NoModifier, at + QPoint(40, 5));
+	}
+
 	/* The overlay says what the drag holds, or only "Drop to add" while that
 	 * is not known. */
 	void dropOverlayNamesWhatIsDragged()

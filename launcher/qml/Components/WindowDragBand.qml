@@ -7,12 +7,22 @@ import QtQuick
 // macOS, title bar laid over the content: dragging this band moves the
 // window and a double click zooms it.
 Item {
+    id: band
+
+    // The attached Window.window is null inside a handler (it is not an Item), so it is read through the band.
     DragHandler {
         target: null
-        onActiveChanged: if (active) Window.window.startSystemMove()
+        onActiveChanged: if (active && band.Window.window) band.Window.window.startSystemMove()
     }
     TapHandler {
-        onDoubleTapped: Window.window.visibility === Window.Maximized ? Window.window.showNormal()
-                                                                      : Window.window.showMaximized()
+        onDoubleTapped: {
+            const window = band.Window.window
+            if (!window)
+                return
+            if (window.visibility === Window.Maximized)
+                window.showNormal()
+            else
+                window.showMaximized()
+        }
     }
 }
