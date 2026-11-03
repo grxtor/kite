@@ -156,4 +156,12 @@ AbstractButton {
             }
         }
     }
+
+    // Files dropped on the tile are added to this instance (Main.qml dropOnInstance).
+    InstanceDropTarget {
+        anchors.fill: parent
+        z: 10
+        instanceId: control.instanceId
+        radius: Theme.radius.md
+    }
 }

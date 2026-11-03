@@ -99,6 +99,7 @@ qt_add_qml_module(Kite_qml_components
         OnboardingView.qml
         WorldsTab.qml
         DropOverlay.qml
+        InstanceDropTarget.qml
         ContentDropFlow.qml
         ScreenshotsTab.qml
         LogTab.qml
