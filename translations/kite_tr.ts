@@ -3097,6 +3097,14 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FeaturedServers</name>
+    <message>
+        <location filename="../launcher/servers/FeaturedServers.cpp" line="+163"/>
+        <source>Featured servers</source>
+        <translation>Öne çıkan sunucular</translation>
+    </message>
+</context>
+<context>
     <name>FiltersButton</name>
     <message>
         <location filename="../launcher/qml/Components/FiltersButton.qml" line="+14"/>
@@ -3345,6 +3353,21 @@ Lütfen tekrar dene.</translation>
         <source>Friends needs a Minecraft account that is signed in with Microsoft.</source>
         <translation>Arkadaşlık için Microsoft ile giriş yapmış bir Minecraft hesabı gerekir.</translation>
     </message>
+    <message>
+        <location line="+46"/>
+        <source>%1 is here</source>
+        <translation>%1 burada</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 and %2 are here</source>
+        <translation>%1 ve %2 burada</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 and %2 others are here</source>
+        <translation>%1 ve %2 kişi daha burada</translation>
+    </message>
 </context>
 <context>
     <name>FriendConfirmDialog</name>
@@ -3408,7 +3431,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendJoinDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendJoinDialog.qml" line="+51"/>
+        <location filename="../launcher/qml/Components/FriendJoinDialog.qml" line="+38"/>
         <source>No Minecraft %1 instance</source>
         <translation>Minecraft %1 kurulumun yok</translation>
     </message>
@@ -3438,32 +3461,7 @@ Lütfen tekrar dene.</translation>
         <translation>Ya da başka bir sürümle katıl (bağlanamayabilir)</translation>
     </message>
     <message>
-        <location line="+52"/>
-        <source>Vanilla</source>
-        <translation>Vanilla</translation>
-    </message>
-    <message>
-        <location line="+9"/>
-        <source>%1, %2, running</source>
-        <translation>%1, %2, çalışıyor</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>%1, %2</source>
-        <translation>%1, %2</translation>
-    </message>
-    <message>
-        <location line="+59"/>
-        <source>Running</source>
-        <translation>Çalışıyor</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Can&apos;t start</source>
-        <translation>Başlatılamıyor</translation>
-    </message>
-    <message>
-        <location line="+18"/>
+        <location line="+30"/>
         <source>Create %1 instance</source>
         <translation>%1 kurulumu oluştur</translation>
     </message>
@@ -6536,6 +6534,34 @@ Kurulumu başlattığında indirilecekler.</translation>
         <location line="-5"/>
         <source>Close</source>
         <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>JoinInstanceList</name>
+    <message>
+        <location filename="../launcher/qml/Components/JoinInstanceList.qml" line="+89"/>
+        <source>Vanilla</source>
+        <translation>Vanilla</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>%1, %2, running</source>
+        <translation>%1, %2, çalışıyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1, %2</source>
+        <translation>%1, %2</translation>
+    </message>
+    <message>
+        <location line="+59"/>
+        <source>Running</source>
+        <translation>Çalışıyor</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Can&apos;t start</source>
+        <translation>Başlatılamıyor</translation>
     </message>
 </context>
 <context>
@@ -11563,6 +11589,73 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     </message>
 </context>
 <context>
+    <name>QuickJoinBar</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+125"/>
+        <source>More servers</source>
+        <translation>Diğer sunucular</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Join with %1</source>
+        <translation>%1 ile katıl</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Join…</source>
+        <translation>Katıl…</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Join with another instance…</source>
+        <translation>Başka bir kurulumla katıl…</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Copy address</source>
+        <translation>Adresi kopyala</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>%1 · %2 online</source>
+        <translation>%1 · %2 çevrimiçi</translation>
+    </message>
+</context>
+<context>
+    <name>QuickJoinEntry</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinEntry.qml" line="+35"/>
+        <source>Offline</source>
+        <translation>Çevrimdışı</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Join %1 with %2</source>
+        <translation>%2 ile %1 sunucusuna katıl</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Join %1</source>
+        <translation>%1 sunucusuna katıl</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <location line="+21"/>
+        <source>%1 online</source>
+        <translation>%1 çevrimiçi</translation>
+    </message>
+    <message>
+        <location line="-19"/>
+        <source>%1 ms</source>
+        <translation>%1 ms</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Not answering right now</source>
+        <translation>Şu an yanıt vermiyor</translation>
+    </message>
+</context>
+<context>
     <name>QuietPlayButton</name>
     <message>
         <location filename="../launcher/qml/Components/QuietPlayButton.qml" line="+25"/>
@@ -11943,6 +12036,92 @@ Currently installed version: %1</source>
     </message>
 </context>
 <context>
+    <name>ServerJoinDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/ServerJoinDialog.qml" line="+37"/>
+        <source>No instance for %1</source>
+        <translation>%1 için kurulum yok</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Join %1 with which instance?</source>
+        <translation>%1 sunucusuna hangi kurulumla katılınsın?</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>%1 takes Minecraft %2.</source>
+        <translation>%1, Minecraft %2 kabul ediyor.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>None of your instances can join %1.</source>
+        <translation>Kurulumlarının hiçbiri %1 sunucusuna katılamıyor.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 is on Minecraft %2.</source>
+        <translation>%1, Minecraft %2 sürümünde.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Or join with another version (may not connect)</source>
+        <translation>Ya da başka bir sürümle katıl (bağlanamayabilir)</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>New instance</source>
+        <translation>Yeni kurulum</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Join anyway</source>
+        <translation>Yine de katıl</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+</context>
+<context>
+    <name>ServerJoinFlow</name>
+    <message>
+        <location filename="../launcher/qml/Components/ServerJoinFlow.qml" line="+32"/>
+        <source>%1 to %2</source>
+        <translation>%1 – %2</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 or newer</source>
+        <translation>%1 veya daha yeni</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 or older</source>
+        <translation>%1 veya daha eski</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>%1 is already running. Quit it, then press Join.</source>
+        <translation>%1 zaten açık. Kapatıp Katıl&apos;a yeniden bas.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 can&apos;t start. Fix it, then press Join.</source>
+        <translation>%1 başlatılamıyor. Düzelttikten sonra Katıl&apos;a yeniden bas.</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>Starting %2 to join %1…</source>
+        <translation>%1 sunucusuna katılmak için %2 açılıyor…</translation>
+    </message>
+</context>
+<context>
     <name>ServersListModel</name>
     <message>
         <location filename="../launcher/models/ServersListModel.cpp" line="+311"/>
@@ -11953,12 +12132,12 @@ Currently installed version: %1</source>
 <context>
     <name>ServersTab</name>
     <message>
-        <location filename="../launcher/qml/Components/ServersTab.qml" line="+23"/>
+        <location filename="../launcher/qml/Components/ServersTab.qml" line="+28"/>
         <source>The game is running. The server list can be changed once it has closed.</source>
         <translation>Oyun çalışıyor. Sunucu listesi oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+20"/>
         <source>Ask</source>
         <translation>Sor</translation>
     </message>
@@ -11973,30 +12152,60 @@ Currently installed version: %1</source>
         <translation>Asla</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+26"/>
+        <source>Refresh</source>
+        <translation>Yenile</translation>
+    </message>
+    <message>
+        <location line="+4"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
         <location line="+8"/>
-        <location line="+106"/>
+        <location line="+177"/>
         <location line="+1"/>
         <source>Add server</source>
         <translation>Sunucu ekle</translation>
     </message>
     <message>
-        <location line="-73"/>
-        <location line="+115"/>
+        <location line="-138"/>
+        <location line="+180"/>
         <source>Minecraft Server</source>
         <translation>Minecraft Sunucusu</translation>
     </message>
     <message>
-        <location line="-114"/>
+        <location line="-177"/>
         <source>No address yet</source>
         <translation>Henüz adres yok</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+32"/>
+        <source>1 friend here</source>
+        <translation>1 arkadaş burada</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 friends here</source>
+        <translation>%1 arkadaş burada</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Can&apos;t reach</source>
+        <translation>Ulaşılamıyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 online</source>
+        <translation>%1 çevrimiçi</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>%1 ms</source>
+        <translation>%1 ms</translation>
+    </message>
+    <message>
+        <location line="+8"/>
         <source>Join</source>
         <translation>Katıl</translation>
     </message>
