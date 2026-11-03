@@ -10,7 +10,8 @@ export interface RateLimits {
   shareCodesPerHour: number;
   shareCodeFetchesPerHour: number;
   chatMessagesPerMinute: number;
-  chatReportsPerHour: number;
+  chatMessagesPerDay: number;
+  chatReportsPerDay: number;
   socketFramesPerMinute: number;
 }
 
@@ -41,8 +42,9 @@ export const defaultRateLimits: RateLimits = {
   shareCodesPerHour: 20,
   shareCodeFetchesPerHour: 30,
   chatMessagesPerMinute: 30,
-  chatReportsPerHour: 10,
-  socketFramesPerMinute: 60,
+  chatMessagesPerDay: 2000,
+  chatReportsPerDay: 20,
+  socketFramesPerMinute: 120,
 };
 
 function positiveInt(env: Record<string, string | undefined>, key: string, fallback: number): number {

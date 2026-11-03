@@ -1,6 +1,6 @@
 import type pg from 'pg';
 import { publishEvent } from './bus.ts';
-import { day, hour, minute, type Context } from './context.ts';
+import { day, minute, type Context } from './context.ts';
 import { withTransaction } from './db.ts';
 import { badRequest, notFound } from './errors.ts';
 import { cleanText } from './status.ts';
@@ -86,6 +86,7 @@ function cleanMessage(raw: string): string {
 /** Sends a message to a friend and pushes it to both players' sockets except `origin`. */
 export async function sendMessage(ctx: Context, me: string, toRaw: string, rawText: string, origin?: string): Promise<MessageJson> {
   ctx.limit(`chat:${me}`, ctx.config.rateLimits.chatMessagesPerMinute, minute);
+  ctx.limit(`chat-day:${me}`, ctx.config.rateLimits.chatMessagesPerDay, day);
   const to = toRaw.toLowerCase();
   if (to === me) throw badRequest('That is you');
   const text = cleanMessage(rawText);
@@ -171,7 +172,7 @@ export async function unreadCounts(db: Queryable, me: string, now: Date): Promis
 
 /** Files a report on a message `other` sent to `me`, with a copy of it and what came before. */
 export async function reportMessage(ctx: Context, me: string, otherRaw: string, id: string, reason: ReportReason): Promise<void> {
-  ctx.limit(`chat-reports:${me}`, ctx.config.rateLimits.chatReportsPerHour, hour);
+  ctx.limit(`chat-reports:${me}`, ctx.config.rateLimits.chatReportsPerDay, day);
   const other = otherRaw.toLowerCase();
   const cutoff = retentionCutoff(ctx.now());
   // Allowed after a block too: blocking and then reporting is the usual order.
@@ -206,12 +207,15 @@ export async function reportMessage(ctx: Context, me: string, otherRaw: string, 
 
 /**
  * Empties what `uuid` sent and hides what they received, for account deletion. Returns the
- * players who still see placeholders for their messages.
+ * players, other than blocked ones, who now see placeholders for their messages.
  */
 export async function forgetMessages(client: pg.PoolClient, uuid: string): Promise<string[]> {
+  // Nothing crosses a block, not even this.
   const { rows } = await client.query<{ uuid: string }>(
-    `select distinct recipient_uuid as uuid from messages
-     where sender_uuid = $1 and text is not null and not hidden_for_recipient`,
+    `select distinct m.recipient_uuid as uuid from messages m
+     where m.sender_uuid = $1 and m.text is not null and not m.hidden_for_recipient
+       and not exists (select 1 from blocks b where (b.blocker = $1 and b.blocked = m.recipient_uuid)
+                                              or (b.blocker = m.recipient_uuid and b.blocked = $1))`,
     [uuid],
   );
   await client.query('update messages set text = null, hidden_for_sender = true where sender_uuid = $1', [uuid]);
@@ -225,8 +229,11 @@ export async function forgetMessages(client: pg.PoolClient, uuid: string): Promi
   return rows.map((row) => row.uuid);
 }
 
-/** Removes messages past retention and old reports. */
+/** Removes messages past retention, the read markers left pointing at them, and old reports. */
 export async function purgeMessages(db: Queryable, now: Date): Promise<void> {
   await db.query('delete from messages where created_at <= $1', [retentionCutoff(now)]);
+  // Ids only grow, so a marker below the oldest message left counts nothing as read and only
+  // records that two players once talked.
+  await db.query('delete from chat_reads where last_read_id < coalesce((select min(id) from messages), 9223372036854775807)');
   await db.query('delete from chat_reports where created_at <= $1', [new Date(now.getTime() - reportRetentionDays * day)]);
 }

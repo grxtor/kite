@@ -16,8 +16,9 @@ describe('defaultRateLimits', () => {
       shareCodesPerHour: 20,
       shareCodeFetchesPerHour: 30,
       chatMessagesPerMinute: 30,
-      chatReportsPerHour: 10,
-      socketFramesPerMinute: 60,
+      chatMessagesPerDay: 2000,
+      chatReportsPerDay: 20,
+      socketFramesPerMinute: 120,
     });
   });
 });

@@ -147,7 +147,8 @@ const relaxedRateLimits: RateLimits = {
   shareCodesPerHour: RELAXED_LIMIT,
   shareCodeFetchesPerHour: RELAXED_LIMIT,
   chatMessagesPerMinute: RELAXED_LIMIT,
-  chatReportsPerHour: RELAXED_LIMIT,
+  chatMessagesPerDay: RELAXED_LIMIT,
+  chatReportsPerDay: RELAXED_LIMIT,
   socketFramesPerMinute: RELAXED_LIMIT,
 };
 

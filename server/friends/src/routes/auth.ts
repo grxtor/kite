@@ -78,7 +78,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Context, clientIp:
       const token = tokenPrefix + randomBytes(32).toString('base64url');
       const now = ctx.now();
       const expiresAt = new Date(now.getTime() + ctx.config.sessionTtlDays * day);
-      await withTransaction(ctx.pool, async (client) => {
+      const dropped = await withTransaction(ctx.pool, async (client) => {
         const consumed = await client.query('delete from challenges where id = $1 and expires_at > $2', [
           challengeId,
           now,
@@ -90,16 +90,20 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Context, clientIp:
              name_seen_at = excluded.name_seen_at`,
           [profile.uuid, profile.name, now],
         );
-        await client.query(
+        const trimmed = await client.query<{ token_hash: Buffer }>(
           `delete from sessions where token_hash in (
-             select token_hash from sessions where user_uuid = $1 order by seq desc offset $2)`,
+             select token_hash from sessions where user_uuid = $1 order by seq desc offset $2)
+           returning token_hash`,
           [profile.uuid, maxSessionsPerUser - 1],
         );
         await client.query(
           'insert into sessions (token_hash, user_uuid, created_at, expires_at) values ($1, $2, $3, $4)',
           [hashToken(token), profile.uuid, now, expiresAt],
         );
+        return trimmed.rows;
       });
+      // A socket signed in with a dropped token closes like one whose token was logged out.
+      for (const { token_hash } of dropped) ctx.bus.publish(profile.uuid, { kind: 'end', tokenHash: token_hash.toString('hex') });
       return { token, expiresAt: expiresAt.toISOString(), user: userJson(profile) };
     },
   );

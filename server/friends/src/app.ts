@@ -59,6 +59,9 @@ export async function buildApp({ config, pool, clock = Date.now, bus = new Memor
   });
   const ctx = createContext({ config, pool, clock, limiter: new RateLimiter(clock), bus, log: app.log });
   const clientIp = clientIpReader(config);
+  // First, so its hooks run before ours: an upgrade refused by any later hook still gets its
+  // socket closed instead of left open.
+  await app.register(fastifyWebsocket, { options: { maxPayload: maxFrameBytes } });
 
   app.decorateRequest('user', null);
 
@@ -87,7 +90,6 @@ export async function buildApp({ config, pool, clock = Date.now, bus = new Memor
   });
 
   registerAuthRoutes(app, ctx, clientIp);
-  await app.register(fastifyWebsocket, { options: { maxPayload: maxFrameBytes } });
 
   await app.register(async (scope) => {
     scope.addHook('onRequest', authenticator(ctx));

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { request } from 'node:http';
-import type { Socket } from 'node:net';
+import { connect, type Socket } from 'node:net';
 
 export interface ServerFrame {
   type: string;
@@ -126,5 +126,24 @@ export function silentSocket(baseUrl: string, token: string): Promise<{ closed: 
     req.on('response', (res) => reject(new Error(`upgrade refused with ${res.statusCode}`)));
     req.on('error', reject);
     req.end();
+  });
+}
+
+/**
+ * Sends an upgrade request over a bare TCP socket and resolves with the status line's code once
+ * the server has closed the connection, so a refused upgrade that is left open times out.
+ */
+export function refusedUpgradeCloses(baseUrl: string, headers: Record<string, string>): Promise<number> {
+  const url = new URL(baseUrl);
+  return new Promise((resolve, reject) => {
+    const socket = connect(Number(url.port), url.hostname);
+    let received = '';
+    socket.on('data', (chunk) => {
+      received += chunk.toString('latin1');
+    });
+    socket.on('close', () => resolve(Number(/^HTTP\/1\.1 (\d+)/.exec(received)?.[1] ?? 0)));
+    socket.on('error', reject);
+    const lines = Object.entries({ host: url.host, ...upgradeHeaders(headers) }).map(([key, value]) => `${key}: ${value}`);
+    socket.write(`GET /v1/ws HTTP/1.1\r\n${lines.join('\r\n')}\r\n\r\n`);
   });
 }

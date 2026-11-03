@@ -48,7 +48,15 @@ type ClientFrame =
   | { type: 'chat.send'; ref?: string; to: string; text: string }
   | { type: 'chat.read'; ref?: string; with: string; upTo: string };
 
-class FrameError extends Error {}
+/** A frame that cannot be handled. `ref` is the frame's own when it had a valid one. */
+class FrameError extends Error {
+  readonly ref: string | undefined;
+
+  constructor(message: string, ref?: string) {
+    super(message);
+    this.ref = ref;
+  }
+}
 
 function parseFrame(text: string): ClientFrame {
   let frame: unknown;
@@ -59,19 +67,19 @@ function parseFrame(text: string): ClientFrame {
   }
   if (typeof frame !== 'object' || frame === null || Array.isArray(frame)) throw new FrameError('Not an object');
   const raw = frame as Record<string, unknown>;
-  const fields =
-    raw.type === 'chat.send' ? ['type', 'ref', 'to', 'text'] : raw.type === 'chat.read' ? ['type', 'ref', 'with', 'upTo'] : null;
-  if (!fields) throw new FrameError('Unknown type');
-  if (Object.keys(raw).some((key) => !fields.includes(key))) throw new FrameError('A field is not allowed');
   if (raw.ref !== undefined && (typeof raw.ref !== 'string' || !refPattern.test(raw.ref))) throw new FrameError('Bad ref');
   const ref = raw.ref as string | undefined;
+  const fields =
+    raw.type === 'chat.send' ? ['type', 'ref', 'to', 'text'] : raw.type === 'chat.read' ? ['type', 'ref', 'with', 'upTo'] : null;
+  if (!fields) throw new FrameError('Unknown type', ref);
+  if (Object.keys(raw).some((key) => !fields.includes(key))) throw new FrameError('A field is not allowed', ref);
   if (raw.type === 'chat.send') {
-    if (typeof raw.to !== 'string' || !uuidRegex.test(raw.to)) throw new FrameError('to is not a uuid');
-    if (typeof raw.text !== 'string') throw new FrameError('text is not a string');
+    if (typeof raw.to !== 'string' || !uuidRegex.test(raw.to)) throw new FrameError('to is not a uuid', ref);
+    if (typeof raw.text !== 'string') throw new FrameError('text is not a string', ref);
     return { type: 'chat.send', ref, to: raw.to, text: raw.text };
   }
-  if (typeof raw.with !== 'string' || !uuidRegex.test(raw.with)) throw new FrameError('with is not a uuid');
-  if (!isMessageId(raw.upTo)) throw new FrameError('upTo is not a message id');
+  if (typeof raw.with !== 'string' || !uuidRegex.test(raw.with)) throw new FrameError('with is not a uuid', ref);
+  if (!isMessageId(raw.upTo)) throw new FrameError('upTo is not a message id', ref);
   return { type: 'chat.read', ref, with: raw.with, upTo: raw.upTo };
 }
 
@@ -110,7 +118,7 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
       }
     } catch (error) {
       if (error instanceof FrameError) {
-        send(conn, { type: 'error', ref, error: 'bad_request', message: error.message });
+        send(conn, { type: 'error', ref: error.ref, error: 'bad_request', message: error.message });
       } else if (error instanceof HttpError) {
         const retryAfter = error.retryAfterSeconds ?? undefined;
         send(conn, { type: 'error', ref, error: error.code, message: error.message, retryAfter });
