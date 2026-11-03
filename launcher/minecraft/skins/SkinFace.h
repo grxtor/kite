@@ -27,6 +27,8 @@ namespace SkinFace
 {
 	/// The face (8x8 at (8,8)) with the hat overlay (8x8 at (40,8)) drawn over
 	/// it, at native size. Hat pixels with alpha 0 leave the face untouched.
+	/// Like the game, a 64x32 skin whose overlay area is opaque all over has
+	/// no hat.
 	/// Null if @p skin is too small to hold both regions.
 	QImage fromSkin(const QImage& skin);
 } // namespace SkinFace

@@ -173,6 +173,33 @@ class FriendsFacesTest : public QObject
 		QCOMPARE(FriendsFaces::faceFromSkinPng(skinPng(32)).size(), QSize(8, 8));
 	}
 
+	/* Skins from before 1.8 often filled the overlay with black, which the
+	 * game leaves out; the head is the face under it, not a black square. */
+	void anOldSkinWithAFilledOverlayShowsTheFace()
+	{
+		QImage skin(64, 32, QImage::Format_ARGB32);
+		skin.fill(Qt::black);
+		for (int y = 0; y < 8; ++y) {
+			for (int x = 0; x < 8; ++x) {
+				skin.setPixelColor(8 + x, 8 + y, Qt::red);
+			}
+		}
+		QByteArray png;
+		QBuffer buffer(&png);
+		buffer.open(QIODevice::WriteOnly);
+		skin.save(&buffer, "PNG");
+		const QImage face = FriendsFaces::faceFromSkinPng(png);
+		QCOMPARE(face.pixelColor(0, 0), QColor(Qt::red));
+		QCOMPARE(face.pixelColor(7, 7), QColor(Qt::red));
+
+		/* With any see-through pixel in it, the overlay is a real hat. */
+		skin.setPixelColor(63, 31, Qt::transparent);
+		png.clear();
+		buffer.seek(0);
+		skin.save(&buffer, "PNG");
+		QCOMPARE(FriendsFaces::faceFromSkinPng(png).pixelColor(0, 0), QColor(Qt::black));
+	}
+
 	void whatIsNotASkinHasNoFace()
 	{
 		QVERIFY(FriendsFaces::faceFromSkinPng("not a png").isNull());
