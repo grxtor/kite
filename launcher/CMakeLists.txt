@@ -685,6 +685,8 @@ set(JAVA_SOURCES
     java/JavaVersion.cpp
     java/JavaArgs.h
     java/JavaArgs.cpp
+    java/GpuPreference.h
+    java/GpuPreference.cpp
 )
 
 if(NOT Kite_DISABLE_JAVA_DOWNLOADER)
@@ -698,6 +700,11 @@ endif()
 add_unit_test(JavaVersion
     SOURCES java/JavaVersion_test.cpp
     LIBS Kite_logic
+    )
+
+add_unit_test(GpuPreference
+    SOURCES java/GpuPreference_test.cpp
+    LIBS Kite_core
     )
 
 add_unit_test(JavaRuntime

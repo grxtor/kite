@@ -26,6 +26,12 @@
 #include "Commandline.h"
 #include "launch/LaunchTask.h"
 
+#ifdef Q_OS_WIN
+#include "core/LauncherContext.h"
+#include "java/GpuPreference.h"
+#include "settings/SettingsObject.h"
+#endif
+
 GameProcessStep::GameProcessStep(LaunchTask* parent) : LaunchStep(parent)
 {
 	connect(&m_process, &LoggedProcess::log, this, &GameProcessStep::logLines);
@@ -74,6 +80,9 @@ void GameProcessStep::startProcess(const QString& javaPath, QStringList args,
 								   const char* wrapperMissingLog,
 								   const QString& wrapperMissing)
 {
+#ifdef Q_OS_WIN
+	GpuPreference::applyForLaunch(*LAUNCHER->settings(), javaPath);
+#endif
 	QString wrapperCommandStr = m_parent->wrapperCommand();
 	if (!wrapperCommandStr.isEmpty()) {
 		auto wrapperArgs = Commandline::splitArgs(wrapperCommandStr);

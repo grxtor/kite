@@ -12844,6 +12844,16 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+6"/>
+        <source>Use the high-performance graphics card</source>
+        <translation>Yüksek performanslı ekran kartını kullan</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>For computers with two graphics cards: Java runs on the faster one. A choice you made for Java in the Windows graphics settings stays.</source>
+        <translation>İki ekran kartı olan bilgisayarlar için: Java daha hızlı olanda çalışır. Windows grafik ayarlarında Java için yaptığın seçim korunur.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Automatic Java</source>
         <translation>Otomatik Java</translation>
     </message>

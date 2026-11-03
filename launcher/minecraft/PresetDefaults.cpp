@@ -29,13 +29,33 @@ namespace
 	constexpr quint64 kMiBPerGiB = 1024;
 	constexpr int kMemoryStepMiB = 512;
 	constexpr int kLeastMaxMemoryMiB = 1024;
+	constexpr int kSmallMinMemoryMiB = 512;
+	/* Firmware, the kernel and integrated graphics keep part of the RAM out
+	 * of what the system reports: a machine counts as having a tier's RAM
+	 * when it reports at least 7/8 of it (15.8 GiB is a 16 GB machine). */
+	constexpr quint64 kReportedShareOf = 8;
+	constexpr quint64 kReportedShare = 7;
 
 	struct MemoryTier {
 		quint64 minRamGiB;
 		int maxMemoryMiB;
+		int minMemoryMiB;
 	};
 	/* Largest first. */
-	constexpr MemoryTier kMemoryTiers[] = {{32, 6144}, {16, 4096}, {8, 3072}};
+	constexpr MemoryTier kMemoryTiers[] = {
+		{32, 6144, 1024}, {16, 4096, 1024}, {8, 3072, 512}};
+
+	/// The tier @p systemRamMiB falls in, or null below the smallest.
+	const MemoryTier* memoryTier(quint64 systemRamMiB)
+	{
+		for (const MemoryTier& tier : kMemoryTiers) {
+			if (systemRamMiB * kReportedShareOf >=
+				tier.minRamGiB * kMiBPerGiB * kReportedShare) {
+				return &tier;
+			}
+		}
+		return nullptr;
+	}
 
 	constexpr int kFirstModernMinor = 13;
 	constexpr int kFirstNumberedMajor = 2;
@@ -48,13 +68,17 @@ namespace
 
 int PresetDefaults::maxMemoryMiB(quint64 systemRamMiB)
 {
-	for (const MemoryTier& tier : kMemoryTiers) {
-		if (systemRamMiB >= tier.minRamGiB * kMiBPerGiB) {
-			return tier.maxMemoryMiB;
-		}
+	if (const MemoryTier* tier = memoryTier(systemRamMiB)) {
+		return tier->maxMemoryMiB;
 	}
 	const int half = int(systemRamMiB / 2);
 	return std::max(kLeastMaxMemoryMiB, half - half % kMemoryStepMiB);
+}
+
+int PresetDefaults::minMemoryMiB(quint64 systemRamMiB)
+{
+	const MemoryTier* tier = memoryTier(systemRamMiB);
+	return tier ? tier->minMemoryMiB : kSmallMinMemoryMiB;
 }
 
 bool PresetDefaults::usesLegacyOptions(const QString& mcVersion)
