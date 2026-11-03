@@ -21,13 +21,13 @@ interface HistoryBody {
 }
 
 interface ReportRow {
-  reporter_uuid: string;
+  reporter_uuid: string | null;
   reported_uuid: string;
   message_id: string;
   reason: string;
   snapshot: {
     reported: { uuid: string; name: string | null };
-    messages: { id: string; from: string; text: string | null; createdAt: string }[];
+    messages: { id: string; from: 'reporter' | 'reported'; text: string | null; createdAt: string }[];
   };
 }
 
@@ -435,7 +435,10 @@ describe('chat', () => {
           reason: 'harassment',
           snapshot: {
             reported: { uuid: a.uuid, name: a.name },
-            messages: [first, second].map(({ id, from, text, createdAt }) => ({ id, from, text, createdAt })),
+            messages: [
+              { id: first.id, from: 'reporter', text: 'hey', createdAt: first.createdAt },
+              { id: second.id, from: 'reported', text: 'something nasty', createdAt: second.createdAt },
+            ],
           },
         },
       );
@@ -581,12 +584,26 @@ describe('chat', () => {
       await socket.none('chat.deleted');
     });
 
-    test('reports they filed go with them', async () => {
+    test('a report they filed stays, with nothing in it that points at them', async () => {
       const { a, b } = await friends();
+      await sent(s, b, a, 'leave me alone');
       const message = await sent(s, a, b, 'nasty');
       await chat.report(b, a, message.id);
+      // pg returns the bigint id as a string.
+      const [filed] = await s.query<ReportRow & { id: string }>('select * from chat_reports where reporter_uuid = $1', [b.uuid]);
       await s.api('DELETE', '/v1/me', { token: b.token });
-      assert.equal((await s.query('select 1 from chat_reports where reporter_uuid = $1', [b.uuid])).length, 0);
+      const [kept] = await s.query<ReportRow & { id: string }>('select * from chat_reports where id = $1', [filed!.id]);
+      assert.deepEqual(kept, { ...filed, reporter_uuid: null });
+      assert.equal(kept!.reported_uuid, a.uuid);
+      assert.deepEqual(
+        kept!.snapshot.messages.map((m) => [m.from, m.text]),
+        [
+          ['reporter', 'leave me alone'],
+          ['reported', 'nasty'],
+        ],
+      );
+      assert.ok(!JSON.stringify(kept).includes(b.uuid), 'the report still names the reporter');
+      assert.ok(!JSON.stringify(kept).includes(b.name), 'the report still names the reporter');
     });
   });
 

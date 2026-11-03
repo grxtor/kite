@@ -206,8 +206,9 @@ DELETE /v1/me
 
 `204`. Deletes the account and everything stored about it: tokens, status,
 settings, friendships, requests and invites in both directions, your share
-codes, the blocks you placed, your read markers and the reports you filed.
-The text of every chat message you sent is deleted; the people you wrote to
+codes, the blocks you placed and your read markers. Reports you filed stay
+as evidence but lose your UUID (see [Reports](#reports)). The text of every
+chat message you sent is deleted; the people you wrote to
 keep a placeholder (`"text": null, "deleted": true`) until it ages out, and
 are told with a [`chat.deleted`](#events) event. Messages you received are
 hidden from you for good. Blocks other players placed on you stay, because
@@ -753,6 +754,12 @@ it in the conversation (from both of you) and the reported player's name,
 for moderation; reporting the same message again changes nothing. `404` if
 no such message from that player to you is visible. 20 reports a day.
 
+In the copy each message says only which side wrote it (`"from":
+"reporter"` or `"reported"`), not who the reporter is. If the reporter
+deletes their account, the report stays, so the evidence against the
+reported player is not lost; its `reporter_uuid` becomes `null`, and nothing
+left in it points at the deleted account.
+
 There is no moderation screen yet. Reports are read in the database:
 
 ```sql
@@ -790,7 +797,8 @@ GET /healthz
 ## Privacy
 
 What the server stores, all of it deleted by `DELETE /v1/me` (except blocks
-other players placed on you and reports they filed about your messages):
+other players placed on you, reports they filed about your messages, and
+reports you filed, which are kept without your UUID):
 
 - Minecraft UUID and name, and when they were last seen
 - Settings
@@ -811,9 +819,11 @@ other players placed on you and reports they filed about your messages):
   messages they point at.
 - Chat reports: who reported whom, the reason, and a copy of the reported
   message with up to 20 messages before it and the reported player's name.
-  Kept 180 days so a moderator can act on them, even after the messages age
-  out or the reported player deletes their account. A report you filed is
-  deleted with your account.
+  The copy marks each message as the reporter's or the reported player's,
+  without the reporter's UUID. Kept 180 days so a moderator can act on
+  them, even after the messages age out or either player deletes their
+  account. When the reporter deletes theirs, the report keeps the copy and
+  loses the reporter's UUID, so it no longer leads back to them.
 - Session tokens, stored only as SHA-256 hashes
 
 Raw IP and local server addresses are not stored unless `shareIpServers` is

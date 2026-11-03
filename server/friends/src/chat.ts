@@ -193,7 +193,8 @@ export async function reportMessage(ctx: Context, me: string, otherRaw: string, 
     reported: { uuid: other, name: names[0]?.name ?? null },
     messages: [...before.reverse(), message].map(({ id: messageId, sender_uuid, text, created_at }) => ({
       id: messageId,
-      from: sender_uuid,
+      // A side, not a uuid: once the reporter deletes their account nothing in the copy names them.
+      from: sender_uuid === other ? 'reported' : 'reporter',
       text,
       createdAt: created_at.toISOString(),
     })),

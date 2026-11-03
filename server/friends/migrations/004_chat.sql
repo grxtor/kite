@@ -27,10 +27,11 @@ create table chat_reads (
 create index chat_reads_other_idx on chat_reads (other_uuid);
 
 -- A report keeps a copy of the message and what came before it, so it outlives retention
--- and the reported player deleting their account.
+-- and the reported player deleting their account. When the reporter deletes theirs, the
+-- report stays as evidence and only loses who filed it.
 create table chat_reports (
   id bigint generated always as identity primary key,
-  reporter_uuid uuid not null references users on delete cascade,
+  reporter_uuid uuid references users on delete set null,
   reported_uuid uuid not null,
   message_id bigint not null,
   reason text not null check (reason in ('spam', 'harassment', 'other')),
