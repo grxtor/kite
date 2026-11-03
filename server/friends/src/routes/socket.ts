@@ -39,6 +39,8 @@ interface Connection {
   tokenHash: string;
   socket: Socket;
   alive: boolean;
+  /** Set once the session behind the socket is gone; nothing it sends is handled after that. */
+  ended: boolean;
   rateLimited: boolean;
   queue: Promise<void>;
   unsubscribe: () => void;
@@ -103,7 +105,14 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
     else byUser.delete(conn.user.uuid);
   }
 
+  // A client that ignores the close frame keeps its socket open until `ws` gives up on it.
+  function end(conn: Connection): void {
+    conn.ended = true;
+    conn.socket.close(closeCodes.sessionEnded, 'Session ended');
+  }
+
   async function handleFrame(conn: Connection, text: string): Promise<void> {
+    if (conn.ended) return;
     let ref: string | undefined;
     try {
       const frame = parseFrame(text);
@@ -136,6 +145,7 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
       tokenHash: user.tokenHash.toString('hex'),
       socket,
       alive: true,
+      ended: false,
       rateLimited: false,
       queue: Promise.resolve(),
       unsubscribe: () => {},
@@ -148,9 +158,7 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
 
     conn.unsubscribe = ctx.bus.subscribe(user.uuid, (message) => {
       if (message.kind === 'end') {
-        if (message.tokenHash === undefined || message.tokenHash === conn.tokenHash) {
-          socket.close(closeCodes.sessionEnded, 'Session ended');
-        }
+        if (message.tokenHash === undefined || message.tokenHash === conn.tokenHash) end(conn);
       } else if (message.exceptConnection !== conn.id) {
         send(conn, message.event);
       }
@@ -161,11 +169,13 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
     });
     socket.on('close', () => forget(conn));
     socket.on('message', (data, isBinary) => {
+      if (conn.ended) return;
       if (isBinary) {
         socket.close(closeCodes.textOnly, 'Text frames only');
         return;
       }
-      const hit = ctx.limiter.hit(`socket:${conn.id}`, ctx.config.rateLimits.socketFramesPerMinute, minute);
+      // Per player rather than per socket, so reconnecting does not start a fresh window.
+      const hit = ctx.limiter.hit(`socket:${user.uuid}`, ctx.config.rateLimits.socketFramesPerMinute, minute);
       if (!hit.ok) {
         // One error per window; the frames after it are dropped quietly.
         if (!conn.rateLimited) {
@@ -188,7 +198,7 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
     const now = ctx.now();
     for (const conn of [...byUser.values()].flat()) {
       if (now >= conn.user.sessionExpiresAt) {
-        conn.socket.close(closeCodes.sessionEnded, 'Session ended');
+        end(conn);
       } else if (!conn.alive) {
         conn.socket.terminate();
       } else {

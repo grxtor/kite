@@ -147,3 +147,58 @@ export function refusedUpgradeCloses(baseUrl: string, headers: Record<string, st
     socket.write(`GET /v1/ws HTTP/1.1\r\n${lines.join('\r\n')}\r\n\r\n`);
   });
 }
+
+function maskedTextFrame(text: string): Buffer {
+  const payload = Buffer.from(text, 'utf8');
+  assert.ok(payload.length < 65_536);
+  const header =
+    payload.length < 126
+      ? Buffer.from([0x81, 0x80 | payload.length])
+      : Buffer.from([0x81, 0x80 | 126, payload.length >> 8, payload.length & 0xff]);
+  const mask = randomBytes(4);
+  const masked = Buffer.from(payload.map((byte, i) => byte ^ mask[i % 4]!));
+  return Buffer.concat([header, mask, masked]);
+}
+
+export interface RawSocket {
+  /** The code of the first close frame the server sends. */
+  closeCode: Promise<number>;
+  sendText: (text: string) => void;
+  destroy: () => void;
+}
+
+/** A socket that speaks frames by hand and never answers pings or the server's close frame. */
+export function rawSocket(baseUrl: string, token: string): Promise<RawSocket> {
+  return new Promise((resolve, reject) => {
+    const req = request(`${baseUrl}/v1/ws`, { headers: upgradeHeaders({ authorization: `Bearer ${token}` }) });
+    req.on('upgrade', (_res, socket: Socket, head: Buffer) => {
+      let buffered = head;
+      let onClose: (code: number) => void = () => {};
+      const closeCode = new Promise<number>((done) => {
+        onClose = done;
+      });
+      // Server frames are unmasked and small here: two header bytes, or four with a 16-bit length.
+      const drain = () => {
+        while (buffered.length >= 2) {
+          const opcode = buffered[0]! & 0x0f;
+          const short = buffered[1]! & 0x7f;
+          const start = short === 126 ? 4 : 2;
+          if (buffered.length < start) return;
+          const length = short === 126 ? buffered.readUInt16BE(2) : short;
+          if (buffered.length < start + length) return;
+          if (opcode === 0x8) onClose(buffered.readUInt16BE(start));
+          buffered = buffered.subarray(start + length);
+        }
+      };
+      socket.on('data', (chunk: Buffer) => {
+        buffered = Buffer.concat([buffered, chunk]);
+        drain();
+      });
+      drain();
+      resolve({ closeCode, sendText: (text) => socket.write(maskedTextFrame(text)), destroy: () => socket.destroy() });
+    });
+    req.on('response', (res) => reject(new Error(`upgrade refused with ${res.statusCode}`)));
+    req.on('error', reject);
+    req.end();
+  });
+}

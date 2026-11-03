@@ -3,7 +3,7 @@ import { after, before, describe, test } from 'node:test';
 import { closeCodes, maxConnectionsPerUser, maxFrameBytes } from '../src/routes/socket.ts';
 import { makeUuid, startServer } from './helpers.ts';
 import type { Player, TestServer } from './helpers.ts';
-import { refusedUpgradeCloses, silentSocket, TestSocket, upgradeStatus } from './socketClient.ts';
+import { rawSocket, refusedUpgradeCloses, silentSocket, TestSocket, upgradeStatus } from './socketClient.ts';
 
 const DAY = 24 * 60 * 60;
 
@@ -87,6 +87,24 @@ describe('socket', () => {
       const sockets = [await s.connect(a), await s.connect(other)];
       await s.api('DELETE', '/v1/me', { token: a.token });
       for (const socket of sockets) assert.equal((await socket.closed).code, closeCodes.sessionEnded);
+    });
+
+    test('a socket that ignores the close frame gets nothing more handled', async () => {
+      const { a, b } = await friends();
+      const sb = await s.connect(b);
+      const raw = await rawSocket(s.baseUrl, a.token);
+      try {
+        raw.sendText(JSON.stringify({ type: 'chat.send', to: b.uuid, text: 'before' }));
+        assert.equal(((await sb.next('chat.message')).message as { text: string }).text, 'before');
+        await s.api('POST', '/v1/auth/logout', { token: a.token });
+        assert.equal(await raw.closeCode, closeCodes.sessionEnded);
+        raw.sendText(JSON.stringify({ type: 'chat.send', to: b.uuid, text: 'after' }));
+        await sb.none('chat.message', 300);
+        const texts = await s.query<{ text: string }>('select text from messages where sender_uuid = $1', [a.uuid]);
+        assert.deepEqual(texts, [{ text: 'before' }]);
+      } finally {
+        raw.destroy();
+      }
     });
 
     test('a token dropped by the eleventh sign-in closes its socket', async () => {
@@ -330,6 +348,15 @@ describe('socket', () => {
         assert.deepEqual(invisible.status, { state: 'offline', lastSeenAt: null });
       });
 
+      test('a settings change friends cannot see pushes nothing', async () => {
+        const { a, b } = await friends();
+        await s.api('PUT', '/v1/me/status', { token: a.token, body: { state: 'online' } });
+        const socket = await s.connect(b);
+        await s.api('PATCH', '/v1/me/settings', { token: a.token, body: { allowInvites: false } });
+        await s.api('PATCH', '/v1/me/settings', { token: a.token, body: { hideServer: false } });
+        await socket.none('friend.status');
+      });
+
       test('is not pushed to players who are not friends', async () => {
         const a = await s.newPlayer();
         const stranger = await s.newPlayer();
@@ -372,15 +399,24 @@ describe('socket rate limits', () => {
     }
   });
 
-  test('the limit is per socket', async () => {
-    const s = await startServer({ rateLimits: { socketFramesPerMinute: 1 } });
+  test('the limit is shared by a player\'s sockets and outlasts reconnecting', async () => {
+    const s = await startServer({ rateLimits: { socketFramesPerMinute: 2 } });
     try {
       const a = await s.newPlayer();
+      const b = await s.newPlayer();
       const [first, second] = [await s.connect(a), await s.connect(a)];
       first.send({ type: 'nope' });
-      second.send({ type: 'nope' });
       assert.equal((await first.next('error')).error, 'bad_request');
+      second.send({ type: 'nope' });
       assert.equal((await second.next('error')).error, 'bad_request');
+      second.close();
+      await second.closed;
+      const third = await s.connect(a);
+      third.send({ type: 'nope' });
+      assert.equal((await third.next('error')).error, 'rate_limited');
+      const theirs = await s.connect(b);
+      theirs.send({ type: 'nope' });
+      assert.equal((await theirs.next('error')).error, 'bad_request');
     } finally {
       await s.close();
     }

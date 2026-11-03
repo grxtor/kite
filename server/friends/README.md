@@ -608,11 +608,12 @@ Every frame either way is a JSON object in a text frame, with a `type`.
 - A frame is at most 16 KB (close `1009`). Binary frames close the socket
   with `1003`. A client that does not read what it is sent, so that more
   than 1 MB waits for it, is dropped.
-- A socket may send 120 frames a minute. Past that it gets one
-  `rate_limited` error, and frames are dropped until the minute is over.
+- A player's sockets together may send 120 frames a minute, and
+  reconnecting does not start the minute again. Past that each socket gets
+  one `rate_limited` error, and frames are dropped until the minute is over.
 - `4401` means the session ended: logged out, dropped by an eleventh
-  sign-in, expired, or the account was deleted. Sign in again before
-  reconnecting. For any other close, reconnect with a growing delay (1 s,
+  sign-in, expired, or the account was deleted. Nothing sent after it is
+  handled. Sign in again before reconnecting. For any other close, reconnect with a growing delay (1 s,
   2 s, 4 s, up to a minute); Cloudflare also drops sockets when it updates
   its servers.
 
@@ -628,7 +629,7 @@ in `GET /v1/friends`.
 
 | `type` | Fields | When |
 |---|---|---|
-| `friend.status` | `uuid`, `status` | A friend's status as you see it, when a report differs from the last one, when they go offline or their status runs out, and when they change their settings |
+| `friend.status` | `uuid`, `status` | A friend's status as you see it, when a report differs from the last one, when they go offline or their status runs out, and when they change a setting that changes what you see |
 | `friend.request` | `user`, `createdAt` | Someone sent you a friend request |
 | `friend.accepted` | `user` | Your request was accepted. Fetch `GET /v1/friends` for their status |
 | `friend.removed` | `uuid` | You are no longer friends: either of you unfriended or blocked the other, or they deleted their account. Drop their invites with them |
@@ -772,7 +773,7 @@ select created_at, reason, reported_uuid, snapshot from chat_reports order by cr
 | Share code fetches, per user | 30 an hour |
 | Chat messages sent, per user | 30 a minute, 2000 a day |
 | Chat reports, per user | 20 a day |
-| Socket frames, per socket | 120 a minute |
+| Socket frames, per user (all sockets together) | 120 a minute |
 | Open sockets, per user | 5 |
 
 A refused message or report still counts. The launcher's normal load is

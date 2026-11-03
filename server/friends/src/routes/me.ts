@@ -43,6 +43,8 @@ interface StatusBody {
 }
 
 const settingsColumns = 'visibility, hide_server, share_ip_servers, allow_join, allow_invites';
+// The settings that change how friends see a status; allow_invites does not.
+const statusSettings = ['visibility', 'hide_server', 'share_ip_servers', 'allow_join'] as const;
 
 function settingsJson(row: SettingsRow) {
   return {
@@ -86,7 +88,9 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
   app.patch<{ Body: SettingsPatch }>('/v1/me/settings', { schema: { body: settingsBody } }, async (request) => {
     const user = currentUser(request);
     const { visibility, hideServer, shareIpServers, allowJoin, allowInvites } = request.body;
-    const settings = await withTransaction(ctx.pool, async (client) => {
+    const { settings, statusChanged } = await withTransaction(ctx.pool, async (client) => {
+      const before = (await client.query<SettingsRow>(`select ${settingsColumns} from users where uuid = $1 for update`, [user.uuid]))
+        .rows[0]!;
       const { rows } = await client.query<SettingsRow>(
         `update users set visibility = coalesce($2, visibility), hide_server = coalesce($3, hide_server),
            share_ip_servers = coalesce($4, share_ip_servers), allow_join = coalesce($5, allow_join),
@@ -102,10 +106,9 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
       }
       if (!settings.allow_invites) await client.query('delete from invites where to_uuid = $1', [user.uuid]);
       if (!settings.share_ip_servers) await dropUnsharedInvites(client, user.uuid);
-      return settingsJson(settings);
+      return { settings: settingsJson(settings), statusChanged: statusSettings.some((key) => before[key] !== settings[key]) };
     });
-    // Any of the settings can change what friends see.
-    await pushStatus(ctx, user.uuid);
+    if (statusChanged) await pushStatus(ctx, user.uuid);
     return settings;
   });
 
