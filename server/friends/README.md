@@ -1,8 +1,10 @@
 # Kite friends server
 
-The service behind Kite's friends list: add a friend by Minecraft name and
-see whether they are online, playing, and on which server. There is no chat,
-no voice and no world sharing. The launcher talks to it over plain HTTPS and
+The service behind Kite's friends list: add a friend by Minecraft name, see
+whether they are online, playing, and on which server, and invite them to a
+server. It also keeps share codes that hand an instance's Minecraft version,
+loader and mods to someone else. There is no chat, no voice and no world
+sharing. The launcher talks to it over plain HTTPS and
 polls once a minute; there is no WebSocket.
 
 - Production: `https://api.kiteclient.com` (not deployed yet)
@@ -65,10 +67,13 @@ Failures return a status code and a body like this:
 | 400 | `challenge_invalid` | Login with an unknown, used or expired challenge |
 | 401 | `unauthorized` | Missing, unknown or expired token. Log in again |
 | 401 | `not_joined` | Mojang did not confirm the `join` for this challenge |
-| 404 | `not_found` | The player, request or friend does not exist, or you may not see it |
+| 404 | `not_found` | The player, request, friend, invite or share code does not exist, or you may not see it |
 | 409 | `already_friends` | Friend request to someone who already is a friend |
 | 409 | `blocked_by_you` | Friend request to someone you blocked. Unblock first |
-| 409 | `limit_reached` | Too many friends (500), pending outgoing requests (100) or blocks (1000) |
+| 409 | `limit_reached` | Too many friends (500), pending outgoing requests (100), blocks (1000) or share codes (50) |
+| 409 | `address_not_shared` | Invite to a raw IP or local address while your `shareIpServers` is off |
+| 409 | `invites_off` | Invite to a friend whose `allowInvites` is off |
+| 413 | `bad_request` | The body is larger than 8 KB (64 KB for a share code manifest) |
 | 429 | `rate_limited` | Too many requests. Wait for the `Retry-After` header (seconds) |
 | 502 | `mojang_unavailable` | Mojang's session server failed or timed out. Try again later |
 
@@ -156,7 +161,13 @@ GET /v1/me
 {
   "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
   "name": "Notch",
-  "settings": { "visibility": "friends", "hideServer": false, "shareIpServers": false, "allowJoin": true }
+  "settings": {
+    "visibility": "friends",
+    "hideServer": false,
+    "shareIpServers": false,
+    "allowJoin": true,
+    "allowInvites": true
+  }
 }
 ```
 
@@ -175,13 +186,15 @@ GET /v1/me
 - `allowJoin`: on by default. Friends may join the server you are on. It
   only takes effect while they can see the server's address; see `joinable`
   in [Status objects](#status-objects).
+- `allowInvites`: on by default. Friends may [invite](#invites) you to a
+  server. Turning it off also drops the invites you have already received.
 
 ```http
 PATCH /v1/me/settings
 { "visibility": "everyone", "hideServer": true }
 ```
 
-`200` with the full settings object. Any subset of the four fields may be
+`200` with the full settings object. Any subset of the five fields may be
 sent.
 
 ```http
@@ -189,8 +202,8 @@ DELETE /v1/me
 ```
 
 `204`. Deletes the account and everything stored about it: tokens, status,
-settings, friendships, requests in both directions, and the blocks you
-placed. Blocks other players placed on you stay, because they belong to
+settings, friendships, requests and invites in both directions, your share
+codes, and the blocks you placed. Blocks other players placed on you stay, because they belong to
 them. Signing in again later creates a new, empty account.
 
 ### Reporting your status
@@ -303,11 +316,16 @@ GET /v1/friends
   "requests": {
     "incoming": [ { "uuid": "...", "name": "Dinnerbone", "createdAt": "2026-10-24T17:58:00.000Z" } ],
     "outgoing": [ { "uuid": "...", "name": "Grumm", "createdAt": "2026-10-24T17:50:00.000Z" } ]
+  },
+  "invites": {
+    "incoming": [ { "uuid": "...", "name": "jeb_", "host": "mc.hypixel.net", "port": 25565,
+                    "createdAt": "2026-10-24T17:59:00.000Z", "expiresAt": "2026-10-24T18:09:00.000Z" } ],
+    "outgoing": []
   }
 }
 ```
 
-Friends are sorted by name. Only players who signed in to Kite at least once
+`invites` are the live [invites](#invites) to and from you. Friends are sorted by name. Only players who signed in to Kite at least once
 can be added.
 
 ```http
@@ -348,7 +366,71 @@ DELETE /v1/friends/requests/{uuid}
 DELETE /v1/friends/{uuid}
 ```
 
-`204`, or `404` if you are not friends.
+`204`, or `404` if you are not friends. Invites between the two of you go
+too.
+
+### Invites
+
+"jeb_ invites you to mc.hypixel.net". An invite goes from one friend to
+another and names a server. It lives for 10 minutes and reaches the other
+side through the `invites` part of `GET /v1/friends`, so the launcher's
+regular poll is enough.
+
+```http
+PUT /v1/invites/{uuid}
+{ "host": "mc.hypixel.net", "port": 25565 }
+```
+
+```json
+200
+{
+  "uuid": "853c80ef-3c37-49fd-aa49-938b674adae6",
+  "name": "jeb_",
+  "host": "mc.hypixel.net",
+  "port": 25565,
+  "createdAt": "2026-10-24T18:00:00.000Z",
+  "expiresAt": "2026-10-24T18:10:00.000Z"
+}
+```
+
+`{uuid}` is the friend you invite; the answer is the invite as it shows in
+your `outgoing` list. `host` follows the rules of a status `world` host and
+is stored normalized (lower case, no trailing dot); `port` is optional and
+defaults to 25565. There is one invite per sender and friend: inviting the
+same friend again replaces the old one and starts a new 10 minutes.
+
+| Response | Meaning |
+|---|---|
+| `200` | Invite sent or replaced |
+| `400 bad_request` | The host is not a valid server address, or the uuid is yours |
+| `404 not_found` | Not friends with this player (a block either way, an unknown player and a pending request look the same) |
+| `409 address_not_shared` | The host is a raw IP or local address and your `shareIpServers` is off. Such an address is never stored |
+| `409 invites_off` | The friend's `allowInvites` is off |
+| `429 rate_limited` | More than 30 invites an hour, or 5 an hour to the same friend |
+
+```http
+GET /v1/invites
+```
+
+`200 { "incoming": [...], "outgoing": [...] }`, the same lists as in
+`GET /v1/friends`, newest first. `uuid` and `name` are the other player.
+
+```http
+POST /v1/invites/{uuid}/dismiss
+```
+
+`204`, or `404` if that player has no live invite to you. The sender is not
+told; the invite just disappears from their `outgoing` list.
+
+```http
+DELETE /v1/invites/{uuid}
+```
+
+`204`, or `404`. Cancels your own invite to that player.
+
+An invite also goes away when either player blocks the other, when they stop
+being friends, when the recipient turns `allowInvites` off, and, for a raw IP
+or local address, when the sender turns `shareIpServers` off.
 
 ### Blocking
 
@@ -393,6 +475,98 @@ Returns the status if the player is a friend, or has `visibility:
 for an unknown name, an invisible non-friend and a block in either direction.
 Limited to 30 lookups a minute.
 
+### Share codes
+
+A share code (`KITE-7F3K-9QXM`) gives someone else an instance's Minecraft
+version, loader and content, so their launcher can build the same instance.
+The manifest names projects on Modrinth and CurseForge by id and nothing
+else: no URLs, no file contents, no paths. The launcher downloads files from
+the platform, so a code can never carry a jar from anywhere.
+
+```http
+POST /v1/share-codes
+{
+  "name": "Survival 1.21",
+  "minecraftVersion": "1.21.4",
+  "loader": { "type": "fabric", "version": "0.16.10" },
+  "content": [
+    { "kind": "mod", "platform": "modrinth", "projectId": "AANobbMI", "versionId": "IZskON6d" },
+    { "kind": "resourcepack", "platform": "curseforge", "projectId": 238222, "fileId": 5432100 }
+  ]
+}
+```
+
+```json
+201
+{ "code": "KITE-7F3K-9QXM", "createdAt": "2026-10-24T18:00:00.000Z", "expiresAt": "2027-01-22T18:00:00.000Z" }
+```
+
+The manifest is checked strictly; a field that is not listed here makes it
+`400`, it is not silently dropped.
+
+- `name`: 1 to 64 characters, control and bidi characters removed.
+- `minecraftVersion`: 1 to 32 characters of `A-Z a-z 0-9 . _ - +` and spaces.
+- `loader.type`: `fabric`, `quilt`, `forge`, `neoforge` or `vanilla`.
+  `loader.version` is 1 to 64 characters of `A-Z a-z 0-9 . _ - +`, required
+  for every loader but `vanilla`, which has none.
+- `content`: at most 500 entries, each with `kind` (`mod`, `resourcepack`,
+  `shaderpack` or `datapack`) and `platform`:
+  - `modrinth`: `projectId` and `versionId`, each 1 to 16 letters and digits.
+  - `curseforge`: `projectId` and `fileId`, positive 32-bit integers.
+
+  `vanilla` takes no `mod` entries, and the same project may appear only once
+  per kind.
+
+The body may be up to 64 KB (every other endpoint takes 8 KB). A player can
+keep 50 codes live and make 20 an hour.
+
+```http
+GET /v1/share-codes/{code}
+```
+
+```json
+200
+{
+  "code": "KITE-7F3K-9QXM",
+  "manifest": { "name": "Survival 1.21", "minecraftVersion": "1.21.4", "loader": { ... }, "content": [ ... ] },
+  "createdAt": "2026-10-24T18:00:00.000Z",
+  "expiresAt": "2027-01-22T18:00:00.000Z"
+}
+```
+
+Any signed-in player may fetch a code; the answer does not say who made it.
+Case, dashes, spaces and the `KITE-` prefix do not matter, so
+`kite-7f3k-9qxm` and `7F3K9QXM` find the same code. `400` if it cannot be a
+code, `404` if there is no such code or it expired. Limited to 30 fetches an
+hour, counted before the lookup.
+
+Codes are 8 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no `0`, `O`,
+`1`, `I` or `L`), about 8.5 × 10^11 of them. A code lives for 90 days after it
+was made or last fetched; every fetch starts the 90 days again.
+
+```http
+GET /v1/share-codes
+```
+
+```json
+200
+{
+  "codes": [
+    { "code": "KITE-7F3K-9QXM", "name": "Survival 1.21", "minecraftVersion": "1.21.4",
+      "loader": { "type": "fabric", "version": "0.16.10" },
+      "createdAt": "2026-10-24T18:00:00.000Z", "expiresAt": "2027-01-22T18:00:00.000Z" }
+  ]
+}
+```
+
+Your live codes, newest first.
+
+```http
+DELETE /v1/share-codes/{code}
+```
+
+`204`, or `404` if you have no such code. Someone else's code looks unknown.
+
 ### Rate limits
 
 | Scope | Limit |
@@ -402,6 +576,9 @@ Limited to 30 lookups a minute.
 | Signed-in requests, per user | 120 a minute |
 | Friend requests sent, per user | 30 an hour, 3 a day to the same player |
 | Player lookups, per user | 30 a minute |
+| Invites sent, per user | 30 an hour, 5 an hour to the same friend |
+| Share codes made, per user | 20 an hour |
+| Share code fetches, per user | 30 an hour |
 
 The launcher's normal load is two requests a minute.
 
@@ -423,10 +600,16 @@ other players placed on you):
 - Friendships, pending requests and blocks
 - The current status: state, instance name, Minecraft version and world. It
   expires three minutes after the last report and is purged after that.
+- Invites: sender, recipient, server address and port. They expire after 10
+  minutes and are purged after that; dismissing or cancelling one deletes it
+  at once.
+- Share codes: the code, who made it and the manifest (name, Minecraft
+  version, loader and platform project ids). Kept until the owner deletes it
+  or 90 days pass without a fetch; who fetched a code is not recorded.
 - Session tokens, stored only as SHA-256 hashes
 
 Raw IP and local server addresses are not stored unless `shareIpServers` is
-on. Requests are not logged. Client IPs are only kept in memory for rate
+on, in statuses and invites alike. Requests are not logged. Client IPs are only kept in memory for rate
 limiting.
 
 ## Deploying
