@@ -508,22 +508,27 @@ KiteMod::Support MinecraftInstance::kiteModSupport() const
 // does); KITE_MOD_JAR overrides it for mod development.
 QString MinecraftInstance::kiteModJar() const
 {
+	QString jar;
 	const QFileInfo devJar(qEnvironmentVariable("KITE_MOD_JAR"));
 	if (devJar.isFile()) {
-		return devJar.absoluteFilePath();
+		jar = devJar.absoluteFilePath();
+	} else if (auto* context = LAUNCHER) {
+		const QString cacheRoot = context->metacache()->getBasePath("general");
+		const auto build = KiteMod::cachedBuild(cacheRoot, minecraftVersion(),
+												kiteModLoaderVersion());
+		if (build && KiteMod::isDownloaded(cacheRoot, *build)) {
+			jar = KiteMod::jarPath(cacheRoot, *build);
+		}
 	}
-
-	auto* context = LAUNCHER;
-	if (!context) {
+	// The jar has the last word: one whose own metadata rules this Minecraft
+	// out stops Fabric from starting the game, so it is left out
+	// (PrepareKiteMod logs why).
+	if (!jar.isEmpty() &&
+		KiteMod::jarFileAcceptsMinecraft(jar, minecraftVersion()) ==
+			VersionRange::Match::No) {
 		return QString();
 	}
-	const QString cacheRoot = context->metacache()->getBasePath("general");
-	const auto build = KiteMod::cachedBuild(cacheRoot, minecraftVersion(),
-											kiteModLoaderVersion());
-	if (!build || !KiteMod::isDownloaded(cacheRoot, *build)) {
-		return QString();
-	}
-	return KiteMod::jarPath(cacheRoot, *build);
+	return jar;
 }
 
 QStringList MinecraftInstance::kiteModArguments() const

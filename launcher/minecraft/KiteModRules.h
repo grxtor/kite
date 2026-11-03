@@ -25,6 +25,8 @@
 #include <QStringList>
 #include <optional>
 
+#include "minecraft/mod/VersionRange.h"
+
 /// One build of the Kite mod, as the manifest lists it.
 struct KiteModBuild {
 	QString minecraft;
@@ -72,6 +74,21 @@ namespace KiteMod
 	/// builds when there is no manifest.
 	Support supportFor(const std::optional<QList<KiteModBuild>>& builds,
 					   const QString& mcVersion, const QString& loaderVersion);
+	/// What the jar's own fabric.mod.json says about Minecraft @p mcVersion:
+	/// No when its "depends" on minecraft rules the version out (the manifest
+	/// or a KITE_MOD_JAR said otherwise), Yes when it allows it, Unknown
+	/// without readable metadata or range. A No jar is never added: Fabric
+	/// would refuse to start the game over it.
+	VersionRange::Match jarAcceptsMinecraft(const QByteArray& fabricModJson,
+											const QString& mcVersion);
+	/// The Minecraft versions the jar's metadata asks for, for a person
+	/// ("26.3.x"); empty when it names none.
+	QString jarMinecraftRange(const QByteArray& fabricModJson);
+	/// jarAcceptsMinecraft() for the jar at @p jarPath; Unknown when it cannot
+	/// be read.
+	VersionRange::Match jarFileAcceptsMinecraft(const QString& jarPath,
+												const QString& mcVersion);
+
 	/// Whether the mod can be loaded: on, Fabric (not Quilt) and a known loader
 	/// version.
 	bool appliesTo(bool enabled, const QString& primaryLoader,

@@ -27,6 +27,7 @@
 #include <launch/LaunchTask.h>
 
 #include "BuildConfig.h"
+#include "MMCZip.h"
 #include "core/LauncherContext.h"
 #include "minecraft/MinecraftInstance.h"
 #include "net/ChecksumValidator.h"
@@ -91,6 +92,21 @@ void PrepareKiteMod::manifestFetched()
 	if (m_aborted) {
 		return;
 	}
+	const QFileInfo devJar(qEnvironmentVariable("KITE_MOD_JAR"));
+	if (devJar.isFile()) {
+		const QString path = devJar.absoluteFilePath();
+		if (KiteMod::jarFileAcceptsMinecraft(path, m_mcVersion) ==
+			VersionRange::Match::No) {
+			const QByteArray json =
+				MMCZip::readFileFromZip(path, QStringLiteral("fabric.mod.json"));
+			finish(tr("Kite mod: KITE_MOD_JAR is made for Minecraft %1, not %2; "
+					  "it is left out of this launch")
+					   .arg(KiteMod::jarMinecraftRange(json), m_mcVersion));
+		} else {
+			finish(tr("Kite mod: using KITE_MOD_JAR %1").arg(path));
+		}
+		return;
+	}
 	const auto build =
 		KiteMod::cachedBuild(m_cacheRoot, m_mcVersion, m_loaderVersion);
 	if (!build) {
@@ -112,10 +128,28 @@ void PrepareKiteMod::manifestFetched()
 		return;
 	}
 	if (KiteMod::isDownloaded(m_cacheRoot, *build)) {
-		finish(tr("Kite mod: %1 ready").arg(build->version));
+		ready(*build);
 		return;
 	}
 	download(*build);
+}
+
+void PrepareKiteMod::ready(const KiteModBuild& build)
+{
+	// The manifest says the build is for this Minecraft; the jar's own
+	// fabric.mod.json decides, as Fabric reads that one.
+	const QString jar = KiteMod::jarPath(m_cacheRoot, build);
+	if (KiteMod::jarFileAcceptsMinecraft(jar, m_mcVersion) ==
+		VersionRange::Match::No) {
+		const QByteArray json =
+			MMCZip::readFileFromZip(jar, QStringLiteral("fabric.mod.json"));
+		finish(tr("Kite mod: %1 is made for Minecraft %2, not %3; it is left "
+				  "out of this launch")
+				   .arg(build.version, KiteMod::jarMinecraftRange(json),
+						m_mcVersion));
+		return;
+	}
+	finish(tr("Kite mod: %1 ready").arg(build.version));
 }
 
 void PrepareKiteMod::download(const KiteModBuild& build)
@@ -161,7 +195,7 @@ void PrepareKiteMod::downloaded(const KiteModBuild& build)
 			QFile::remove(folder.filePath(old));
 		}
 	}
-	finish(tr("Kite mod: %1 ready").arg(build.version));
+	ready(build);
 }
 
 void PrepareKiteMod::downloadFailed(const QString& reason)

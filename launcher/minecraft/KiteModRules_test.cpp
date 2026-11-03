@@ -406,6 +406,36 @@ class KiteModRulesTest : public QObject
 		QCOMPARE(KiteMod::cachedSupport(root.path(), "26.3", "0.10.0"),
 				 Support::LoaderTooOld);
 	}
+
+	// Kite mod 0.1.0 was built for 26.3 ("~26.3") and reached a 26.2 instance;
+	// Fabric refused to start. The jar's own metadata now has the last word.
+	void jarMetadataRulesMinecraftOut()
+	{
+		const QByteArray json =
+			R"({"schemaVersion": 1, "id": "kite", "version": "0.1.0",
+			    "depends": {"fabricloader": ">=0.19.3", "minecraft": "~26.3"}})";
+		QCOMPARE(KiteMod::jarAcceptsMinecraft(json, "26.2"),
+				 VersionRange::Match::No);
+		QCOMPARE(KiteMod::jarAcceptsMinecraft(json, "26.3"),
+				 VersionRange::Match::Yes);
+		QCOMPARE(KiteMod::jarAcceptsMinecraft(json, "26.3.1"),
+				 VersionRange::Match::Yes);
+		QVERIFY(!KiteMod::jarMinecraftRange(json).isEmpty());
+	}
+
+	// Nothing to go on is not a refusal: the manifest's word stands.
+	void jarWithoutMinecraftDependencyIsUnknown()
+	{
+		const QByteArray json =
+			R"({"schemaVersion": 1, "id": "kite", "version": "0.2.0"})";
+		QCOMPARE(KiteMod::jarAcceptsMinecraft(json, "26.3"),
+				 VersionRange::Match::Unknown);
+		QCOMPARE(KiteMod::jarAcceptsMinecraft(QByteArray("not json"), "26.3"),
+				 VersionRange::Match::Unknown);
+		QCOMPARE(KiteMod::jarFileAcceptsMinecraft("/nonexistent/kite.jar", "26.3"),
+				 VersionRange::Match::Unknown);
+	}
+
 };
 
 QTEST_GUILESS_MAIN(KiteModRulesTest)
