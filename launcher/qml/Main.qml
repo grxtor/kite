@@ -725,6 +725,21 @@ ApplicationWindow {
         }
         // The title keeps to the page's column; the toggle stands over the panel.
         rightReserve: friendsPanel.width
+        // Home only: the big servers to join in one click, against the right of the page's column.
+        middle: [
+            QuickJoinBar {
+                visible: root.page === "home" && root.featuredList.length > 0
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, parent.width - Theme.space.xl)
+                servers: root.featuredList
+                pinger: root.serverPinger
+                friends: root.friendsController ? root.friendsController.friends : []
+                joinFlow: serverJoin
+                onJoinRequested: (server) => serverJoin.join(server)
+                onJoinWithRequested: (server) => serverJoin.joinWithAnother(server)
+            }
+        ]
         trailing: [
             FriendsPanelToggle {
                 visible: !!root.friendsController

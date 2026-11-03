@@ -106,6 +106,7 @@ Item {
                 status: root.statusOf(entry.modelData.address, root.pinger ? root.pinger.revision : 0)
                 friends: root.friendsOn(entry.modelData.address)
                 joinFlow: root.joinFlow
+                menuOpen: serverMenu.visible && serverMenu.server.id === entry.modelData.id
                 onClicked: root.joinRequested(entry.modelData)
                 onMenuRequested: {
                     serverMenu.server = entry.modelData

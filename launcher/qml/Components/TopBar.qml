@@ -23,6 +23,9 @@ Item {
     signal trailActivated(int index)
 
     property alias trailing: trailingRow.data
+    // Items after the title, in the room the title leaves; they place themselves (the quick-join servers sit
+    // against the right).
+    property alias middle: middleSlot.data
     // Width of a panel right of the page area: the page's column centres in what is left.
     property int rightReserve: 0
     // The page column's margin (Main.pageSideMargin).
@@ -123,7 +126,12 @@ Item {
             }
         }
 
-        Item { Layout.fillWidth: true }
+        Item {
+            id: middleSlot
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumWidth: 0
+        }
     }
 
     // Over the layout, so its buttons are first in line for the pointer.

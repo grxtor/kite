@@ -372,6 +372,38 @@ class QmlModuleTest : public QObject
 		QCOMPARE(bar->property("fullWidth").toInt(), full);
 	}
 
+	/* A quick-join entry's tooltip says what a click does and what is
+	 * live there. */
+	void quickJoinEntryTipSaysWhatAClickDoes()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			QuickJoinEntry {
+				server: ({ id: "hypixel", name: "Hypixel", address: "mc.hypixel.net",
+						   minVersion: "1.8", maxVersion: "", versions: [] })
+				status: ({ state: "online", online: 27000, max: 200000, ping: 160, favicon: "" })
+				friends: [{ name: "Steve", face: "" }, { name: "Alex", face: "" }]
+				joinFlow: QtObject {
+					function instanceName(server) { return "Hardcore Survival" }
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> entry(component.create());
+		QVERIFY2(entry, qPrintable(component.errorString()));
+		QVariant tip;
+		QVERIFY(QMetaObject::invokeMethod(entry.get(), "tipText",
+										  Q_RETURN_ARG(QVariant, tip)));
+		const QStringList lines = tip.toString().split(QLatin1Char('\n'));
+		QCOMPARE(lines.size(), 3);
+		QCOMPARE(lines.at(0), QStringLiteral("Join Hypixel with Hardcore Survival"));
+		QVERIFY(lines.at(1).endsWith(QStringLiteral(" online · 160 ms")));
+		QCOMPARE(lines.at(2), QStringLiteral("Steve and Alex are here"));
+	}
+
 	/* The macOS menu bar shows only natively (Cocoa), not in this offscreen
 	 * test. */
 	void nativeMenuBarStaysOffOutsideCocoa()

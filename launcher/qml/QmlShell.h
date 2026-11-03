@@ -425,7 +425,8 @@ class QmlShell : public QObject
 	/* Dev only: a real mouse click at window point "x,y" for review snapshots
 	 * ("click=x,y[,right[,delayMs]]"). The pointer moves there first so
 	 * hover-only controls show; delayMs defaults to 1000.
-	 * "x,y,left,delayMs,dx,dy" drags by (dx, dy) before letting go. */
+	 * "x,y,left,delayMs,dx,dy" drags by (dx, dy) before letting go;
+	 * "x,y,hover[,delayMs]" only moves the pointer there (a tooltip). */
 	Q_INVOKABLE void debugClick(const QString& spec);
 	/* Dev only, for snapshots ("ask=<kind>"): "pickAccount" asks the launch
 	 * account picker; "busySkip" shows the account-refresh wait with its "Play

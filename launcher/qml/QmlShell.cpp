@@ -808,6 +808,9 @@ void QmlShell::debugClick(const QString& spec)
 		}
 	});
 	at(delay, QEvent::MouseMove, point, Qt::NoButton, Qt::NoButton);
+	if (parts.size() > 2 && parts.at(2) == QLatin1String("hover")) {
+		return;
+	}
 	at(delay + hoverMs, QEvent::MouseButtonPress, point, button, button);
 	for (int i = 1; i <= steps; ++i) {
 		at(delay + hoverMs + stepMs * i, QEvent::MouseMove, point + offset * (qreal(i) / steps),

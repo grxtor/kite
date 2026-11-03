@@ -20,8 +20,11 @@ AbstractButton {
     property var status: ({})
     // The friends playing there (ServerPinger.friendsOn).
     property var friends: []
-    // ServerJoinFlow, which names the instance a click starts (asked as the pointer arrives, so never stale).
+    // ServerJoinFlow, which names the instance a click starts (the tooltip follows the selection).
     property var joinFlow: null
+
+    // Its menu is open: the tooltip keeps out of the way.
+    property bool menuOpen: false
 
     signal menuRequested()
 
@@ -64,9 +67,10 @@ AbstractButton {
     Accessible.name: root.server.name || ""
     Accessible.description: root.players.length > 0 ? qsTr("%1 online").arg(root.players) : root.countText
 
-    ToolTip.visible: root.hovered
+    ToolTip.visible: root.hovered && !root.menuOpen
     ToolTip.delay: 500
-    ToolTip.text: root.hovered ? root.tipText() : ""
+    // Not tied to `hovered`: the shared tooltip takes its text as it is told to show, which may come first.
+    ToolTip.text: root.tipText()
 
     TapHandler {
         acceptedButtons: Qt.RightButton
