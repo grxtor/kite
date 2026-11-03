@@ -496,6 +496,8 @@ set(MINECRAFT_SOURCES
     minecraft/mod/PackwizSidecar.cpp
     minecraft/mod/PackLayout.h
     minecraft/mod/PackLayout.cpp
+    minecraft/mod/DroppedContent.h
+    minecraft/mod/DroppedContent.cpp
     minecraft/mod/VersionRange.h
     minecraft/mod/VersionRange.cpp
     minecraft/mod/VersionRangeCommon.h
@@ -592,6 +594,11 @@ add_unit_test(ModFolderModel
 add_unit_test(LocalModParseTask
     SOURCES minecraft/mod/LocalModParseTask_test.cpp
     LIBS Kite_logic
+    )
+
+add_unit_test(DroppedContent
+    SOURCES minecraft/mod/DroppedContent_test.cpp
+    LIBS Kite_core
     )
 
 add_unit_test(VersionRange
