@@ -77,6 +77,9 @@ ServerPing::ServerPing(const QString& host, quint16 port, bool lookupSrv,
 	m_srvTimeout.setSingleShot(true);
 	m_srvTimeout.setInterval(kSrvTimeoutMs);
 	connect(&m_srvTimeout, &QTimer::timeout, this, &ServerPing::onSrvTimeout);
+	m_connectRetry.setSingleShot(true);
+	m_connectRetry.setInterval(kConnectRetryMs);
+	connect(&m_connectRetry, &QTimer::timeout, this, &ServerPing::onConnectRetry);
 }
 
 ServerPing::~ServerPing()
@@ -173,6 +176,11 @@ void ServerPing::onSrvFinished()
 void ServerPing::connectTo(const QString& host, quint16 port)
 {
 	m_phase = Phase::Connecting;
+	m_targetHost = host;
+	m_targetPort = port;
+	if (!m_retried) {
+		m_connectRetry.start();
+	}
 	m_socket = new QTcpSocket(this);
 	connect(m_socket, &QTcpSocket::connected, this, &ServerPing::onConnected);
 	connect(m_socket, &QTcpSocket::readyRead, this, &ServerPing::onReadyRead);
@@ -181,8 +189,19 @@ void ServerPing::connectTo(const QString& host, quint16 port)
 	m_socket->connectToHost(host, port);
 }
 
+void ServerPing::onConnectRetry()
+{
+	if (m_phase != Phase::Connecting || m_retried) {
+		return;
+	}
+	m_retried = true;
+	dropSocket();
+	connectTo(m_targetHost, m_targetPort);
+}
+
 void ServerPing::onConnected()
 {
+	m_connectRetry.stop();
 	m_phase = Phase::Status;
 	m_socket->write(handshake(m_host, m_port) + packet(kStatusId, {}));
 	m_clock.start();
@@ -310,16 +329,22 @@ void ServerPing::fail(const QString& reason)
 	emit failed(reason);
 }
 
-void ServerPing::cleanUp()
+void ServerPing::dropSocket()
 {
-	m_timeout.stop();
-	m_srvTimeout.stop();
 	if (m_socket) {
 		m_socket->disconnect(this);
 		m_socket->abort();
 		m_socket->deleteLater();
 		m_socket = nullptr;
 	}
+}
+
+void ServerPing::cleanUp()
+{
+	m_timeout.stop();
+	m_srvTimeout.stop();
+	m_connectRetry.stop();
+	dropSocket();
 	if (m_dns) {
 		m_dns->disconnect(this);
 		m_dns->abort();

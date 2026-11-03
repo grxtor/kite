@@ -50,6 +50,9 @@ class ServerPing : public QObject
 	/// A lost DNS packet costs the resolver its 5 s retry; past this the
 	/// ping goes to the host as written, as the game does without SRV.
 	static constexpr int kSrvTimeoutMs = 1500;
+	/// A connection still not made by then starts over once, from a new
+	/// port: a dropped SYN is retried by the system on the same one.
+	static constexpr int kConnectRetryMs = 2000;
 
 	/// @p host and @p port as the player wrote them (the handshake carries
 	/// them, which name-based proxies route by); @p lookupSrv first asks
@@ -78,6 +81,8 @@ class ServerPing : public QObject
 	void connectTo(const QString& host, quint16 port);
 	void onSrvFinished();
 	void onSrvTimeout();
+	void onConnectRetry();
+	void dropSocket();
 	void onConnected();
 	void onReadyRead();
 	void onClosed();
@@ -98,6 +103,11 @@ class ServerPing : public QObject
 	QTcpSocket* m_socket = nullptr;
 	QTimer m_timeout;
 	QTimer m_srvTimeout;
+	QTimer m_connectRetry;
+	bool m_retried = false;
+	/// Where connectTo() went: the SRV target, else the host as written.
+	QString m_targetHost;
+	quint16 m_targetPort = 0;
 	QElapsedTimer m_clock;
 	QByteArray m_buffer;
 	ServerStatus::Status m_status;
