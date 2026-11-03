@@ -77,6 +77,7 @@
 #include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
+#include "servers/ServerPinger.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -1303,6 +1304,14 @@ QObject* QmlShell::friends() const
 		}
 	}
 	return expose(m_friends.get());
+}
+
+QObject* QmlShell::serverPinger() const
+{
+	if (!m_serverPinger) {
+		m_serverPinger = std::make_unique<ServerPinger>();
+	}
+	return expose(m_serverPinger.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)

@@ -28,6 +28,9 @@ StateFill {
 
     property string title
     property string meta
+    // A meta of markup the caller made safe (a server's message: Text.StyledText), and how many lines it may take.
+    property int metaFormat: Text.AutoText
+    property int metaLines: 1
     property bool dimmed: false
     readonly property alias thumb: thumb
     default property alias actions: actionRow.data
@@ -86,6 +89,8 @@ StateFill {
                     visible: text.length > 0
                     width: Math.min(implicitWidth, metaRow.width - (badgeRow.width > 0 ? badgeRow.width + metaRow.spacing : 0))
                     text: root.meta
+                    textFormat: root.metaFormat
+                    maximumLineCount: root.metaLines
                     elide: Text.ElideRight
                     role: "label"
                     tone: "secondary"

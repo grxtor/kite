@@ -224,6 +224,24 @@ QtObject {
         return at > 0 ? new Date(at).toLocaleTimeString(Qt.locale(), Locale.ShortFormat) : ""
     }
 
+    // Who of `friends` (ServerPinger.friendsOn) is on a server, in words: "Alex is here", "Alex and Kai are here",
+    // "Alex and 2 others are here"; "" for no one.
+    function friendsHere(friends) {
+        var names = (friends || []).map((one) => one.name)
+        if (names.length === 0)
+            return ""
+        if (names.length === 1)
+            return qsTr("%1 is here").arg(names[0])
+        if (names.length === 2)
+            return qsTr("%1 and %2 are here").arg(names[0]).arg(names[1])
+        return qsTr("%1 and %2 others are here").arg(names[0]).arg(names.length - 1)
+    }
+
+    // Players online in the user's locale ("28,058", "28.058"); "" while a server hides them (-1).
+    function playerCount(online) {
+        return online >= 0 ? Number(online).toLocaleString(Qt.locale(), "f", 0) : ""
+    }
+
     // Where Join sends the game: the host, and the port unless it is the game's own. An IPv6 host goes in brackets,
     // as parse() reads server addresses.
     readonly property int defaultServerPort: 25565

@@ -416,6 +416,8 @@ Item {
             ServersTab {
                 model: root.details ? root.details.servers : null
                 serversDir: root.details ? root.details.serversDir : ""
+                pinger: root.shell ? root.shell.serverPinger : null
+                friends: root.shell && root.shell.friends ? root.shell.friends.friends : []
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onJoinRequested: (address) => root.joinServerRequested(root.instanceId, address)
             }

@@ -267,6 +267,7 @@ qt_add_qml_module(Kite_qml_components
         BrandMark.qml
         SkinSilhouette.qml
         ServersTab.qml
+        FriendHeads.qml
         BackupsTab.qml
         DataPacksTab.qml
         ManagedPackTab.qml

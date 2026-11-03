@@ -54,6 +54,7 @@ class LibraryController;
 class LauncherLogs;
 class BundleCatalog;
 class FriendsController;
+class ServerPinger;
 class CatPackList;
 class RecentWorldsModel;
 class JavaInstallList;
@@ -138,6 +139,8 @@ class QmlShell : public QObject
 	/// Null in a build without a friends server; contacts nothing while
 	/// FriendsEnabled is off.
 	Q_PROPERTY(QObject* friends READ friends CONSTANT)
+	/// Live status of Minecraft servers (ServerPinger), shared by every view.
+	Q_PROPERTY(QObject* serverPinger READ serverPinger CONSTANT)
 	/// Distinct groups in use, derived like the library's section headers.
 	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
 	/// Icon grid model; roles `key`, `name`, `isBuiltin`.
@@ -270,6 +273,7 @@ class QmlShell : public QObject
 	QObject* catPacks() const;
 	QObject* bundles() const;
 	QObject* friends() const;
+	QObject* serverPinger() const;
 
 	/* The actions below emit the matching *Requested() signal; Application
 	 * connects the real work, which Kite_qml cannot see. */
@@ -518,6 +522,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<CatPackList> m_catPacks;
 	mutable std::unique_ptr<BundleCatalog> m_bundles;
 	mutable std::unique_ptr<FriendsController> m_friends;
+	mutable std::unique_ptr<ServerPinger> m_serverPinger;
 	/* Keyed by (anchor, anchorContext). Declared with the other cached models
 	 * so they are destroyed before the engine. */
 	std::map<std::pair<int, QString>, std::unique_ptr<QObject>>
