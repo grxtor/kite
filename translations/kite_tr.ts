@@ -12182,12 +12182,12 @@ Currently installed version: %1</source>
     <message>
         <location line="+32"/>
         <source>1 friend here</source>
-        <translation>1 arkadaş burada</translation>
+        <translation>1 arkadaşın burada</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>%1 friends here</source>
-        <translation>%1 arkadaş burada</translation>
+        <translation>%1 arkadaşın burada</translation>
     </message>
     <message>
         <location line="+20"/>
