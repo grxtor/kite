@@ -1007,6 +1007,8 @@ void Application::initSettings()
 	// local end-to-end run.
 	m_settings->registerSetting("FriendsEnabled", true);
 	m_settings->registerSetting("FriendsNoticeSeen", false);
+	// Desktop notifications when a friend comes online or sends a request.
+	m_settings->registerSetting("FriendsNotifications", true);
 	// Friends panel on the QML shell's right edge. FriendsPanelExpanded: names
 	// and groups shown; FriendsPanelWidth: pixel width the user dragged it to.
 	m_settings->registerSetting("FriendsPanelOpen", true);
@@ -2287,6 +2289,11 @@ NewsChecker* Application::newsChecker() const
 ModBridge* Application::modBridge() const
 {
 	return m_modBridge.get();
+}
+
+bool Application::dispatchPluginHook(uint32_t hookId, void* payload)
+{
+	return m_pluginManager && m_pluginManager->dispatchHook(hookId, payload);
 }
 
 bool Application::usingQmlShell() const

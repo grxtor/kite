@@ -3817,6 +3817,21 @@ Lütfen tekrar dene.</translation>
         <source>Friends was turned on before the delete finished; delete again if you still want it</source>
         <translation>Silme bitmeden Arkadaşlık açıldı; hâlâ istiyorsan yeniden sil</translation>
     </message>
+    <message>
+        <location filename="../launcher/friends/FriendsNotify.cpp" line="+46"/>
+        <source>%1 is online</source>
+        <translation>%1 çevrimiçi</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 sent you a friend request</source>
+        <translation>%1 sana arkadaşlık isteği gönderdi</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Accept or decline it in Friends.</source>
+        <translation>Arkadaşlar bölümünden kabul et ya da reddet.</translation>
+    </message>
 </context>
 <context>
     <name>FriendsDisplay</name>
@@ -12493,13 +12508,13 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsFriendsSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+32"/>
-        <location line="+87"/>
+        <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+33"/>
+        <location line="+94"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
     <message>
-        <location line="-86"/>
+        <location line="-93"/>
         <source>See which server your friends are on, and join them when they let you. While Friends is off, Kite sends nothing.</source>
         <translation>Arkadaşlarının hangi sunucuda olduğunu gör, izin verirlerse yanlarına katıl. Arkadaşlık kapalıyken Kite hiçbir şey göndermez.</translation>
     </message>
@@ -12556,7 +12571,17 @@ Currently installed version: %1</source>
         <translation>Minecraft adın</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+13"/>
+        <source>Desktop notifications</source>
+        <translation>Masaüstü bildirimleri</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Tells you when a friend comes online or sends you a friend request.</source>
+        <translation>Bir arkadaşın çevrimiçi olduğunda ya da sana arkadaşlık isteği gönderdiğinde haber verir.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>These show once Kite&apos;s friends server has answered.</source>
         <translation>Bunlar, Kite&apos;ın arkadaşlık sunucusu yanıt verince görünür.</translation>
     </message>

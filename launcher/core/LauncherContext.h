@@ -21,6 +21,7 @@
 #pragma once
 
 #include <QString>
+#include <cstdint>
 #include <memory>
 
 #include "QObjectPtr.h"
@@ -105,6 +106,14 @@ class LauncherContext
 	virtual ModBridge* modBridge() const
 	{
 		return nullptr;
+	}
+	/* Hands @p payload to the plugins registered for @p hookId (PluginHooks.h)
+	 * and says whether one cancelled. Core code calls through this because
+	 * PluginManager pulls in QtWidgets. Nothing happens without a plugin host
+	 * or in a test or tool context, which is why this is not pure. */
+	virtual bool dispatchPluginHook(uint32_t /*hookId*/, void* /*payload*/)
+	{
+		return false;
 	}
 
   protected:

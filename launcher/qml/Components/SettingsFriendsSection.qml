@@ -6,11 +6,12 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The "Friends" section of SettingsPage.qml: the Friends switch, who may see you
- * and where you play, and deleting what Kite's server holds about you. The
- * privacy rows are dimmed while it is off and out of reach until the server
- * has sent the account's settings; deleting stays available, since turning
- * Friends on only to delete is what someone who turned it off does not want.
+ * The "Friends" section of SettingsPage.qml: the Friends switch, desktop
+ * notifications, who may see you and where you play, and deleting what Kite's
+ * server holds about you. The privacy rows are dimmed while it is off and out
+ * of reach until the server has sent the account's settings; deleting stays
+ * available, since turning Friends on only to delete is what someone who
+ * turned it off does not want.
  */
 SettingsScroll {
     id: root
@@ -101,6 +102,13 @@ SettingsScroll {
                 emptyText: qsTr("Not signed in")
                 textColor: Theme.palette.textSecondary
             }
+        }
+        // A launcher setting, not one of the server's: the notices are shown by the DesktopNotifier plugin.
+        SettingSwitch {
+            enabled: root.on
+            key: "FriendsNotifications"
+            label: qsTr("Desktop notifications")
+            description: qsTr("Tells you when a friend comes online or sends you a friend request.")
         }
     }
 

@@ -858,6 +858,8 @@ set(FRIENDS_SOURCES
     friends/FriendsFaces.cpp
     friends/FriendsLogRules.h
     friends/FriendsLogRules.cpp
+    friends/FriendsNotices.h
+    friends/FriendsNotices.cpp
     friends/FriendsSessionStore.h
     friends/FriendsSessionStore.cpp
     friends/FriendsHttp.h
@@ -870,6 +872,7 @@ set(FRIENDS_SOURCES
     friends/FriendsPoll.cpp
     friends/FriendsActions.cpp
     friends/FriendsBridge.cpp
+    friends/FriendsNotify.cpp
     modbridge/ModBridgeProtocol.h
     modbridge/ModBridgeProtocol.cpp
     modbridge/ModBridgeAnswers.cpp
@@ -890,6 +893,11 @@ add_unit_test(FriendsApi
 
 add_unit_test(FriendsLogRules
     SOURCES friends/FriendsLogRules_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(FriendsNotices
+    SOURCES friends/FriendsNotices_test.cpp
     LIBS Kite_core
     )
 

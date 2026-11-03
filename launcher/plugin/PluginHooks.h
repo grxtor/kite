@@ -88,6 +88,14 @@ enum MMCOHookId : uint32_t {
 	 * MinecraftAccount::fillSession() populated the AuthSession and before the launch task is
 	 * built. Payload: MMCOSessionFillEvent*. The return value is ignored; mutations always apply. */
 	MMCO_HOOK_SESSION_FILL = 0x0801,
+
+	/* Friends */
+
+	/* MMCO_HOOK_FRIENDS_NOTICE: something about a friend worth a desktop notification, once per
+	 * event (a friend came online, a friend request arrived), and only while the launcher's
+	 * FriendsNotifications setting is on. Payload: MMCOFriendsNotice*. The return value is
+	 * ignored. */
+	MMCO_HOOK_FRIENDS_NOTICE = 0x0900,
 };
 
 /* Hook callback signature.
@@ -235,4 +243,14 @@ struct MMCOSessionFillEvent {
 	/* Comma-separated key=value pairs or a JSON object literal, appended verbatim to
 	 * AuthSession::user_properties. NULL adds none. */
 	const char* extra_user_properties;
+};
+
+/* Payload for MMCO_HOOK_FRIENDS_NOTICE. Strings are UTF-8, owned by the host and valid only during
+ * the callback. title and body are worded by Kite in the launcher's language, ready to show. */
+struct MMCOFriendsNotice {
+	const char* kind;  /* "online" (came online or started playing) | "request" (sent a request) */
+	const char* uuid;  /* the friend's Minecraft UUID */
+	const char* name;  /* the friend's Minecraft name */
+	const char* title; /* "Alex is online" */
+	const char* body;  /* "On mc.hypixel.net"; never empty */
 };

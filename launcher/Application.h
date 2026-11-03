@@ -144,6 +144,7 @@ class Application : public QApplication, public LauncherContext
 
 	NewsChecker* newsChecker() const override;
 	ModBridge* modBridge() const override;
+	bool dispatchPluginHook(uint32_t hookId, void* payload) override;
 
 	/* Whether the QML shell is up and its presenter ready to answer, the check
 	 * uiHost() makes before routing a UiHost call to QmlUiHost. */

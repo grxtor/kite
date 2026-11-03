@@ -17,6 +17,9 @@
  *    notify_news      fire on NEWS_UPDATED              (default 0)
  *    notify_startup   say hello on APP_INITIALIZED      (default 0)
  *    timeout_ms       notification timeout              (default 5000)
+ *
+ *  Friends notices (FRIENDS_NOTICE) have no key here: the launcher's own setting
+ *  (Settings > Friends) decides whether they are sent, already worded.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -24,7 +27,7 @@
 
 MMCO_DEFINE_MODULE("DesktopNotifier", "1.0.0", "Project Tick",
 				   "Native desktop notifications for Kite events "
-				   "(launch, instance lifecycle, news)",
+				   "(launch, instance lifecycle, news, friends)",
 				   "BSD-3-Clause");
 
 static MMCOContext* g_ctx = nullptr;
@@ -175,6 +178,18 @@ static int on_news_updated(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
+/* FRIENDS_NOTICE: a friend came online or sent a request; Kite words both lines. */
+static int on_friends_notice(void* /*mh*/, uint32_t /*hook_id*/,
+							 void* payload, void* /*ud*/)
+{
+	auto* notice = static_cast<MMCOFriendsNotice*>(payload);
+	if (!notice || !notice->title || !notice->body)
+		return 0;
+	notify(QString::fromUtf8(notice->title), QString::fromUtf8(notice->body),
+		   1);
+	return 0;
+}
+
 /* ── lifecycle ────────────────────────────────────────────────────── */
 
 extern "C" {
@@ -216,6 +231,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   on_instance_removed, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_NEWS_UPDATED,
 					   on_news_updated, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_FRIENDS_NOTICE,
+					   on_friends_notice, nullptr);
 
 	MMCO_LOG(ctx, "DesktopNotifier initialized.");
 	return 0;
