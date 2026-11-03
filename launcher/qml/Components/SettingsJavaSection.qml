@@ -69,6 +69,13 @@ SettingsScroll {
             label: qsTr("JVM arguments")
             description: qsTr("Extra flags for every launch. Kite already sets memory and the classpath.")
         }
+        // Windows keeps this per program; Kite writes it for the Java of each launch.
+        SettingSwitch {
+            visible: Qt.platform.os === "windows"
+            key: "UseHighPerformanceGpu"
+            label: qsTr("Use the high-performance graphics card")
+            description: qsTr("For computers with two graphics cards: Java runs on the faster one. A choice you made for Java in the Windows graphics settings stays.")
+        }
     }
 
     SettingsGroup {

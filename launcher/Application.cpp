@@ -94,6 +94,7 @@
 #include "minecraft/PackProfile.h"
 #include "minecraft/Component.h"
 #include "minecraft/PresetDefaults.h"
+#include "java/GpuPreference.h"
 
 #include "Sys.h"
 #include "Logging.h"
@@ -958,6 +959,20 @@ void Application::initSettings()
 
 	m_settings->registerSetting("JavaAutoDownload", true);
 	m_settings->registerSetting("JavaAutoDownloadVendor", "net.minecraft.java");
+
+	// Windows only: the Java gets the high-performance graphics card at
+	// launch (GpuPreference). Turning it off removes what Kite wrote.
+	m_settings->registerSetting(GpuPreference::kSetting, false);
+	m_settings->registerSetting(GpuPreference::kWrittenSetting, QString());
+#ifdef Q_OS_WIN
+	connect(m_settings->getSetting(GpuPreference::kSetting).get(),
+			&Setting::SettingChanged, this,
+			[this](const Setting&, QVariant value) {
+				if (!value.toBool()) {
+					GpuPreference::removeWritten(*m_settings);
+				}
+			});
+#endif
 
 	m_settings->registerSetting("UseNativeOpenAL", false);
 	m_settings->registerSetting("UseNativeGLFW", false);
