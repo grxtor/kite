@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
+import { publishEvent } from '../bus.ts';
+import { unreadCounts } from '../chat.ts';
 import { currentUser, day, hour, type Context, userJson } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
+import { pushFriendRemoved } from '../notify.ts';
 import { nameBody, uuidParams } from '../schemas.ts';
 import { presenceColumns, statusView, type PresenceRow } from '../status.ts';
 import { areFriends, findUserByName, hasBlockBetween, lockPair, type UserRef } from '../users.ts';
@@ -80,12 +83,14 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
        where r.from_uuid = $1 order by r.created_at desc`,
       [me],
     );
+    const unread = await unreadCounts(ctx.pool, me, ctx.now());
     return {
       friends: friends.rows.map((row) => ({
         uuid: row.uuid,
         name: row.name,
         since: row.since.toISOString(),
         status: statusView(row),
+        unread: unread.get(row.uuid) ?? 0,
       })),
       requests: { incoming: incoming.rows.map(requestJson), outgoing: outgoing.rows.map(requestJson) },
       invites: await liveInvites(ctx.pool, me, ctx.now()),
@@ -93,7 +98,8 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
   });
 
   app.post<{ Body: { name: string } }>('/v1/friends/requests', { schema: { body: nameBody } }, async (request, reply) => {
-    const me = currentUser(request).uuid;
+    const sender = currentUser(request);
+    const me = sender.uuid;
     const limits = ctx.config.rateLimits;
     // Counted before the lookup, so the endpoint cannot be used to probe names quickly.
     ctx.limit(`friend-requests:${me}`, limits.friendRequestsPerHour, hour);
@@ -102,6 +108,7 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
     if (!target) throw noSuchPlayer();
     if (target.uuid === me) throw badRequest('That is you');
 
+    const now = ctx.now();
     const result = await withTransaction(ctx.pool, async (client) => {
       await lockPair(client, me, target.uuid);
       const blocks = await hasBlockBetween(client, me, target.uuid);
@@ -109,7 +116,6 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
       if (blocks.byB) throw noSuchPlayer();
       if (await areFriends(client, me, target.uuid)) throw new HttpError(409, 'already_friends', 'Already friends');
 
-      const now = ctx.now();
       if (await acceptRequest(client, target.uuid, me, now)) return 'accepted';
       const existing = await client.query('select 1 from friend_requests where from_uuid = $1 and to_uuid = $2', [
         me,
@@ -137,7 +143,13 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
     });
 
     const user = userJson(target);
-    if (result === 'accepted') return { status: 'accepted', user };
+    if (result === 'created') {
+      publishEvent(ctx.bus, target.uuid, { type: 'friend.request', user: userJson(sender), createdAt: now.toISOString() });
+    }
+    if (result === 'accepted') {
+      publishEvent(ctx.bus, target.uuid, { type: 'friend.accepted', user: userJson(sender) });
+      return { status: 'accepted', user };
+    }
     return reply.status(result === 'created' ? 201 : 200).send({ status: 'pending', user });
   });
 
@@ -145,7 +157,8 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
     '/v1/friends/requests/:uuid/accept',
     { schema: { params: uuidParams } },
     async (request) => {
-      const me = currentUser(request).uuid;
+      const accepter = currentUser(request);
+      const me = accepter.uuid;
       const from = request.params.uuid.toLowerCase();
       const user = await withTransaction(ctx.pool, async (client): Promise<UserRef | null> => {
         await lockPair(client, from, me);
@@ -156,6 +169,7 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
         return rows[0] ?? null;
       });
       if (!user) throw notFound('No pending request from this player');
+      publishEvent(ctx.bus, from, { type: 'friend.accepted', user: userJson(accepter) });
       return { user: userJson(user) };
     },
   );
@@ -200,6 +214,7 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
       return rowCount ?? 0;
     });
     if (removed === 0) throw notFound('Not friends with this player');
+    pushFriendRemoved(ctx, me, other);
     return reply.status(204).send();
   });
 }

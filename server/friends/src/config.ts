@@ -9,6 +9,9 @@ export interface RateLimits {
   invitesPerPairPerHour: number;
   shareCodesPerHour: number;
   shareCodeFetchesPerHour: number;
+  chatMessagesPerMinute: number;
+  chatReportsPerHour: number;
+  socketFramesPerMinute: number;
 }
 
 export interface Config {
@@ -21,6 +24,8 @@ export interface Config {
   statusTtlSeconds: number;
   sessionTtlDays: number;
   challengeTtlSeconds: number;
+  /** How often the server pings each WebSocket; one missed pong closes it. */
+  heartbeatMs: number;
   rateLimits: RateLimits;
 }
 
@@ -35,6 +40,9 @@ export const defaultRateLimits: RateLimits = {
   invitesPerPairPerHour: 5,
   shareCodesPerHour: 20,
   shareCodeFetchesPerHour: 30,
+  chatMessagesPerMinute: 30,
+  chatReportsPerHour: 10,
+  socketFramesPerMinute: 60,
 };
 
 function positiveInt(env: Record<string, string | undefined>, key: string, fallback: number): number {
@@ -58,6 +66,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     statusTtlSeconds: positiveInt(env, 'STATUS_TTL_SECONDS', 180),
     sessionTtlDays: positiveInt(env, 'SESSION_TTL_DAYS', 30),
     challengeTtlSeconds: 120,
+    heartbeatMs: 30_000,
     rateLimits: { ...defaultRateLimits },
   };
 }

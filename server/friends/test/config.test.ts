@@ -15,6 +15,9 @@ describe('defaultRateLimits', () => {
       invitesPerPairPerHour: 5,
       shareCodesPerHour: 20,
       shareCodeFetchesPerHour: 30,
+      chatMessagesPerMinute: 30,
+      chatReportsPerHour: 10,
+      socketFramesPerMinute: 60,
     });
   });
 });
@@ -36,6 +39,7 @@ describe('loadConfig', () => {
       statusTtlSeconds: 180,
       sessionTtlDays: 30,
       challengeTtlSeconds: 120,
+      heartbeatMs: 30_000,
       rateLimits: defaultRateLimits,
     });
   });

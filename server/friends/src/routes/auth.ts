@@ -24,14 +24,14 @@ export function authenticator(ctx: Context) {
     const match = tokenPattern.exec(request.headers.authorization ?? '');
     if (!match?.[1]) throw new HttpError(401, 'unauthorized', 'Missing or malformed token');
     const tokenHash = hashToken(match[1]);
-    const { rows } = await ctx.pool.query<{ uuid: string; name: string }>(
-      `select u.uuid, u.name from sessions s join users u on u.uuid = s.user_uuid
+    const { rows } = await ctx.pool.query<{ uuid: string; name: string; expires_at: Date }>(
+      `select u.uuid, u.name, s.expires_at from sessions s join users u on u.uuid = s.user_uuid
        where s.token_hash = $1 and s.expires_at > $2`,
       [tokenHash, ctx.now()],
     );
     const row = rows[0];
     if (!row) throw new HttpError(401, 'unauthorized', 'Unknown or expired token');
-    request.user = { uuid: row.uuid, name: row.name, tokenHash };
+    request.user = { uuid: row.uuid, name: row.name, tokenHash, sessionExpiresAt: row.expires_at };
     ctx.limit(`user:${row.uuid}`, ctx.config.rateLimits.userPerMinute, minute);
   };
 }
@@ -107,7 +107,9 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Context, clientIp:
 
 export function registerLogoutRoute(app: FastifyInstance, ctx: Context) {
   app.post('/v1/auth/logout', async (request, reply) => {
-    await ctx.pool.query('delete from sessions where token_hash = $1', [currentUser(request).tokenHash]);
+    const user = currentUser(request);
+    await ctx.pool.query('delete from sessions where token_hash = $1', [user.tokenHash]);
+    ctx.bus.publish(user.uuid, { kind: 'end', tokenHash: user.tokenHash.toString('hex') });
     return reply.status(204).send();
   });
 }

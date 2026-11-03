@@ -1,10 +1,22 @@
+import { isDeepStrictEqual } from 'node:util';
 import type { FastifyInstance } from 'fastify';
+import { publishEvent } from '../bus.ts';
+import { forgetMessages } from '../chat.ts';
 import { currentUser, type Context } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest } from '../errors.ts';
 import { settingsBody, statusBody } from '../schemas.ts';
+import { friendUuids, pushStatus } from '../notify.ts';
 import { normalizeHost } from '../serverAddress.ts';
-import { cleanText, defaultMinecraftPort, statusView, visibleWorld, type Visibility, type World } from '../status.ts';
+import {
+  cleanText,
+  defaultMinecraftPort,
+  statusView,
+  visibleWorld,
+  type PresenceRow,
+  type Visibility,
+  type World,
+} from '../status.ts';
 import { dropUnsharedInvites } from './invites.ts';
 
 interface SettingsRow {
@@ -74,7 +86,7 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
   app.patch<{ Body: SettingsPatch }>('/v1/me/settings', { schema: { body: settingsBody } }, async (request) => {
     const user = currentUser(request);
     const { visibility, hideServer, shareIpServers, allowJoin, allowInvites } = request.body;
-    return withTransaction(ctx.pool, async (client) => {
+    const settings = await withTransaction(ctx.pool, async (client) => {
       const { rows } = await client.query<SettingsRow>(
         `update users set visibility = coalesce($2, visibility), hide_server = coalesce($3, hide_server),
            share_ip_servers = coalesce($4, share_ip_servers), allow_join = coalesce($5, allow_join),
@@ -92,10 +104,22 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
       if (!settings.share_ip_servers) await dropUnsharedInvites(client, user.uuid);
       return settingsJson(settings);
     });
+    // Any of the settings can change what friends see.
+    await pushStatus(ctx, user.uuid);
+    return settings;
   });
 
   app.delete('/v1/me', async (request, reply) => {
-    await ctx.pool.query('delete from users where uuid = $1', [currentUser(request).uuid]);
+    const me = currentUser(request).uuid;
+    const { friends, counterparts } = await withTransaction(ctx.pool, async (client) => {
+      const friendsBefore = await friendUuids(client, me);
+      const placeholdersFor = await forgetMessages(client, me);
+      await client.query('delete from users where uuid = $1', [me]);
+      return { friends: friendsBefore, counterparts: placeholdersFor };
+    });
+    for (const friend of friends) publishEvent(ctx.bus, friend, { type: 'friend.removed', uuid: me });
+    for (const other of counterparts) publishEvent(ctx.bus, other, { type: 'chat.deleted', uuid: me });
+    ctx.bus.publish(me, { kind: 'end' });
     return reply.status(204).send();
   });
 
@@ -118,8 +142,15 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
       const settings = rows[0]!;
       if (settings.visibility === 'invisible') {
         await client.query('delete from presence where user_uuid = $1', [user.uuid]);
-        return { state: 'offline', lastSeenAt: null } as const;
+        return { status: { state: 'offline', lastSeenAt: null } as const, changed: false };
       }
+      const before = await client.query<Omit<PresenceRow, keyof SettingsRow>>(
+        `select u.last_seen_at, p.state, p.instance, p.version, p.world from users u
+         left join presence p on p.user_uuid = u.uuid and p.expires_at > $2
+         where u.uuid = $1`,
+        [user.uuid, now],
+      );
+      const previous = statusView({ ...settings, ...before.rows[0]! });
 
       // Stored already filtered, so a hidden or private address never reaches the database.
       const privacy = { hideServer: settings.hide_server, shareIpServers: settings.share_ip_servers };
@@ -131,19 +162,24 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
         [user.uuid, body.state, instance, version, world ? JSON.stringify(world) : null, expiresAt],
       );
       await client.query('update users set last_seen_at = $2 where uuid = $1', [user.uuid, now]);
-      return statusView({ ...settings, last_seen_at: now, state: body.state, instance, version, world });
+      const current = statusView({ ...settings, last_seen_at: now, state: body.state, instance, version, world });
+      return { status: current, changed: !isDeepStrictEqual(previous, current) };
     });
-    return { expiresAt: expiresAt.toISOString(), status };
+    // The launcher reports every minute; friends hear only about changes.
+    if (status.changed) await pushStatus(ctx, user.uuid);
+    return { expiresAt: expiresAt.toISOString(), status: status.status };
   });
 
   app.delete('/v1/me/status', async (request, reply) => {
     const user = currentUser(request);
-    await withTransaction(ctx.pool, async (client) => {
+    const wentOffline = await withTransaction(ctx.pool, async (client) => {
       const removed = await client.query('delete from presence where user_uuid = $1', [user.uuid]);
       if (removed.rowCount) {
         await client.query('update users set last_seen_at = $2 where uuid = $1', [user.uuid, ctx.now()]);
       }
+      return (removed.rowCount ?? 0) > 0;
     });
+    if (wentOffline) await pushStatus(ctx, user.uuid);
     return reply.status(204).send();
   });
 }

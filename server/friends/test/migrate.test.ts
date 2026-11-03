@@ -24,7 +24,7 @@ describe('migrations', () => {
     const { rows } = await pool.query<{ name: string }>('select name from schema_migrations order by name');
     assert.deepEqual(
       rows.map((row) => row.name),
-      ['001_init.sql', '002_allow_join.sql', '003_invites_share_codes.sql'],
+      ['001_init.sql', '002_allow_join.sql', '003_invites_share_codes.sql', '004_chat.sql'],
     );
   });
 

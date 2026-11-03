@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
+import { publishEvent } from '../bus.ts';
 import { currentUser, hour, type Context } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
@@ -21,13 +22,22 @@ interface InviteRow {
   expires_at: Date;
 }
 
+export interface InviteJson {
+  uuid: string;
+  name: string;
+  host: string;
+  port: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
 interface InviteUserRow {
   uuid: string;
   share_ip_servers: boolean;
   allow_invites: boolean;
 }
 
-function inviteJson(row: InviteRow) {
+function inviteJson(row: InviteRow): InviteJson {
   return {
     uuid: row.uuid,
     name: row.name,
@@ -84,7 +94,8 @@ export function registerInviteRoutes(app: FastifyInstance, ctx: Context) {
     '/v1/invites/:uuid',
     { schema: { params: uuidParams, body: inviteBody } },
     async (request) => {
-      const me = currentUser(request).uuid;
+      const sender = currentUser(request);
+      const me = sender.uuid;
       const to = request.params.uuid.toLowerCase();
       const limits = ctx.config.rateLimits;
       ctx.limit(`invites:${me}`, limits.invitesPerHour, hour);
@@ -106,10 +117,10 @@ export function registerInviteRoutes(app: FastifyInstance, ctx: Context) {
           'select uuid, share_ip_servers, allow_invites from users where uuid in ($1, $2) order by uuid for share',
           [me, to],
         );
-        const sender = users.find((user) => user.uuid === me);
+        const from = users.find((user) => user.uuid === me);
         const recipient = users.find((user) => user.uuid === to);
-        if (!sender || !recipient) throw notFound('Not friends with this player');
-        if (classifyHost(host) !== 'domain' && !sender.share_ip_servers) {
+        if (!from || !recipient) throw notFound('Not friends with this player');
+        if (classifyHost(host) !== 'domain' && !from.share_ip_servers) {
           throw new HttpError(409, 'address_not_shared', 'Raw IP and local addresses need shareIpServers on');
         }
         if (!recipient.allow_invites) throw new HttpError(409, 'invites_off', 'This player does not take invites');
@@ -126,17 +137,22 @@ export function registerInviteRoutes(app: FastifyInstance, ctx: Context) {
         );
         return rows[0]!;
       });
-      return inviteJson(row);
+      const invite = inviteJson(row);
+      publishEvent(ctx.bus, to, { type: 'invite', invite: { ...invite, uuid: me, name: sender.name } });
+      return invite;
     },
   );
 
   app.delete<{ Params: { uuid: string } }>('/v1/invites/:uuid', { schema: { params: uuidParams } }, async (request, reply) => {
+    const me = currentUser(request).uuid;
+    const to = request.params.uuid.toLowerCase();
     const removed = await ctx.pool.query('delete from invites where from_uuid = $1 and to_uuid = $2 and expires_at > $3', [
-      currentUser(request).uuid,
-      request.params.uuid,
+      me,
+      to,
       ctx.now(),
     ]);
     if (removed.rowCount === 0) throw notFound('No invite to this player');
+    publishEvent(ctx.bus, to, { type: 'invite.cancelled', uuid: me });
     return reply.status(204).send();
   });
 
