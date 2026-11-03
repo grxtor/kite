@@ -274,7 +274,8 @@ void LaunchTask::emitSucceeded()
 void LaunchTask::emitFailed(QString reason)
 {
 	m_instance->setRunning(false);
-	m_instance->setCrashed(true);
+	// Stopping the game on purpose is no crash.
+	m_instance->setCrashed(state != LaunchTask::Aborted);
 	Task::emitFailed(reason);
 }
 

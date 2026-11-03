@@ -76,6 +76,48 @@ class StagedStep : public LaunchStep
 	}
 };
 
+// A step that fails on its own, like a game that crashed.
+class FailingStep : public LaunchStep
+{
+	Q_OBJECT
+
+  public:
+	using LaunchStep::LaunchStep;
+
+  protected:
+	void executeTask() override
+	{
+		emitFailed(QStringLiteral("Game crashed."));
+	}
+};
+
+// A step that runs until it is stopped, like a running game; stopping it ends
+// it failed, the way GameProcessStep does after a Kill.
+class RunningStep : public LaunchStep
+{
+	Q_OBJECT
+
+  public:
+	using LaunchStep::LaunchStep;
+
+	bool canAbort() const override
+	{
+		return true;
+	}
+
+  public slots:
+	bool abort() override
+	{
+		QMetaObject::invokeMethod(
+			this, [this] { emitFailed(QStringLiteral("The game was stopped.")); },
+			Qt::QueuedConnection);
+		return true;
+	}
+
+  protected:
+	void executeTask() override {}
+};
+
 class LaunchTaskTest : public QObject
 {
 	Q_OBJECT
@@ -130,6 +172,31 @@ class LaunchTaskTest : public QObject
 		const QList<QVariant> last = progressSpy.last();
 		QCOMPARE(last.at(0).toLongLong(), 0);
 		QCOMPARE(last.at(1).toLongLong(), 0);
+	}
+
+	// The crash flag Home reads ("Crashed last time").
+	void failedLaunchIsACrash()
+	{
+		InstanceFixture fixture;
+		auto task = LaunchTask::create(fixture.instance);
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new FailingStep(task.get())));
+		task->start();
+		QTRY_VERIFY(task->isFinished());
+		QVERIFY(!task->wasSuccessful());
+		QVERIFY(fixture.instance->hasCrashed());
+	}
+
+	void stoppedGameIsNoCrash()
+	{
+		InstanceFixture fixture;
+		auto task = LaunchTask::create(fixture.instance);
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new RunningStep(task.get())));
+		task->start();
+		QTRY_VERIFY(task->isRunning());
+		QVERIFY(task->abort());
+		QTRY_VERIFY(task->isFinished());
+		QVERIFY(!task->wasSuccessful());
+		QVERIFY(!fixture.instance->hasCrashed());
 	}
 };
 

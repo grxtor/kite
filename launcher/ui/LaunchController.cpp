@@ -553,7 +553,9 @@ void LaunchController::onSucceeded()
 
 void LaunchController::onFailed(QString reason)
 {
-	if (m_instance->settings()->get("ShowConsoleOnError").toBool()) {
+	// A Kill the player asked for is no error to show the console for.
+	const bool stopped = m_launcher && m_launcher->isAborting();
+	if (!stopped && m_instance->settings()->get("ShowConsoleOnError").toBool()) {
 		APPLICATION->showInstanceLog(m_instance);
 	}
 	emitFailed(reason);
