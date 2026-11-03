@@ -746,6 +746,8 @@ set(META_SOURCES
     meta/Version.h
     meta/Index.cpp
     meta/Index.h
+    meta/MetaCatalog.cpp
+    meta/MetaCatalog.h
 )
 
 set(FLAME_SOURCES
@@ -911,6 +913,32 @@ add_unit_test(FriendsFaces
     LIBS Kite_core
     )
 
+set(SERVERS_SOURCES
+    servers/ServerStatus.h
+    servers/ServerStatus.cpp
+    servers/ServerPing.h
+    servers/ServerPing.cpp
+    servers/ServerPinger.h
+    servers/ServerPinger.cpp
+    servers/FeaturedServers.h
+    servers/FeaturedServers.cpp
+)
+
+add_unit_test(ServerStatus
+    SOURCES servers/ServerStatus_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(ServerPing
+    SOURCES servers/ServerPing_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(FeaturedServers
+    SOURCES servers/FeaturedServers_test.cpp
+    LIBS Kite_core
+    )
+
 add_unit_test(ModBridgeProtocol
     SOURCES modbridge/ModBridgeProtocol_test.cpp
     LIBS Kite_core
@@ -980,6 +1008,7 @@ set(LOGIC_SOURCES
     ${MODRINTH_SOURCES}
     ${CONTENT_DOWNLOAD_SOURCES}
     ${FRIENDS_SOURCES}
+    ${SERVERS_SOURCES}
 )
 
 set(KITE_SOURCES
@@ -1016,11 +1045,11 @@ endif()
 # or ui/. Kite_logic is the plugin host and the application on top of it.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
-# Embedded as :/kite/bundles.json; in the core so tests find it too.
+# Embedded as :/kite/bundles.json and :/kite/servers.json; in the core so tests find them too.
 qt6_add_resources(Kite_core kite_bundles
     PREFIX "/kite"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
-    FILES resources/kite/bundles.json)
+    FILES resources/kite/bundles.json resources/kite/servers.json)
 
 # kite_<lang>.ts -> :/i18n/kite_<lang>.qm, plus :/i18n/stats.txt ("<lang> <translated> <total>",
 # counted from the .ts: a .qm cannot tell). No LinguistTools or no .ts: English only.

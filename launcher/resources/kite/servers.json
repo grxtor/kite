@@ -1,0 +1,19 @@
+{
+	"formatVersion": 1,
+	"servers": [
+		{
+			"id": "hypixel",
+			"name": "Hypixel",
+			"address": "mc.hypixel.net",
+			"note": { "en": "Mini games and SkyBlock", "tr": "Mini oyunlar ve SkyBlock" },
+			"minVersion": "1.8"
+		},
+		{
+			"id": "cubecraft",
+			"name": "CubeCraft",
+			"address": "play.cubecraft.net",
+			"note": { "en": "Mini games", "tr": "Mini oyunlar" },
+			"minVersion": "1.20"
+		}
+	]
+}

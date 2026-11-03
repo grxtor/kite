@@ -89,7 +89,6 @@ class BundleCatalog : public QObject
 	/// The text of a {"en": ..., "tr": ...} value in the current language.
 	QString localized(const QJsonValue& value) const;
 	QJsonObject presetById(const QString& presetId) const;
-	void onRefreshed(const QString& path);
 
   private:
 	QJsonObject m_catalog;
