@@ -46,6 +46,9 @@ void LibrariesTask::executeTask()
 	downloadJob.reset(job);
 
 	auto metacache = LAUNCHER->metacache();
+	// The crash doctor's "Repair game files": once, every library, native and
+	// the game jar come again from the network, checked against their hashes.
+	const bool repair = inst->settings()->get("RepairGameFiles").toBool();
 
 	auto processArtifactPool = [&](const QList<LibraryPtr>& pool,
 								   QStringList& errors,
@@ -56,8 +59,8 @@ void LibrariesTask::executeTask()
 					tr("Null jar is specified in the metadata, aborting."));
 				return false;
 			}
-			auto dls =
-				lib->getDownloads(context, metacache.get(), errors, localPath);
+			auto dls = lib->getDownloads(context, metacache.get(), errors,
+										 localPath, repair);
 			for (auto dl : dls) {
 				downloadJob->addNetAction(dl);
 			}
@@ -90,8 +93,12 @@ void LibrariesTask::executeTask()
 		return;
 	}
 
-	connect(downloadJob.get(), &NetJob::succeeded, this,
-			&LibrariesTask::emitSucceeded);
+	connect(downloadJob.get(), &NetJob::succeeded, this, [this, inst, repair] {
+		if (repair) {
+			inst->settings()->set("RepairGameFiles", false);
+		}
+		emitSucceeded();
+	});
 	connect(downloadJob.get(), &NetJob::failed, this,
 			&LibrariesTask::jarlibFailed);
 	connect(downloadJob.get(), &NetJob::progress, this,

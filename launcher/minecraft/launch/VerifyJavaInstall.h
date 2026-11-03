@@ -28,6 +28,8 @@
 #endif
 #include "net/NetJob.h"
 
+class MinecraftInstance;
+
 class VerifyJavaInstall : public LaunchStep
 {
 	Q_OBJECT
@@ -41,6 +43,10 @@ class VerifyJavaInstall : public LaunchStep
 	{
 		return false;
 	}
+
+	/// The Java major Minecraft @p instance's version needs (0: none stated),
+	/// raised to its JavaMajorAtLeast setting.
+	static int requiredJavaMajor(MinecraftInstance& instance);
 
   private:
 	int determineRequiredJavaMajor() const;

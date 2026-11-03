@@ -163,11 +163,13 @@ class Library
 	/// Returns true if the library is to always be checked for updates
 	bool isAlwaysStale() const;
 
-	// Get a list of downloads for this library
+	// Get a list of downloads for this library. @p redownload fetches every
+	// file again, checksummed, even when the cache thinks it is current.
 	QList<NetAction::Ptr> getDownloads(const RuntimeContext& context,
 									   class HttpMetaCache* cache,
 									   QStringList& failedLocalFiles,
-									   const QString& overridePath) const;
+									   const QString& overridePath,
+									   bool redownload = false) const;
 
   private: /* methods */
 	/// the default storage prefix used by Kite

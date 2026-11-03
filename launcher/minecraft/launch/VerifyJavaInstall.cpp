@@ -31,6 +31,7 @@
 #include <QStandardPaths>
 #include <QSysInfo>
 
+#include <algorithm>
 #include <tuple>
 
 #include <launch/LaunchTask.h>
@@ -125,29 +126,43 @@ namespace
 	}
 } // namespace
 
+namespace
+{
+	int versionJavaMajor(MinecraftInstance& instance)
+	{
+		auto minecraftComponent =
+			instance.getPackProfile()->getComponent("net.minecraft");
+		if (!minecraftComponent) {
+			return 0;
+		}
+		const auto released = minecraftComponent->getReleaseDateTime();
+		if (released >= g_VersionFilterData.java25BeginsDate)
+			return 25;
+		if (released >= g_VersionFilterData.java21BeginsDate)
+			return 21;
+		if (released >= g_VersionFilterData.java17BeginsDate)
+			return 17;
+		if (released >= g_VersionFilterData.java16BeginsDate)
+			return 16;
+		if (released >= g_VersionFilterData.java8BeginsDate)
+			return 8;
+		return 0;
+	}
+} // namespace
+
+int VerifyJavaInstall::requiredJavaMajor(MinecraftInstance& instance)
+{
+	// A mod can need a newer Java than its Minecraft (the crash doctor's
+	// "Use Java 21" on 1.20.1).
+	return std::max(versionJavaMajor(instance),
+					instance.settings()->get("JavaMajorAtLeast").toInt());
+}
+
 int VerifyJavaInstall::determineRequiredJavaMajor() const
 {
 	auto m_inst =
 		std::dynamic_pointer_cast<MinecraftInstance>(m_parent->instance());
-	auto minecraftComponent =
-		m_inst->getPackProfile()->getComponent("net.minecraft");
-
-	if (minecraftComponent->getReleaseDateTime() >=
-		g_VersionFilterData.java25BeginsDate)
-		return 25;
-	if (minecraftComponent->getReleaseDateTime() >=
-		g_VersionFilterData.java21BeginsDate)
-		return 21;
-	if (minecraftComponent->getReleaseDateTime() >=
-		g_VersionFilterData.java17BeginsDate)
-		return 17;
-	if (minecraftComponent->getReleaseDateTime() >=
-		g_VersionFilterData.java16BeginsDate)
-		return 16;
-	if (minecraftComponent->getReleaseDateTime() >=
-		g_VersionFilterData.java8BeginsDate)
-		return 8;
-	return 0;
+	return requiredJavaMajor(*m_inst);
 }
 
 QString VerifyJavaInstall::javaInstallDir() const
@@ -237,8 +252,17 @@ void VerifyJavaInstall::executeTask()
 	int requiredMajor = determineRequiredJavaMajor();
 	// CheckJava lets a launch through with no usable Java (welcome screen's
 	// "let Kite download the right version"), so a recorded version is no proof
-	// of one.
+	// of one. A crash doctor fix (JavaRepick) asks once for a fresh choice, as
+	// if no Java were set: the exact major and the architecture this version's
+	// natives need.
+	const bool repick = m_inst->settings()->get("JavaRepick").toBool();
+	if (repick) {
+		m_inst->settings()->set("JavaRepick", false);
+		emit logLine(tr("Choosing the Java for this version again."),
+					 MessageLevel::Kite);
+	}
 	const bool javaPathResolves =
+		!repick &&
 		!QStandardPaths::findExecutable(
 			 FS::ResolveExecutable(
 				 m_inst->settings()->get("JavaPath").toString()))

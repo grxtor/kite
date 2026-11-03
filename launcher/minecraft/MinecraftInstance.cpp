@@ -209,6 +209,19 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 
 	// Kite's mod is injected with -Dfabric.addMods; Fabric instances only.
 	m_settings->registerSetting("KiteMod", true);
+
+	/* Set by the crash doctor's fixes (crashdoctor/CrashFixer), read at the
+	 * next launch. JavaMajorAtLeast raises the Java major this instance needs
+	 * (a mod built for a newer Java than its Minecraft); JavaRepick makes
+	 * VerifyJavaInstall choose the Java again once, as if none were set;
+	 * RepairGameFiles makes LibrariesTask download every library again once;
+	 * MacStartOnFirstThread adds -XstartOnFirstThread even when the version
+	 * does not ask for it. CrashDoctorUndo holds what undoes the last fix. */
+	m_settings->registerSetting("JavaMajorAtLeast", 0);
+	m_settings->registerSetting("JavaRepick", false);
+	m_settings->registerSetting("RepairGameFiles", false);
+	m_settings->registerSetting("MacStartOnFirstThread", false);
+	m_settings->registerSetting("CrashDoctorUndo", "");
 	// The mod bridge session ends with the game.
 	connect(this, &BaseInstance::runningStatusChanged, this,
 			[this](bool running) {
@@ -577,7 +590,8 @@ QStringList MinecraftInstance::javaArguments() const
 	// NOTE: Oracle Java option. if there are alternate jvm implementations,
 	// this would be the place to customize this for them
 #ifdef Q_OS_MAC
-	if (traits_.contains("FirstThreadOnMacOS")) {
+	if (traits_.contains("FirstThreadOnMacOS") ||
+		m_settings->get("MacStartOnFirstThread").toBool()) {
 		args << QString("-XstartOnFirstThread");
 	}
 #endif
