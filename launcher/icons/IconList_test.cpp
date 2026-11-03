@@ -60,6 +60,7 @@ class IconListTest : public QObject
 		QCOMPARE(roles.value(Qt::DisplayRole), QByteArray("name"));
 		QCOMPARE(roles.value(IconList::IsBuiltinRole),
 				 QByteArray("isBuiltin"));
+		QCOMPARE(roles.value(IconList::IsSmoothRole), QByteArray("smooth"));
 	}
 
 	void builtinIconReportsIsBuiltinRole()
@@ -171,7 +172,45 @@ class IconListTest : public QObject
 		QCOMPARE(pixelOf(QStringLiteral("grass")), mine);
 	}
 
+	void smoothDrawingUntilAGameTextureStandsIn()
+	{
+		QVERIFY(m_icons->addThemeIcon(QStringLiteral("grass")));
+		QVERIFY(m_icons->addThemeIcon(QStringLiteral("herobrine")));
+		QVERIFY(m_icons->addThemeIcon(QStringLiteral("kite_moss")));
+		QVERIFY(isSmooth(QStringLiteral("grass")));
+		QVERIFY(isSmooth(QStringLiteral("herobrine")));
+		QVERIFY(!isSmooth(QStringLiteral("kite_moss")));
+
+		writeJar(QStringLiteral("1.21.4"),
+				 {{QStringLiteral("block/grass_block_side.png"),
+				   filled(16, 16, qRgba(40, 160, 40, 255))}});
+		m_icons->loadGameTextures(libraries(), cache());
+
+		QVERIFY(!isSmooth(QStringLiteral("grass")));
+		// No game texture is ever a herobrine.
+		QVERIFY(isSmooth(QStringLiteral("herobrine")));
+	}
+
+	void customIconUnderSmoothKeyIsNotSmooth()
+	{
+		const QString path = m_dir->filePath(QStringLiteral("herobrine.png"));
+		QVERIFY(filled(16, 16, qRgba(1, 2, 3, 255)).save(path, "PNG"));
+		QVERIFY(m_icons->addThemeIcon(QStringLiteral("herobrine")));
+		QVERIFY(m_icons->addIcon(QStringLiteral("herobrine"), QString(), path,
+								 IconType::FileBased));
+
+		QVERIFY(!isSmooth(QStringLiteral("herobrine")));
+	}
+
   private:
+	bool isSmooth(const QString& key) const
+	{
+		const int row = m_icons->getIconIndex(key);
+		return row != -1 &&
+			   m_icons->data(m_icons->index(row), IconList::IsSmoothRole)
+				   .toBool();
+	}
+
 	QString libraries() const
 	{
 		return m_dir->filePath(QStringLiteral("libraries"));

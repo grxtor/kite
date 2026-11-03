@@ -37,8 +37,11 @@ AppDialog {
         }
     ]
 
-    // The *_legacy and *_mark icons would list every icon twice, so they stay out of the picker; an
-    // instance already using one keeps it.
+    // The *_legacy and *_mark icons would list every icon twice, and the smooth flat drawings (`smooth`)
+    // clash with the pixel set, so they stay out of the picker; an instance already using one keeps it.
+    // Refiltered on open: game textures that arrive later turn a smooth icon into pixels.
+    onAboutToShow: shownIcons.refilter()
+
     DelegateModel {
         id: shownIcons
         model: root.iconsModel
@@ -50,7 +53,8 @@ AppDialog {
             for (var i = 0; i < items.count; ++i) {
                 var item = items.get(i)
                 var key = String(item.model.key)
-                item.inShown = (!key.endsWith("_legacy") && !key.endsWith("_mark")) || key === root.current
+                item.inShown = (!key.endsWith("_legacy") && !key.endsWith("_mark") && !item.model.smooth)
+                               || key === root.current
             }
         }
         items.onChanged: refilter()
