@@ -76,6 +76,17 @@ Item {
     readonly property bool updatable: !!root.content && !!root.content.updater
                                       && root.content.updater.supportsUpdates(root.kind)
     readonly property int count: root.listModel ? root.listModel.totalCount : 0
+    // How many of its mods have a newer version, found in the background (ModUpdateReminder); asked for as the tab
+    // shows an instance, at most once a day per instance.
+    readonly property var reminder: LauncherStore.modUpdates
+    readonly property int modUpdates: root.updatesOf(root.instanceId, root.reminder ? root.reminder.revision : 0)
+    function updatesOf(id, revision) {
+        return root.reminder && id.length > 0 ? root.reminder.count(id) : 0
+    }
+    function askForUpdates() {
+        if (root.reminder && root.instanceId.length > 0)
+            root.reminder.check(root.instanceId)
+    }
 
     function showKind(kind) {
         if (root.kinds.some((k) => k.value === kind))
@@ -445,6 +456,19 @@ Item {
             onActionTriggered: healthDialog.open()
         }
 
+        // The background check's count; Update runs the tab's own check, whose review says what changes.
+        NoticeBar {
+            objectName: "modUpdatesNotice"
+            Layout.fillWidth: true
+            visible: root.kind === "mods" && root.updatable && root.modUpdates > 0 && !root.flowsBusy
+            // Quiet: news, not a problem.
+            tone: "neutral"
+            text: root.modUpdates === 1 ? qsTr("A new version of 1 mod is out.")
+                                        : qsTr("New versions of %1 mods are out.").arg(root.modUpdates)
+            actionText: qsTr("Update")
+            onActionTriggered: root.withLoader(() => flows.checkUpdates([]))
+        }
+
         ContentSelectionBar {
             Layout.fillWidth: true
             visible: packList.selecting
@@ -631,12 +655,14 @@ Item {
     onInstanceIdChanged: {
         root.refreshPerformance()
         root.trackRunningSetup()
+        root.askForUpdates()
     }
     onVisibleChanged: if (visible) {
         root.refreshPerformance()
         root.trackRunningSetup()
     }
     Component.onCompleted: {
+        root.askForUpdates()
         root.refreshPerformance()
         root.trackRunningSetup()
     }

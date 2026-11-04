@@ -25,4 +25,6 @@ QtObject {
     property int iconRevision: 0
     // QmlShell, for iconFillsTile(key) -- see Icons.fillsTile().
     property var icons: null
+    // ModUpdateReminder: how many of an instance's mods have a newer version (count(id), check(id)).
+    property var modUpdates: null
 }

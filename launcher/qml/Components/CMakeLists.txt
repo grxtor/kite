@@ -324,6 +324,7 @@ qt_add_qml_module(Kite_qml_components
         ContentProjectPanel.qml
         WhatsNewDialog.qml
         WhatsNewItem.qml
+        ModUpdatesLine.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg

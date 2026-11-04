@@ -77,6 +77,7 @@ ApplicationWindow {
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.catPacks = root.shell.catPacks
             LauncherStore.icons = root.shell
+            LauncherStore.modUpdates = root.shellValue("modUpdates")
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
@@ -181,6 +182,11 @@ ApplicationWindow {
             else if (key === "whatsnew") {
                 root.whatsNew.debugShowNewest()
                 root.dialog(whatsNewLoader).open()
+            }
+            // modupdates=<id>,<count>: as if the background check had found that many.
+            else if (key === "modupdates") {
+                var update = value.split(",")
+                LauncherStore.modUpdates.debugRecord(update[0], parseInt(update[1]))
             }
             else if (key === "import")
                 root.openImport(value)
