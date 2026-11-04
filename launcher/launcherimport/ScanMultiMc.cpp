@@ -75,14 +75,17 @@ namespace LauncherImport
 			return readCapped(path, kMaxConfigBytes, &bytes) && ini->loadFile(bytes);
 		}
 
-		QString instancesDir(Source source, const QString& dataDir)
+		/* A folder the launcher's config names (@p key), else @p fallback
+		 * under the data folder. */
+		QString configuredDir(Source source, const QString& dataDir,
+							  const QString& key, const QString& fallbackName)
 		{
-			const QString fallback = QDir(dataDir).filePath(QStringLiteral("instances"));
+			const QString fallback = QDir(dataDir).filePath(fallbackName);
 			INIFile config;
 			if (!readIni(QDir(dataDir).filePath(configFileName(source)), &config)) {
 				return fallback;
 			}
-			const QString configured = iniValue(config, QStringLiteral("InstanceDir"));
+			const QString configured = iniValue(config, key);
 			if (configured.isEmpty()) {
 				return fallback;
 			}
@@ -146,7 +149,26 @@ namespace LauncherImport
 			}
 		}
 
-		FoundInstance readInstance(Source source, const QString& instanceDir)
+		/* A custom icon is a picture named after its key in the launcher's
+		 * icon folder; a built-in one has no file. */
+		QString iconFileFor(const QString& iconsDir, const QString& key)
+		{
+			if (!isSafeName(key)) {
+				return {};
+			}
+			const QFileInfoList candidates = QDir(iconsDir).entryInfoList(
+				{key + QStringLiteral(".*")}, QDir::Files, QDir::Name);
+			for (const QFileInfo& candidate : candidates) {
+				const QString file = usableIconFile(iconsDir, candidate.filePath());
+				if (!file.isEmpty() && candidate.completeBaseName() == key) {
+					return file;
+				}
+			}
+			return {};
+		}
+
+		FoundInstance readInstance(Source source, const QString& instanceDir,
+								   const QString& iconsDir)
 		{
 			FoundInstance instance;
 			instance.source = source;
@@ -165,6 +187,7 @@ namespace LauncherImport
 				instance.name = name.trimmed();
 			}
 			instance.iconKey = iniValue(cfg, QStringLiteral("iconKey"));
+			instance.iconFile = iconFileFor(iconsDir, instance.iconKey);
 			instance.lastPlayed = parseTime(cfg.get(QStringLiteral("lastLaunchTime"), 0));
 			const QString type = iniValue(cfg, QStringLiteral("InstanceType"));
 			if (!type.isEmpty() && type != QLatin1String("OneSix")) {
@@ -199,7 +222,10 @@ namespace LauncherImport
 		FoundLauncher launcher;
 		launcher.source = source;
 		launcher.dataDir = dataDir;
-		const QString root = instancesDir(source, dataDir);
+		const QString root = configuredDir(source, dataDir, QStringLiteral("InstanceDir"),
+										   QStringLiteral("instances"));
+		const QString iconsDir = configuredDir(source, dataDir, QStringLiteral("IconsDir"),
+											   QStringLiteral("icons"));
 		const QFileInfoList entries =
 			QDir(root).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
 		for (const QFileInfo& entry : entries) {
@@ -215,7 +241,7 @@ namespace LauncherImport
 				!QFileInfo::exists(QDir(entry.filePath()).filePath(QStringLiteral("instance.cfg")))) {
 				continue;
 			}
-			launcher.instances.append(readInstance(source, entry.filePath()));
+			launcher.instances.append(readInstance(source, entry.filePath(), iconsDir));
 		}
 		ScanCommon::checkLoaders(&launcher);
 		return launcher;

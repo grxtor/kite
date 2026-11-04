@@ -243,6 +243,48 @@ class LauncherImportTest : public QObject
 		QVERIFY(custom->gameDir.endsWith("/minecraft"));
 	}
 
+	/* A custom icon is the picture named after its key in the launcher's icon
+	 * folder; a built-in key has no file. */
+	void prismCustomIconIsFound()
+	{
+		const QString dir = place("prism", "prism-icons");
+		const FoundLauncher launcher = scanMultiMc(Source::Prism, dir);
+		QCOMPARE(named(launcher, "Custom")->iconFile,
+				 QFileInfo(dir + "/icons/custom-icon-kite-lacks.png").canonicalFilePath());
+		QVERIFY(named(launcher, "Fabric Pack, Remix")->iconFile.isEmpty());
+		QCOMPARE(named(launcher, "Fabric Pack, Remix")->iconKey, QString("grass"));
+	}
+
+	/* A manifest may name any file as its icon; only a picture inside the
+	 * launcher's own folder is shown. */
+	void iconsOutsideTheLauncherAreIgnored()
+	{
+		const QString dir = place("modrinth-legacy", "modrinth-icons");
+		const QString outside = m_tmp.filePath("outside-icon.png");
+		const QString inside = dir + "/caches/icons/own.png";
+		QDir().mkpath(QFileInfo(inside).absolutePath());
+		for (const QString& path : {outside, inside}) {
+			QVERIFY(QFile::copy(fixture("prism/icons/custom-icon-kite-lacks.png"), path));
+		}
+		const QString manifest = dir + "/profiles/Old Profile/profile.json";
+		const auto withIcon = [&](const QString& icon) {
+			QJsonObject profile = readJson(manifest);
+			QJsonObject metadata = profile.value("metadata").toObject();
+			metadata.insert("icon", icon);
+			profile.insert("metadata", metadata);
+			QFile file(manifest);
+			QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+			file.write(QJsonDocument(profile).toJson());
+		};
+		withIcon(outside);
+		QVERIFY(scanModrinthApp(dir).instances.first().iconFile.isEmpty());
+		withIcon(dir + "/caches/icons/../../../outside-icon.png");
+		QVERIFY(scanModrinthApp(dir).instances.first().iconFile.isEmpty());
+		withIcon(inside);
+		QCOMPARE(scanModrinthApp(dir).instances.first().iconFile, QFileInfo(inside).canonicalFilePath());
+		QVERIFY(usableIconFile(dir, dir + "/profiles/Old Profile/profile.json").isEmpty());
+	}
+
 	void prismConfiguredInstanceFolderIsFollowed()
 	{
 		const QString dir = place("prism", "prism-moved");

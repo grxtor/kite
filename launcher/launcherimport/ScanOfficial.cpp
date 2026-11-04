@@ -189,6 +189,13 @@ namespace LauncherImport
 									: QCoreApplication::translate("LauncherImport", "Latest release");
 			}
 			instance.lastPlayed = parseTime(profile.value(QStringLiteral("lastUsed")).toVariant());
+			/* A block name ("Grass", "Crafting_Table"). A picture of the
+			 * player's own comes as a "data:" address, which is no name and is
+			 * left out. */
+			const QString icon = profile.value(QStringLiteral("icon")).toString().toLower();
+			if (isSafeName(icon)) {
+				instance.iconKey = icon;
+			}
 			/* A game folder must be given in full; the launcher itself
 			 * refuses a relative one. */
 			const QString gameDir = profile.value(QStringLiteral("gameDir")).toString();

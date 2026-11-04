@@ -121,7 +121,6 @@ namespace LauncherImport
 			instance.key = ScanCommon::instanceKey(Source::CurseForge, ScanCommon::canonical(dir));
 			instance.gameDir = dir;
 			instance.name = QFileInfo(dir).fileName();
-			instance.iconKey = QStringLiteral("flame");
 			QJsonObject manifest;
 			QString error;
 			if (!readJsonObject(QDir(dir).filePath(kManifest), kMaxManifestBytes, &manifest, &error)) {
@@ -151,6 +150,11 @@ namespace LauncherImport
 				return instance;
 			}
 			instance.mods = readAddons(manifest.value(QStringLiteral("installedAddons")).toArray(), dir);
+			/* A picture the player set, if it is kept with CurseForge's
+			 * files. A modpack's own thumbnail is a web address, which is not
+			 * fetched: the list stays on this computer. */
+			instance.iconFile = usableIconFile(QFileInfo(dir).absolutePath() + QStringLiteral("/.."),
+											   manifest.value(QStringLiteral("profileImagePath")).toString());
 			instance.linkBlocker = ScanCommon::linkBlockerFor(dir);
 			return instance;
 		}

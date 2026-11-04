@@ -121,7 +121,8 @@ namespace LauncherImport
 				instance.loaderVersion = row.value(QStringLiteral("mod_loader_version")).toString();
 				instance.lastPlayed = parseTime(row.value(QStringLiteral("last_played")));
 				instance.modrinthDatabase = dbPath;
-				instance.iconKey = QStringLiteral("modrinth");
+				/* Cached under the app's own folder (caches/icons). */
+				instance.iconFile = usableIconFile(dataDir, row.value(QStringLiteral("icon_path")).toString());
 				finish(&instance, row.value(QStringLiteral("mod_loader")).toString());
 				/* Files are still arriving while a pack installs. */
 				if (instance.importable() &&
@@ -192,7 +193,6 @@ namespace LauncherImport
 				instance.key = ScanCommon::instanceKey(Source::ModrinthApp, ScanCommon::canonical(dir));
 				instance.gameDir = dir;
 				instance.name = entry.fileName();
-				instance.iconKey = QStringLiteral("modrinth");
 				QJsonObject profile;
 				QString error;
 				if (!readJsonObject(manifest, kMaxManifestBytes, &profile, &error)) {
@@ -210,6 +210,7 @@ namespace LauncherImport
 											 .toObject().value(QStringLiteral("id")).toString();
 				instance.lastPlayed = parseTime(metadata.value(QStringLiteral("last_played")).toVariant());
 				instance.mods = legacyMods(profile.value(QStringLiteral("projects")).toObject());
+				instance.iconFile = usableIconFile(dataDir, metadata.value(QStringLiteral("icon")).toString());
 				finish(&instance, metadata.value(QStringLiteral("loader")).toString());
 				launcher.instances.append(instance);
 			}

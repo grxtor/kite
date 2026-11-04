@@ -97,7 +97,11 @@ namespace LauncherImport
 		/* A Modrinth App database whose cache maps file hashes to projects;
 		 * read at import time, since it needs the files hashed. */
 		QString modrinthDatabase;
-		/* Prism's icon key, when it names a built-in icon. */
+		/* The source's own icon, if it has one: a picture on disk
+		 * (iconFile, checked with usableIconFile()) or the name of a built-in
+		 * one (iconKey: Prism's key, the official launcher's block name),
+		 * which only means something when Kite has an icon by that name. */
+		QString iconFile;
 		QString iconKey;
 		/* Why Link is not offered; empty when it is. */
 		QString linkBlocker;

@@ -19,7 +19,10 @@
 
 #include "LauncherImportController.h"
 
+#include <QCryptographicHash>
+#include <QDir>
 #include <QLocale>
+#include <QSaveFile>
 #include <QStorageInfo>
 #include <QtConcurrentRun>
 
@@ -29,6 +32,7 @@
 #include "icons/IconList.h"
 #include "launcherimport/LauncherImportTask.h"
 #include "launcherimport/LauncherScan.h"
+#include "launcherimport/SafeFiles.h"
 
 using LauncherImport::FoundInstance;
 using LauncherImport::FoundLauncher;
@@ -36,6 +40,9 @@ using LauncherImport::Mode;
 
 namespace
 {
+	/* Hex digits of an icon's SHA-1 in the key it is stored under. */
+	constexpr int kIconHashChars = 16;
+
 	QString sizeText(qint64 bytes)
 	{
 		return QLocale().formattedDataSize(qMax<qint64>(0, bytes), 1,
@@ -79,10 +86,19 @@ void LauncherImportController::scan()
 	}));
 }
 
-void LauncherImportController::applyScan(const QList<FoundLauncher>& launchers)
+void LauncherImportController::applyScan(const QList<FoundLauncher>& found)
 {
 	m_unsupported.clear();
 	m_unreadable.clear();
+	/* An icon name only counts when Kite has an icon by it. */
+	QList<FoundLauncher> launchers = found;
+	for (FoundLauncher& launcher : launchers) {
+		for (FoundInstance& instance : launcher.instances) {
+			if (!instance.iconKey.isEmpty() && !LAUNCHER->icons()->icon(instance.iconKey)) {
+				instance.iconKey.clear();
+			}
+		}
+	}
 	QList<FoundLauncher> readable;
 	for (const FoundLauncher& launcher : launchers) {
 		const QString name = LauncherImport::sourceName(launcher.source);
@@ -241,6 +257,16 @@ void LauncherImportController::setMode(const QString& key, const QString& mode)
 	}
 }
 
+QString LauncherImportController::launcherName(const QString& key) const
+{
+	for (const LauncherImport::Source source : LauncherImport::allSources()) {
+		if (LauncherImport::sourceKey(source) == key) {
+			return LauncherImport::sourceName(source);
+		}
+	}
+	return key;
+}
+
 void LauncherImportController::openFolder(const QString& key)
 {
 	const int row = m_model.indexOf(key);
@@ -249,14 +275,45 @@ void LauncherImportController::openFolder(const QString& key)
 	}
 }
 
-QString LauncherImportController::iconFor(const FoundInstance& instance) const
+QString LauncherImportController::installIcon(const QString& file) const
 {
-	/* A Prism icon key only means something when Kite has the same icon. */
-	const QString key = instance.iconKey;
-	if (key.isEmpty() || !LAUNCHER->icons()->icon(key)) {
-		return QStringLiteral("default");
+	QFile in(file);
+	if (file.isEmpty() || !in.open(QIODevice::ReadOnly) ||
+		in.size() > LauncherImport::kMaxIconBytes) {
+		return {};
+	}
+	const QByteArray bytes = in.read(LauncherImport::kMaxIconBytes);
+	const QString key = QStringLiteral("import-") +
+		QString::fromLatin1(QCryptographicHash::hash(bytes, QCryptographicHash::Sha1)
+								.toHex()
+								.left(kIconHashChars));
+	const QString target = QDir(LAUNCHER->icons()->getDirectory())
+							   .filePath(key + QLatin1Char('.') + QFileInfo(file).suffix().toLower());
+	if (!QFile::exists(target)) {
+		QSaveFile out(target);
+		if (!out.open(QIODevice::WriteOnly) || out.write(bytes) != bytes.size() || !out.commit()) {
+			return {};
+		}
 	}
 	return key;
+}
+
+QString LauncherImportController::iconFor(const FoundInstance& instance) const
+{
+	const QString own = installIcon(instance.iconFile);
+	if (!own.isEmpty()) {
+		return own;
+	}
+	if (!instance.iconKey.isEmpty()) {
+		return instance.iconKey;
+	}
+	/* The platform's mark, which Kite swaps for a picture of its own
+	 * (AutoIcons), like an imported pack without an icon. */
+	switch (instance.source) {
+	case LauncherImport::Source::ModrinthApp: return QStringLiteral("modrinth");
+	case LauncherImport::Source::CurseForge: return QStringLiteral("flame");
+	default: return QStringLiteral("default");
+	}
 }
 
 bool LauncherImportController::start()

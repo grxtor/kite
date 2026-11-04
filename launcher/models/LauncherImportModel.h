@@ -52,7 +52,9 @@ class LauncherImportModel : public QAbstractListModel
 		LinkBlockerRole,
 		ProblemRole,
 		ImportedRole,
-		LeftBehindRole
+		LeftBehindRole,
+		IconKeyRole,
+		IconFileRole
 	};
 
 	struct Row {

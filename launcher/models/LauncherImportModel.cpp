@@ -20,6 +20,7 @@
 #include "LauncherImportModel.h"
 
 #include <QLocale>
+#include <QUrl>
 
 #include <algorithm>
 
@@ -54,7 +55,9 @@ QHash<int, QByteArray> LauncherImportModel::roleNames() const
 			{LinkBlockerRole, "linkBlocker"},
 			{ProblemRole, "problem"},
 			{ImportedRole, "imported"},
-			{LeftBehindRole, "leftBehind"}};
+			{LeftBehindRole, "leftBehind"},
+			{IconKeyRole, "iconKey"},
+			{IconFileRole, "iconFile"}};
 }
 
 QVariant LauncherImportModel::data(const QModelIndex& index, int role) const
@@ -87,6 +90,14 @@ QVariant LauncherImportModel::data(const QModelIndex& index, int role) const
 	case ProblemRole: return instance.problem;
 	case ImportedRole: return row.imported;
 	case LeftBehindRole: return instance.leftBehind.join(QStringLiteral(", "));
+	/* The instance's own icon: a picture (as a file URL) or, failing that, the
+	 * Kite icon of the same name (the controller clears names Kite lacks), or
+	 * Kite's default one. */
+	case IconKeyRole:
+		return instance.iconKey.isEmpty() ? QStringLiteral("default") : instance.iconKey;
+	case IconFileRole:
+		return instance.iconFile.isEmpty() ? QString()
+										   : QUrl::fromLocalFile(instance.iconFile).toString();
 	default: return {};
 	}
 }

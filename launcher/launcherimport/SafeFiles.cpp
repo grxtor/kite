@@ -117,6 +117,23 @@ namespace LauncherImport
 		return info.isDir();
 	}
 
+	QString usableIconFile(const QString& root, const QString& path)
+	{
+		static const QStringList pictures = {
+			QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
+			QStringLiteral("gif"), QStringLiteral("svg")};
+		if (path.isEmpty()) {
+			return {};
+		}
+		const QFileInfo info(path);
+		if (!info.isFile() || info.size() > kMaxIconBytes ||
+			!pictures.contains(info.suffix().toLower()) ||
+			!resolvesInside(root, path)) {
+			return {};
+		}
+		return info.canonicalFilePath();
+	}
+
 	bool isSafeName(const QString& name)
 	{
 		return JavaDownload::isSafeSegment(name);

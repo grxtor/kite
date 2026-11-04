@@ -142,6 +142,8 @@ class LauncherImportController : public QObject
 	Q_INVOKABLE void setAllChecked(bool checked);
 	/* "copy" or "link". */
 	Q_INVOKABLE void setMode(const QString& key, const QString& mode);
+	/* A launcher's name for its key ("prism" -> "Prism Launcher"). */
+	Q_INVOKABLE QString launcherName(const QString& key) const;
 	/* Opens the instance's game folder in the file manager. */
 	Q_INVOKABLE void openFolder(const QString& key);
 	/* Imports the ticked rows; false when none is ticked, one already runs or
@@ -160,11 +162,14 @@ class LauncherImportController : public QObject
 	void finished(int imported, int failed, bool cancelled);
 
   private:
-	void applyScan(const QList<LauncherImport::FoundLauncher>& launchers);
+	void applyScan(const QList<LauncherImport::FoundLauncher>& found);
 	qint64 selectedBytes() const;
 	qint64 freeBytes() const;
 	QSet<QString> importedKeys() const;
 	QString iconFor(const LauncherImport::FoundInstance& instance) const;
+	/* Copies an instance's own picture into Kite's icons, named after its
+	 * contents so the same picture is stored once; its key, or "". */
+	QString installIcon(const QString& file) const;
 	void startNext();
 	void currentFinished(bool ok, const QString& error);
 
