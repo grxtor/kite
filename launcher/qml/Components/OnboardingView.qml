@@ -465,6 +465,7 @@ Rectangle {
                     LauncherImportPane {
                         id: importPane
                         controller: root.importer
+                        fadeTo: Theme.palette.canvas
                     }
                 }
 
@@ -485,12 +486,14 @@ Rectangle {
                         icon.source: Icons.url("chevron-left")
                         onClicked: root.index--
                     }
-                    Item { Layout.fillWidth: true }
+                    // The import step's pick, next to Back so the buttons keep their room.
                     Copy {
-                        visible: root.step === "import" && importPane.summary.length > 0
-                        text: importPane.summary
+                        Layout.fillWidth: true
+                        Layout.leftMargin: root.index > 0 ? Theme.space.md : 0
+                        text: root.step === "import" ? importPane.summary : ""
                         role: "label"
                         tone: "tertiary"
+                        elide: Text.ElideRight
                     }
                     Button {
                         highlighted: true

@@ -49,7 +49,8 @@ AbstractButton {
         return parts.join("  •  ")
     }
 
-    enabled: root.importable && !root.locked
+    // One already in Kite takes no second tick.
+    enabled: root.importable && root.row.imported !== true && !root.locked
     hoverEnabled: true
     implicitHeight: Math.max(Theme.control.heightLg, content.implicitHeight + Theme.space.sm * 2)
     leftPadding: Theme.space.sm
@@ -118,9 +119,10 @@ AbstractButton {
             visible: root.row.imported === true
             text: qsTr("In Kite")
         }
+        // The way it comes over when not the default copy.
         Tag {
-            visible: root.row.linked === true
-            text: qsTr("Linked")
+            visible: root.row.linked === true && root.row.imported !== true
+            text: qsTr("Will link")
             iconName: "folder-input"
         }
 
@@ -130,7 +132,8 @@ AbstractButton {
             enabled: !root.locked
             iconName: "more"
             tip: qsTr("More")
-            onClicked: menu.popup(moreButton, 0, moreButton.height + Theme.space.xs)
+            // Right-aligned to the button, so it opens inside the list.
+            onClicked: menu.popup(moreButton, moreButton.width - menu.width, moreButton.height + Theme.space.xs)
 
             Menu {
                 id: menu

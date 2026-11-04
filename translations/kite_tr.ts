@@ -8553,7 +8553,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     <name>LauncherImportController</name>
     <message>
         <location filename="../launcher/models/LauncherImportController.cpp" line="+92"/>
-        <location line="+258"/>
+        <location line="+271"/>
         <source>%1: %2</source>
         <translation>%1: %2</translation>
     </message>
@@ -8571,12 +8571,12 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
 <context>
     <name>LauncherImportPane</name>
     <message>
-        <location filename="../launcher/qml/Components/LauncherImportPane.qml" line="+32"/>
+        <location filename="../launcher/qml/Components/LauncherImportPane.qml" line="+34"/>
         <source>Tick the instances to bring over.</source>
         <translation>Getirmek istediğin kurulumları işaretle.</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>1 instance selected</source>
         <translation>1 kurulum seçildi</translation>
     </message>
@@ -8586,12 +8586,22 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>%1 kurulum seçildi</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>%1, %2 to copy</source>
-        <translation>%1, kopyalanacak: %2</translation>
+        <location line="+2"/>
+        <source>%1 to copy</source>
+        <translation>kopyalanacak: %1</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+2"/>
+        <source>1 linked</source>
+        <translation>1 bağlı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 linked</source>
+        <translation>%1 bağlı</translation>
+    </message>
+    <message>
+        <location line="+24"/>
         <source>1 instance imported.</source>
         <translation>1 kurulum içe aktarıldı.</translation>
     </message>
@@ -8631,7 +8641,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Yeniden ara</translation>
     </message>
     <message>
-        <location line="+60"/>
+        <location line="+77"/>
         <source>No other launchers found</source>
         <translation>Başka launcher bulunamadı</translation>
     </message>
@@ -8643,7 +8653,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     <message>
         <location line="+7"/>
         <source>Also found, not supported yet: %1</source>
-        <translation>Bunlar da bulundu, henüz desteklenmiyor: %1</translation>
+        <translation>Bulundu ama henüz desteklenmiyor: %1</translation>
     </message>
     <message>
         <location line="+20"/>
@@ -8669,9 +8679,9 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
 <context>
     <name>LauncherImportRow</name>
     <message>
-        <location filename="../launcher/qml/Components/LauncherImportRow.qml" line="+110"/>
+        <location filename="../launcher/qml/Components/LauncherImportRow.qml" line="+111"/>
         <source>Not brought over: %1</source>
-        <translation>Getirilmeyenler: %1</translation>
+        <translation>Aktarılmayacak: %1</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -8679,9 +8689,9 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Kite&apos;ta var</translation>
     </message>
     <message>
-        <location line="+4"/>
-        <source>Linked</source>
-        <translation>Bağlı</translation>
+        <location line="+5"/>
+        <source>Will link</source>
+        <translation>Bağlanacak</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -8689,7 +8699,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+7"/>
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
@@ -11677,12 +11687,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Durdur</translation>
     </message>
     <message>
-        <location line="+45"/>
+        <location line="+46"/>
         <source>Back</source>
         <translation>Geri</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+23"/>
         <source>Skip</source>
         <translation>Atla</translation>
     </message>
@@ -11692,7 +11702,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-256"/>
+        <location line="-259"/>
         <source>Start a new instance, or find a modpack in Discover.</source>
         <translation>Yeni bir kurulum başlat ya da Keşfet&apos;te bir mod paketi bul.</translation>
     </message>
@@ -11707,7 +11717,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Sonra</translation>
     </message>
     <message>
-        <location line="+76"/>
+        <location line="+79"/>
         <location line="+7"/>
         <source>Continue</source>
         <translation>Devam</translation>

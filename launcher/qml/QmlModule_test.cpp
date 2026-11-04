@@ -1199,6 +1199,7 @@ class QmlModuleTest : public QObject
 			"    property bool running: false; property bool scanning: false; property bool scanned: true\n"
 			"    property int availableCount: 2; property var unsupported: ['ATLauncher']; property var unreadable: []\n"
 			"    property int selectedCount: 1; property bool allSelected: false; property bool anyLinked: false\n"
+			"    property int linkedCount: 0; property int foundCount: 2\n"
 			"    property string selectedSizeText: '1.2 GB'; property string freeSpaceText: '10 GB'\n"
 			"    property string space: 'ok'; property real progress: -1; property string status: ''\n"
 			"    property int importedCount: 0; property int failedCount: 0; property var errors: []\n"
@@ -1228,6 +1229,12 @@ class QmlModuleTest : public QObject
 		fake->setProperty("selectedCount", 3);
 		QCOMPARE(pane->property("summary").toString(),
 				 QStringLiteral("3 instances selected, 1.2 GB to copy"));
+		fake->setProperty("linkedCount", 1);
+		QCOMPARE(pane->property("summary").toString(),
+				 QStringLiteral("3 instances selected, 1.2 GB to copy, 1 linked"));
+		fake->setProperty("selectedCount", 1);
+		QCOMPARE(pane->property("summary").toString(), QStringLiteral("1 instance selected, 1 linked"));
+		fake->setProperty("linkedCount", 0);
 		fake->setProperty("space", QStringLiteral("short"));
 		QVERIFY(!pane->property("canImport").toBool());
 		fake->setProperty("space", QStringLiteral("ok"));

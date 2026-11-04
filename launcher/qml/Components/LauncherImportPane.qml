@@ -19,6 +19,8 @@ ColumnLayout {
 
     // QmlShell.launcherImport (LauncherImportController).
     property var controller: null
+    // What lies behind the list, for its scroll fades.
+    property color fadeTo: Theme.glass.popup
 
     readonly property bool running: !!root.controller && root.controller.running
     readonly property int selected: root.controller ? root.controller.selectedCount : 0
@@ -30,9 +32,14 @@ ColumnLayout {
             return ""
         if (root.selected === 0)
             return root.controller.availableCount > 0 ? qsTr("Tick the instances to bring over.") : ""
-        var count = root.selected === 1 ? qsTr("1 instance selected")
-                                        : qsTr("%1 instances selected").arg(root.selected)
-        return qsTr("%1, %2 to copy").arg(count).arg(root.controller.selectedSizeText)
+        var linked = root.controller.linkedCount || 0
+        var parts = [root.selected === 1 ? qsTr("1 instance selected")
+                                         : qsTr("%1 instances selected").arg(root.selected)]
+        if (root.selected > linked)
+            parts.push(qsTr("%1 to copy").arg(root.controller.selectedSizeText))
+        if (linked > 0)
+            parts.push(linked === 1 ? qsTr("1 linked") : qsTr("%1 linked").arg(linked))
+        return parts.join(", ")
     }
     // Shown once a run ends, until the next one starts.
     property bool showResult: false
@@ -86,8 +93,8 @@ ColumnLayout {
         Copy {
             visible: !!root.controller && root.controller.scanned
             text: !root.controller ? ""
-                : root.controller.availableCount === 1 ? qsTr("1 instance found")
-                : qsTr("%1 instances found").arg(root.controller.availableCount)
+                : root.controller.foundCount === 1 ? qsTr("1 instance found")
+                : qsTr("%1 instances found").arg(root.controller.foundCount)
             role: "caption"
             tone: "tertiary"
         }
@@ -140,6 +147,23 @@ ColumnLayout {
                 controller: root.controller
                 locked: root.running
             }
+        }
+
+        ScrollFade {
+            anchors.left: list.left
+            anchors.right: list.right
+            anchors.top: list.top
+            height: Theme.space.lg
+            atTop: true
+            flickable: list
+            fadeTo: root.fadeTo
+        }
+        ScrollFade {
+            anchors.left: list.left
+            anchors.right: list.right
+            anchors.bottom: list.bottom
+            flickable: list
+            fadeTo: root.fadeTo
         }
 
         BusyIndicator {
@@ -208,7 +232,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: root.showResult && !root.running && !!root.controller
                  && root.controller.importedCount + root.controller.failedCount > 0
-        tone: root.controller && root.controller.failedCount > 0 ? "warning" : "info"
+        tone: root.controller && root.controller.failedCount > 0 ? "warning" : "accent"
         text: {
             if (!root.controller)
                 return ""
