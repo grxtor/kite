@@ -147,48 +147,69 @@ namespace PackLayout
 		return false;
 	}
 
-	bool isDataPack(const QFileInfo& file)
+	namespace
 	{
-		if (!file.exists()) {
-			return false;
-		}
+		// A `pack.mcmeta` beside a `dirName` directory ("data", "assets") at
+		// the root or one level down: what data and resource packs share.
+		bool hasMcmetaWith(const QFileInfo& file, const QString& dirName)
+		{
+			if (!file.exists()) {
+				return false;
+			}
 
-		if (file.isDir()) {
-			if (hasFile(file, QStringLiteral("pack.mcmeta")) &&
-				hasSubDirectory(file, QStringLiteral("data"))) {
+			if (file.isDir()) {
+				if (hasFile(file, QStringLiteral("pack.mcmeta")) &&
+					hasSubDirectory(file, dirName)) {
+					return true;
+				}
+				const QDir dir(file.filePath());
+				const QStringList children =
+					dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+				for (const QString& child : children) {
+					const QFileInfo nested(FS::PathCombine(dir.path(), child));
+					if (hasFile(nested, QStringLiteral("pack.mcmeta")) &&
+						hasSubDirectory(nested, dirName)) {
+						return true;
+					}
+				}
+				return false;
+			}
+
+			const QStringList entries = normalizedEntries(file.filePath());
+			if (entries.isEmpty()) {
+				return false;
+			}
+
+			const QSet<QString> entrySet(entries.begin(), entries.end());
+			if (entrySet.contains(QStringLiteral("pack.mcmeta")) &&
+				anyEntryUnder(entries, dirName + QLatin1Char('/'))) {
 				return true;
 			}
-			const QDir dir(file.filePath());
-			const QStringList children =
-				dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-			for (const QString& child : children) {
-				const QFileInfo nested(FS::PathCombine(dir.path(), child));
-				if (hasFile(nested, QStringLiteral("pack.mcmeta")) &&
-					hasSubDirectory(nested, QStringLiteral("data"))) {
+
+			for (const QString& top : topLevelFolders(entries)) {
+				if (entrySet.contains(top + QStringLiteral("/pack.mcmeta")) &&
+					anyEntryUnder(entries, top + QLatin1Char('/') + dirName +
+											   QLatin1Char('/'))) {
 					return true;
 				}
 			}
 			return false;
 		}
+	} // namespace
 
-		const QStringList entries = normalizedEntries(file.filePath());
-		if (entries.isEmpty()) {
-			return false;
-		}
+	bool isDataPack(const QFileInfo& file)
+	{
+		return hasMcmetaWith(file, QStringLiteral("data"));
+	}
 
-		const QSet<QString> entrySet(entries.begin(), entries.end());
-		if (entrySet.contains(QStringLiteral("pack.mcmeta")) &&
-			anyEntryUnder(entries, QStringLiteral("data/"))) {
-			return true;
-		}
+	bool isResourcePack(const QFileInfo& file)
+	{
+		return hasMcmetaWith(file, QStringLiteral("assets"));
+	}
 
-		for (const QString& top : topLevelFolders(entries)) {
-			if (entrySet.contains(top + QStringLiteral("/pack.mcmeta")) &&
-				anyEntryUnder(entries, top + QStringLiteral("/data/"))) {
-				return true;
-			}
-		}
-		return false;
+	QStringList archiveEntries(const QString& zipPath)
+	{
+		return normalizedEntries(zipPath);
 	}
 
 } // namespace PackLayout

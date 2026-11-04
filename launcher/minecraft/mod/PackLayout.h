@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QFileInfo>
+#include <QStringList>
 
 // Structural recognition for pack formats that sit next to mods but carry no
 // mod metadata: for shader and data packs only the internal directory layout
@@ -34,8 +35,16 @@ namespace PackLayout
 	// from a Git forge are wrapped in one top-level folder).
 	bool isShaderPack(const QFileInfo& file);
 
+	// True when `file` is a resource pack: a `pack.mcmeta` beside an `assets`
+	// directory, at the root or one level down.
+	bool isResourcePack(const QFileInfo& file);
+
 	// True when `file` is a vanilla data pack: a `pack.mcmeta` beside a `data`
 	// directory, at the root or one level down.
 	bool isDataPack(const QFileInfo& file);
+
+	// The entries of the zip at `zipPath` with slashes forward and no leading
+	// "./" or "/"; directories keep their trailing slash.
+	QStringList archiveEntries(const QString& zipPath);
 
 } // namespace PackLayout

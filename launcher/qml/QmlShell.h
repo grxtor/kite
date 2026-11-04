@@ -36,6 +36,7 @@ class IdSelectionModel;
 class InstanceFilterModel;
 class InstanceDetails;
 class InstanceExportController;
+class ContentDrop;
 class InstanceShortcutController;
 class SettingsAdapter;
 class ModrinthModpackModel;
@@ -263,6 +264,10 @@ class QmlShell : public QObject
 	/// Kept like instanceDetails().
 	Q_INVOKABLE QObject* exportController(const QString& id);
 	Q_INVOKABLE QObject* shortcutController(const QString& id);
+	/* Files and links dropped on instance @p id's tile, without opening its
+	 * page. One is kept per instance so a download started by a drop outlives
+	 * the next one; null if @p id names no Minecraft instance. */
+	Q_INVOKABLE QObject* contentDrop(const QString& id);
 	QObject* accountsController() const;
 	QObject* newInstance() const;
 	QObject* javaController() const;
@@ -522,6 +527,7 @@ class QmlShell : public QObject
 	std::unique_ptr<TechnicModpackModel> m_technicModpacks;
 	std::unique_ptr<InstanceDetails> m_instanceDetails;
 	std::unique_ptr<InstanceExportController> m_exportController;
+	std::map<QString, std::unique_ptr<ContentDrop>> m_contentDrops;
 	std::unique_ptr<InstanceShortcutController> m_shortcutController;
 	std::unique_ptr<AccountsController> m_accountsController;
 	mutable std::unique_ptr<NewInstanceController> m_newInstance;

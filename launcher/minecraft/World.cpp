@@ -265,7 +265,8 @@ void World::readFromZip(const QFileInfo& file)
 {
 	QString zipPath = file.absoluteFilePath();
 	auto location = MMCZip::findFolderOfFileInZip(zipPath, "level.dat");
-	is_valid = !location.isEmpty();
+	// Empty is level.dat at the archive's root; null is not found.
+	is_valid = !location.isNull();
 	if (!is_valid) {
 		return;
 	}

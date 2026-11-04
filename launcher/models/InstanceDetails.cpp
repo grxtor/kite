@@ -20,7 +20,6 @@
 
 #include "InstanceDetails.h"
 
-#include <QFutureWatcher>
 #include <QSortFilterProxyModel>
 #include <QThreadPool>
 #include <QtConcurrentRun>
@@ -41,6 +40,7 @@
 #include "models/BackupController.h"
 #include "models/ComponentTools.h"
 #include "models/ContentBrowser.h"
+#include "models/ContentDrop.h"
 #include "models/InstanceContentController.h"
 #include "models/KeyValueFilterModel.h"
 #include "models/LegacyUpgrade.h"
@@ -55,6 +55,7 @@
 #include "models/ServersListModel.h"
 #include "models/SettingsAdapter.h"
 #include "models/WorldDataPacksController.h"
+#include "models/WorldCopyTask.h"
 #include "models/WorldTools.h"
 #include "screenshots/ScreenshotListModel.h"
 #include "settings/SettingsObject.h"
@@ -77,55 +78,6 @@ namespace
 	}
 
 } // namespace
-
-/* Runs World::install() off the GUI thread (world files can run into gigabytes). */
-class WorldCopyTask : public Task
-{
-	Q_OBJECT
-  public:
-	using Fn = std::function<bool()>;
-
-	WorldCopyTask(QString status, Fn fn, QObject* parent = nullptr)
-		: Task(parent), m_fn(std::move(fn))
-	{
-		setObjectName(QStringLiteral("WorldCopyTask"));
-		setStatus(status);
-		setProgress(0, 0);
-	}
-
-	~WorldCopyTask() override
-	{
-		disconnect(&m_watcher, nullptr, this, nullptr);
-		if (m_future.isRunning()) {
-			// The worker only owns copies of what it needs; let it finish unwatched.
-			auto* holder = new QFutureWatcher<bool>();
-			connect(holder, &QFutureWatcher<bool>::finished, holder,
-					&QObject::deleteLater);
-			holder->setFuture(m_future);
-		}
-	}
-
-  protected:
-	void executeTask() override
-	{
-		connect(&m_watcher, &QFutureWatcher<bool>::finished, this, [this] {
-			if (m_future.result()) {
-				setProgress(1, 1);
-				emitSucceeded();
-			} else {
-				emitFailed(tr("The operation failed. See the launcher log "
-							  "for details."));
-			}
-		});
-		m_future = QtConcurrent::run(QThreadPool::globalInstance(), m_fn);
-		m_watcher.setFuture(m_future);
-	}
-
-  private:
-	Fn m_fn;
-	QFuture<bool> m_future;
-	QFutureWatcher<bool> m_watcher;
-};
 
 InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	: QObject(parent), m_instance(std::move(instance))
@@ -456,6 +408,14 @@ QObject* InstanceDetails::content() const
 	return m_content;
 }
 
+QObject* InstanceDetails::drop() const
+{
+	if (!m_drop && m_mc) {
+		m_drop = new ContentDrop(m_instance, const_cast<InstanceDetails*>(this));
+	}
+	return m_drop;
+}
+
 QObject* InstanceDetails::logUploader() const
 {
 	return m_logUploader;
@@ -634,5 +594,3 @@ void InstanceLogBridge::onLaunchTaskChanged(shared_qobject_ptr<LaunchTask> task)
 	m_model = m_task ? m_task->getLogModel() : shared_qobject_ptr<LogModel>();
 	emit modelChanged();
 }
-
-#include "InstanceDetails.moc"

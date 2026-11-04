@@ -206,4 +206,12 @@ Item {
         Behavior on opacity { NumberAnimation { duration: Theme.motion.fast } }
         onClicked: root.menuRequested(moreButton)
     }
+
+    // Files dropped on the tile are added to this instance (Main.qml dropOnInstance).
+    InstanceDropTarget {
+        anchors.fill: parent
+        z: 10
+        instanceId: root.instanceId
+        radius: Theme.radius.lg
+    }
 }

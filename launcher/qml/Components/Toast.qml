@@ -15,7 +15,7 @@ import Kite.Theme
 GlassSurface {
     id: root
 
-    property string tone: "neutral" // neutral | success | danger
+    property string tone: "neutral" // neutral | success | warning | danger
     property alias text: label.text
     property string actionText: ""
     property var actionCallback: null
@@ -63,7 +63,7 @@ GlassSurface {
 
     Timer {
         id: hideTimer
-        interval: root.tone === "danger" || root.actionText.length > 0 ? root.longTimeoutMs : root.shortTimeoutMs
+        interval: root.tone === "danger" || root.tone === "warning" || root.actionText.length > 0 ? root.longTimeoutMs : root.shortTimeoutMs
         onTriggered: root.shown = false
     }
 
@@ -76,7 +76,7 @@ GlassSurface {
         }
     }
 
-    readonly property color toneColor: Theme.tone(root.tone === "danger" || root.tone === "success" ? root.tone : "accent").ink
+    readonly property color toneColor: Theme.tone(root.tone === "danger" || root.tone === "success" || root.tone === "warning" ? root.tone : "accent").ink
 
     RowLayout {
         id: row
@@ -86,7 +86,7 @@ GlassSurface {
 
         MeshIcon {
             Layout.alignment: Qt.AlignVCenter
-            iconName: root.tone === "danger" ? "alert-triangle" : root.tone === "success" ? "check" : "info"
+            iconName: root.tone === "danger" || root.tone === "warning" ? "alert-triangle" : root.tone === "success" ? "check" : "info"
             size: Theme.icon.mid
             color: root.toneColor
         }

@@ -43,6 +43,11 @@ set(CORE_SOURCES
     models/ScreenshotUploader.cpp
     models/WorldTools.h
     models/WorldTools.cpp
+    models/WorldCopyTask.h
+    models/ContentDrop.h
+    models/ContentDrop.cpp
+    models/ContentLinkInstall.h
+    models/ContentLinkInstall.cpp
     models/LegacyUpgrade.h
     models/LegacyUpgrade.cpp
     models/KeyValueFilterModel.h
@@ -496,6 +501,8 @@ set(MINECRAFT_SOURCES
     minecraft/mod/PackwizSidecar.cpp
     minecraft/mod/PackLayout.h
     minecraft/mod/PackLayout.cpp
+    minecraft/mod/DroppedContent.h
+    minecraft/mod/DroppedContent.cpp
     minecraft/mod/VersionRange.h
     minecraft/mod/VersionRange.cpp
     minecraft/mod/VersionRangeCommon.h
@@ -592,6 +599,11 @@ add_unit_test(ModFolderModel
 add_unit_test(LocalModParseTask
     SOURCES minecraft/mod/LocalModParseTask_test.cpp
     LIBS Kite_logic
+    )
+
+add_unit_test(DroppedContent
+    SOURCES minecraft/mod/DroppedContent_test.cpp
+    LIBS Kite_core
     )
 
 add_unit_test(VersionRange

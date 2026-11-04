@@ -215,6 +215,12 @@ ApplicationWindow {
                 onboardingLoader.item.index = Math.max(0, onboardingLoader.item.steps.indexOf(value))
                 onboardingLoader.item.active = true
             }
+            // After instance=<id>: dragover=<file>[,<file>] shows the drop overlay as if those files were dragged
+            // over the page; drop=<file>[,<file>] drops them on it.
+            else if (key === "dragover")
+                Qt.callLater(windowDrop.preview, value.split(","))
+            else if (key === "drop")
+                Qt.callLater(windowDrop.dropFiles, value.split(","))
             // toast=<text>: a toast with an action, to see how a long message wraps.
             else if (key === "toast")
                 Qt.callLater(() => toast.show(value, "success", "Open", () => {}))
@@ -572,16 +578,67 @@ ApplicationWindow {
         onActivated: root.openNewInstance()
     }
 
-    // A zip, .mrpack or link dropped on the window opens import. Declared first,
-    // so NewInstanceDialog's and the library's drop areas above it keep their drops.
+    ContentDropFlow {
+        id: dropFlow
+        onNotify: (text, tone) => toast.show(text, tone)
+        onImportRequested: (source) => root.openImport(source)
+    }
+
+    function dropUrls(urls) {
+        const list = []
+        for (let i = 0; i < urls.length; ++i)
+            list.push(urls[i].toString())
+        return list
+    }
+    // A tile of the library or the sidebar took a drop (InstanceDropTarget).
+    function dropOnInstance(id, urls) {
+        if (root.shell && typeof root.shell.contentDrop === "function")
+            dropFlow.handle(root.shell.contentDrop(id), urls, null)
+    }
+
+    // Files and links dropped on the window. On an instance's page they are added to it by what they are (mods,
+    // packs, worlds; ContentDrop); anywhere else a zip, .mrpack or link opens import. Declared first, so
+    // NewInstanceDialog's and the library's drop areas above it keep their drops.
     DropArea {
+        id: windowDrop
         anchors.fill: parent
         keys: ["text/uri-list"]
+
+        readonly property bool onInstance: root.page === "instance" && !!root.openedDetails
+                                           && root.openedDetails.isMinecraft && !!root.openedDetails.drop
+        // What the drag in progress holds, for the overlay (ContentDrop.preview()).
+        property var rows: []
+        property string unknown: ""
+        // Dev route "dragover": the overlay stays up without a real drag.
+        property bool previewing: false
+
+        function show(paths) {
+            const found = windowDrop.onInstance ? root.openedDetails.drop.preview(paths) : ({ rows: [], unknown: "" })
+            windowDrop.rows = found.rows
+            windowDrop.unknown = found.unknown
+        }
+        function preview(paths) {
+            windowDrop.show(paths)
+            windowDrop.previewing = true
+        }
+        // Dev route "drop": what a drop of these local files would do.
+        function dropFiles(paths) {
+            windowDrop.previewing = false
+            if (windowDrop.onInstance)
+                dropFlow.handle(root.openedDetails.drop, paths, instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
+        }
+
+        onEntered: (drag) => windowDrop.show(drag.hasUrls ? root.dropUrls(drag.urls) : [])
         onDropped: (drop) => {
             if (!drop.hasUrls || drop.urls.length === 0)
                 return
-            root.openImport(drop.urls[0].toString())
-            drop.accept()
+            const urls = root.dropUrls(drop.urls)
+            drop.accept(Qt.CopyAction)
+            if (windowDrop.onInstance)
+                dropFlow.handle(root.openedDetails.drop, urls,
+                                instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
+            else
+                root.openImport(urls[0])
         }
     }
 
@@ -1150,6 +1207,15 @@ ApplicationWindow {
             onPicked: (key) => root.shell.setInstanceIcon(targetId, key)
             onOpenFolderRequested: root.call("openPath", root.shell.iconsDir || "icons")
         }
+    }
+
+    // Over the page while files are dragged across an instance's page.
+    DropOverlay {
+        anchors.fill: panel
+        radius: root.panelRadius
+        visible: (windowDrop.containsDrag || windowDrop.previewing) && windowDrop.onInstance
+        rows: windowDrop.rows
+        unknown: windowDrop.unknown
     }
 
     Toast {
