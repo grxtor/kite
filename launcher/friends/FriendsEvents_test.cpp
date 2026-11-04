@@ -62,6 +62,11 @@ class FriendsEventsTest : public QObject
 		QCOMPARE(FriendsEvents::kindOf(frame(R"({"type":"error"})")), Kind::Chat);
 		QCOMPARE(FriendsEvents::kindOf(frame(R"({"type":"invite.cancelled"})")), Kind::Invite);
 		QCOMPARE(FriendsEvents::kindOf(frame(R"({"type":"later.thing"})")), Kind::Other);
+		QVERIFY(FriendsEvents::forInvites(frame(R"({"type":"invite"})")));
+		QVERIFY(FriendsEvents::forInvites(frame(R"({"type":"invite.cancelled"})")));
+		QVERIFY(FriendsEvents::forInvites(frame(R"({"type":"friend.removed"})")));
+		QVERIFY(!FriendsEvents::forInvites(frame(R"({"type":"friend.status"})")));
+		QVERIFY(!FriendsEvents::forInvites(frame(R"({"type":"chat.message"})")));
 	}
 
 	void unreadComesWithTheFriendsList()

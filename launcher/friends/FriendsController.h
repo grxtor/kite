@@ -147,6 +147,11 @@ class FriendsController : public QObject
 	/// The mod says where the player is; that is what friends are told.
 	void reportWorld(BaseInstance* instance, const FriendsApi::World& world);
 
+  public slots:
+	/// The socket's invite, invite.cancelled and friend.removed frames, for the invites
+	/// (FriendsInviteStub.cpp until they land; the second of the two changes to merge drops the stub).
+	void applyInviteEvent(const QJsonObject& frame);
+
   signals:
 	void changed();
 	/// Every fresh snapshot, even one that left the lists as they were.
@@ -257,8 +262,8 @@ class FriendsController : public QObject
 	void applyLive(const FriendsApi::FriendsSnapshot& snapshot);
 	/// @p snapshot without unread messages in the conversation on screen.
 	FriendsApi::FriendsSnapshot chatSeen(const FriendsApi::FriendsSnapshot& snapshot) const;
-	/// invite / invite.cancelled frames (FriendsInviteStub.cpp until the invites land).
-	void applyInviteEvent(const QJsonObject& event);
+	/// friend.* frames: the lists change in place.
+	void applyFriendEvent(const QJsonObject& frame);
 
 	// Desktop notifications (FriendsNotify.cpp)
 	/// Tells the plugins (DesktopNotifier) who came online and which requests

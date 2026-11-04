@@ -21,8 +21,9 @@
  * FriendsController's socket (GET /v1/ws): open while Friends is on with a
  * session, closed with it. What it pushes goes where the poll's answers go:
  * friends' statuses and requests into the lists, chat into FriendsChat,
- * invites to applyInviteEvent(). Up, the poll slows to the minute's safety
- * net; every (re)connect reads the lists again, as events are not replayed.
+ * invites (and friend.removed, whose invites go too) to applyInviteEvent().
+ * Up, the poll slows to the minute's safety net; every (re)connect reads the
+ * lists again, as events are not replayed.
  */
 
 #include "FriendsController.h"
@@ -120,18 +121,19 @@ void FriendsController::onSocketUp(bool up)
 
 void FriendsController::onSocketFrame(const QJsonObject& frame)
 {
-	switch (FriendsEvents::kindOf(frame)) {
-		case FriendsEvents::Kind::Chat:
-			m_chat->handleFrame(frame);
-			return;
-		case FriendsEvents::Kind::Invite:
-			applyInviteEvent(frame);
-			return;
-		case FriendsEvents::Kind::Friend:
-			break;
-		case FriendsEvents::Kind::Other:
-			return;
+	const auto kind = FriendsEvents::kindOf(frame);
+	if (kind == FriendsEvents::Kind::Chat) {
+		m_chat->handleFrame(frame);
+	} else if (kind == FriendsEvents::Kind::Friend) {
+		applyFriendEvent(frame);
 	}
+	if (FriendsEvents::forInvites(frame)) {
+		applyInviteEvent(frame);
+	}
+}
+
+void FriendsController::applyFriendEvent(const QJsonObject& frame)
+{
 	if (!m_loaded) {
 		/* Nothing on screen to change yet: the first read brings it all. */
 		poll();

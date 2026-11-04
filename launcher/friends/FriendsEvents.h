@@ -39,6 +39,9 @@ namespace FriendsEvents
 
 	/// Which part of the launcher a frame's `type` is for.
 	Kind kindOf(const QJsonObject& frame);
+	/// Whether the invites hear of the frame: invite and invite.cancelled, and
+	/// friend.removed, whose invites go with the friend.
+	bool forInvites(const QJsonObject& frame);
 
 	/// friend.status, friend.request, friend.accepted and friend.removed.
 	Outcome apply(FriendsApi::FriendsSnapshot& snapshot, const QJsonObject& frame);

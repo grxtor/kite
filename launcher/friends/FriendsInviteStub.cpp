@@ -18,15 +18,16 @@
  */
 
 /*
- * Where the socket's invite and invite.cancelled frames go. The invites
- * themselves (their list, Join and Dismiss) are another change's; until it
- * lands this does nothing and the next poll is all an invite gets. That change
- * replaces this file.
+ * Where the socket's invite, invite.cancelled and friend.removed frames go
+ * (FriendsEvents::forInvites()). The invites themselves (their list, Join and
+ * Dismiss) are another change's; until it lands this does nothing and the next
+ * poll is all an invite gets. Whichever of the two changes merges second drops
+ * this file.
  */
 
 #include "FriendsController.h"
 
-void FriendsController::applyInviteEvent(const QJsonObject& event)
+void FriendsController::applyInviteEvent(const QJsonObject& frame)
 {
-	Q_UNUSED(event);
+	Q_UNUSED(frame);
 }

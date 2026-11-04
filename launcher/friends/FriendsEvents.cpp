@@ -100,6 +100,12 @@ namespace FriendsEvents
 		return Kind::Other;
 	}
 
+	bool forInvites(const QJsonObject& frame)
+	{
+		return kindOf(frame) == Kind::Invite ||
+			   frame.value("type").toString() == QLatin1String("friend.removed");
+	}
+
 	Outcome apply(FriendsApi::FriendsSnapshot& snapshot, const QJsonObject& frame)
 	{
 		const QString type = frame.value("type").toString();
