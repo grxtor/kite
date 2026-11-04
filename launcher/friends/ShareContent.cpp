@@ -53,11 +53,13 @@ namespace ShareContent
 		}
 
 		/* A bare file name: the platform's answer decides where a file lands,
-		 * so a name with a path in it is not taken. */
+		 * so a name with a path in it is not taken. On Windows "C:x.jar" is a
+		 * path too: QDir::filePath() hands it back as it is. */
 		bool safeFileName(const QString& name)
 		{
 			return !name.isEmpty() && !name.contains(QLatin1Char('/')) &&
-				   !name.contains(QLatin1Char('\\')) && name != QLatin1String(".") &&
+				   !name.contains(QLatin1Char('\\')) &&
+				   !name.contains(QLatin1Char(':')) && name != QLatin1String(".") &&
 				   name != QLatin1String("..");
 		}
 

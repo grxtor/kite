@@ -93,6 +93,10 @@ void JavaRuntimeTest::insideMeansStrictlyBelow()
 	QVERIFY(!isInside("/data/java", "/data/java"));
 	QVERIFY(!isInside("/data/java", "/data/java-other/x"));
 	QVERIFY(!isInside("/data/java", "/data/java/../x"));
+	QVERIFY(isInside("/data/java", "/data/java/a/../b"));
+#if defined(Q_OS_WIN)
+	QVERIFY(isInside("c:/data/java", "C:/data/java/a/../b"));
+#endif
 	QVERIFY(!isInside("/data/java", "/etc"));
 }
 

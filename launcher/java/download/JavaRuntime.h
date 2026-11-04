@@ -113,14 +113,18 @@ namespace JavaDownload
 		return !parts.isEmpty();
 	}
 
-	// Whether @p path lies strictly below @p root, ".." resolved.
+	/* Whether @p path lies strictly below @p root, ".." resolved. Both sides go
+	 * through QFileInfo: QDir::absolutePath() hands a clean path back as it is
+	 * but sends one with ".." through Windows, which gives "/x" the current
+	 * drive and "c:" a capital letter, and the two would no longer compare. */
 	inline bool isInside(const QString& root, const QString& path)
 	{
-		QString base = QDir::cleanPath(QDir(root).absolutePath());
+		QString base = QDir::cleanPath(QFileInfo(root).absoluteFilePath());
 		if (!base.endsWith(QLatin1Char('/'))) {
 			base += QLatin1Char('/');
 		}
-		return QDir::cleanPath(QDir(path).absolutePath()).startsWith(base);
+		return QDir::cleanPath(QFileInfo(path).absoluteFilePath())
+			.startsWith(base);
 	}
 
 	// <root>/<relative>, or empty if @p relative is unsafe or escapes @p root.
@@ -155,10 +159,8 @@ namespace JavaDownload
 				return false;
 			}
 		}
-		// Made absolute the way isInside does it (QFileInfo::absolutePath would
-		// differ on Windows for a rooted path without a drive letter).
-		return isInside(root, QDir(QFileInfo(linkPath).path()).absolutePath() +
-								  QLatin1Char('/') + target);
+		return isInside(root, QFileInfo(linkPath).path() + QLatin1Char('/') +
+								  target);
 	}
 
 	inline QString currentRuntimeOS()

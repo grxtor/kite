@@ -26,6 +26,11 @@
 #include "JavaInstallList.h"
 
 #ifdef Q_OS_WIN
+// Without it <windows.h> defines min() and max() macros, and every file that
+// includes this header loses std::min and std::max.
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #endif
 

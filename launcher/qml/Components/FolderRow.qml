@@ -44,7 +44,7 @@ SettingRow {
         title: root.label
         // Only an absolute path can be a starting point; a relative one is
         // inside the data folder, which the dialog cannot see.
-        currentFolder: root.path.length > 0 && root.path.charAt(0) === "/" ? "file://" + root.path : ""
+        currentFolder: Format.isAbsolutePath(root.path) ? Format.fileUrl(root.path) : ""
         onAccepted: LauncherStore.folders.setFolder(root.key, selectedFolder)
     }
 }
