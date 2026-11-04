@@ -146,31 +146,32 @@ void CrashDoctorService::onFinished(LaunchTask* task, const QString& instanceId)
 		return;
 	}
 	Q_UNUSED(instanceId);
-	run(CrashDoctor::snapshot(*instance, task));
+	run(CrashDoctor::snapshot(*instance, task), true);
 }
 
-void CrashDoctorService::analyseFiles(MinecraftInstance& instance)
+void CrashDoctorService::analyseFiles(MinecraftInstance& instance, bool fresh)
 {
 	if (busy(instance.id())) {
 		return;
 	}
 	refreshCatalog();
-	run(CrashDoctor::snapshot(instance, nullptr));
+	run(CrashDoctor::snapshot(instance, nullptr), fresh);
 }
 
-void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot)
+void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh)
 {
 	const QString id = snapshot.instanceId;
 	m_busy.insert(id);
 	emit busyChanged(id);
 	auto* watcher = new QFutureWatcher<CrashDoctor::Report>(this);
-	connect(watcher, &QFutureWatcher<CrashDoctor::Report>::finished, this, [this, watcher, id] {
-		m_reports.insert(id, watcher->result());
-		m_busy.remove(id);
-		watcher->deleteLater();
-		emit busyChanged(id);
-		emit analysed(id);
-	});
+	connect(watcher, &QFutureWatcher<CrashDoctor::Report>::finished, this,
+			[this, watcher, id, fresh] {
+				m_reports.insert(id, watcher->result());
+				m_busy.remove(id);
+				watcher->deleteLater();
+				emit busyChanged(id);
+				emit analysed(id, fresh);
+			});
 	watcher->setFuture(QtConcurrent::run(
 		[catalog = m_catalog, snapshot, lang = language()] {
 			return CrashDoctor::analyse(catalog, snapshot, lang);

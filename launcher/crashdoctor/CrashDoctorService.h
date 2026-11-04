@@ -60,7 +60,8 @@ class CrashDoctorService : public QObject
 	/// Watches @p task; MinecraftInstance::createLaunchTask() calls it.
 	void watch(const shared_qobject_ptr<LaunchTask>& task);
 	/// Analyses @p instance's last run from its files (no launch to watch).
-	void analyseFiles(MinecraftInstance& instance);
+	/// @p fresh says the crash just happened (only the dev route sets it).
+	void analyseFiles(MinecraftInstance& instance, bool fresh = false);
 
 	std::optional<CrashDoctor::Report> report(const QString& instanceId) const;
 	bool busy(const QString& instanceId) const;
@@ -72,7 +73,9 @@ class CrashDoctorService : public QObject
 
   signals:
 	/// A report for @p instanceId is ready, possibly with no known cause.
-	void analysed(const QString& instanceId);
+	/// @p fresh: the crash of a launch that just ended, as opposed to one
+	/// read again later; only a fresh one opens the "why" window.
+	void analysed(const QString& instanceId, bool fresh);
 	void busyChanged(const QString& instanceId);
 	void forgotten(const QString& instanceId);
 
@@ -81,7 +84,7 @@ class CrashDoctorService : public QObject
 	void loadCatalog();
 	void refreshCatalog();
 	void onFinished(LaunchTask* task, const QString& instanceId);
-	void run(const CrashDoctor::Snapshot& snapshot);
+	void run(const CrashDoctor::Snapshot& snapshot, bool fresh);
 
 	CrashDoctor::Catalog m_catalog;
 	QHash<QString, CrashDoctor::Report> m_reports;

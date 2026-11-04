@@ -158,8 +158,8 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, bump);
 
 	connect(CrashDoctorService::instance(), &CrashDoctorService::analysed, this,
-			[this](const QString& id) {
-				emit crashAnalysed(id, CrashDoctorService::instance()->topCause(id));
+			[this](const QString& id, bool fresh) {
+				emit crashAnalysed(id, CrashDoctorService::instance()->topCause(id), fresh);
 			});
 
 	recomputeSetupSteps();
@@ -772,15 +772,28 @@ void QmlShell::debugMarkInstanceCrashed(const QString& id)
 	instance->setCrashed(true);
 }
 
+namespace
+{
+	void debugCrash(const QString& id, bool fresh)
+	{
+		auto instance = std::dynamic_pointer_cast<MinecraftInstance>(
+			LAUNCHER->instances()->getInstanceById(id));
+		if (!instance) {
+			return;
+		}
+		instance->setCrashed(true);
+		CrashDoctorService::instance()->analyseFiles(*instance, fresh);
+	}
+} // namespace
+
 void QmlShell::debugAnalyseCrash(const QString& id)
 {
-	auto instance = std::dynamic_pointer_cast<MinecraftInstance>(
-		LAUNCHER->instances()->getInstanceById(id));
-	if (!instance) {
-		return;
-	}
-	instance->setCrashed(true);
-	CrashDoctorService::instance()->analyseFiles(*instance);
+	debugCrash(id, false);
+}
+
+void QmlShell::debugCrashNow(const QString& id)
+{
+	debugCrash(id, true);
 }
 
 void QmlShell::debugClick(const QString& spec)
