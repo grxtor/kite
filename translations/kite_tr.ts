@@ -589,7 +589,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1554"/>
+        <location filename="../launcher/Application.cpp" line="+1557"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -2685,7 +2685,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Hata</translation>
     </message>
     <message>
-        <location line="+38"/>
+        <location line="+42"/>
         <source>1 mod</source>
         <translation>1 mod</translation>
     </message>
@@ -2848,7 +2848,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashUploadPromptDialog</name>
     <message>
-        <location line="-137"/>
+        <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="-137"/>
         <source>Kite Crash Report</source>
         <translation>Kite çökme raporu</translation>
     </message>
@@ -8802,7 +8802,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+406"/>
+        <location filename="../launcher/qml/Main.qml" line="+411"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -12893,7 +12893,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+483"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+484"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
