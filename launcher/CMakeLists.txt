@@ -887,6 +887,14 @@ set(FRIENDS_SOURCES
     friends/FriendsActions.cpp
     friends/FriendsBridge.cpp
     friends/FriendsNotify.cpp
+    friends/FriendsChatApi.h
+    friends/FriendsChatApi.cpp
+    friends/FriendsChatModel.h
+    friends/FriendsChatModel.cpp
+    friends/FriendsChat.h
+    friends/FriendsChat.cpp
+    friends/FriendsChatHistory.cpp
+    friends/FriendsChatSend.cpp
     modbridge/ModBridgeProtocol.h
     modbridge/ModBridgeProtocol.cpp
     modbridge/ModBridgeAnswers.cpp
@@ -922,6 +930,11 @@ add_unit_test(FriendsGameWatcher
 
 add_unit_test(FriendsFaces
     SOURCES friends/FriendsFaces_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(FriendsChat
+    SOURCES friends/FriendsChat_test.cpp
     LIBS Kite_core
     )
 
