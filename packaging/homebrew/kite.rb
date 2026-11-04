@@ -34,6 +34,9 @@ cask "kite" do
     strategy :github_latest
   end
 
+  # Kite updates itself with Sparkle; brew upgrade leaves it to the app.
+  auto_updates true
+
   app "Kite.app"
 
   # Not notarised yet, so Gatekeeper refuses a quarantined copy. Drop this once

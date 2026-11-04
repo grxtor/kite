@@ -48,9 +48,5 @@ runs:
           --pattern "mkappimage-*-$APPIMAGE_ARCH.AppImage" \
           --output ~/bin/mkappimage
 
-        gh release download \
-          --repo AppImageCommunity/AppImageUpdate \
-          --pattern "AppImageUpdate-$APPIMAGE_ARCH.AppImage" \
-          --output ~/bin/AppImageUpdate.AppImage
         chmod +x ~/bin/*
         echo "$HOME/bin" >> "$GITHUB_PATH"

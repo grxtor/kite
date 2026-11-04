@@ -130,7 +130,6 @@ runs:
           --dst-dir "$INSTALL_APPIMAGE_DIR" \
           "$INSTALL_APPIMAGE_DIR"/bin/* "$QT_PLUGIN_PATH"/*/*.so "${qml_plugin_libs[@]}" "${openssl_libs[@]}"
 
-        cp ~/bin/AppImageUpdate.AppImage "$INSTALL_APPIMAGE_DIR"/bin/
         # FIXME(@YongDo-Hyun): gamemode doesn't seem to be very portable with DBus. Find a way to make it work!
         find "$INSTALL_APPIMAGE_DIR" -name '*gamemode*' -exec rm {} +
 
@@ -147,7 +146,8 @@ runs:
         ls -la "$INSTALL_APPIMAGE_DIR"
 
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          # The name release.yml publishes. AppImageUpdate fetches both the
+          # The name release.yml publishes. kite-updater looks for it, and
+          # zsync tools (AppImageUpdate, AppImageLauncher) fetch both the
           # .zsync named below and the AppImage the .zsync points at (this
           # file's name), so neither may differ from the release asset.
           APPIMAGE_DEST="Kite-Linux-Qt${{ inputs.qt-major }}-$APPIMAGE_ARCH.AppImage"

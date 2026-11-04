@@ -27,6 +27,15 @@ include(CTest)
 include(ECMAddTests)
 if(BUILD_TESTING)
     enable_testing()
+
+    # The script the release workflow makes and signs the update feeds with: its tests use a fake
+    # release, so they run with every build rather than only on a tag.
+    find_package(Python3 3.9 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME UpdateFeedScript
+            COMMAND "${Python3_EXECUTABLE}" -I -B -m unittest discover
+                -s "${CMAKE_CURRENT_SOURCE_DIR}/packaging/update-feed" -t "${CMAKE_CURRENT_SOURCE_DIR}/packaging/update-feed")
+    endif()
 endif()
 
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BUILD_DIR}" IS_IN_SOURCE_BUILD)

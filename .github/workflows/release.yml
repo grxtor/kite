@@ -24,7 +24,8 @@ jobs:
     needs: build_release
     permissions:
       contents: write
-    runs-on: ubuntu-slim
+    # Not ubuntu-slim: the update feeds are made with Python.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -80,6 +81,72 @@ jobs:
             cd ..
           done
 
+      # The one list of what the release carries: the feeds below sign exactly these files.
+      - name: List the release files
+        id: files
+        run: |
+          cat > release-files.txt <<EOF
+          Kite-Linux-Qt6-x86_64.AppImage
+          Kite-Linux-Qt6-x86_64.AppImage.zsync
+          Kite-Linux-Qt6-aarch64.AppImage
+          Kite-Linux-Qt6-aarch64.AppImage.zsync
+          Kite-Linux-Qt6-Portable-${VERSION}.tar.gz
+          Kite-Linux-aarch64-Qt6-Portable-${VERSION}.tar.gz
+          Kite-Windows-MinGW-Qt6-w64-${VERSION}.zip
+          Kite-Windows-MinGW-Qt6-w64-Portable-${VERSION}.zip
+          Kite-Windows-MinGW-Qt6-w64-Setup-${VERSION}.exe
+          Kite-Windows-MSVC-Qt6-arm64-${VERSION}.zip
+          Kite-Windows-MSVC-Qt6-arm64-Portable-${VERSION}.zip
+          Kite-Windows-MSVC-Qt6-arm64-Setup-${VERSION}.exe
+          Kite-Windows-MSVC-Qt6-${VERSION}.zip
+          Kite-Windows-MSVC-Qt6-Portable-${VERSION}.zip
+          Kite-Windows-MSVC-Qt6-Setup-${VERSION}.exe
+          Kite-macOS-Intel-Qt6-${VERSION}.zip
+          Kite-macOS-Intel-Qt6-${VERSION}.dmg
+          Kite-macOS-ARM-Qt6-${VERSION}.zip
+          Kite-macOS-ARM-Qt6-${VERSION}.dmg
+          Kite-macOS-Intel-Legacy-Qt6-${VERSION}.zip
+          Kite-macOS-Intel-Legacy-Qt6-${VERSION}.dmg
+          Kite-${VERSION}.tar.gz
+          EOF
+          {
+            echo 'list<<LIST'
+            cat release-files.txt
+            printf '%s\n' appcast-macOS-ARM-Qt6.xml appcast-macOS-Intel-Qt6.xml \
+              appcast-macOS-Intel-Legacy-Qt6.xml kite-update.json kite-update.json.sig
+            echo LIST
+          } >> "$GITHUB_OUTPUT"
+
+      # Sparkle's appcasts (macOS, EdDSA over each .zip) and kite-update.json with its signature
+      # (Windows, Linux), served from releases/latest/download/. The script fails when the tag is not
+      # the version in CMakeLists.txt or a key is not the one built into the apps; a release without
+      # these feeds would reach nobody's updater.
+      - name: Make and sign the update feeds
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          KITE_UPDATE_ED_PRIVATE_KEY: ${{ secrets.KITE_UPDATE_ED_PRIVATE_KEY }}
+          BASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ env.VERSION }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SPARKLE_ED_PRIVATE_KEY" ] || [ -z "$KITE_UPDATE_ED_PRIVATE_KEY" ]; then
+            echo "::error::The SPARKLE_ED_PRIVATE_KEY and KITE_UPDATE_ED_PRIVATE_KEY secrets are needed to sign the update feeds."
+            exit 1
+          fi
+          keys="$RUNNER_TEMP/update-keys"
+          mkdir -m 700 "$keys"
+          trap 'rm -rf "$keys"' EXIT
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$keys/sparkle"
+          printf '%s' "$KITE_UPDATE_ED_PRIVATE_KEY" > "$keys/update"
+
+          mapfile -t files < release-files.txt
+          script="Kite-${VERSION}/packaging/update-feed/kite_update_feed.py"
+          python3 -I "$script" make --tag "$VERSION" --cmake-lists "Kite-${VERSION}/CMakeLists.txt" \
+            --sparkle-key-file "$keys/sparkle" --update-key-file "$keys/update" \
+            --base-url "$BASE_URL" --out . "${files[@]}"
+          # What the apps will check, checked here first.
+          python3 -I "$script" verify --tag "$VERSION" --cmake-lists "Kite-${VERSION}/CMakeLists.txt" \
+            --feeds . "${files[@]}"
+
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
@@ -89,26 +156,4 @@ jobs:
           draft: true
           prerelease: false
           fail_on_unmatched_files: true
-          files: |
-            Kite-Linux-Qt6-x86_64.AppImage
-            Kite-Linux-Qt6-x86_64.AppImage.zsync
-            Kite-Linux-Qt6-aarch64.AppImage
-            Kite-Linux-Qt6-aarch64.AppImage.zsync
-            Kite-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            Kite-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            Kite-Windows-MinGW-Qt6-w64-${{ env.VERSION }}.zip
-            Kite-Windows-MinGW-Qt6-w64-Portable-${{ env.VERSION }}.zip
-            Kite-Windows-MinGW-Qt6-w64-Setup-${{ env.VERSION }}.exe
-            Kite-Windows-MSVC-Qt6-arm64-${{ env.VERSION }}.zip
-            Kite-Windows-MSVC-Qt6-arm64-Portable-${{ env.VERSION }}.zip
-            Kite-Windows-MSVC-Qt6-arm64-Setup-${{ env.VERSION }}.exe
-            Kite-Windows-MSVC-Qt6-${{ env.VERSION }}.zip
-            Kite-Windows-MSVC-Qt6-Portable-${{ env.VERSION }}.zip
-            Kite-Windows-MSVC-Qt6-Setup-${{ env.VERSION }}.exe
-            Kite-macOS-Intel-Qt6-${{ env.VERSION }}.zip
-            Kite-macOS-Intel-Qt6-${{ env.VERSION }}.dmg
-            Kite-macOS-ARM-Qt6-${{ env.VERSION }}.zip
-            Kite-macOS-ARM-Qt6-${{ env.VERSION }}.dmg
-            Kite-macOS-Intel-Legacy-Qt6-${{ env.VERSION }}.zip
-            Kite-macOS-Intel-Legacy-Qt6-${{ env.VERSION }}.dmg
-            Kite-${{ env.VERSION }}.tar.gz
+          files: ${{ steps.files.outputs.list }}

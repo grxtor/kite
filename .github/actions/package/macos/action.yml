@@ -31,9 +31,6 @@ inputs:
   apple-notarize-password:
     description: Password used for notarizing macOS builds
     required: false
-  sparkle-ed25519-key:
-    description: Private key for signing Sparkle updates
-    required: false
   qt-major:
     description: Major version of Qt used, to keep artifact names distinct
     required: false
@@ -159,27 +156,6 @@ runs:
             -D license=LICENSE \
             "Kite ${{ inputs.version }}" \
             Kite.dmg
-
-    - name: Make Sparkle signature
-      shell: bash
-      run: |
-        if [ '${{ inputs.sparkle-ed25519-key }}' != '' ]; then
-          echo '${{ inputs.sparkle-ed25519-key }}' > ed25519-priv.pem
-          OPENSSL=$(brew --prefix openssl@3)/bin/openssl
-          signature_zip=$("$OPENSSL" pkeyutl -sign -rawin -in ${{ github.workspace }}/Kite.zip -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
-          signature_dmg=$("$OPENSSL" pkeyutl -sign -rawin -in ${{ github.workspace }}/Kite.dmg -inkey ed25519-priv.pem | openssl base64 | tr -d \\n)
-          rm ed25519-priv.pem
-          cat >> $GITHUB_STEP_SUMMARY << EOF
-        ### Artifact Information :information_source:
-        - :memo: Sparkle Signature (ed25519): \`$signature_zip\` (ZIP)
-        - :memo: Sparkle Signature (ed25519): \`$signature_dmg\` (DMG)
-        EOF
-        else
-          cat >> $GITHUB_STEP_SUMMARY << EOF
-        ### Artifact Information :information_source:
-        - :warning: Sparkle Signature (ed25519): No private key available (likely a pull request or fork)
-        EOF
-        fi
 
     - name: Upload binary tarball
       uses: actions/upload-artifact@v7

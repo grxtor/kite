@@ -31,9 +31,11 @@ package() {
   install -d "$pkgdir/opt/kite" "$pkgdir/usr/bin" "$pkgdir/usr/share"
   bsdtar -xf "$srcdir/$tarball" -C "$pkgdir/opt/kite"
 
-  # pacman updates Kite, so the updater goes. Without portable.txt data lives in
-  # ~/.local/share/Kite.
-  rm "$pkgdir/opt/kite/"{portable.txt,manifest.txt} "$pkgdir/opt/kite/bin/kite-updater"
+  # pacman updates Kite: with updates-managed-by.txt Kite only announces a new
+  # release, and its updater refuses to install one. Without portable.txt data
+  # lives in ~/.local/share/Kite.
+  rm "$pkgdir/opt/kite/"{portable.txt,manifest.txt}
+  echo pacman > "$pkgdir/opt/kite/updates-managed-by.txt"
   ln -s /opt/kite/Kite "$pkgdir/usr/bin/kite"
 
   # Copied, not moved: the bundle still looks for its files under /opt/kite.

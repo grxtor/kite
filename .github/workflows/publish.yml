@@ -7,6 +7,37 @@ on:
 permissions: {}
 
 jobs:
+  # The appcasts are made when the release is built, before its notes are written: the notes go in
+  # now, as Markdown, which Sparkle shows as text. The EdDSA signatures cover the archives, not the
+  # appcasts, so they stay valid.
+  update-feed-notes:
+    name: Release notes in the macOS update feeds
+
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: packaging/update-feed
+
+      - name: Put the release notes into the appcasts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          # Through the environment, never pasted into the script.
+          NOTES: ${{ github.event.release.body }}
+        run: |
+          set -euo pipefail
+          mkdir feeds
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir feeds --pattern 'appcast-*.xml'
+          printf '%s' "$NOTES" > notes.md
+          python3 -I packaging/update-feed/kite_update_feed.py add-notes --notes-file notes.md feeds/appcast-*.xml
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber feeds/appcast-*.xml
+
   winget:
     name: Winget
 
