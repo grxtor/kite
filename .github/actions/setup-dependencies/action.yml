@@ -66,8 +66,10 @@ runs:
         qt-major: ${{ inputs.qt-major }}
 
     # TODO(@YongDo-Hyun): Get this working on MSYS2!
+    # Not on Intel Macs: there `brew install sccache` finds no bottle on macos-26-intel and builds LLVM
+    # and Rust from source until the job runs out of time. They build uncached instead.
     - name: Setup ccache
-      if: ${{ (runner.os != 'Windows' || inputs.msystem == '') && inputs.build-type == 'Debug' }}
+      if: ${{ (runner.os != 'Windows' || inputs.msystem == '') && inputs.build-type == 'Debug' && !(runner.os == 'macOS' && runner.arch == 'X64') }}
       uses: hendrikmuhs/ccache-action@v1.2.24
       with:
         variant: sccache
@@ -75,7 +77,7 @@ runs:
         key: ${{ runner.os }}-${{ runner.arch }}-${{ inputs.artifact-name }}-sccache
 
     - name: Use ccache on debug builds
-      if: ${{ inputs.build-type == 'Debug' }}
+      if: ${{ inputs.build-type == 'Debug' && !(runner.os == 'macOS' && runner.arch == 'X64') }}
       shell: bash
       env:
         # Only use ccache on MSYS2
