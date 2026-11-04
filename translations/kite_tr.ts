@@ -4004,7 +4004,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 okunmamış mesaj</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>%1 min left</source>
         <translation>%1 dk kaldı</translation>
     </message>
@@ -4227,12 +4227,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendInviteCard</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendInviteCard.qml" line="+37"/>
+        <location filename="../launcher/qml/Components/FriendInviteCard.qml" line="+42"/>
         <source>%1 invited you to %2</source>
         <translation>%1 seni %2 sunucusuna davet etti</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+35"/>
         <source>%1 invited you</source>
         <translation>%1 seni davet etti</translation>
     </message>
@@ -4240,6 +4240,69 @@ Lütfen tekrar dene.</translation>
         <location line="+34"/>
         <source>Dismiss</source>
         <translation>Kapat</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Join %1</source>
+        <translation>%1 sunucusuna katıl</translation>
+    </message>
+</context>
+<context>
+    <name>FriendInvitePicker</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendInvitePicker.qml" line="+58"/>
+        <source>Invite friends to %1</source>
+        <translation>Arkadaşlarını %1 sunucusuna davet et</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Done</source>
+        <translation>Bitti</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Search friends</source>
+        <translation>Arkadaş ara</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Friends isn&apos;t connected. Invites go out once it is.</source>
+        <translation>Arkadaşlar bağlı değil. Bağlanınca davet gönderebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No friends yet. Add them by their Minecraft name in Friends.</source>
+        <translation>Henüz arkadaşın yok. Arkadaşlar&apos;da Minecraft adlarıyla ekleyebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No friend is called that.</source>
+        <translation>Bu adda bir arkadaşın yok.</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>Inviting…</source>
+        <translation>Davet ediliyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Invited</source>
+        <translation>Davet edildi</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Invite</source>
+        <translation>Davet et</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Invite %1</source>
+        <translation>Davet et: %1</translation>
     </message>
 </context>
 <context>
@@ -4311,7 +4374,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendJoinFlow</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendJoinFlow.qml" line="+41"/>
+        <location filename="../launcher/qml/Components/FriendJoinFlow.qml" line="+49"/>
         <source>%1 is already running. Quit it, then press Join.</source>
         <translation>%1 zaten açık. Kapatıp Katıl&apos;a yeniden bas.</translation>
     </message>
@@ -4337,16 +4400,18 @@ Lütfen tekrar dene.</translation>
     </message>
     <message>
         <location line="+2"/>
+        <location line="+29"/>
         <source>Start %1 and join %2</source>
         <translation>%1 kurulumunu başlat ve %2 sunucusuna katıl</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-28"/>
+        <location line="+29"/>
         <source>Choose an instance and join %1</source>
         <translation>Bir kurulum seç ve %1 sunucusuna katıl</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="-19"/>
         <source>Starting %2 to join %1…</source>
         <translation>%1 sunucusuna katılmak için %2 açılıyor…</translation>
     </message>
@@ -4376,12 +4441,22 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendPersonMenu</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+48"/>
+        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+59"/>
         <source>Message</source>
         <translation>Mesaj gönder</translation>
     </message>
     <message>
         <location line="+6"/>
+        <source>Invite to %1</source>
+        <translation>%1 sunucusuna davet et</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Take back invite</source>
+        <translation>Daveti geri al</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>Remove friend…</source>
         <translation>Arkadaşlıktan çıkar…</translation>
     </message>
@@ -4612,6 +4687,7 @@ Lütfen tekrar dene.</translation>
     <name>FriendsController</name>
     <message>
         <location filename="../launcher/friends/FriendsActions.cpp" line="+64"/>
+        <location filename="../launcher/friends/FriendsInviteActions.cpp" line="+260"/>
         <location filename="../launcher/friends/FriendsRealtime.cpp" line="+63"/>
         <source>Friends is turned off</source>
         <translation>Arkadaşlık kapalı</translation>
@@ -4701,6 +4777,7 @@ Lütfen tekrar dene.</translation>
     </message>
     <message>
         <location line="+2"/>
+        <location filename="../launcher/friends/FriendsInviteActions.cpp" line="-103"/>
         <source>%1 is not your friend</source>
         <translation>%1 arkadaşın değil</translation>
     </message>
@@ -4826,24 +4903,75 @@ Lütfen tekrar dene.</translation>
         <translation>Minecraft girişi doğrulamadı; biraz sonra tekrar dene.</translation>
     </message>
     <message>
-        <location filename="../launcher/friends/FriendsController.cpp" line="+277"/>
+        <location filename="../launcher/friends/FriendsController.cpp" line="+280"/>
         <source>Friends was turned on before the delete finished; delete again if you still want it</source>
         <translation>Silme bitmeden Arkadaşlık açıldı; hâlâ istiyorsan yeniden sil</translation>
     </message>
     <message>
-        <location filename="../launcher/friends/FriendsNotify.cpp" line="+46"/>
+        <location filename="../launcher/friends/FriendsNotify.cpp" line="+81"/>
         <source>%1 is online</source>
         <translation>%1 çevrimiçi</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="+4"/>
         <source>%1 sent you a friend request</source>
         <translation>%1 sana arkadaşlık isteği gönderdi</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>Accept or decline it in Friends.</source>
         <translation>Arkadaşlar bölümünden kabul et ya da reddet.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>%1 invited you to %2</source>
+        <translation>%1 seni %2 sunucusuna davet etti</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Join from Friends within 10 minutes.</source>
+        <translation>10 dakika içinde Arkadaşlar&apos;dan katılabilirsin.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/friends/FriendsInviteActions.cpp" line="-9"/>
+        <source>%1 doesn&apos;t take invites to servers</source>
+        <translation>%1 sunucu davetlerini kabul etmiyor</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>This server is reached by an IP address or is on your home network. To invite friends to it, turn on &quot;Show servers I join by IP address&quot; in Settings › Friends.</source>
+        <translation>Bu sunucuya IP adresiyle bağlanılıyor ya da sunucu ev ağında. Arkadaşlarını davet etmek için Ayarlar › Arkadaşlar&apos;da &quot;IP adresiyle girdiğim sunucuları göster&quot;i aç.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <location line="+24"/>
+        <source>That is not a server address friends can join</source>
+        <translation>Bu, arkadaşların katılabileceği bir sunucu adresi değil</translation>
+    </message>
+    <message>
+        <location line="-20"/>
+        <source>You sent many invites; try again in %1 min</source>
+        <translation>Çok fazla davet gönderdin; %1 dk sonra tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>You sent many invites; try again in a minute</source>
+        <translation>Çok fazla davet gönderdin; bir dakika sonra tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>That server runs on your own computer; friends can&apos;t join it</source>
+        <translation>Bu sunucu kendi bilgisayarında çalışıyor; arkadaşların katılamaz</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Invited %1 to %2</source>
+        <translation>%1, %2 sunucusuna davet edildi</translation>
+    </message>
+    <message>
+        <location line="+41"/>
+        <source>Invite to %1 taken back</source>
+        <translation>%1 için davet geri alındı</translation>
     </message>
 </context>
 <context>
@@ -4930,7 +5058,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsFriendsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+48"/>
+        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+47"/>
         <source>IN GAME — %1</source>
         <translation>OYUNDA — %1</translation>
     </message>
@@ -5074,7 +5202,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsPanelFull</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+108"/>
+        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+107"/>
         <source>IN GAME — %1</source>
         <translation>OYUNDA — %1</translation>
     </message>
@@ -5788,12 +5916,12 @@ Lütfen tekrar dene.</translation>
         <translation>Tekrar dene</translation>
     </message>
     <message>
-        <location line="+95"/>
+        <location line="+94"/>
         <source>Add friends who use Kite to see where they play.</source>
         <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
     </message>
     <message>
-        <location line="-153"/>
+        <location line="-152"/>
         <source>%1 online</source>
         <translation>%1 çevrimiçi</translation>
     </message>
@@ -5809,7 +5937,7 @@ Lütfen tekrar dene.</translation>
         <translation>Arkadaşlar şu an güncellenemiyor.</translation>
     </message>
     <message>
-        <location line="+77"/>
+        <location line="+76"/>
         <source>+%1 more</source>
         <translation>+%1 kişi daha</translation>
     </message>
@@ -5968,7 +6096,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+213"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+215"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -5983,7 +6111,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 kurulum</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+56"/>
         <source>No instances match “%1”</source>
         <translation>“%1” ile eşleşen kurulum yok</translation>
     </message>
@@ -6269,7 +6397,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceExportFlows</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceExportFlows.qml" line="+64"/>
+        <location filename="../launcher/qml/Components/InstanceExportFlows.qml" line="+77"/>
         <source>Copying “%1”…</source>
         <translation>“%1” kopyalanıyor…</translation>
     </message>
@@ -6725,6 +6853,11 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+6"/>
+        <source>Share as code…</source>
+        <translation>Kod olarak paylaş…</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Create shortcut…</source>
         <translation>Kısayol oluştur…</translation>
     </message>
@@ -6750,7 +6883,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+155"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+157"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -6811,12 +6944,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+321"/>
+        <location line="+323"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-199"/>
+        <location line="-201"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -6836,7 +6969,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+179"/>
+        <location line="+181"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -6874,6 +7007,11 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <location line="+8"/>
         <source>Export…</source>
         <translation>Dışa aktar…</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Share as code…</source>
+        <translation>Kod olarak paylaş…</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -7152,6 +7290,44 @@ Kurulumu başlattığında indirilecekler.</translation>
         <location line="+14"/>
         <source>Downloading the game&apos;s files...</source>
         <translation>Oyun dosyaları indiriliyor...</translation>
+    </message>
+</context>
+<context>
+    <name>InviteAddressDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/InviteAddressDialog.qml" line="+32"/>
+        <source>Join a server on a home network?</source>
+        <translation>Ev ağındaki bir sunucuya katılmak istiyor musun?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Join a server by its IP address?</source>
+        <translation>IP adresiyle bir sunucuya katılmak istiyor musun?</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>%1 invited you to:</source>
+        <translation>%1 seni şuraya davet etti:</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>This address is on a home or local network. It may only work on theirs, and Kite can&apos;t tell whose server it is.</source>
+        <translation>Bu adres bir ev ya da yerel ağda. Yalnızca onun ağında çalışabilir ve Kite sunucunun kime ait olduğunu bilemez.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This is a raw IP address, not a server name, so Kite can&apos;t tell whose server it is.</source>
+        <translation>Bu bir sunucu adı değil, düz bir IP adresi; Kite sunucunun kime ait olduğunu bilemez.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Join only if you trust %1.</source>
+        <translation>Yalnızca %1 adlı arkadaşına güveniyorsan katıl.</translation>
     </message>
 </context>
 <context>
@@ -8079,7 +8255,7 @@ Neden:
 <context>
     <name>LibrarySections</name>
     <message>
-        <location filename="../launcher/qml/Components/LibrarySections.qml" line="+134"/>
+        <location filename="../launcher/qml/Components/LibrarySections.qml" line="+139"/>
         <source>Ungrouped</source>
         <translation>Grupsuz</translation>
     </message>
@@ -8089,7 +8265,7 @@ Neden:
         <translation>“%1” grubu silinsin mi? Kurulumları kütüphanende, grupsuz olarak kalır.</translation>
     </message>
     <message>
-        <location line="+77"/>
+        <location line="+78"/>
         <source>Rename group</source>
         <translation>Grubu yeniden adlandır</translation>
     </message>
@@ -8429,7 +8605,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+345"/>
+        <location filename="../launcher/qml/Main.qml" line="+401"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -8489,7 +8665,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+381"/>
+        <location line="+387"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -10325,7 +10501,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>NewInstanceDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+58"/>
+        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+63"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -10340,7 +10516,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+85"/>
+        <location line="+113"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -10370,19 +10546,25 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+72"/>
-        <location line="+503"/>
+        <location line="+73"/>
+        <location line="+510"/>
+        <location line="+29"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-502"/>
-        <location line="+516"/>
+        <location line="-538"/>
+        <location line="+523"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-499"/>
+        <location line="-522"/>
+        <source>Share code</source>
+        <translation>Paylaşım kodu</translation>
+    </message>
+    <message>
+        <location line="+16"/>
         <source>Instance icon</source>
         <translation>Kurulum simgesi</translation>
     </message>
@@ -10447,23 +10629,29 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-364"/>
+        <location line="-395"/>
         <source>Pick a Minecraft version.</source>
         <translation>Bir Minecraft sürümü seç.</translation>
     </message>
     <message>
         <location line="+1"/>
+        <location line="+2"/>
         <location line="+3"/>
         <source>Give the instance a name.</source>
         <translation>Kuruluma bir ad ver.</translation>
     </message>
     <message>
-        <location line="-1"/>
+        <location line="-4"/>
+        <source>Enter a share code.</source>
+        <translation>Bir paylaşım kodu gir.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
         <source>Choose a modpack file or paste a link.</source>
         <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
-        <location line="+362"/>
+        <location line="+391"/>
         <source>None for this version</source>
         <translation>Bu sürüm için yok</translation>
     </message>
@@ -10493,7 +10681,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>CurseForge, FTB, ATLauncher veya Technic&apos;ten dışa aktarılan paketler de .zip dosyalarından aynı şekilde içe aktarılır.</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+16"/>
         <source>Choose an instance to import</source>
         <translation>İçe aktarılacak kurulumu seç</translation>
     </message>
@@ -10526,11 +10714,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     <message>
         <location line="-46"/>
         <location line="+32"/>
+        <location line="+29"/>
         <source>Creating…</source>
         <translation>Oluşturuluyor…</translation>
     </message>
     <message>
-        <location line="-9"/>
+        <location line="-38"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -12499,7 +12688,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+482"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+483"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -12627,13 +12816,13 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QuickJoinBar</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+131"/>
-        <location line="+37"/>
+        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+134"/>
+        <location line="+43"/>
         <source>More servers</source>
         <translation>Diğer sunucular</translation>
     </message>
     <message>
-        <location line="-25"/>
+        <location line="-31"/>
         <source>Join with %1</source>
         <translation>%1 ile katıl</translation>
     </message>
@@ -12646,6 +12835,11 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <location line="+5"/>
         <source>Join with another instance…</source>
         <translation>Başka bir kurulumla katıl…</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Invite a friend…</source>
+        <translation>Arkadaş davet et…</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -13167,12 +13361,12 @@ Currently installed version: %1</source>
 <context>
     <name>ServersTab</name>
     <message>
-        <location filename="../launcher/qml/Components/ServersTab.qml" line="+28"/>
+        <location filename="../launcher/qml/Components/ServersTab.qml" line="+30"/>
         <source>The game is running. The server list can be changed once it has closed.</source>
         <translation>Oyun çalışıyor. Sunucu listesi oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+22"/>
         <source>Ask</source>
         <translation>Sor</translation>
     </message>
@@ -13198,19 +13392,19 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+8"/>
-        <location line="+177"/>
+        <location line="+187"/>
         <location line="+1"/>
         <source>Add server</source>
         <translation>Sunucu ekle</translation>
     </message>
     <message>
-        <location line="-138"/>
-        <location line="+180"/>
+        <location line="-148"/>
+        <location line="+190"/>
         <source>Minecraft Server</source>
         <translation>Minecraft Sunucusu</translation>
     </message>
     <message>
-        <location line="-177"/>
+        <location line="-187"/>
         <source>No address yet</source>
         <translation>Henüz adres yok</translation>
     </message>
@@ -13250,7 +13444,12 @@ Currently installed version: %1</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
+        <source>Invite a friend…</source>
+        <translation>Arkadaş davet et…</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>Edit…</source>
         <translation>Düzenle…</translation>
     </message>
@@ -13752,7 +13951,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsFriendsSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+33"/>
+        <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+35"/>
         <location line="+100"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
@@ -13773,7 +13972,12 @@ Currently installed version: %1</source>
         <translation>Giriş yapılmadı</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+9"/>
+        <source>Tells you when a friend comes online, sends you a friend request or invites you to a server.</source>
+        <translation>Bir arkadaşın çevrimiçi olduğunda, sana arkadaşlık isteği gönderdiğinde ya da seni bir sunucuya davet ettiğinde haber verir.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
         <source>Privacy</source>
         <translation>Gizlilik</translation>
     </message>
@@ -13820,12 +14024,7 @@ Currently installed version: %1</source>
         <translation>Masaüstü bildirimleri</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Tells you when a friend comes online or sends you a friend request.</source>
-        <translation>Bir arkadaşın çevrimiçi olduğunda ya da sana arkadaşlık isteği gönderdiğinde haber verir.</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Message notifications</source>
         <translation>Mesaj bildirimleri</translation>
     </message>
@@ -13865,12 +14064,27 @@ Currently installed version: %1</source>
         <translation>Ev ağındaki ya da doğrudan IP adresiyle girilen sunucular, bu açık değilse gizli kalır.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+17"/>
+        <source>Let friends invite me to servers</source>
+        <translation>Arkadaşlarımın beni sunuculara davet etmesine izin ver</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>A friend&apos;s invite shows in Friends with a Join button for ten minutes. Turning this off also drops the invites you have.</source>
+        <translation>Bir arkadaşının daveti on dakika boyunca Arkadaşlar&apos;da Katıl düğmesiyle görünür. Bunu kapatmak elindeki davetleri de siler.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
         <source>Delete my Friends data</source>
         <translation>Arkadaşlık verilerimi sil</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+1"/>
+        <source>Removes your friends, requests, invites, share codes, blocks and settings from Kite&apos;s server.</source>
+        <translation>Arkadaşlarını, isteklerini, davetlerini, paylaşım kodlarını, engellerini ve ayarlarını Kite&apos;ın sunucusundan siler.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>Delete your Friends data?</source>
         <translation>Arkadaşlık verilerin silinsin mi?</translation>
     </message>
@@ -13885,7 +14099,7 @@ Currently installed version: %1</source>
         <translation>Bu, %1 hesabının verisi. Diğer Minecraft hesaplarının verisi kalır.</translation>
     </message>
     <message>
-        <location line="-93"/>
+        <location line="-104"/>
         <source>Friends add you by this Minecraft name.</source>
         <translation>Arkadaşlar seni bu Minecraft adıyla ekler.</translation>
     </message>
@@ -13906,17 +14120,12 @@ Currently installed version: %1</source>
         <translation>Sunucun görünürken arkadaşların, adının yanında bir Katıl düğmesi görür.</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+17"/>
         <source>Your data</source>
         <translation>Verilerin</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Removes your friends, requests, blocks and settings from Kite&apos;s server.</source>
-        <translation>Arkadaşlarını, isteklerini, engellerini ve ayarlarını Kite&apos;ın sunucusundan siler.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="+5"/>
         <source>Delete…</source>
         <translation>Sil…</translation>
     </message>
@@ -14310,7 +14519,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+44"/>
+        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+46"/>
         <source>General</source>
         <translation>Genel</translation>
     </message>
@@ -14642,6 +14851,325 @@ Currently installed version: %1</source>
         <location line="+2"/>
         <source>The date and time this shader pack was last changed (or added).</source>
         <translation>Gölgelendirici paketinin en son değiştirildiği (veya eklendiği) tarih ve saat.</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodeBox</name>
+    <message>
+        <location filename="../launcher/qml/Components/ShareCodeBox.qml" line="+42"/>
+        <source>Copied</source>
+        <translation>Kopyalandı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodeDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/ShareCodeDialog.qml" line="+43"/>
+        <source>Turned off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Not from Modrinth or CurseForge</source>
+        <translation>Modrinth ya da CurseForge&apos;dan değil</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Share “%1” as a code</source>
+        <translation>“%1” kodla paylaş</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Done</source>
+        <translation>Bitti</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Making…</source>
+        <translation>Oluşturuluyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Make code</source>
+        <translation>Kod oluştur</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Share codes go through Kite&apos;s friends server. Turn on Friends in Settings to make one.</source>
+        <translation>Paylaşım kodları Kite&apos;ın arkadaşlık sunucusundan geçer. Kod oluşturmak için Ayarlar&apos;da Arkadaşlar&apos;ı aç.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Reading the instance…</source>
+        <translation>Kurulum okunuyor…</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Anyone with Kite can make this instance from the code for 90 days after it was last used. Your codes are in Settings › Friends.</source>
+        <translation>Kite kullanan herkes bu koddan bu kurulumu, kodun son kullanılmasından sonraki 90 gün boyunca oluşturabilir. Kodların Ayarlar › Arkadaşlar&apos;da.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>A friend who enters the code gets an instance with the same Minecraft version, loader and content, downloaded from Modrinth and CurseForge.</source>
+        <translation>Kodu giren bir arkadaşın aynı Minecraft sürümü, yükleyici ve içerikle bir kurulum alır; dosyalar Modrinth ve CurseForge&apos;dan indirilir.</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>1 file won&apos;t be included</source>
+        <translation>1 dosya eklenmeyecek</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 files won&apos;t be included</source>
+        <translation>%1 dosya eklenmeyecek</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodeImportPane</name>
+    <message>
+        <location filename="../launcher/qml/Components/ShareCodeImportPane.qml" line="+72"/>
+        <source>Enter the code a friend shared with you, like KITE-7F3K-9QXM. Kite makes the same instance and downloads its mods and packs from Modrinth and CurseForge.</source>
+        <translation>Bir arkadaşının seninle paylaştığı kodu gir, örneğin KITE-7F3K-9QXM. Kite aynı kurulumu oluşturur; modlarını ve paketlerini Modrinth ile CurseForge&apos;dan indirir.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Share codes go through Kite&apos;s friends server. Turn on Friends in Settings to use one.</source>
+        <translation>Paylaşım kodları Kite&apos;ın arkadaşlık sunucusundan geçer. Kod kullanmak için Ayarlar&apos;da Arkadaşlar&apos;ı aç.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Share code</source>
+        <translation>Paylaşım kodu</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Looking up…</source>
+        <translation>Aranıyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Look up</source>
+        <translation>Bul</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodeInstanceTask</name>
+    <message>
+        <location filename="../launcher/friends/ShareCodeInstanceTask.cpp" line="+82"/>
+        <location line="+14"/>
+        <source>Share code content</source>
+        <translation>Paylaşım kodu içeriği</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Looking up the shared content</source>
+        <translation>Paylaşılan içerik aranıyor</translation>
+    </message>
+    <message>
+        <location line="+71"/>
+        <source>Downloading the shared content</source>
+        <translation>Paylaşılan içerik indiriliyor</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodeSummary</name>
+    <message>
+        <location filename="../launcher/qml/Components/ShareCodeSummary.qml" line="+23"/>
+        <source>Minecraft %1</source>
+        <translation>Minecraft %1</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>1 mod</source>
+        <translation>1 mod</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 mods</source>
+        <translation>%1 mod</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 resource pack</source>
+        <translation>1 kaynak paketi</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 resource packs</source>
+        <translation>%1 kaynak paketi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 shader pack</source>
+        <translation>1 gölgelendirici paketi</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 shader packs</source>
+        <translation>%1 gölgelendirici paketi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 data pack</source>
+        <translation>1 veri paketi</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 data packs</source>
+        <translation>%1 veri paketi</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No mods or packs</source>
+        <translation>Mod ya da paket yok</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodesController</name>
+    <message>
+        <location filename="../launcher/friends/ShareCodesController.cpp" line="+87"/>
+        <source>Kite&apos;s friends server can&apos;t be reached.</source>
+        <translation>Kite&apos;ın arkadaşlık sunucusuna ulaşılamıyor.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>You looked up many codes; try again in %1 min</source>
+        <translation>Çok fazla kod aradın; %1 dk sonra tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>You made many codes; try again in %1 min</source>
+        <translation>Çok fazla kod oluşturdun; %1 dk sonra tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>There is no such code. It may have run out or been deleted.</source>
+        <translation>Böyle bir kod yok. Süresi dolmuş ya da silinmiş olabilir.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>That code is gone already</source>
+        <translation>Bu kod zaten silinmiş</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>You have 50 codes, the most there can be. Delete one in Settings › Friends to make another.</source>
+        <translation>En fazla 50 kodun olabilir. Yenisini oluşturmak için Ayarlar › Arkadaşlar&apos;dan birini sil.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <location line="+94"/>
+        <location line="+22"/>
+        <source>That is not a share code</source>
+        <translation>Bu bir paylaşım kodu değil</translation>
+    </message>
+    <message>
+        <location line="-115"/>
+        <source>Kite&apos;s friends server did not take this instance&apos;s list</source>
+        <translation>Kite&apos;ın arkadaşlık sunucusu bu kurulumun listesini kabul etmedi</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Something went wrong (%1).</source>
+        <translation>Bir şeyler ters gitti (%1).</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>This instance has no Minecraft version to share</source>
+        <translation>Bu kurulumun paylaşılacak bir Minecraft sürümü yok</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Instances with %1 can&apos;t be shared as a code</source>
+        <translation>%1 kullanan kurulumlar kod olarak paylaşılamaz</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Identifying content</source>
+        <translation>İçerik tanımlanıyor</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Kite is still reading this instance</source>
+        <translation>Kite bu kurulumu hâlâ okuyor</translation>
+    </message>
+    <message>
+        <location line="+50"/>
+        <source>Deleted %1</source>
+        <translation>%1 silindi</translation>
+    </message>
+    <message>
+        <location filename="../launcher/friends/ShareCodesCreate.cpp" line="+54"/>
+        <source>Look up a code first</source>
+        <translation>Önce bir kod bul</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Kite is still loading the Minecraft versions; try again in a moment</source>
+        <translation>Kite Minecraft sürümlerini hâlâ yüklüyor; birazdan tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Minecraft %1 can&apos;t be installed</source>
+        <translation>Minecraft %1 kurulamıyor</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>%1 is ready, but %2 and %3 more couldn&apos;t be downloaded</source>
+        <translation>%1 hazır, ama %2 ve %3 tane daha indirilemedi</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>%1 is ready, but %2 couldn&apos;t be downloaded</source>
+        <translation>%1 hazır, ama %2 indirilemedi</translation>
+    </message>
+</context>
+<context>
+    <name>ShareCodesGroup</name>
+    <message>
+        <location filename="../launcher/qml/Components/ShareCodesGroup.qml" line="+28"/>
+        <source>Share codes</source>
+        <translation>Paylaşım kodları</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Turn on Friends to make and see share codes.</source>
+        <translation>Paylaşım kodu oluşturmak ve görmek için Arkadaşlar&apos;ı aç.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>You have no share codes. Make one from an instance&apos;s ⋯ menu with Share as code.</source>
+        <translation>Hiç paylaşım kodun yok. Bir kurulumun ⋯ menüsünden Kod olarak paylaş ile oluşturabilirsin.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Runs out %1</source>
+        <translation>%1 tarihinde sona erer</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>More options for %1</source>
+        <translation>%1 için daha fazla seçenek</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Copy code</source>
+        <translation>Kodu kopyala</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Delete</source>
+        <translation>Sil</translation>
     </message>
 </context>
 <context>
