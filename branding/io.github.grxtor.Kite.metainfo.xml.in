@@ -34,6 +34,17 @@
     <memory>2048</memory>
   </recommends>
   <releases>
+    <release version="1.3.0" date="2026-11-04">
+      <description>
+        <p>Updates that install themselves, friends who can talk, and a crash doctor that learns.</p>
+        <ul>
+          <li>Updates: Kite checks at every start and once a day, and on Windows and Linux installs only files a signed release vouches for. It never replaces itself under a running game.</li>
+          <li>Friends: chat with a friend in a conversation panel, invite them to a server from its menu, and share an instance as a KITE code.</li>
+          <li>Crash doctor: a native crash names the graphics driver, overlay or antivirus that broke the game, and a crash Kite cannot explain can be sent so a fix reaches you later.</li>
+          <li>Safer text: names and messages from other players, mods and packs show as plain text, and links say where they lead.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.2.0" date="2026-10-30">
       <description>
         <p>Looks, the friends panel and a choice of graphics API.</p>
