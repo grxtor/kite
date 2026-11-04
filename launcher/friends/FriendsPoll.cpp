@@ -376,8 +376,9 @@ void FriendsController::applySnapshot(
 	m_friends = std::move(friends);
 	m_incoming = std::move(incoming);
 	m_outgoing = std::move(outgoing);
+	const bool invitesChanged = setInvites(snapshot.invites);
 	emit updatedAtChanged();
-	if (!same) {
+	if (!same || invitesChanged) {
 		emit changed();
 	}
 	fetchFaces();
@@ -390,6 +391,7 @@ void FriendsController::clearData()
 	m_incoming.clear();
 	m_outgoing.clear();
 	m_blocked.clear();
+	setInvites({});
 	m_loaded = false;
 	const bool hadUpdate = m_updatedAt.isValid();
 	m_updatedAt = QDateTime();

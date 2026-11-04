@@ -874,6 +874,8 @@ set(FRIENDS_SOURCES
     friends/FriendsLogRules.cpp
     friends/FriendsNotices.h
     friends/FriendsNotices.cpp
+    friends/FriendsInvites.h
+    friends/FriendsInvites.cpp
     friends/FriendsSessionStore.h
     friends/FriendsSessionStore.cpp
     friends/FriendsHttp.h
@@ -885,6 +887,7 @@ set(FRIENDS_SOURCES
     friends/FriendsSignIn.cpp
     friends/FriendsPoll.cpp
     friends/FriendsActions.cpp
+    friends/FriendsInviteActions.cpp
     friends/FriendsBridge.cpp
     friends/FriendsNotify.cpp
     friends/FriendsChatApi.h
@@ -900,7 +903,6 @@ set(FRIENDS_SOURCES
     friends/FriendsSocket.h
     friends/FriendsSocket.cpp
     friends/FriendsRealtime.cpp
-    friends/FriendsInviteStub.cpp
     modbridge/ModBridgeProtocol.h
     modbridge/ModBridgeProtocol.cpp
     modbridge/ModBridgeAnswers.cpp
@@ -965,6 +967,11 @@ add_unit_test(FriendsSocket
 add_unit_test(FriendsChatE2E
     SOURCES friends/FriendsChatE2E_test.cpp
     LIBS Kite_core Qt${QT_VERSION_MAJOR}::WebSockets
+    )
+
+add_unit_test(FriendsInvites
+    SOURCES friends/FriendsInvites_test.cpp
+    LIBS Kite_core
     )
 
 set(SERVERS_SOURCES

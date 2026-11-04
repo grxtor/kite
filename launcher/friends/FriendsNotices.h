@@ -25,12 +25,15 @@
 #include <QSet>
 #include <QString>
 
+#include <optional>
+
 #include "FriendsApi.h"
 
 /*
  * Which desktop notifications one friends snapshot calls for, compared with
- * the one before: a friend who was offline is online or playing now, or a
- * friend request nobody had seen yet came in. The first snapshot after
+ * the one before: a friend who was offline is online or playing now, a
+ * friend request or an invite to a server nobody had seen yet came in (an
+ * invite pushed by the socket counts as seen, see invite()). The first snapshot after
  * signing in only sets the baseline, or everyone already online would be
  * announced at once. A friend who drops out and comes back within
  * kQuietSeconds of last being seen online is not announced again.
@@ -40,12 +43,15 @@ namespace FriendsNotices
 	constexpr qint64 kQuietSeconds = 10 * 60;
 
 	struct Notice {
-		enum class Kind { Online, Request };
+		enum class Kind { Online, Request, Invite };
 		Kind kind = Kind::Online;
 		QString uuid;
 		QString name;
 		/// Online only: what the friend is doing now.
 		FriendsApi::Status status;
+		/// Invite only: where to.
+		QString host;
+		int port = 0;
 	};
 
 	/// What one snapshot leaves for the next; default-constructed before the
@@ -58,6 +64,9 @@ namespace FriendsNotices
 		QHash<QString, QDateTime> lastOnline;
 		/// Every incoming request seen since signing in: one notice each.
 		QSet<QString> requests;
+		/// Every invite seen since signing in, by inviteKey(): a friend's new
+		/// invite replaces the old one and is news again.
+		QSet<QString> invites;
 	};
 
 	struct Diff {
@@ -70,4 +79,12 @@ namespace FriendsNotices
 	Diff diff(const Memory& previous,
 			  const FriendsApi::FriendsSnapshot& snapshot,
 			  const QDateTime& now);
+
+	/// Who sent it and when: what tells two invites apart.
+	QString inviteKey(const FriendsApi::Invite& invite);
+	/// The notice for one invite pushed by the socket, if @p memory has not seen
+	/// it, and @p memory marks it seen either way. Before the first snapshot
+	/// (not primed) there is no notice, as for the snapshot's own.
+	std::optional<Notice> invite(Memory& memory,
+								 const FriendsApi::Invite& invite);
 } // namespace FriendsNotices

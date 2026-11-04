@@ -97,6 +97,8 @@ namespace FriendsApi
 		bool shareIpServers = false;
 		/// Friends may join the server this player is on.
 		bool allowJoin = true;
+		/// Friends may invite this player to a server.
+		bool allowInvites = true;
 	};
 
 	struct Person {
@@ -114,10 +116,29 @@ namespace FriendsApi
 		int unread = 0;
 	};
 
+	/// An invite to a server (README "Invites"); uuid and name are the other player.
+	struct Invite {
+		QString uuid;
+		QString name;
+		/// Normalized by the server: lower case, no trailing dot.
+		QString host;
+		/// 25565 when the server leaves it out.
+		int port = 0;
+		QDateTime createdAt;
+		QDateTime expiresAt;
+	};
+
+	struct InviteLists {
+		QList<Invite> incoming;
+		QList<Invite> outgoing;
+	};
+
 	struct FriendsSnapshot {
 		QList<Friend> friends;
 		QList<Person> incoming;
 		QList<Person> outgoing;
+		/// Empty from a server without invites.
+		InviteLists invites;
 	};
 
 	/// The answer to POST /v1/friends/requests.
@@ -164,6 +185,10 @@ namespace FriendsApi
 		extern const QString BlockedByYou;
 		extern const QString LimitReached;
 		extern const QString RateLimited;
+		/// An invite to a raw IP or local address while shareIpServers is off.
+		extern const QString AddressNotShared;
+		/// An invite to a friend whose allowInvites is off.
+		extern const QString InvitesOff;
 	} // namespace Code
 
 	/// The "error" names of Mojang's session server the launcher tells apart.
@@ -196,6 +221,10 @@ namespace FriendsApi
 		QString cancel(const QString& uuid);
 		QString removeFriend(const QString& uuid);
 		QString block(const QString& uuid);
+		QString invites();
+		/// PUT to send, DELETE to cancel your invite to @p uuid.
+		QString invite(const QString& uuid);
+		QString dismissInvite(const QString& uuid);
 	} // namespace Path
 
 	/// Dashed UUIDs are the only form that goes into a path.
@@ -253,6 +282,9 @@ namespace FriendsApi
 	QByteArray statusBody(const Presence& presence);
 	/// PATCH /v1/me/settings with the known keys of @p partial.
 	QByteArray settingsBody(const QVariantMap& partial);
+	/// PUT /v1/invites/{uuid}: the host as normalizeHost() gives it (empty if
+	/// it is not one), the port only when it is a valid one.
+	QByteArray inviteBody(const QString& host, int port);
 
 	// Answers: empty (or false) for a body that is not one.
 	std::optional<Challenge> parseChallenge(const QByteArray& body);

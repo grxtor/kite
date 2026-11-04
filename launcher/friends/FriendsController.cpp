@@ -79,6 +79,9 @@ FriendsController::FriendsController(const QString& dataDir, QObject* parent)
 	m_pushTimer.setSingleShot(true);
 	connect(&m_pushTimer, &QTimer::timeout, this,
 			&FriendsController::pushStatus);
+	m_inviteExpiryTimer.setSingleShot(true);
+	connect(&m_inviteExpiryTimer, &QTimer::timeout, this,
+			&FriendsController::onInviteExpiry);
 	m_renewalTimer.setSingleShot(true);
 	m_renewalTimer.setInterval(kRenewalWaitMs);
 	connect(&m_renewalTimer, &QTimer::timeout, this,
@@ -541,5 +544,7 @@ void FriendsController::onFacesChanged()
 	attachFaces(m_incoming);
 	attachFaces(m_outgoing);
 	attachFaces(m_blocked);
+	attachFaces(m_invites);
+	attachFaces(m_outgoingInvites);
 	emit changed();
 }
