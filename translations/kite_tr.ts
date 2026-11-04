@@ -869,7 +869,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="-167"/>
         <source>The operation failed. See the launcher log for details.</source>
-        <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
+        <translation>İşlem başarısız oldu. Ayrıntılar için launcher günlüğüne bak.</translation>
     </message>
 </context>
 <context>
@@ -887,7 +887,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+41"/>
         <source>Could not create the backup. See the launcher log for details.</source>
-        <translation>Yedek oluşturulamadı. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
+        <translation>Yedek oluşturulamadı. Ayrıntılar için launcher günlüğüne bak.</translation>
     </message>
 </context>
 <context>
@@ -2436,7 +2436,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+117"/>
         <source>The launcher settings are not available.</source>
-        <translation>Başlatıcı ayarlarına ulaşılamadı.</translation>
+        <translation>Launcher ayarlarına ulaşılamadı.</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -3678,7 +3678,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>The whole instance in one .zip file, ready to import into Kite or another launcher.</source>
-        <translation>Kurulumun tamamı tek bir .zip dosyasında; Kite&apos;a ya da başka bir başlatıcıya içe aktarmaya hazır.</translation>
+        <translation>Kurulumun tamamı tek bir .zip dosyasında; Kite&apos;a ya da başka bir launcher&apos;a içe aktarmaya hazır.</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -6904,11 +6904,11 @@ Güncellemeden önce kaybetmek istemediğin her şeyi yedekle. Güncelleme paket
 The update will work, but anything the new version dropped stays behind - usually as an older copy of a mod sitting next to the one that replaced it.
 
 Instances installed before the launcher started keeping that record have no list. This update writes one, so the update after it will be able to clean up.</source>
-        <translation>Başlatıcıda, bu mod paketinin yüklü sürümünün bu kuruluma hangi dosyaları koyduğuna dair kayıt yok, bu yüzden yeni sürümün artık içermediği dosyaları kaldıramaz.
+        <translation>Launcher&apos;da, bu mod paketinin yüklü sürümünün bu kuruluma hangi dosyaları koyduğuna dair kayıt yok, bu yüzden yeni sürümün artık içermediği dosyaları kaldıramaz.
 
 Güncelleme çalışır, ama yeni sürümün bıraktığı her şey kalır; genellikle yerine geçen modun yanında duran eski bir mod kopyası olarak.
 
-Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yoktur. Bu güncelleme bir liste yazar, böylece sonraki güncelleme temizlik yapabilir.</translation>
+Launcher bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yoktur. Bu güncelleme bir liste yazar, böylece sonraki güncelleme temizlik yapabilir.</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -7298,7 +7298,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     <message>
         <location filename="../launcher/qml/Components/InstanceSettingsTab.qml" line="+28"/>
         <source>Each group follows the launcher&apos;s settings until you switch it to custom for this instance.</source>
-        <translation>Her grup, bu kurulum için özele geçirene kadar başlatıcının ayarlarını izler.</translation>
+        <translation>Her grup, bu kurulum için özele geçirene kadar launcher&apos;ın ayarlarını izler.</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -8309,7 +8309,7 @@ Demoyu oynamak ister misin?</translation>
     <message>
         <location line="+6"/>
         <source>Couldn&apos;t instantiate a launcher.</source>
-        <translation>Başlatıcı oluşturulamadı.</translation>
+        <translation>Launcher oluşturulamadı.</translation>
     </message>
     <message>
         <location line="+137"/>
@@ -9615,7 +9615,7 @@ Neden:
     <message>
         <location line="+2"/>
         <source>Treat this as the installed launcher version instead of asking the launcher.</source>
-        <translation>Başlatıcıya sormak yerine bunu yüklü başlatıcı sürümü say.</translation>
+        <translation>Launcher&apos;a sormak yerine bunu yüklü launcher sürümü say.</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -9729,7 +9729,7 @@ Neden:
     <message>
         <location line="+1"/>
         <source>The updater does not support installations on macOS. Updates are handled by the launcher itself.</source>
-        <translation>Güncelleyici macOS üzerindeki kurulumları desteklemiyor. Güncellemeleri başlatıcının kendisi yapar.</translation>
+        <translation>Güncelleyici macOS üzerindeki kurulumları desteklemiyor. Güncellemeleri launcher&apos;ın kendisi yapar.</translation>
     </message>
     <message>
         <location line="+18"/>
@@ -9753,7 +9753,7 @@ Neden:
         <location line="+102"/>
         <location line="+30"/>
         <source>The launcher data folder is not writable!</source>
-        <translation>Başlatıcı veri klasörüne yazılamıyor.</translation>
+        <translation>Launcher veri klasörüne yazılamıyor.</translation>
     </message>
     <message>
         <location line="-29"/>
@@ -9864,7 +9864,7 @@ Güncelleme denetimi çalışır, ama burada yüklemek çalışmaz.</translation
     <message>
         <location line="-822"/>
         <source>Do not start the launcher again once the update is installed.</source>
-        <translation>Güncelleme yüklendikten sonra başlatıcıyı yeniden açma.</translation>
+        <translation>Güncelleme yüklendikten sonra launcher&apos;ı yeniden açma.</translation>
     </message>
     <message>
         <location line="+558"/>
@@ -10038,7 +10038,7 @@ Bu kilidi yoksayıp yine de güncellemek için &quot;Yoksay&quot;ı seç.</trans
     <message>
         <location line="+19"/>
         <source>The unpacked release has no launcher at %1</source>
-        <translation>Açılan sürümde %1 konumunda başlatıcı yok</translation>
+        <translation>Açılan sürümde %1 konumunda launcher yok</translation>
     </message>
     <message>
         <location line="+4"/>
@@ -10314,7 +10314,7 @@ Kurulumun değişmedi. Ayrıntılar güncelleme günlüğünde:
     <message>
         <location line="+35"/>
         <source>Not restarting the launcher, as asked.</source>
-        <translation>İstendiği gibi başlatıcı yeniden açılmıyor.</translation>
+        <translation>İstendiği gibi launcher yeniden açılmıyor.</translation>
     </message>
     <message>
         <location line="+39"/>
@@ -10405,7 +10405,7 @@ Kurulumun değişmedi.</translation>
     <message>
         <location line="-156"/>
         <source>Could not restart the launcher: %1</source>
-        <translation>Başlatıcı yeniden başlatılamadı: %1</translation>
+        <translation>Launcher yeniden başlatılamadı: %1</translation>
     </message>
     <message>
         <location line="+232"/>
@@ -11793,7 +11793,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     <message>
         <location line="+4"/>
         <source>Delete “%1”? It cannot be recovered from the launcher.</source>
-        <translation>“%1” silinsin mi? Başlatıcıdan geri alınamaz.</translation>
+        <translation>“%1” silinsin mi? Launcher&apos;dan geri alınamaz.</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -11803,12 +11803,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     <message>
         <location line="+4"/>
         <source>Delete the log file? It cannot be recovered from the launcher.</source>
-        <translation>Günlük dosyası silinsin mi? Başlatıcıdan geri alınamaz.</translation>
+        <translation>Günlük dosyası silinsin mi? Launcher&apos;dan geri alınamaz.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Delete all %1 log files? They cannot be recovered from the launcher.</source>
-        <translation>%1 günlük dosyasının tümü silinsin mi? Başlatıcıdan geri alınamazlar.</translation>
+        <translation>%1 günlük dosyasının tümü silinsin mi? Launcher&apos;dan geri alınamazlar.</translation>
     </message>
     <message>
         <location line="+27"/>
@@ -14456,7 +14456,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>The launcher&apos;s own language and colour scheme.</source>
-        <translation>Başlatıcının kendi dili ve renk düzeni.</translation>
+        <translation>Launcher&apos;ın kendi dili ve renk düzeni.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -14487,7 +14487,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>How the launcher looks and how Home is laid out. Stage, Calm and Night are dark and bring their own colours; Classic keeps the palette and mode below.</source>
-        <translation>Başlatıcının görünümü ve Ana sayfanın düzeni. Sahne, Sade ve Gece koyudur ve kendi renkleriyle gelir; Klasik aşağıdaki paleti ve modu kullanır.</translation>
+        <translation>Launcher&apos;ın görünümü ve Ana sayfanın düzeni. Sahne, Sade ve Gece koyudur ve kendi renkleriyle gelir; Klasik aşağıdaki paleti ve modu kullanır.</translation>
     </message>
     <message>
         <location line="+14"/>
@@ -14497,7 +14497,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>The launcher&apos;s colours. Each palette has a dark and a light variant.</source>
-        <translation>Başlatıcının renkleri. Her paletin koyu ve açık bir varyantı var.</translation>
+        <translation>Launcher&apos;ın renkleri. Her paletin koyu ve açık bir varyantı var.</translation>
     </message>
     <message>
         <location line="+12"/>
@@ -14532,7 +14532,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>The font every screen of the launcher is drawn in. Sizes stay the same. Inter comes with Kite; the rest are installed on this computer.</source>
-        <translation>Başlatıcının her ekranında kullanılan yazı tipi. Boyutlar aynı kalır. Inter Kite ile birlikte gelir; diğerleri bu bilgisayarda yüklü olanlardır.</translation>
+        <translation>Launcher&apos;ın her ekranında kullanılan yazı tipi. Boyutlar aynı kalır. Inter Kite ile birlikte gelir; diğerleri bu bilgisayarda yüklü olanlardır.</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -14547,7 +14547,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>Turns off decorative animation across the launcher.</source>
-        <translation>Başlatıcıdaki süsleme amaçlı animasyonları kapatır.</translation>
+        <translation>Launcher&apos;daki süsleme amaçlı animasyonları kapatır.</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -15198,7 +15198,7 @@ Currently installed version: %1</source>
     <message>
         <location filename="../launcher/qml/Components/SettingsLauncherLogsSection.qml" line="+25"/>
         <source>Launcher logs</source>
-        <translation>Başlatıcı günlükleri</translation>
+        <translation>Launcher günlükleri</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -15403,7 +15403,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>Launcher logs</source>
-        <translation>Başlatıcı günlükleri</translation>
+        <translation>Launcher günlükleri</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -17344,7 +17344,7 @@ inheritsFrom eksik</translation>
     <message>
         <location filename="../launcher/models/WorldCopyTask.h" line="+65"/>
         <source>The operation failed. See the launcher log for details.</source>
-        <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
+        <translation>İşlem başarısız oldu. Ayrıntılar için launcher günlüğüne bak.</translation>
     </message>
 </context>
 <context>
@@ -17509,7 +17509,7 @@ inheritsFrom eksik</translation>
     <message>
         <location line="+4"/>
         <source>Delete the world “%1”? It cannot be recovered from the launcher.</source>
-        <translation>“%1” dünyası silinsin mi? Başlatıcıdan geri alınamaz.</translation>
+        <translation>“%1” dünyası silinsin mi? Launcher&apos;dan geri alınamaz.</translation>
     </message>
     <message>
         <location line="+20"/>

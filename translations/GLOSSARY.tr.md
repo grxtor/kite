@@ -13,7 +13,7 @@ Bu sözlük Kite'ın Türkçe arayüz metinleri için. Terimler her yerde aynı 
 |---|---|
 | instance | kurulum (çoğulu: kurulumlar) |
 | New instance | Yeni kurulum |
-| launcher | başlatıcı |
+| launcher | launcher (çoğulu: launcher'lar; ekler kesmeyle: launcher'ı, launcher'da). Oyuncular böyle diyor, "başlatıcı" kullanma. |
 | mod / mods | mod / modlar |
 | modpack | mod paketi |
 | resource pack | kaynak paketi |
