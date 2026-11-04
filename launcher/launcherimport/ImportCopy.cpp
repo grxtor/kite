@@ -166,7 +166,8 @@ namespace LauncherImport
 				QStringLiteral("servers.dat")};
 	}
 
-	CopyPlan planCopy(const QString& gameDir, const std::atomic_bool* cancel)
+	CopyPlan planCopy(const QString& gameDir, const std::atomic_bool* cancel,
+					  const QStringList& leaveOut)
 	{
 		Walker walker;
 		walker.cancel = cancel;
@@ -175,6 +176,9 @@ namespace LauncherImport
 			return walker.plan;
 		}
 		for (const QString& name : copiedFolders()) {
+			if (leaveOut.contains(name)) {
+				continue;
+			}
 			const QString path = walker.root + QLatin1Char('/') + name;
 			if (QFileInfo(path).isDir()) {
 				walker.visit(path, name, 1);

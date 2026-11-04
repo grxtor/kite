@@ -1129,6 +1129,8 @@ set(LAUNCHERIMPORT_SOURCES
     launcherimport/ImportBuild.cpp
     launcherimport/LauncherImportTask.h
     launcherimport/LauncherImportTask.cpp
+    launcherimport/LinkedGame.h
+    launcherimport/LinkedGame.cpp
 )
 
 set(LOGIC_SOURCES

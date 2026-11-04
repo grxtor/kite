@@ -46,5 +46,6 @@ class InstanceCopyTask : public InstanceTask
 	QFuture<bool> m_copyFuture;
 	QFutureWatcher<bool> m_copyFutureWatcher;
 	std::unique_ptr<IPathMatcher> m_matcher;
+	bool m_copySaves;
 	bool m_keepPlaytime;
 };

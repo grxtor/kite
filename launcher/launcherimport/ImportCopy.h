@@ -61,10 +61,12 @@ namespace LauncherImport
 		bool tooLarge = false;
 	};
 
-	/* Lists what copying @p gameDir takes. Stops early (cancelled) when
-	 * @p cancel turns true. */
+	/* Lists what copying @p gameDir takes, less the top-level folders named
+	 * in @p leaveOut (Duplicate without worlds leaves out "saves"). Stops early
+	 * (cancelled) when @p cancel turns true. */
 	CopyPlan planCopy(const QString& gameDir,
-					  const std::atomic_bool* cancel = nullptr);
+					  const std::atomic_bool* cancel = nullptr,
+					  const QStringList& leaveOut = {});
 
 	/* Copies @p plan into @p destination, adding each byte written to
 	 * @p copied. False with @p error when a file cannot be read or written,

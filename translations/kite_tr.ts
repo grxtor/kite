@@ -3789,17 +3789,19 @@ Ayrıntılar günlük dosyasında:
         <translation>&apos;%1&apos; oluşturulamadı: %2</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+15"/>
         <source>Could not add %1: %2</source>
         <translation>%1 eklenemedi: %2</translation>
     </message>
     <message>
         <location line="+18"/>
+        <location line="+25"/>
         <source>Compressing: %1</source>
         <translation>Sıkıştırılıyor: %1</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="-9"/>
+        <location line="+11"/>
         <source>Could not read and compress %1: %2</source>
         <translation>%1 okunamadı ve sıkıştırılamadı: %2</translation>
     </message>
@@ -6556,17 +6558,17 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceCopyTask</name>
     <message>
-        <location filename="../launcher/InstanceCopyTask.cpp" line="+43"/>
+        <location filename="../launcher/InstanceCopyTask.cpp" line="+47"/>
         <source>Copying instance %1</source>
         <translation>%1 kurulumu kopyalanıyor</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+40"/>
         <source>Instance folder copy failed.</source>
         <translation>Kurulum klasörü kopyalanamadı.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+23"/>
         <source>Instance folder copy has been aborted.</source>
         <translation>Kurulum klasörünün kopyalanması durduruldu.</translation>
     </message>
@@ -6610,7 +6612,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceExportController</name>
     <message>
-        <location filename="../launcher/models/InstanceExportController.cpp" line="+313"/>
+        <location filename="../launcher/models/InstanceExportController.cpp" line="+315"/>
         <source>This instance is already being exported.</source>
         <translation>Bu kurulum zaten dışa aktarılıyor.</translation>
     </message>
@@ -8438,7 +8440,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     <name>LauncherImport</name>
     <message>
         <location filename="../launcher/launcherimport/ImportBuild.cpp" line="+204"/>
-        <location filename="../launcher/launcherimport/ImportCopy.cpp" line="+202"/>
+        <location filename="../launcher/launcherimport/ImportCopy.cpp" line="+206"/>
         <source>Could not make the instance folder.</source>
         <translation>Kurulum klasörü oluşturulamadı.</translation>
     </message>
@@ -8453,7 +8455,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Kurulumun ayarları yazılamadı.</translation>
     </message>
     <message>
-        <location filename="../launcher/launcherimport/ImportCopy.cpp" line="-94"/>
+        <location filename="../launcher/launcherimport/ImportCopy.cpp" line="-98"/>
         <location line="+18"/>
         <source>Could not read %1.</source>
         <translation>Okunamadı: %1</translation>
@@ -8461,7 +8463,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     <message>
         <location line="-11"/>
         <location line="+17"/>
-        <location line="+76"/>
+        <location line="+80"/>
         <source>Could not write %1.</source>
         <translation>Yazılamadı: %1</translation>
     </message>

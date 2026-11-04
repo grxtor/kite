@@ -19,21 +19,45 @@
 
 #include <QCryptographicHash>
 #include <QDirIterator>
+#include <QSignalSpy>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
 #include <QTest>
 
+#include "InstanceCopyTask.h"
+#include "NullInstance.h"
+#include "TestSettings.h"
 #include "launcherimport/ImportBuild.h"
 #include "launcherimport/ImportCopy.h"
 #include "launcherimport/LauncherScan.h"
+#include "launcherimport/LinkedGame.h"
 #include "launcherimport/SafeFiles.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "settings/INIFile.h"
 
 using namespace LauncherImport;
+
+/* An instance whose game folder is elsewhere, as one imported with Link has
+ * (MinecraftInstance reads it from LinkedGameDir). */
+class LinkedTestInstance : public NullInstance
+{
+  public:
+	LinkedTestInstance(SettingsObjectPtr global, SettingsObjectPtr settings,
+					   const QString& root, const QString& game)
+		: NullInstance(global, settings, root), m_game(game)
+	{
+	}
+	QString gameRoot() const override
+	{
+		return m_game;
+	}
+
+  private:
+	QString m_game;
+};
 
 /* Every format's fixture (testdata/, synthetic) is copied into a temporary
  * folder first, so a test may add links or damage a file without touching the
@@ -522,6 +546,43 @@ class LauncherImportTest : public QObject
 		QCOMPARE(MinecraftInstance::gameRootFor(staging, linked), linked);
 		// A link whose folder is gone falls back to the instance's own.
 		QCOMPARE(MinecraftInstance::gameRootFor(staging, staging + "/gone"), staging + "/.minecraft");
+	}
+
+	/* Duplicating a linked instance copies its game files in (as a Copy
+	 * import takes them) and drops the link, so the two are independent; the
+	 * other launcher's folder is only read. */
+	void duplicateOfALinkedInstanceStandsOnItsOwn()
+	{
+		const QString game = place("prism", "dup-source") + "/instances/Fabric Pack/.minecraft";
+		const QString root = m_tmp.filePath("dup-instance");
+		QVERIFY(QDir().mkpath(root));
+		QVERIFY(QDir().mkpath(m_tmp.filePath("dup-global")));
+		SettingsObjectPtr global = makeGlobalSettings(m_tmp.filePath("dup-global"));
+		auto settings = std::make_shared<INISettingsObject>(root + "/instance.cfg");
+		settings->registerSetting(kLinkedGameDirKey, "");
+		settings->set(kLinkedGameDirKey, game);
+		auto instance = std::make_shared<LinkedTestInstance>(global, settings, root, game);
+		QCOMPARE(outsideGameRoot(*instance), QFileInfo(game).canonicalFilePath());
+		const auto before = snapshot(game);
+
+		for (const bool withWorlds : {true, false}) {
+			InstanceCopyTask task(instance, withWorlds, false);
+			const QString staging = m_tmp.filePath(withWorlds ? "dup-with-worlds" : "dup-without-worlds");
+			task.setStagingPath(staging);
+			task.setParentSettings(global);
+			task.setName(QStringLiteral("Copy"));
+			QSignalSpy finished(&task, &Task::finished);
+			task.start();
+			QVERIFY(finished.wait(10000));
+			QVERIFY2(task.wasSuccessful(), qPrintable(task.failReason()));
+			QVERIFY(QFile::exists(staging + "/minecraft/mods/sodium.jar"));
+			QVERIFY(QFile::exists(staging + "/minecraft/mods/.index/sodium.pw.toml"));
+			QVERIFY(QFile::exists(staging + "/minecraft/options.txt"));
+			QCOMPARE(QFile::exists(staging + "/minecraft/saves/Island/level.dat"), withWorlds);
+			QVERIFY(!QFile::exists(staging + "/minecraft/logs"));
+			QVERIFY(readIni(staging + "/instance.cfg").get(kLinkedGameDirKey, "").toString().isEmpty());
+		}
+		QCOMPARE(snapshot(game), before);
 	}
 
 	void linkIsRefusedWhereItIsNotOffered()

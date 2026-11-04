@@ -65,6 +65,13 @@ namespace MMCZip
 		{
 			m_extraFiles.insert(fileName, data);
 		}
+		/* A file from outside `dir`, stored as @p entryName (a linked
+		 * instance's game files, under the instance's own game folder). Written
+		 * after the listed files. */
+		void addMappedFile(const QString& absolutePath, const QString& entryName)
+		{
+			m_mappedFiles.append({absolutePath, entryName});
+		}
 
 		bool canAbort() const override
 		{
@@ -96,6 +103,7 @@ namespace MMCZip
 		bool m_followSymlinks;
 		QStringList m_excludeFiles;
 		QHash<QString, QByteArray> m_extraFiles;
+		QList<std::pair<QString, QString>> m_mappedFiles;
 
 		/* Not QFuture::cancel(): the future QtConcurrent::run() returns does not
 		 * support cancelling, so isCanceled() stays false and abort would be
