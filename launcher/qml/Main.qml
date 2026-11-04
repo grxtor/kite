@@ -78,6 +78,7 @@ ApplicationWindow {
             LauncherStore.catPacks = root.shell.catPacks
             LauncherStore.icons = root.shell
             LauncherStore.modUpdates = root.shellValue("modUpdates")
+            LauncherStore.quickJoin = root.shellValue("quickJoin")
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
@@ -188,6 +189,9 @@ ApplicationWindow {
                 var update = value.split(",")
                 LauncherStore.modUpdates.debugRecord(update[0], parseInt(update[1]))
             }
+            // quickjoin=edit|add|hint|menu opens that part of Home's quick-join bar.
+            else if (key === "quickjoin")
+                Qt.callLater(quickJoinBar.debugOpen, value)
             else if (key === "import")
                 root.openImport(value)
             else if (key === "friends")
@@ -894,11 +898,14 @@ ApplicationWindow {
         // Home only: the big servers to join in one click, against the right of the page's column.
         middle: [
             QuickJoinBar {
-                visible: root.page === "home" && root.featuredList.length > 0
+                id: quickJoinBar
+                visible: root.page === "home" && !!LauncherStore.quickJoin
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(implicitWidth, parent.width - Theme.space.xl)
-                servers: root.featuredList
+                layout: LauncherStore.quickJoin
+                hintAllowed: !root.onboarding && !(root.whatsNew && root.whatsNew.pending)
+                             && !(whatsNewLoader.item && whatsNewLoader.item.visible)
                 pinger: root.serverPinger
                 friends: root.friendsController ? root.friendsController.friends : []
                 joinFlow: serverJoin

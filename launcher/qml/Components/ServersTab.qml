@@ -40,6 +40,12 @@ Item {
     readonly property int headSize: 24
     readonly property int liveWidth: 112
 
+    // Home's quick-join bar (QuickJoinLayout), where a row's ⋯ can pin its server.
+    readonly property var quickJoin: LauncherStore.quickJoin
+    function inBar(address, shown) {
+        return !!root.quickJoin && address.trim().length > 0 && root.quickJoin.isShown(address)
+    }
+
     function statusOf(address, revision) {
         return root.pinger && address.length > 0 ? root.pinger.status(address) : ({})
     }
@@ -225,6 +231,21 @@ Item {
                     }
                     MenuDivider {
                         visible: root.canInvite
+                    }
+                    MenuEntry {
+                        id: pinItem
+                        objectName: "serverPinToBar"
+                        readonly property bool pinned: root.inBar(row.address, root.quickJoin ? root.quickJoin.shown : [])
+                        visible: !!root.quickJoin
+                        enabled: row.address.trim().length > 0
+                        text: pinItem.pinned ? qsTr("Remove from top bar") : qsTr("Pin to top bar")
+                        icon.source: Icons.url(pinItem.pinned ? "pin-off" : "pin")
+                        onTriggered: {
+                            if (pinItem.pinned)
+                                root.quickJoin.unpin(row.address)
+                            else
+                                root.quickJoin.pin(row.name, row.address)
+                        }
                     }
                     MenuItem {
                         enabled: root.unlocked
