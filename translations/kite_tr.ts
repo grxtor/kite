@@ -8435,6 +8435,299 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     </message>
 </context>
 <context>
+    <name>LauncherImport</name>
+    <message>
+        <location filename="../launcher/launcherimport/ImportBuild.cpp" line="+204"/>
+        <location filename="../launcher/launcherimport/ImportCopy.cpp" line="+202"/>
+        <source>Could not make the instance folder.</source>
+        <translation>Kurulum klasörü oluşturulamadı.</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Its game folder has too many files to copy.</source>
+        <translation>Oyun klasöründe kopyalanamayacak kadar çok dosya var.</translation>
+    </message>
+    <message>
+        <location line="+31"/>
+        <source>Could not write the instance&apos;s settings.</source>
+        <translation>Kurulumun ayarları yazılamadı.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/ImportCopy.cpp" line="-94"/>
+        <location line="+18"/>
+        <source>Could not read %1.</source>
+        <translation>Okunamadı: %1</translation>
+    </message>
+    <message>
+        <location line="-11"/>
+        <location line="+17"/>
+        <location line="+76"/>
+        <source>Could not write %1.</source>
+        <translation>Yazılamadı: %1</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/SafeFiles.cpp" line="+73"/>
+        <source>Its details file is too large to read.</source>
+        <translation>Bilgi dosyası okunamayacak kadar büyük.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="+159"/>
+        <source>Its details file is missing.</source>
+        <translation>Bilgi dosyası yok.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Its details file is damaged.</source>
+        <translation>Bilgi dosyası bozuk.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/ScanCommon.h" line="+34"/>
+        <source>Kite can&apos;t tell which Minecraft version it uses.</source>
+        <translation>Kite hangi Minecraft sürümünü kullandığını anlayamadı.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Its game folder is missing.</source>
+        <translation>Oyun klasörü yok.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="+25"/>
+        <source>Its game folder is a link to another place.</source>
+        <translation>Oyun klasörü başka bir yere giden bir bağlantı.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Kite may not write to its game folder.</source>
+        <translation>Kite oyun klasörüne yazamıyor.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Kite can&apos;t tell which loader version it uses.</source>
+        <translation>Kite hangi yükleyici sürümünü kullandığını anlayamadı.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/ScanCurseForge.cpp" line="+144"/>
+        <location filename="../launcher/launcherimport/ScanModrinth.cpp" line="+71"/>
+        <source>It uses a mod loader Kite doesn&apos;t support.</source>
+        <translation>Kite&apos;ın desteklemediği bir mod yükleyici kullanıyor.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/ScanModrinth.cpp" line="+30"/>
+        <source>Kite can&apos;t read the Modrinth App&apos;s list of instances.</source>
+        <translation>Kite, Modrinth App&apos;in kurulum listesini okuyamadı.</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>It is still being installed in the Modrinth App.</source>
+        <translation>Modrinth App&apos;te hâlâ kuruluyor.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="-48"/>
+        <source>custom components</source>
+        <translation>özel bileşenler</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>jar mods</source>
+        <translation>jar modları</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>It is in an old format Kite can&apos;t read.</source>
+        <translation>Kite&apos;ın okuyamadığı eski bir biçimde.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/launcherimport/ScanOfficial.cpp" line="+188"/>
+        <source>Latest snapshot</source>
+        <translation>En son ön sürüm</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Latest release</source>
+        <translation>En son sürüm</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherImportController</name>
+    <message>
+        <location filename="../launcher/models/LauncherImportController.cpp" line="+92"/>
+        <location line="+258"/>
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <location line="-26"/>
+        <source>Linking %1</source>
+        <translation>Bağlanıyor: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copying %1</source>
+        <translation>Kopyalanıyor: %1</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherImportPane</name>
+    <message>
+        <location filename="../launcher/qml/Components/LauncherImportPane.qml" line="+32"/>
+        <source>Tick the instances to bring over.</source>
+        <translation>Getirmek istediğin kurulumları işaretle.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 instance selected</source>
+        <translation>1 kurulum seçildi</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 instances selected</source>
+        <translation>%1 kurulum seçildi</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1, %2 to copy</source>
+        <translation>%1, kopyalanacak: %2</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>1 instance imported.</source>
+        <translation>1 kurulum içe aktarıldı.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 instances imported.</source>
+        <translation>%1 kurulum içe aktarıldı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 instance could not be imported.</source>
+        <translation>1 kurulum içe aktarılamadı.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 instances could not be imported.</source>
+        <translation>%1 kurulum içe aktarılamadı.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Select all</source>
+        <translation>Tümünü seç</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>1 instance found</source>
+        <translation>1 kurulum bulundu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 instances found</source>
+        <translation>%1 kurulum bulundu</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Look again</source>
+        <translation>Yeniden ara</translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>No other launchers found</source>
+        <translation>Başka launcher bulunamadı</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Kite looks where Prism Launcher, the Modrinth App, CurseForge and the Minecraft Launcher keep their instances.</source>
+        <translation>Kite; Prism Launcher, Modrinth App, CurseForge ve Minecraft Launcher&apos;ın kurulumlarını tuttuğu yerlere bakar.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Also found, not supported yet: %1</source>
+        <translation>Bunlar da bulundu, henüz desteklenmiyor: %1</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Stop</source>
+        <translation>Durdur</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Not enough free space: the copies need %1 and the disk has %2.</source>
+        <translation>Yeterli boş alan yok: kopyalar için %1 gerekiyor, diskte %2 var.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Little space would be left: the copies take %1 of the %2 free.</source>
+        <translation>Diskte az yer kalacak: kopyalar boş olan %2 alanın %1 kadarını kaplıyor.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>A linked instance keeps playing from the other launcher&apos;s folder: both launchers then write to the same worlds, mods and settings.</source>
+        <translation>Bağlı bir kurulum diğer launcher&apos;ın klasöründen oynamaya devam eder: iki launcher da aynı dünyalara, modlara ve ayarlara yazar.</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherImportRow</name>
+    <message>
+        <location filename="../launcher/qml/Components/LauncherImportRow.qml" line="+110"/>
+        <source>Not brought over: %1</source>
+        <translation>Getirilmeyenler: %1</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>In Kite</source>
+        <translation>Kite&apos;ta var</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Linked</source>
+        <translation>Bağlı</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Link</source>
+        <translation>Bağla</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Link: %1</source>
+        <translation>Bağla: %1</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Open folder</source>
+        <translation>Klasörü aç</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherImportTask</name>
+    <message>
+        <location filename="../launcher/launcherimport/LauncherImportTask.cpp" line="+50"/>
+        <source>Linking %1</source>
+        <translation>Bağlanıyor: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copying %1</source>
+        <translation>Kopyalanıyor: %1</translation>
+    </message>
+    <message>
+        <location line="+38"/>
+        <source>The instance could not be imported.</source>
+        <translation>Kurulum içe aktarılamadı.</translation>
+    </message>
+</context>
+<context>
     <name>LegacyInstance</name>
     <message>
         <location filename="../launcher/minecraft/legacy/LegacyInstance.cpp" line="+196"/>
@@ -8891,7 +9184,27 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+417"/>
+        <location filename="../launcher/qml/Main.qml" line="+418"/>
+        <source>1 instance could not be imported.</source>
+        <translation>1 kurulum içe aktarılamadı.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 instances could not be imported.</source>
+        <translation>%1 kurulum içe aktarılamadı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 instance imported.</source>
+        <translation>1 kurulum içe aktarıldı.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 instances imported.</source>
+        <translation>%1 kurulum içe aktarıldı.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -10124,7 +10437,7 @@ Kurulumun değişmedi.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+881"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+904"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -10922,7 +11235,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>NewInstanceDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+63"/>
+        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+65"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -10962,30 +11275,41 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Kurulumu içe aktar</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="+1"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
     </message>
     <message>
+        <location line="+0"/>
+        <source>Import instances</source>
+        <translation>Kurulumları içe aktar</translation>
+    </message>
+    <message>
         <location line="+73"/>
-        <location line="+510"/>
-        <location line="+29"/>
+        <location line="+520"/>
+        <location line="+40"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-538"/>
-        <location line="+523"/>
+        <location line="-559"/>
+        <location line="+533"/>
+        <location line="+16"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-522"/>
+        <location line="-548"/>
+        <source>From another launcher</source>
+        <translation>Başka launcher&apos;dan</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Share code</source>
         <translation>Paylaşım kodu</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+18"/>
         <source>Instance icon</source>
         <translation>Kurulum simgesi</translation>
     </message>
@@ -11045,12 +11369,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Önerilen</translation>
     </message>
     <message>
-        <location line="-125"/>
+        <location line="+237"/>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+    <message>
+        <location line="-362"/>
         <source>Loading…</source>
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-399"/>
+        <location line="-403"/>
         <source>Pick a Minecraft version.</source>
         <translation>Bir Minecraft sürümü seç.</translation>
     </message>
@@ -11072,7 +11401,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
-        <location line="+395"/>
+        <location line="+399"/>
         <source>None for this version</source>
         <translation>Bu sürüm için yok</translation>
     </message>
@@ -11102,7 +11431,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>CurseForge, FTB, ATLauncher veya Technic&apos;ten dışa aktarılan paketler de .zip dosyalarından aynı şekilde içe aktarılır.</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+21"/>
         <source>Choose an instance to import</source>
         <translation>İçe aktarılacak kurulumu seç</translation>
     </message>
@@ -11128,19 +11457,20 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
     <message>
         <location line="+2"/>
-        <location line="+46"/>
+        <location line="+48"/>
+        <location line="+16"/>
         <source>Importing…</source>
         <translation>İçe aktarılıyor…</translation>
     </message>
     <message>
-        <location line="-46"/>
-        <location line="+32"/>
-        <location line="+29"/>
+        <location line="-64"/>
+        <location line="+34"/>
+        <location line="+40"/>
         <source>Creating…</source>
         <translation>Oluşturuluyor…</translation>
     </message>
     <message>
-        <location line="-38"/>
+        <location line="-49"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -11207,7 +11537,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>OnboardingView</name>
     <message>
-        <location filename="../launcher/qml/Components/OnboardingView.qml" line="+86"/>
+        <location filename="../launcher/qml/Components/OnboardingView.qml" line="+117"/>
         <source>Language</source>
         <translation>Dil</translation>
     </message>
@@ -11217,7 +11547,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Java ve bellek</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
@@ -11242,7 +11572,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Dilini seç</translation>
     </message>
     <message>
-        <location line="+199"/>
+        <location line="+212"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
@@ -11252,7 +11582,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="-192"/>
+        <location line="-328"/>
+        <source>Other launchers</source>
+        <translation>Diğer launcher&apos;lar</translation>
+    </message>
+    <message>
+        <location line="+123"/>
+        <source>Bring your instances over</source>
+        <translation>Kurulumlarını getir</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Sign in to play online</source>
         <translation>Çevrimiçi oynamak için giriş yap</translation>
     </message>
@@ -11270,6 +11610,11 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="+1"/>
         <source>Minecraft runs on Java. Pick an installed one, or let Kite download the right version for each game automatically.</source>
         <translation>Minecraft Java ile çalışır. Yüklü birini seç ya da Kite her oyun için doğru sürümü kendiliğinden indirsin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Kite found instances from other launchers on this computer. Tick the ones to bring over: they are copied, and the originals stay as they are. Your accounts stay there too; you sign in to Kite yourself.</source>
+        <translation>Kite bu bilgisayarda başka launcher&apos;ların kurulumlarını buldu. Getirmek istediklerini işaretle: kopyalanırlar, asılları olduğu gibi kalır. Hesapların da orada kalır; Kite&apos;a kendin giriş yaparsın.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -11327,27 +11672,43 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Microsoft ile giriş yap</translation>
     </message>
     <message>
-        <location line="+54"/>
+        <location line="+25"/>
+        <source>Stop</source>
+        <translation>Durdur</translation>
+    </message>
+    <message>
+        <location line="+45"/>
         <source>Back</source>
         <translation>Geri</translation>
     </message>
     <message>
-        <location line="-213"/>
+        <location line="+21"/>
+        <source>Skip</source>
+        <translation>Atla</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Import</source>
+        <translation>İçe aktar</translation>
+    </message>
+    <message>
+        <location line="-256"/>
         <source>Start a new instance, or find a modpack in Discover.</source>
         <translation>Yeni bir kurulum başlat ya da Keşfet&apos;te bir mod paketi bul.</translation>
     </message>
     <message>
-        <location line="+192"/>
+        <location line="+203"/>
         <source>Go to Home</source>
         <translation>Ana sayfaya git</translation>
     </message>
     <message>
-        <location line="-25"/>
+        <location line="-36"/>
         <source>Later</source>
         <translation>Sonra</translation>
     </message>
     <message>
-        <location line="+54"/>
+        <location line="+76"/>
+        <location line="+7"/>
         <source>Continue</source>
         <translation>Devam</translation>
     </message>
@@ -13109,7 +13470,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+484"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+485"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>

@@ -1180,6 +1180,65 @@ class QmlModuleTest : public QObject
 		QTest::mouseRelease(window, Qt::LeftButton, Qt::NoModifier, at + QPoint(40, 5));
 	}
 
+	/* The "From another launcher" pane against a stand-in controller: its
+	 * footer line counts the pick (singular and plural), Import is off when the
+	 * copies do not fit, and start() hands over to the controller. */
+	void launcherImportPaneFollowsItsController()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(
+			"import QtQuick\n"
+			"import Kite.Components\n"
+			"Item {\n"
+			"  width: 800; height: 600\n"
+			"  property alias pane: pane\n"
+			"  property alias fake: fake\n"
+			"  QtObject { id: fake\n"
+			"    property bool running: false; property bool scanning: false; property bool scanned: true\n"
+			"    property int availableCount: 2; property var unsupported: ['ATLauncher']; property var unreadable: []\n"
+			"    property int selectedCount: 1; property bool allSelected: false; property bool anyLinked: false\n"
+			"    property string selectedSizeText: '1.2 GB'; property string freeSpaceText: '10 GB'\n"
+			"    property string space: 'ok'; property real progress: -1; property string status: ''\n"
+			"    property int importedCount: 0; property int failedCount: 0; property var errors: []\n"
+			"    property int started: 0\n"
+			"    property var model: ListModel { ListElement { key: 'prism:a'; launcher: 'prism';\n"
+			"      launcherName: 'Prism Launcher'; name: 'Pack'; minecraftVersion: '1.20.1'; loader: 'fabric';\n"
+			"      loaderVersion: '0.15.11'; sizeText: '1.2 GB'; lastPlayed: 0; checked: true; linked: false;\n"
+			"      linkable: true; linkBlocker: ''; problem: ''; imported: false; leftBehind: '' } }\n"
+			"    function scan() {} function setChecked(k, c) {} function setAllChecked(c) {}\n"
+			"    function setMode(k, m) {} function openFolder(k) {} function cancel() {}\n"
+			"    function start() { started++; running = true; return true }\n"
+			"  }\n"
+			"  LauncherImportPane { id: pane; anchors.fill: parent; controller: fake }\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/LauncherImport.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		QTest::failOnWarning(QRegularExpression(QStringLiteral("TypeError|ReferenceError")));
+		std::unique_ptr<QObject> root(component.create());
+		QVERIFY2(root, qPrintable(component.errorString()));
+		auto* pane = root->property("pane").value<QObject*>();
+		auto* fake = root->property("fake").value<QObject*>();
+		QVERIFY(pane && fake);
+
+		QCOMPARE(pane->property("summary").toString(),
+				 QStringLiteral("1 instance selected, 1.2 GB to copy"));
+		QVERIFY(pane->property("canImport").toBool());
+		fake->setProperty("selectedCount", 3);
+		QCOMPARE(pane->property("summary").toString(),
+				 QStringLiteral("3 instances selected, 1.2 GB to copy"));
+		fake->setProperty("space", QStringLiteral("short"));
+		QVERIFY(!pane->property("canImport").toBool());
+		fake->setProperty("space", QStringLiteral("ok"));
+
+		QVERIFY(QMetaObject::invokeMethod(pane, "start"));
+		QCOMPARE(fake->property("started").toInt(), 1);
+		QVERIFY(pane->property("running").toBool());
+		QVERIFY(!pane->property("canImport").toBool());
+		QCOMPARE(pane->property("summary").toString(), QString());
+	}
+
 	/* The overlay's card says "Drop to add" and one line per kind dragged; the
 	 * data pack line adds that a world will be asked for. */
 	void dropOverlayNamesWhatIsDragged()

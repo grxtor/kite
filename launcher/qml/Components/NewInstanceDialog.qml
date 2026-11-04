@@ -8,8 +8,8 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import Kite.Theme
 
-/* A new instance: "create" (version and optional loader), "import" (a local .zip/.mrpack or a URL) or "code" (a
- * friend's share code, ShareCodeImportPane). */
+/* A new instance: "create" (version and optional loader), "import" (a local .zip/.mrpack or a URL), "code" (a
+ * friend's share code, ShareCodeImportPane) or "launchers" (instances other launchers have, LauncherImportPane). */
 AppDialog {
     id: root
 
@@ -22,7 +22,7 @@ AppDialog {
     property var iconsModel: null
     property string selectedIcon: "default"
 
-    // "create", "import" or "code"; set before open().
+    // "create", "import", "code" or "launchers"; set before open().
     property string mode: "create"
     // QmlShell.shareCodes (ShareCodesController); null hides the "Share code" tab.
     property var shareCodes: null
@@ -34,6 +34,8 @@ AppDialog {
     // Catalog mod project ids picked in the mod picker; null for the catalog defaults.
     property var modPicks: null
     property string importSource: ""
+    // QmlShell.launcherImport; null hides the "From another launcher" tab.
+    readonly property var launcherImport: root.shell ? root.shell.launcherImport : null
     // Starting value of the import field: a file or link handed in from outside (`kite --import`).
     property string presetSource: ""
 
@@ -230,7 +232,8 @@ AppDialog {
     readonly property int maxHeight: 760
     height: Math.min(root.maxHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
-    title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
+    title: root.mode === "import" ? qsTr("Import instance")
+         : root.mode === "launchers" ? qsTr("Import instances") : qsTr("New instance")
 
     // root.mode is left alone: a pick made right after open() must not be reset.
     onAboutToShow: {
@@ -305,13 +308,16 @@ AppDialog {
             tabs: [
                 { id: "create", label: qsTr("Create") },
                 { id: "import", label: qsTr("Import") }
-            ].concat(root.shareCodes ? [{ id: "code", label: qsTr("Share code") }] : [])
+            ].concat(root.launcherImport ? [{ id: "launchers", label: qsTr("From another launcher") }] : [])
+             .concat(root.shareCodes ? [{ id: "code", label: qsTr("Share code") }] : [])
             current: root.mode
             onActivated: (id) => root.mode = id
         }
 
+        // Instances from other launchers keep their own names.
         RowLayout {
             Layout.fillWidth: true
+            visible: root.mode !== "launchers"
             spacing: Theme.space.md
 
             AbstractButton {
@@ -406,7 +412,7 @@ AppDialog {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: root.mode === "code" ? 2 : root.mode === "import" ? 1 : 0
+            currentIndex: root.mode === "launchers" ? 3 : root.mode === "code" ? 2 : root.mode === "import" ? 1 : 0
 
         RowLayout {
             spacing: Theme.space.xl
@@ -754,6 +760,11 @@ AppDialog {
             locked: root.creating
             onPreviewChanged: root.refreshCodeName()
         }
+
+        LauncherImportPane {
+            id: launcherPane
+            controller: root.launcherImport
+        }
         } // StackLayout
 
         FileDialog {
@@ -796,15 +807,17 @@ AppDialog {
             Layout.leftMargin: Theme.space.xl
             Layout.bottomMargin: Theme.space.xl
             visible: !root.creating && !(root.watcher && root.watcher.failed)
-            text: root.mode === "import" ? root.importBlocker : root.mode === "code" ? root.codeBlocker : root.createBlocker
+            text: root.mode === "import" ? root.importBlocker : root.mode === "code" ? root.codeBlocker
+                : root.mode === "launchers" ? launcherPane.summary : root.createBlocker
             role: "label"
             tone: "tertiary"
             elide: Text.ElideRight
         }
 
+        // "Close" for other launchers: closing does not stop their import.
         Button {
             Layout.bottomMargin: Theme.space.xl
-            text: qsTr("Cancel")
+            text: root.mode === "launchers" ? qsTr("Close") : qsTr("Cancel")
             enabled: !root.creating
             onClicked: root.close()
         }
@@ -836,6 +849,17 @@ AppDialog {
             onClicked: {
                 root.watcher = root.controller.importFrom(root.importSource.trim(), nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
             }
+        }
+        // The import carries on with the dialog closed; the pane shows its progress.
+        Button {
+            Layout.rightMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
+            highlighted: true
+            visible: root.mode === "launchers"
+            text: launcherPane.running ? qsTr("Importing…") : qsTr("Import")
+            icon.source: Icons.url("download")
+            enabled: launcherPane.canImport
+            onClicked: launcherPane.start()
         }
         Button {
             Layout.rightMargin: Theme.space.xl

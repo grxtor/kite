@@ -267,10 +267,10 @@ ApplicationWindow {
             else if (key === "sidebarwidth")
                 root.setSidebarWidth(parseInt(value))
             // Every first-run step; nothing is saved unless one is finished. onboarding=<step>
-            // (language|java|account|done) opens it on that step.
+            // (language|java|import|account|done) opens it on that step.
             else if (key === "onboarding") {
                 onboardingLoader.active = true
-                onboardingLoader.item.steps = ["language", "java", "account", "done"]
+                onboardingLoader.item.steps = ["language", "java", "import", "account", "done"]
                 onboardingLoader.item.index = Math.max(0, onboardingLoader.item.steps.indexOf(value))
                 onboardingLoader.item.active = true
             }
@@ -395,15 +395,32 @@ ApplicationWindow {
     }
     readonly property QtObject newInstanceDialog: newInstanceLoader.item
 
-    // mode is "create" (default), "import" or "code"; source pre-fills the import field.
+    // mode is "create" (default), "import", "code" or "launchers"; source pre-fills the import field.
     function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
         var instanceDialog = root.dialog(newInstanceLoader)
         instanceDialog.controller = root.shell.newInstance
-        instanceDialog.mode = mode === "import" || mode === "code" ? mode : "create"
+        instanceDialog.mode = mode === "import" || mode === "code" || mode === "launchers" ? mode : "create"
         instanceDialog.presetSource = source || ""
         instanceDialog.open()
+    }
+
+    // An import from other launchers runs on with its dialog closed; its end is told wherever one is.
+    Connections {
+        target: root.shell ? root.shell.launcherImport : null
+        ignoreUnknownSignals: true
+        function onFinished(imported, failed, cancelled) {
+            // The open tab says it itself.
+            if (root.newInstanceDialog && root.newInstanceDialog.opened && root.newInstanceDialog.mode === "launchers")
+                return
+            if (failed > 0)
+                toast.show(failed === 1 ? qsTr("1 instance could not be imported.")
+                                        : qsTr("%1 instances could not be imported.").arg(failed), "danger")
+            else if (imported > 0)
+                toast.show(imported === 1 ? qsTr("1 instance imported.")
+                                          : qsTr("%1 instances imported.").arg(imported), "success")
+        }
     }
 
     // An import from outside the window (`kite --import`, a second launcher).

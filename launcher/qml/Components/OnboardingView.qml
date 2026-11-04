@@ -12,6 +12,8 @@ Rectangle {
     id: root
 
     property var shell: null
+    // QmlShell.launcherImport: other launchers' instances, offered as a step when there are any.
+    readonly property var importer: root.shell ? root.shell.launcherImport : null
     // macOS: the title bar's height when it lies over the window, else 0.
     property int topInset: 0
     // Fixed when the flow opens, so saving a choice does not reshuffle it.
@@ -45,6 +47,35 @@ Rectangle {
         root.active = true
         if (needed.indexOf("java") >= 0)
             root.shell.detectJava()
+        if (root.importer && !root.importer.scanned)
+            root.importer.scan()
+        else
+            root.offerImport()
+    }
+
+    // The look for other launchers ends after the flow opened: its step joins before the account
+    // (or the end) unless the person is already past that point.
+    function offerImport() {
+        if (!root.active || !root.importer || root.importer.availableCount === 0
+                || root.steps.indexOf("import") >= 0)
+            return
+        var at = root.steps.indexOf("account")
+        if (at < 0)
+            at = root.steps.indexOf("done")
+        if (at < 0 || root.index > at)
+            return
+        var steps = root.steps.slice()
+        steps.splice(at, 0, "import")
+        root.steps = steps
+    }
+
+    Connections {
+        target: root.importer
+        ignoreUnknownSignals: true
+        function onScanningChanged() {
+            if (!root.importer.scanning)
+                root.offerImport()
+        }
     }
 
     function next() {
@@ -85,6 +116,7 @@ Rectangle {
         switch (id) {
         case "language": return qsTr("Language")
         case "java": return qsTr("Java & memory")
+        case "import": return qsTr("Other launchers")
         case "account": return qsTr("Account")
         case "done": return qsTr("Ready")
         default: return ""
@@ -207,6 +239,7 @@ Rectangle {
                 Copy {
                     text: root.step === "language" ? qsTr("Choose your language")
                         : root.step === "java" ? root.stepTitle("java")
+                        : root.step === "import" ? qsTr("Bring your instances over")
                         : root.step === "account" ? qsTr("Sign in to play online")
                         : qsTr("You're all set")
                     role: "display"
@@ -217,6 +250,7 @@ Rectangle {
                     wrapMode: Text.Wrap
                     text: root.step === "language" ? qsTr("Kite switches as soon as you pick one. You can change it later in Settings.")
                         : root.step === "java" ? qsTr("Minecraft runs on Java. Pick an installed one, or let Kite download the right version for each game automatically.")
+                        : root.step === "import" ? qsTr("Kite found instances from other launchers on this computer. Tick the ones to bring over: they are copied, and the originals stay as they are. Your accounts stay there too; you sign in to Kite yourself.")
                         : root.step === "account" ? qsTr("Use the Microsoft account that owns Minecraft. You can also do this later from the account button at the bottom of the left sidebar.")
                         : qsTr("Start a new instance, or find a modpack in Discover.")
                     tone: "secondary"
@@ -229,7 +263,7 @@ Rectangle {
                     Layout.maximumWidth: root.contentMaxWidth
                     // Every page counts toward a StackLayout's size; none may push the footer out of a short window.
                     Layout.minimumHeight: 0
-                    currentIndex: ["language", "java", "account", "done"].indexOf(root.step)
+                    currentIndex: ["language", "java", "account", "done", "import"].indexOf(root.step)
 
                     ColumnLayout {
                         spacing: Theme.space.md
@@ -394,6 +428,17 @@ Rectangle {
 
                     ColumnLayout {
                         spacing: 0
+                        // An import started a step earlier carries on here.
+                        NoticeBar {
+                            Layout.fillWidth: true
+                            Layout.topMargin: Theme.space.lg
+                            visible: !!root.importer && root.importer.running
+                            tone: "info"
+                            text: root.importer ? root.importer.status : ""
+                            progress: root.importer ? root.importer.progress : -1
+                            actionText: qsTr("Stop")
+                            onActionTriggered: root.importer.cancel()
+                        }
                         RowLayout {
                             Layout.topMargin: Theme.space.lg
                             spacing: Theme.space.sm
@@ -416,6 +461,11 @@ Rectangle {
                         }
                         Item { Layout.fillHeight: true }
                     }
+
+                    LauncherImportPane {
+                        id: importPane
+                        controller: root.importer
+                    }
                 }
 
                 RowLayout {
@@ -436,11 +486,35 @@ Rectangle {
                         onClicked: root.index--
                     }
                     Item { Layout.fillWidth: true }
+                    Copy {
+                        visible: root.step === "import" && importPane.summary.length > 0
+                        text: importPane.summary
+                        role: "label"
+                        tone: "tertiary"
+                    }
                     Button {
                         highlighted: true
                         visible: root.step === "language" || root.step === "java"
                         text: qsTr("Continue")
                         onClicked: root.next()
+                    }
+                    // Skipping, or moving on while the import runs: it carries on in the background.
+                    Button {
+                        flat: true
+                        visible: root.step === "import"
+                        text: importPane.running ? qsTr("Continue") : qsTr("Skip")
+                        onClicked: root.next()
+                    }
+                    Button {
+                        highlighted: true
+                        visible: root.step === "import" && !importPane.running
+                        text: qsTr("Import")
+                        icon.source: Icons.url("download")
+                        enabled: importPane.canImport
+                        onClicked: {
+                            importPane.start()
+                            root.next()
+                        }
                     }
                 }
             }
