@@ -18,10 +18,12 @@ IconButton {
     property string personName
     // Someone who is not a friend (a request) can only be blocked.
     property bool canRemove: true
+    // Off where the conversation is already open.
+    property bool canMessage: root.canRemove
 
     size: Theme.control.heightSm
     iconName: "more"
     tip: qsTr("More")
     Accessible.name: root.personName.length > 0 ? qsTr("More options for %1").arg(root.personName) : root.tip
-    onClicked: if (root.menu) root.menu.openFor(root, root.personUuid, root.personName, root.canRemove)
+    onClicked: if (root.menu) root.menu.openFor(root, root.personUuid, root.personName, root.canRemove, root.canMessage)
 }

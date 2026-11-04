@@ -294,6 +294,11 @@ ApplicationWindow {
         root.friendsPanelExpanded = expanded
         SettingsStore.setValue("FriendsPanelExpanded", expanded)
     }
+    // The conversation with @p uuid in the friends panel, opened (and opened out) for it.
+    function openFriendChat(uuid) {
+        root.setFriendsPanelOpen(true)
+        friendsPanel.openChat(uuid)
+    }
     function setFriendsPanelWidth(width) {
         root.friendsPanelWidth = width
         SettingsStore.setValue("FriendsPanelWidth", width)
@@ -845,6 +850,7 @@ ApplicationWindow {
         controller: root.friendsController
         places: root.friendPlaces
         joinFlow: friendJoin
+        myFace: root.shellValue("accountFace", "")
         onExpandedRequested: (expanded) => root.setFriendsPanelExpanded(expanded)
         onWidthCommitted: (panelWidth) => root.setFriendsPanelWidth(panelWidth)
         onFriendsRequested: (tab) => root.openFriends(tab)
@@ -1071,6 +1077,7 @@ ApplicationWindow {
                                 joinFlow: friendJoin
                                 onNavigateRequested: (target) => root.navigate(target)
                                 onJoinRequested: (friend) => friendJoin.join(friend)
+                                onMessageRequested: (uuid) => root.openFriendChat(uuid)
                         }
                     }
                 }

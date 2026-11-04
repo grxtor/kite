@@ -9,9 +9,9 @@ import Kite.Theme
 /*
  * The card a click on a head in the friends strip opens, a profile popout like Discord's: the head bigger with the
  * name and a word on where they are, then where they play (FriendPlaceBlock: the server's live favicon, players,
- * version, Join) and a Message field with the unread count (chat is coming). ⋯ holds Remove and Block. One card for
- * the strip, since a card in a head would close under the pointer when the lists are rebuilt. A click on the strip
- * does not close it (the strip decides): a press that closed it first would reopen it on that head.
+ * version, Join) and a Message field with the unread count that opens the conversation. ⋯ holds Remove and Block.
+ * One card for the strip, since a card in a head would close under the pointer when the lists are rebuilt. A click
+ * on the strip does not close it (the strip decides): a press that closed it first would reopen it on that head.
  */
 Popup {
     id: root
@@ -37,6 +37,7 @@ Popup {
     readonly property int headSize: 48
 
     signal joinRequested(var friend)
+    signal messageRequested(string uuid)
 
     function find(list, uuid) {
         for (var i = 0; i < list.length; ++i) {
@@ -120,6 +121,8 @@ Popup {
                 menu: root.menu
                 personUuid: root.friendUuid
                 personName: root.known ? root.friend.name : ""
+                // The Message field is right below.
+                canMessage: false
                 enabled: root.actionsEnabled
             }
         }
@@ -141,6 +144,12 @@ Popup {
             Layout.fillWidth: true
             name: root.known ? root.friend.name : ""
             unread: root.friend.unread || 0
+            enabled: root.known
+            onClicked: {
+                const uuid = root.friendUuid
+                root.close()
+                root.messageRequested(uuid)
+            }
         }
     }
 }

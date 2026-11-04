@@ -26,6 +26,7 @@ Item {
     signal addRequested()
     signal requestsRequested()
     signal joinRequested(var friend)
+    signal messageRequested(string uuid)
 
     readonly property bool failed: root.friendsState.phase === "error" && !root.friendsState.signInFirst
     readonly property string stateTip: root.friendsState.phase === "off" ? qsTr("Friends is off")
@@ -204,5 +205,6 @@ Item {
         stale: root.friendsState.stale
         actionsEnabled: root.friendsState.connected
         onJoinRequested: (friend) => root.joinRequested(friend)
+        onMessageRequested: (uuid) => root.messageRequested(uuid)
     }
 }

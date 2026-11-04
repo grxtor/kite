@@ -25,73 +25,17 @@
 #include "FriendsChat.h"
 #include "FriendsChatApi.h"
 
+#include "FriendsChatFakeServer.h"
+
+using FriendsChatFake::kJeb;
+using FriendsChatFake::kMe;
+using FriendsChatFake::message;
+using FriendsChatFake::page;
+using FriendsChatFake::reply;
+using FakeServer = FriendsChatFake::Server;
+
 namespace
 {
-	const QString kMe = QStringLiteral("069a79f4-44e9-4726-a5be-fca90e38aaf5");
-	const QString kJeb = QStringLiteral("853c80ef-3c37-49fd-aa49-938b674adae6");
-	const QString kTime = QStringLiteral("2026-11-04T10:00:00.000Z");
-
-	QJsonObject message(const QString& id, const QString& from, const QString& text,
-						const QString& at = kTime)
-	{
-		return {{"id", id}, {"from", from}, {"to", from == kMe ? kJeb : kMe},
-				{"text", text}, {"createdAt", at}, {"deleted", false}};
-	}
-
-	QByteArray page(const QJsonArray& messages, bool more = false)
-	{
-		return QJsonDocument(QJsonObject{{"messages", messages}, {"more", more}})
-			.toJson(QJsonDocument::Compact);
-	}
-
-	FriendsApi::Reply reply(int status, const QByteArray& body = QByteArray(), int retryAfter = 0)
-	{
-		FriendsApi::Reply answer;
-		answer.status = status;
-		answer.body = body;
-		answer.retryAfterSeconds = retryAfter;
-		return answer;
-	}
-
-	/* Stands in for the controller: records what the chat sends, answers when told. */
-	struct FakeServer {
-		struct Request {
-			QByteArray verb;
-			QString path;
-			QByteArray body;
-			std::function<void(const FriendsApi::Reply&)> done;
-		};
-		bool socketUp = true;
-		QList<QJsonObject> frames;
-		QList<Request> requests;
-		QStringList finished;
-
-		FriendsChat::Transport transport()
-		{
-			FriendsChat::Transport t;
-			t.sendFrame = [this](const QJsonObject& frame) {
-				if (socketUp) {
-					frames.append(frame);
-				}
-				return socketUp;
-			};
-			t.request = [this](const QByteArray& verb, const QString& path, const QByteArray& body,
-							   std::function<void(const FriendsApi::Reply&)> done) {
-				requests.append({verb, path, body, std::move(done)});
-			};
-			t.finished = [this](const QString& action, bool ok, const QString&) {
-				finished.append(action + (ok ? QStringLiteral(":ok") : QStringLiteral(":failed")));
-			};
-			return t;
-		}
-		/* Answers the oldest request still waiting. */
-		void answer(const FriendsApi::Reply& reply)
-		{
-			auto request = requests.takeFirst();
-			request.done(reply);
-		}
-	};
-
 	QVariant at(FriendsChat& chat, int row, int role)
 	{
 		auto* model = chat.messages();
@@ -134,35 +78,6 @@ class FriendsChatTest : public QObject
 		m_chat = std::make_unique<FriendsChat>();
 		m_chat->setTransport(m_server.transport());
 		m_chat->setMe(kMe);
-	}
-
-	void textIsCleanedLikeTheServerDoes()
-	{
-		using namespace FriendsChatApi;
-		QCOMPARE(cleanText(QStringLiteral("  gg\n wp‮ §6gold  ")), QStringLiteral("gg wp §6gold"));
-		QVERIFY(!sendable(QStringLiteral(" \n ")));
-		QVERIFY(sendable(QString(kMaxTextLength, QLatin1Char('a'))));
-		QVERIFY(!sendable(QString(kMaxTextLength + 1, QLatin1Char('a'))));
-		QVERIFY(idLess(QStringLiteral("9"), QStringLiteral("10")));
-		QVERIFY(idLess(QString(), QStringLiteral("1")));
-		QVERIFY(!idLess(QStringLiteral("10"), QStringLiteral("10")));
-		QVERIFY(isRef(QStringLiteral("s1")));
-		QVERIFY(!isRef(QStringLiteral("bad ref")));
-		QCOMPARE(Path::page(kJeb, QStringLiteral("42"), QString(), kPageLimit),
-				 QStringLiteral("/v1/chats/%1/messages?before=42&limit=50").arg(kJeb));
-	}
-
-	void aDeletedMessageHasNoText()
-	{
-		const auto parsed = FriendsChatApi::parsePage(page(
-			{QJsonObject{{"id", "3"}, {"from", kJeb.toUpper()}, {"to", kMe}, {"text", QJsonValue()},
-						 {"createdAt", kTime}, {"deleted", true}}}));
-		QVERIFY(parsed);
-		QCOMPARE(parsed->messages.size(), 1);
-		QVERIFY(parsed->messages.first().deleted);
-		QVERIFY(parsed->messages.first().text.isEmpty());
-		QCOMPARE(parsed->messages.first().from, kJeb);
-		QVERIFY(!FriendsChatApi::parseMessage(QJsonObject{{"from", kJeb}}));
 	}
 
 	void openingReadsTheNewestPageNewestFirst()

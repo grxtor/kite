@@ -230,6 +230,14 @@ qt_add_qml_module(Kite_qml_components
         PanelEdgeHandle.qml
         FriendsStripHead.qml
         FriendHeadCard.qml
+        FriendChatView.qml
+        FriendChatHeader.qml
+        FriendChatList.qml
+        FriendChatMessage.qml
+        FriendChatMessageMenu.qml
+        FriendChatDaySeparator.qml
+        FriendChatComposer.qml
+        FriendReportDialog.qml
         FriendsPanelHeader.qml
         FriendsPanelGroup.qml
         FriendsPanelToggle.qml

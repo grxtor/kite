@@ -944,6 +944,11 @@ add_unit_test(FriendsChat
     LIBS Kite_core
     )
 
+add_unit_test(FriendsChatApi
+    SOURCES friends/FriendsChatApi_test.cpp
+    LIBS Kite_core
+    )
+
 add_unit_test(FriendsEvents
     SOURCES friends/FriendsEvents_test.cpp
     LIBS Kite_core
@@ -1593,6 +1598,19 @@ add_unit_test(QmlModule
 # the test fails at runtime with 'plugin "Kite_qmlplugin" not found'. Kite_qmlplugin is linked above
 # because nothing imports "Kite".
 qt_import_qml_plugins(QmlModule_test)
+
+# The friends panel's conversation over a real FriendsChat; KITE_CHAT_SHOTS=<dir> also saves each state as a PNG.
+add_unit_test(FriendChatQml
+    SOURCES qml/FriendChatQml_test.cpp qml/FriendChatQmlHarness.h
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(FriendChatQml_test)
+
+add_unit_test(FriendChatPanelQml
+    SOURCES qml/FriendChatPanelQml_test.cpp qml/FriendChatQmlHarness.h
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(FriendChatPanelQml_test)
 
 # Kite_logic, not the core: the built-in icons are compiled into Kite_logic.
 add_unit_test(InstanceIconProvider

@@ -8,8 +8,9 @@ import Kite.Theme
 /*
  * The friends panel opened out: header, then what waits on you (invites to a server, friend requests to accept or
  * decline; FriendsWaiting), then who is in game, in Kite and, folded until opened, offline (FriendsPanelGroup).
- * Sent requests, blocked people and adding by name stay on the Friends page. FriendsSidePanel builds this once and
- * never tears it down, so the folds hold for the session.
+ * Sent requests, blocked people and adding by name stay on the Friends page. A conversation (FriendChatView) takes
+ * the whole panel while FriendsChat has one open. FriendsSidePanel builds this once and never tears it down, so the
+ * folds hold for the session.
  */
 Item {
     id: root
@@ -20,6 +21,11 @@ Item {
     property var menu: null
     // Main.qml's FriendPlaces, for the server names and favicons.
     property FriendPlaces places: FriendPlaces {}
+    // The launcher account's head, for its own messages.
+    property string myFace
+
+    readonly property var chat: root.friendsState.controller ? root.friendsState.controller.chat : null
+    readonly property bool chatOpen: !!root.chat && root.chat.openUuid.length > 0
 
     // Which groups show their rows; offline starts folded.
     property bool playingOpen: true
@@ -34,6 +40,7 @@ Item {
 
     FriendsPanelHeader {
         id: header
+        visible: !root.chatOpen
         anchors.left: parent.left
         anchors.leftMargin: 1
         anchors.right: parent.right
@@ -52,7 +59,7 @@ Item {
 
     Item {
         id: lists
-        visible: root.friendsState.showsLists
+        visible: root.friendsState.showsLists && !root.chatOpen
         anchors.left: parent.left
         anchors.leftMargin: 1
         anchors.right: parent.right
@@ -161,8 +168,20 @@ Item {
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         anchors.margins: Theme.space.lg
-        visible: !root.friendsState.showsLists
+        visible: !root.friendsState.showsLists && !root.chatOpen
         friendsState: root.friendsState
         onNavigateRequested: (target) => root.navigateRequested(target)
+    }
+
+    FriendChatView {
+        anchors.fill: parent
+        anchors.leftMargin: 1
+        anchors.topMargin: 1
+        visible: root.chatOpen
+        controller: root.friendsState.controller
+        menu: root.menu
+        myFace: root.myFace
+        connected: root.friendsState.connected
+        stale: root.friendsState.stale
     }
 }

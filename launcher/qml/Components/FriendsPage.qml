@@ -26,6 +26,8 @@ Item {
 
     signal navigateRequested(string target)
     signal joinRequested(var friend)
+    // Message in a friend's ⋯: the conversation opens in the friends panel.
+    signal messageRequested(string uuid)
 
     readonly property FriendsState friendsState: FriendsState { controller: root.controller }
     readonly property string updatedAt: Format.friendsUpdatedAt(root.controller)
@@ -150,6 +152,7 @@ Item {
     // under the pointer.
     FriendPersonMenu {
         id: personMenu
+        onMessageRequested: (uuid) => root.messageRequested(uuid)
         onRemoveRequested: (uuid, name) => root.confirmAction("remove", uuid, name)
         onBlockRequested: (uuid, name, friend) => root.confirmAction(friend ? "block" : "blockRequest", uuid, name)
     }
