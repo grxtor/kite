@@ -412,6 +412,23 @@ class FriendsApiTest : public QObject
 		QVERIFY(!parseUser("{}"));
 	}
 
+	/* A name that is not a Minecraft name is dropped with its person, however
+	 * the server sent it. */
+	void namesThatAreNotMinecraftNamesAreDropped()
+	{
+		const auto snapshot = parseFriends(R"({
+			"friends": [ { "uuid": "a", "name": "<b>x</b>", "status": { "state": "online" } },
+						 { "uuid": "b", "name": "jeb_", "status": { "state": "online" } } ],
+			"requests": { "incoming": [ { "uuid": "c", "name": "Two words" } ], "outgoing": [] } })");
+		QVERIFY(snapshot);
+		QCOMPARE(snapshot->friends.size(), 1);
+		QCOMPARE(snapshot->friends.first().name, QString("jeb_"));
+		QVERIFY(snapshot->incoming.isEmpty());
+		QVERIFY(!parseUser(R"({ "user": { "uuid": "u", "name": "jeb_\n" } })"));
+		QVERIFY(!parseRequestResult(
+			R"({ "status": "pending", "user": { "uuid": "u", "name": "seventeen_chars_xx" } })"));
+	}
+
 	void parsesErrors()
 	{
 		const auto error = parseError(

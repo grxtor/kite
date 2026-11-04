@@ -72,7 +72,7 @@ namespace FriendsEvents
 		Outcome request(FriendsApi::FriendsSnapshot& snapshot, const QJsonObject& frame)
 		{
 			const auto person = personOf(frame);
-			if (person.uuid.isEmpty() || person.name.isEmpty()) {
+			if (person.uuid.isEmpty() || !FriendsApi::isMinecraftName(person.name)) {
 				return {false, true};
 			}
 			const bool known = std::any_of(snapshot.incoming.cbegin(), snapshot.incoming.cend(),

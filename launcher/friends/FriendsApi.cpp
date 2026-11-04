@@ -159,9 +159,11 @@ namespace FriendsApi
 			return person;
 		}
 
+		/* A name that is not a Minecraft name is not shown: names reach text
+		 * views, and a server is not trusted to have checked them. */
 		bool hasIdentity(const Person& person)
 		{
-			return !person.uuid.isEmpty() && !person.name.isEmpty();
+			return !person.uuid.isEmpty() && isMinecraftName(person.name);
 		}
 
 		QList<Person> parsePeople(const QJsonValue& value, bool* ok)
@@ -502,7 +504,7 @@ namespace FriendsApi
 		session.uuid = user.value("uuid").toString();
 		session.name = user.value("name").toString();
 		if (!ok || session.token.isEmpty() || !session.expiresAt.isValid() ||
-			session.uuid.isEmpty() || session.name.isEmpty()) {
+			session.uuid.isEmpty() || !isMinecraftName(session.name)) {
 			return std::nullopt;
 		}
 		return session;
@@ -576,7 +578,7 @@ namespace FriendsApi
 			one.status =
 				parseStatus(friendObject.value("status").toObject());
 			one.unread = std::max(0, friendObject.value("unread").toInt());
-			if (!one.uuid.isEmpty() && !one.name.isEmpty()) {
+			if (!one.uuid.isEmpty() && isMinecraftName(one.name)) {
 				snapshot.friends.append(one);
 			}
 		}
@@ -616,7 +618,7 @@ namespace FriendsApi
 		result.status = object.value("status").toString();
 		result.uuid = user.value("uuid").toString();
 		result.name = user.value("name").toString();
-		if (!ok || result.status.isEmpty() || result.name.isEmpty()) {
+		if (!ok || result.status.isEmpty() || !isMinecraftName(result.name)) {
 			return std::nullopt;
 		}
 		return result;
