@@ -97,14 +97,16 @@ class FriendsChatE2ETest : public QObject
 	bool signIn(Player& player, const QString& name)
 	{
 		player.name = name;
-		const auto challenge = FriendsApi::parseChallenge(
-			call("POST", FriendsApi::Path::challenge(), FriendsApi::challengeBody(name)).body);
+		const auto asked = call("POST", FriendsApi::Path::challenge(), FriendsApi::challengeBody(name));
+		const auto challenge = FriendsApi::parseChallenge(asked.body);
 		if (!challenge) {
+			qWarning() << "challenge:" << asked.status << asked.body;
 			return false;
 		}
-		const auto session = FriendsApi::parseSession(
-			call("POST", FriendsApi::Path::login(), FriendsApi::loginBody(challenge->challengeId)).body);
+		const auto login = call("POST", FriendsApi::Path::login(), FriendsApi::loginBody(challenge->challengeId));
+		const auto session = FriendsApi::parseSession(login.body);
 		if (!session) {
+			qWarning() << "login:" << login.status << login.body;
 			return false;
 		}
 		player.uuid = session->uuid.toLower();
