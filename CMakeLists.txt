@@ -324,6 +324,12 @@ set(Kite_BUILD_PLATFORM "" CACHE STRING "A short string identifying the platform
 
 set(Kite_UPDATER_GITHUB_REPO "" CACHE STRING "GitHub repository the updater reads releases from. Defaults to Kite_Git.")
 
+# kite-updater (Windows, Linux) installs a release only when its kite-update.json carries an Ed25519
+# signature by this key; the release workflow signs it with the KITE_UPDATE_ED_PRIVATE_KEY secret and
+# fails if that secret is not this key's. A fork publishing its own releases sets its own key. Base64
+# of the 32-byte public key.
+set(Kite_UPDATE_PUBLIC_KEY "6dOlOyj2F8eqxeWJSbnIYY6V1PBak2YHHn02CydQblY=" CACHE STRING "Public Ed25519 key the release manifest must be signed with (base64).")
+
 # A beta build enables pre-releases by default; users can change that. Not
 # Kite_VERSION_CHANNEL, which is the git branch name.
 set(Kite_UPDATE_CHANNEL "stable" CACHE STRING "Release channel this build subscribes to: stable | beta.")
@@ -610,6 +616,7 @@ add_subdirectory(libraries/xz-embedded) # xz compression
 add_subdirectory(libraries/localpeer) # fork of a library from Qt solutions
 add_subdirectory(libraries/classparser) # Java class file parser
 add_subdirectory(libraries/katabasis) # OAuth2 library
+add_subdirectory(libraries/monocypher) # Ed25519 check of the update manifest
 
 # The shared libraries go where the launcher loads them: beside the binary on
 # Windows, covered by the RPATH elsewhere. Installed by hand: RUNTIME_DEPENDENCY_SET

@@ -25,6 +25,7 @@
 #include <QDebug>
 #include <QDirIterator>
 #include <QElapsedTimer>
+#include <QEventLoop>
 #include <QFileInfo>
 #include <QLocale>
 #include <QLoggingCategory>
@@ -44,6 +45,9 @@
 #include <QThread>
 #include <QTimer>
 
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <mutex>
 
 #include "AssetMatcher.h"
@@ -62,6 +66,9 @@ namespace
 	constexpr int kReleasesPerPage = 30;
 
 	constexpr int kVersionQueryTimeoutMs = 5000;
+
+	//! For the manifest and its signature: a few KiB each.
+	constexpr int kSmallFileTimeoutMs = 30000;
 
 	/*! Everything goes through the log file: this process is built for the windowing subsystem so
 	 * updating does not flash a console, and has nowhere else to write. */
@@ -385,6 +392,8 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 		{{QStringLiteral("l"), QStringLiteral("list")},
 		 tr("List the available releases.")},
 		{QStringLiteral("debug"), tr("Log debug output to the console.")},
+		{QStringLiteral("no-relaunch"),
+		 tr("Do not start the launcher again once the update is installed.")},
 		{{QStringLiteral("S"), QStringLiteral("select-ui")},
 		 tr("Select the version to install with a GUI.")},
 		{{QStringLiteral("D"), QStringLiteral("allow-downgrade")},
@@ -406,6 +415,7 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 	m_selectUI = parser.isSet(QStringLiteral("select-ui"));
 	m_allowDowngrade = parser.isSet(QStringLiteral("allow-downgrade"));
 	m_allowPreRelease = parser.isSet(QStringLiteral("pre-release"));
+	m_noRelaunch = parser.isSet(QStringLiteral("no-relaunch"));
 
 	const QString binPath = applicationDirPath();
 	const QString dirOption = parser.value(QStringLiteral("dir"));
@@ -474,8 +484,8 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 	return;
 #endif
 
-	// An AppImage is one read-only file mounted at a temporary path; updating means replacing the
-	// file, which is AppImageUpdate's job.
+	// An AppImage is one read-only file mounted at a temporary path; updating means replacing that
+	// file (installAppImage()).
 	if (binPath.startsWith(QLatin1String("/tmp/.mount_"))) {
 		m_isAppImage = true;
 		m_appImagePath =
@@ -491,6 +501,8 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 	}
 
 	m_isFlatpak = DesktopServices::isFlatpak();
+	m_managedBy = m_isFlatpak ? QStringLiteral("flatpak")
+							  : UpdateLockFile::managedBy(m_rootPath);
 
 	m_launcherExecutable = QDir(binPath).absoluteFilePath(launcherBinaryName());
 	if (!QFileInfo(m_launcherExecutable).isFile()) {
@@ -922,13 +934,31 @@ void MeshUpdaterApp::run()
 	if (m_checkOnly) {
 		// The launcher parses exactly these three labelled lines and treats the rest of stdout as
 		// release notes. Keep in step with KiteExternalUpdater::checkForUpdates().
-		m_status = Succeeded;
 		if (!updateNeeded) {
 			qDebug() << "No update needed.";
+			m_status = Succeeded;
 			QCoreApplication::exit(ExitSuccess);
 			return;
 		}
 
+		// Offer only what can be installed: a release whose files are signed, with one for this
+		// installation. A package manager's copy only hears about it, so any signed release will do.
+		QString manifestError;
+		if (!loadManifest(latest, &manifestError)) {
+			fail(tr("%1 cannot be installed by the updater: %2")
+					 .arg(latest.displayName(), manifestError));
+			return;
+		}
+		if (m_managedBy.isEmpty() && installableAssets(latest).isEmpty()) {
+			fail(tr("%1 has no signed file for this installation (%2).")
+					 .arg(latest.displayName(),
+						  BuildConfig.BUILD_ARTIFACT.isEmpty()
+							  ? tr("unknown build")
+							  : BuildConfig.BUILD_ARTIFACT));
+			return;
+		}
+
+		m_status = Succeeded;
 		QTextStream out(stdout);
 		out << "Name: " << latest.displayName() << '\n';
 		out << "Version: " << latest.tagName << '\n';
@@ -962,17 +992,14 @@ void MeshUpdaterApp::run()
 		return;
 	}
 
-	if (m_isAppImage) {
-		// One file, updated in place by AppImageUpdate over zsync, which transfers only the changed
-		// blocks.
-		if (!updateNeeded && !m_forceUpdate) {
-			m_status = Succeeded;
-			QCoreApplication::exit(ExitSuccess);
-			return;
-		}
-		const bool started = updateAppImage();
-		m_status = started ? Succeeded : Failed;
-		QCoreApplication::exit(started ? ExitSuccess : ExitFailed);
+	if (!m_managedBy.isEmpty()) {
+		// Writing over a package manager's files would leave it believing in a version that is no
+		// longer there, and its next upgrade would fight this one.
+		showFatalError(
+			tr("Updated by %1").arg(m_managedBy),
+			tr("%1 was installed with %2, which also updates it. Update it "
+			   "with %2 instead.")
+				.arg(BuildConfig.KITE_DISPLAYNAME, m_managedBy));
 		return;
 	}
 
@@ -1003,7 +1030,120 @@ void MeshUpdaterApp::run()
 		}
 	}
 
+	QString manifestError;
+	if (!loadManifest(target, &manifestError)) {
+		showFatalError(
+			tr("Update Not Signed"),
+			tr("%1 cannot be installed: %2\n"
+			   "\n"
+			   "Your installation has not been changed. You can download the "
+			   "release yourself from %3.")
+				.arg(target.displayName(), manifestError,
+					 BuildConfig.UPDATER_GITHUB_REPO +
+						 QLatin1String("/releases")));
+		return;
+	}
+
 	performUpdate(target);
+}
+
+// ---------------------------------------------------------------------------
+// The signed manifest
+// ---------------------------------------------------------------------------
+
+QByteArray MeshUpdaterApp::fetchSmallFile(const QUrl& url, qint64 maxBytes,
+										  QString* error)
+{
+	QNetworkRequest request{url};
+	request.setHeader(QNetworkRequest::UserAgentHeader,
+					  BuildConfig.USER_AGENT_UNCACHED);
+	request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+						 QNetworkRequest::NoLessSafeRedirectPolicy);
+	request.setTransferTimeout(kSmallFileTimeoutMs);
+
+	QNetworkReply* reply = m_network->get(request);
+	QEventLoop loop;
+	connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+	// A reply that grows past what the file can be is cut off rather than buffered.
+	connect(reply, &QNetworkReply::downloadProgress, reply,
+			[reply, maxBytes](qint64 received, qint64) {
+				if (received > maxBytes)
+					reply->abort();
+			});
+	loop.exec();
+
+	reply->deleteLater();
+	if (reply->error() != QNetworkReply::NoError) {
+		*error = tr("could not download %1: %2")
+					 .arg(url.toString(), reply->errorString());
+		return {};
+	}
+	const QByteArray data = reply->readAll();
+	if (data.isEmpty() || data.size() > maxBytes) {
+		*error = tr("%1 is empty or too large").arg(url.toString());
+		return {};
+	}
+	return data;
+}
+
+bool MeshUpdaterApp::loadManifest(const GitHubRelease& release, QString* error)
+{
+	const auto findAsset = [&release](const char* name) {
+		for (const GitHubReleaseAsset& asset : release.assets) {
+			if (asset.name == QLatin1String(name) && asset.isValid())
+				return asset;
+		}
+		return GitHubReleaseAsset();
+	};
+
+	const GitHubReleaseAsset manifestAsset =
+		findAsset(UpdateManifest::kManifestName);
+	const GitHubReleaseAsset signatureAsset =
+		findAsset(UpdateManifest::kSignatureName);
+	if (!manifestAsset.isValid() || !signatureAsset.isValid()) {
+		// Releases before 1.3.0, or one published without the release workflow.
+		*error = tr("the release has no signed file list (%1)")
+					 .arg(QLatin1String(UpdateManifest::kManifestName));
+		return false;
+	}
+
+	const QByteArray manifest = fetchSmallFile(
+		manifestAsset.downloadUrl, UpdateManifest::kMaxBytes, error);
+	if (manifest.isEmpty())
+		return false;
+	const QByteArray signature =
+		fetchSmallFile(signatureAsset.downloadUrl, 4096, error);
+	if (signature.isEmpty())
+		return false;
+
+	QString reason;
+	const auto loaded =
+		UpdateManifest::load(manifest, signature, BuildConfig.UPDATE_PUBLIC_KEY,
+							 release.tagName, &reason);
+	if (!loaded) {
+		*error = reason;
+		return false;
+	}
+
+	m_manifest = *loaded;
+	qDebug() << "The signed file list of" << release.tagName << "verified;"
+			 << m_manifest.assets.size() << "files.";
+	return true;
+}
+
+QList<GitHubReleaseAsset>
+MeshUpdaterApp::installableAssets(const GitHubRelease& release) const
+{
+	QList<GitHubReleaseAsset> installable;
+	for (const GitHubReleaseAsset& asset : matchingAssets(release)) {
+		if (m_manifest.asset(asset.name)) {
+			installable.append(asset);
+		} else {
+			qDebug().noquote() << "  Dropping" << asset.name
+							   << ": the signed file list does not have it.";
+		}
+	}
+	return installable;
 }
 
 // ---------------------------------------------------------------------------
@@ -1060,7 +1200,7 @@ void MeshUpdaterApp::performUpdate(const GitHubRelease& release)
 	m_installRelease = release;
 	qDebug() << "Updating to" << release.tagName;
 
-	QList<GitHubReleaseAsset> candidates = matchingAssets(release);
+	QList<GitHubReleaseAsset> candidates = installableAssets(release);
 
 	if (candidates.isEmpty()) {
 		showFatalError(
@@ -1115,14 +1255,23 @@ QString MeshUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
 
 	const QString target = QDir(downloadDir).absoluteFilePath(asset.name);
 
+	// The size and hash come from the signed file list, not from the release listing: only the
+	// signature proves they are the release workflow's.
+	const auto signedEntry = m_manifest.asset(asset.name);
+	if (!signedEntry) {
+		qCritical() << asset.name << "is not in the signed file list.";
+		return {};
+	}
+	if (!asset.sha256.isEmpty() && asset.sha256 != signedEntry->sha256) {
+		qCritical() << "GitHub's SHA-256 for" << asset.name
+					<< "differs from the signed one; not downloading it.";
+		return {};
+	}
+
 	auto* download =
 		new ReleaseDownload(m_network.get(), asset.downloadUrl, target);
-	download->setExpectedSize(asset.size);
-	if (asset.sha256.isEmpty())
-		qWarning() << "The release lists no SHA-256 for" << asset.name
-				   << "- only its size is checked.";
-	else
-		download->setExpectedSha256(asset.sha256);
+	download->setExpectedSize(signedEntry->size);
+	download->setExpectedSha256(signedEntry->sha256);
 
 	qDebug().noquote() << "Downloading" << asset.name << "-"
 					   << formatBytes(asset.size);
@@ -1206,6 +1355,11 @@ void MeshUpdaterApp::installFrom(const QString& archivePath)
 	logUpdate(tr("Updating from %1 to %2")
 				  .arg(m_installedVersion, m_installRelease.tagName));
 
+	if (m_isAppImage) {
+		installAppImage(archivePath);
+		return;
+	}
+
 	const QString lowerName = QFileInfo(archivePath).fileName().toLower();
 	if (isArchiveName(lowerName)) {
 		UpdateLockFile::Contents lock;
@@ -1243,6 +1397,22 @@ void MeshUpdaterApp::runInstaller(const QString& installerPath)
 	QProcess proc;
 	applyInvokerCompatibility(&proc);
 	proc.setProgram(installerPath);
+
+	/* Kite's own installer (branding/win_install.nsi.in): /S installs without its wizard, /Relaunch
+	 * starts Kite once it is done, since this process has to be gone before the installer can
+	 * replace it. /D= keeps the installation where it is; NSIS wants it last and unquoted, which
+	 * QProcess's argument quoting would break. */
+	QStringList arguments{QStringLiteral("/S")};
+	if (!m_noRelaunch)
+		arguments.append(QStringLiteral("/Relaunch"));
+	proc.setArguments(arguments);
+#if defined(Q_OS_WIN32)
+	proc.setNativeArguments(QStringLiteral("/D=") +
+							QDir::toNativeSeparators(m_rootPath));
+#endif
+	logUpdate(tr("Starting the installer: %1 %2 /D=%3")
+				  .arg(installerPath, arguments.join(QLatin1Char(' ')),
+					   QDir::toNativeSeparators(m_rootPath)));
 
 	const bool started = proc.startDetached();
 	logUpdate(started ? tr("The installer was started.")
@@ -1349,6 +1519,8 @@ void MeshUpdaterApp::unpackAndHandOff(const QString& archivePath)
 
 	QStringList arguments{QStringLiteral("--dir"), m_dataPath,
 						  QStringLiteral("--finish-update"), releaseRoot};
+	if (m_noRelaunch)
+		arguments.append(QStringLiteral("--no-relaunch"));
 	if (logToConsole) {
 		// Keep logging to the terminal the hand-off was started from.
 		arguments.append(QStringLiteral("--debug"));
@@ -1901,18 +2073,16 @@ void MeshUpdaterApp::finishUpdate(const QString& sourceDir,
 	progress.setValue(done);
 	QCoreApplication::processEvents();
 
-	// The launcher reports both outcomes on its next start with this log attached; otherwise a
-	// failed update would be silent.
-	const QString marker = UpdateLockFile::markerPath(
-		m_dataPath,
-		QLatin1String(failed ? UpdateLockFile::kFailMarkerName
-							 : UpdateLockFile::kSuccessMarkerName));
-	logUpdate(failed ? tr("There were errors installing the update.")
-					 : tr("The update succeeded."));
-	QString copyError;
-	copyOverFile(m_updateLogPath, marker, &copyError);
+	writeOutcomeMarker(failed);
 
 	QFile::remove(UpdateLockFile::lockPath(m_dataPath));
+
+	if (m_noRelaunch) {
+		logUpdate(tr("Not restarting the launcher, as asked."));
+		m_status = failed ? Failed : Succeeded;
+		QCoreApplication::exit(failed ? ExitFailed : ExitSuccess);
+		return;
+	}
 
 	QProcess launcher;
 	applyInvokerCompatibility(&launcher);
@@ -1934,55 +2104,84 @@ void MeshUpdaterApp::finishUpdate(const QString& sourceDir,
 	QCoreApplication::exit(failed ? ExitFailed : ExitSuccess);
 }
 
-bool MeshUpdaterApp::updateAppImage()
+void MeshUpdaterApp::installAppImage(const QString& downloadedPath)
 {
-	// AppImageUpdate reads the update information embedded in the AppImage and fetches only changed
-	// blocks over zsync (we publish a .zsync next to every .AppImage).
-	QStringList candidates = {
-		QDir(m_rootPath).absoluteFilePath(
-			QStringLiteral("bin/AppImageUpdate.AppImage")),
-		QDir(m_rootPath).absoluteFilePath(QStringLiteral("bin/AppImageUpdate")),
-	};
+	/* The AppImage is one file, mounted read-only while it runs; the new one goes beside it and is
+	 * renamed over it, which leaves the running copy's open file intact. Same directory, so the
+	 * rename cannot cross file systems and is atomic: a crash leaves the old AppImage or the new
+	 * one, never half of one. */
+	const QFileInfo target(m_appImagePath);
+	const QString staged = target.dir().absoluteFilePath(
+		QLatin1Char('.') + target.fileName() + QLatin1String(".update"));
 
-	QString program;
-	for (const QString& candidate : candidates) {
-		if (QFileInfo(candidate).isExecutable()) {
-			program = candidate;
-			break;
+	logUpdate(tr("Replacing the AppImage at %1").arg(target.absoluteFilePath()));
+
+	QFile::remove(staged);
+	QString error;
+	if (!copyOverFile(downloadedPath, staged, &error)) {
+		QFile::remove(staged);
+		logUpdate(tr("Could not write next to the AppImage: %1").arg(error));
+		showFatalError(
+			tr("Update Failed"),
+			tr("The new AppImage could not be written next to the current one "
+			   "in %1:\n%2\n"
+			   "\n"
+			   "Your installation has not been changed. Download the new "
+			   "version yourself, or move the AppImage to a folder you can "
+			   "write to.")
+				.arg(QDir::toNativeSeparators(target.absolutePath()), error));
+		return;
+	}
+
+	QFile stagedFile(staged);
+	stagedFile.setPermissions(target.permissions() | QFileDevice::ExeOwner |
+							  QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+
+	if (std::rename(QFile::encodeName(staged).constData(),
+					QFile::encodeName(target.absoluteFilePath()).constData()) !=
+		0) {
+		const QString reason = QString::fromLocal8Bit(std::strerror(errno));
+		QFile::remove(staged);
+		logUpdate(tr("Could not replace the AppImage: %1").arg(reason));
+		showFatalError(tr("Update Failed"),
+					   tr("Could not replace %1:\n%2\n"
+						  "\n"
+						  "Your installation has not been changed.")
+						   .arg(QDir::toNativeSeparators(target.absoluteFilePath()),
+								reason));
+		return;
+	}
+
+	QFile::remove(downloadedPath);
+	writeOutcomeMarker(false);
+
+	if (!m_noRelaunch) {
+		QProcess launcher;
+		launcher.setProgram(target.absoluteFilePath());
+		if (!launcher.startDetached()) {
+			logUpdate(tr("Could not start the new AppImage: %1")
+						  .arg(launcher.errorString()));
 		}
 	}
-	if (program.isEmpty()) {
-		// Not bundled, but commonly installed system-wide.
-		program = QStandardPaths::findExecutable(
-			QStringLiteral("AppImageUpdate"));
-	}
 
-	if (program.isEmpty()) {
-		showFatalError(
-			tr("AppImageUpdate Not Found"),
-			tr("This AppImage is updated with AppImageUpdate, which could not "
-			   "be found.\n"
-			   "\n"
-			   "Install AppImageUpdate, or download the new version "
-			   "manually."));
-		return false;
-	}
+	m_status = Succeeded;
+	QCoreApplication::exit(ExitSuccess);
+}
 
-	QProcess proc;
-	proc.setProgram(program);
-	proc.setArguments({m_appImagePath});
-
-	qDebug() << "Calling" << program << "for" << m_appImagePath;
-
-	if (!proc.startDetached()) {
-		qCritical() << "Could not start AppImageUpdate:" << proc.errorString();
-		showFatalError(tr("Update Failed"),
-					   tr("Could not start AppImageUpdate:\n%1")
-						   .arg(proc.errorString()));
-		return false;
-	}
-
-	return true;
+void MeshUpdaterApp::writeOutcomeMarker(bool failed)
+{
+	// The launcher reports both outcomes on its next start with this log attached; otherwise a
+	// failed update would be silent.
+	const QString marker = UpdateLockFile::markerPath(
+		m_dataPath,
+		QLatin1String(failed ? UpdateLockFile::kFailMarkerName
+							 : UpdateLockFile::kSuccessMarkerName));
+	if (failed)
+		logUpdate(tr("There were errors installing the update."));
+	else
+		logUpdate(tr("The update succeeded."));
+	QString copyError;
+	copyOverFile(m_updateLogPath, marker, &copyError);
 }
 
 // ---------------------------------------------------------------------------

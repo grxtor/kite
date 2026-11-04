@@ -31,6 +31,7 @@
 
 #include "GitHubRelease.h"
 #include "Version.h"
+#include "updater/UpdateManifest.h"
 
 class QNetworkAccessManager;
 
@@ -139,6 +140,19 @@ class MeshUpdaterApp : public QApplication
 	QList<GitHubReleaseAsset>
 	matchingAssets(const GitHubRelease& release) const;
 
+	/*! Fetches \a release's kite-update.json and its signature and keeps the manifest when the
+	 * signature verifies against BuildConfig.UPDATE_PUBLIC_KEY and it names that release. Nothing is
+	 * installed from a release without one. */
+	bool loadManifest(const GitHubRelease& release, QString* error);
+
+	/*! matchingAssets() narrowed to the files the loaded manifest lists, which are the only ones the
+	 * updater can check. */
+	QList<GitHubReleaseAsset>
+	installableAssets(const GitHubRelease& release) const;
+
+	//! A small file (the manifest, its signature) into memory; empty with \a error set on failure.
+	QByteArray fetchSmallFile(const QUrl& url, qint64 maxBytes, QString* error);
+
 	GitHubReleaseAsset
 	askWhichAsset(const QList<GitHubReleaseAsset>& assets);
 
@@ -195,8 +209,12 @@ class MeshUpdaterApp : public QApplication
 	 * not derived from this binary's location, because the binary may be a copy beside the staged release. */
 	void finishUpdate(const QString& sourceDir, const QString& targetDir);
 
-	//! Hand an AppImage install over to AppImageUpdate (which speaks zsync).
-	bool updateAppImage();
+	/*! Puts the downloaded AppImage in the place of the running one (a rename, so the old file stays
+	 * valid for whoever has it open) and starts it. */
+	void installAppImage(const QString& downloadedPath);
+
+	//! Writes the success or failure marker the launcher reports at its next start.
+	void writeOutcomeMarker(bool failed);
 
 	// -- helpers ----------------------------------------------------------
 
@@ -241,6 +259,8 @@ class MeshUpdaterApp : public QApplication
 	bool m_isPortable = false;
 	bool m_isAppImage = false;
 	bool m_isFlatpak = false;
+	//! The package manager that owns this installation (UpdateLockFile::kManagedByFileName), if any.
+	QString m_managedBy;
 	QString m_appImagePath;
 
 	QString m_launcherExecutable;
@@ -255,6 +275,8 @@ class MeshUpdaterApp : public QApplication
 	bool m_selectUI = false;
 	bool m_allowDowngrade = false;
 	bool m_allowPreRelease = false;
+	//! --no-relaunch: the user closed the launcher and it should stay closed after the update.
+	bool m_noRelaunch = false;
 
 	// Installed launcher identity
 	QString m_installedVersion;
@@ -262,6 +284,8 @@ class MeshUpdaterApp : public QApplication
 
 	QList<GitHubRelease> m_releases;
 	GitHubRelease m_installRelease;
+	//! The signed file list of the release being checked or installed; see loadManifest().
+	UpdateManifest::Manifest m_manifest;
 
 	//! Whether the second pass was seen to take the update over; only then is the lock not this
 	//! process's to clean up and success reportable.

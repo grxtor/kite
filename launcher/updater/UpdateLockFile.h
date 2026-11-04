@@ -44,6 +44,11 @@ namespace UpdateLockFile
 	//! The updater's own narrative of the last attempt, under logs/.
 	inline constexpr auto kUpdateLogName = "kite_update.log";
 
+	/*! In the installation root when a package manager (Scoop, pacman, ...) installed Kite and keeps
+	 * it up to date: one line naming it. Kite then only says that a release is out, and kite-updater
+	 * refuses to install over the package manager. Written by the packaging templates. */
+	inline constexpr auto kManagedByFileName = "updates-managed-by.txt";
+
 	struct Contents {
 		QDateTime timestamp;
 		QString from;	  //!< Version being replaced.
@@ -62,6 +67,10 @@ namespace UpdateLockFile
 	QString markerPath(const QString& dataDir, const QString& fileName);
 
 	QString updateLogPath(const QString& dataDir);
+
+	/*! The package manager named in \a installRoot's kManagedByFileName ("scoop", "pacman", ...), or
+	 * empty when there is no such file. Only a short plain word is accepted. */
+	QString managedBy(const QString& installRoot);
 
 	bool read(const QString& path, Contents* contents);
 

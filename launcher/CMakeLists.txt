@@ -1753,6 +1753,20 @@ else()
 endif()
 
 
+# The signed list of a release's files that kite-updater checks downloads against. Built and tested
+# everywhere, macOS included, although only kite-updater uses it.
+add_library(kite_update_manifest STATIC
+    updater/UpdateManifest.h
+    updater/UpdateManifest.cpp
+)
+target_include_directories(kite_update_manifest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(kite_update_manifest PUBLIC Qt${QT_VERSION_MAJOR}::Core PRIVATE monocypher)
+
+add_unit_test(UpdateManifest
+    SOURCES updater/UpdateManifest_test.cpp
+    LIBS kite_update_manifest monocypher
+    )
+
 # A separate executable: it replaces the libraries the launcher runs from, and a process cannot
 # delete an image it has mapped. macOS is excluded: Sparkle does the job there.
 if(NOT APPLE)
@@ -1810,6 +1824,7 @@ if(NOT APPLE)
         LibArchive::LibArchive
         cmark::cmark
         BuildConfig
+        kite_update_manifest
     )
 
     # WIN32: no console window; diagnostics go to the log file, --debug borrows the parent console.

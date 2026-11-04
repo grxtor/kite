@@ -23,6 +23,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 #include <QTextStream>
 
 QString UpdateLockFile::markerPath(const QString& dataDir,
@@ -40,6 +41,23 @@ QString UpdateLockFile::updateLogPath(const QString& dataDir)
 {
 	return QDir(dataDir).absoluteFilePath(
 		QStringLiteral("logs/%1").arg(QLatin1String(kUpdateLogName)));
+}
+
+QString UpdateLockFile::managedBy(const QString& installRoot)
+{
+	QFile file(QDir(installRoot).absoluteFilePath(
+		QLatin1String(kManagedByFileName)));
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+		return {};
+	const QString name = QString::fromUtf8(file.readLine(64)).trimmed();
+	static const QRegularExpression plainWord(
+		QStringLiteral("^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"));
+	if (!plainWord.match(name).hasMatch()) {
+		qWarning() << "Ignoring" << file.fileName()
+				   << ": it does not name a package manager.";
+		return {};
+	}
+	return name;
 }
 
 bool UpdateLockFile::read(const QString& path, Contents* contents)
