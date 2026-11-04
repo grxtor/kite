@@ -666,6 +666,29 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("|1 unread message|3 unread messages|8 min left|1 min left|In game|success|tertiary"));
 	}
 
+	/* A folder path counts as absolute with a Windows drive too, and becomes a
+	 * url the folder dialog can start from. */
+	void windowsDrivePathsAreAbsolute()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			QtObject {
+				function words() {
+					return ["/home/a", "C:/Games/Kite", "C:\\Games", "\\\\nas\\kite", "instances", "C:kite", ""]
+						.map(p => Format.isAbsolutePath(p)).join("|") + "|" + Format.fileUrl("C:\\Games\\Kite")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> words(component.create());
+		QVERIFY2(words, qPrintable(component.errorString()));
+		QCOMPARE(callString(words.get(), "words"),
+				 QStringLiteral("true|true|true|true|false|false|false|file:///C:/Games/Kite"));
+	}
+
 	/* Join on an invite goes to the invite's server through ServerJoinFlow,
 	 * whatever the inviter plays now; a big server Kite knows lends its name
 	 * and versions; a home-network address is confirmed first. */

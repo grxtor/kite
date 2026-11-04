@@ -137,6 +137,11 @@ QtObject {
         return Number(n).toLocaleString(Qt.locale(), "f", n < 10 ? 1 : 0) + units[unit]
     }
 
+    // Whether a local path is absolute on any system Kite runs on: "/a", "C:/a", "C:\a", "\\server\a".
+    function isAbsolutePath(path) {
+        return /^(?:[A-Za-z]:)?[\/\\]/.test(String(path || ""))
+    }
+
     // A local path as a url QML can load: "/a/b" and "C:/a/b" alike.
     function fileUrl(path) {
         if (!path || path.length === 0)
