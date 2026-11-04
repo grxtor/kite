@@ -22,30 +22,18 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QFutureWatcher>
-#include <QUrl>
 #include <QtConcurrent>
 
-#include "BuildConfig.h"
 #include "Logging.h"
 #include "core/LauncherContext.h"
 #include "launch/LaunchTask.h"
+#include "meta/MetaCatalog.h"
 #include "minecraft/MinecraftInstance.h"
-#include "net/Download.h"
-#include "net/HttpMetaCache.h"
-#include "translations/TranslationsModel.h"
 
 namespace
 {
 	const QString kEmbeddedCatalog = QStringLiteral(":/kite/crash-rules.json");
 	const QString kCatalogPath = QStringLiteral("kite/crash-rules.json");
-	const QString kCache = QStringLiteral("general");
-
-	QString language()
-	{
-		auto* context = LAUNCHER;
-		auto translations = context ? context->translations() : nullptr;
-		return translations ? translations->selectedLanguage() : QString();
-	}
 } // namespace
 
 CrashDoctorService* CrashDoctorService::instance()
@@ -97,33 +85,18 @@ bool CrashDoctorService::useCatalog(const QByteArray& json, const QString& from)
 void CrashDoctorService::refreshCatalog()
 {
 	auto* context = LAUNCHER;
-	auto cache = context ? context->metacache() : nullptr;
-	if (m_refreshed || !cache) {
+	if (m_refreshed || !context || !context->metacache()) {
 		return;
 	}
 	m_refreshed = true;
 	// The copy downloaded last time first, then ask for a newer one.
-	if (auto cachedEntry = cache->getEntry(kCache, kCatalogPath)) {
-		QFile cached(cachedEntry->getFullPath());
-		if (cached.open(QIODevice::ReadOnly)) {
-			useCatalog(cached.readAll(), QStringLiteral("cached"));
-		}
+	const QByteArray cached = MetaCatalog::cached(kCatalogPath);
+	if (!cached.isEmpty()) {
+		useCatalog(cached, QStringLiteral("cached"));
 	}
-	auto entry = cache->resolveEntry(kCache, kCatalogPath);
-	entry->setStale(true);
-	m_refreshJob.reset(new NetJob(tr("Crash rules"), context->network()));
-	m_refreshJob->addNetAction(
-		Net::Download::makeCached(QUrl(BuildConfig.META_URL + kCatalogPath), entry));
-	connect(m_refreshJob.get(), &NetJob::succeeded, this, [this, entry] {
-		QFile file(entry->getFullPath());
-		if (file.open(QIODevice::ReadOnly)) {
-			useCatalog(file.readAll(), QStringLiteral("downloaded"));
-		}
-	});
-	connect(m_refreshJob.get(), &NetJob::failed, this, [](QString reason) {
-		qCDebug(crashDoctorLog) << "No newer crash rules:" << reason;
-	});
-	m_refreshJob->start();
+	m_refreshJob = MetaCatalog::refresh(
+		kCatalogPath, tr("Crash rules"), this,
+		[this](const QByteArray& json) { useCatalog(json, QStringLiteral("downloaded")); });
 }
 
 void CrashDoctorService::watch(const shared_qobject_ptr<LaunchTask>& task)
@@ -173,7 +146,7 @@ void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh)
 				emit analysed(id, fresh);
 			});
 	watcher->setFuture(QtConcurrent::run(
-		[catalog = m_catalog, snapshot, lang = language()] {
+		[catalog = m_catalog, snapshot, lang = MetaCatalog::selectedLanguage()] {
 			return CrashDoctor::analyse(catalog, snapshot, lang);
 		}));
 }

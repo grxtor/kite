@@ -12,8 +12,9 @@ do, and why it can do nothing else.
 - Code: `launcher/crashdoctor/`. The engine is pure (`CrashEngine`), the fixes are C++
   (`CrashFixer`), the QML is `CrashDoctorPanel.qml` above the Log tab.
 - Rules: `launcher/resources/kite/crash-rules.json`, embedded as `:/kite/crash-rules.json` and
-  replaced by `meta.kiteclient.com/kite/crash-rules.json` when that copy is valid and its
-  `catalogVersion` is not lower. Asked once per run; the cached copy is used offline.
+  replaced by `meta.kiteclient.com/kite/crash-rules.json` (through `MetaCatalog`, like the bundle
+  and server lists) when that copy is valid and its `catalogVersion` is not lower. Asked once per
+  run; the cached copy is used offline.
 - Tests: `CrashEngine_test` runs every case of `launcher/crashdoctor/testdata/expected.json`
   (real crashes from a player's own instances, scrubbed, and cases written from the loaders' own
   message templates). Add a case with every new rule.
