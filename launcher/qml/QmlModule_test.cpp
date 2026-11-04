@@ -1662,6 +1662,99 @@ class QmlModuleTest : public QObject
 		const int lines = 5;
 		QTRY_COMPARE(text->property("lineCount").toInt(), lines);
 	}
+
+	/* An update on offer: "Restart and update" only while no game started from Kite runs (Kite is
+	 * never replaced under one), "Update when I close Kite" unless a package manager installs it,
+	 * and each button answers what it says. */
+	void updateOfferButtonsFollowTheSituation()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			Window {
+				id: win
+				width: 900; height: 700; visible: true
+				property string answer: ""
+				QtObject {
+					id: host
+					property var current: null
+				}
+				Component {
+					id: offer
+					QtObject {
+						property string kind: "update"
+						property string title: "Kite 1.3.0 is available"
+						property string text: "Kite restarts to install it."
+						property string severity: "info"
+						property string acceptLabel: ""
+						property string rejectLabel: ""
+						property string filePickerMode: ""
+						property string filePickerFilter: ""
+						property string profileNameStatus: ""
+						property string profileNameError: ""
+						property int confirmDelayMs: 0
+						property var updateInfo: ({})
+						function answerUpdate(choice) { win.answer = choice; host.current = null }
+						function reject() { win.answer = "rejected"; host.current = null }
+					}
+				}
+				UiRequestDialog { host: host }
+				function show(info) {
+					win.answer = ""
+					host.current = offer.createObject(win, { updateInfo: info })
+				}
+			})",
+						  QUrl(QStringLiteral("qrc:/test/Update.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY2(window, qPrintable(component.errorString()));
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+
+		const auto show = [&](bool canInstallNow, const QString& managedHint) {
+			const QVariant info = QVariantMap{{"currentVersion", "1.2.0"},
+											  {"availableVersion", "1.3.0"},
+											  {"releaseNotes", ""},
+											  {"canInstallNow", canInstallNow},
+											  {"managedHint", managedHint}};
+			return QMetaObject::invokeMethod(window, "show", Q_ARG(QVariant, info));
+		};
+		const auto button = [&](const char* name) {
+			return window->findChild<QQuickItem*>(QLatin1String(name));
+		};
+
+		// No game running: restart now, highlighted, or once Kite closes.
+		QVERIFY(show(true, QString()));
+		QQuickItem* now = nullptr;
+		QQuickItem* onExit = nullptr;
+		QTRY_VERIFY((now = button("updateNowButton")) && now->isVisible());
+		QVERIFY((onExit = button("updateOnExitButton")) && onExit->isVisible());
+		QVERIFY(now->property("highlighted").toBool());
+		QVERIFY(!onExit->property("highlighted").toBool());
+		QVERIFY(QMetaObject::invokeMethod(now, "clicked"));
+		QTRY_COMPARE(window->property("answer").toString(), QStringLiteral("install"));
+
+		// A game is running: no restart, and waiting for Kite to close is the main choice.
+		QVERIFY(show(false, QString()));
+		QTRY_VERIFY(onExit->isVisible());
+		QVERIFY(!now->isVisible());
+		QVERIFY(onExit->property("highlighted").toBool());
+		QVERIFY(QMetaObject::invokeMethod(onExit, "clicked"));
+		QTRY_COMPARE(window->property("answer").toString(),
+					 QStringLiteral("installOnExit"));
+
+		// Scoop installs it: Kite only tells, and installs nothing.
+		QVERIFY(show(true, QStringLiteral("Scoop keeps Kite up to date.")));
+		QQuickItem* ok = nullptr;
+		QTRY_VERIFY((ok = button("updateOkButton")) && ok->isVisible());
+		QVERIFY(!now->isVisible());
+		QVERIFY(!onExit->isVisible());
+		QVERIFY(QMetaObject::invokeMethod(ok, "clicked"));
+		QTRY_COMPARE(window->property("answer").toString(), QStringLiteral("later"));
+	}
 };
 
 int main(int argc, char* argv[])

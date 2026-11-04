@@ -54,8 +54,15 @@ Item {
     // Set before a button answers, so onClosed does not answer twice.
     property bool answered: false
 
-    size: kind === "blockedMods" || kind === "untrustedMods" || kind === "update" || kind === "modal"
-          || kind === "optionalMods" ? "md" : "sm"
+    // kind == "update": four buttons, and room for the release notes.
+    size: kind === "update" ? "lg"
+          : kind === "blockedMods" || kind === "untrustedMods" || kind === "modal" || kind === "optionalMods" ? "md" : "sm"
+
+    // kind == "update" (QmlUiRequest::setUpdateInfo): managed means a package manager installs it and Kite only
+    // tells; installNow is off while a game started from Kite runs.
+    readonly property var updateInfo: kind === "update" && request && request.updateInfo ? request.updateInfo : ({})
+    readonly property bool updateManaged: (updateInfo.managedHint || "").length > 0
+    readonly property bool updateInstallNow: !updateManaged && updateInfo.canInstallNow !== false
     title: request ? request.title : ""
     icon: root.request ? root.severityIcon(root.request.severity) : ""
     iconColor: root.request ? root.severityColor(root.request.severity) : Theme.palette.accent
@@ -509,13 +516,18 @@ Item {
                 }
             }
             ScrollView {
+                id: notesView
                 width: parent.width
                 height: Math.min(260, notes.implicitHeight + Theme.space.md)
+                contentWidth: availableWidth
                 visible: notes.source.length > 0
+                // RichBody's article (QmlUiRequest::setUpdateInfo): no raw HTML, links are http(s) or mail only.
                 RemoteRichText {
                     id: notes
-                    width: parent.width
-                    source: root.request && root.request.updateInfo ? root.request.updateInfo.releaseNotes || "" : ""
+                    width: notesView.availableWidth
+                    format: "html"
+                    article: true
+                    source: root.updateInfo.releaseNotes || ""
                     pixelSize: Theme.type.label.pixelSize
                     onLinkActivated: (link) => ExternalLinks.open(notes, link)
                 }
@@ -557,10 +569,25 @@ Item {
         }
 
         Button {
-            visible: root.kind === "update"
+            objectName: "updateNowButton"
+            visible: root.kind === "update" && root.updateInstallNow
             highlighted: true
-            text: qsTr("Install update")
+            text: qsTr("Restart and update")
             onClicked: root.answer(() => root.request.answerUpdate("install"))
+        }
+        Button {
+            objectName: "updateOnExitButton"
+            visible: root.kind === "update" && !root.updateManaged
+            highlighted: !root.updateInstallNow
+            text: qsTr("Update when I close Kite")
+            onClicked: root.answer(() => root.request.answerUpdate("installOnExit"))
+        }
+        Button {
+            objectName: "updateOkButton"
+            visible: root.kind === "update" && root.updateManaged
+            highlighted: true
+            text: qsTr("OK")
+            onClicked: root.answer(() => root.request.answerUpdate("later"))
         }
         Button {
             visible: root.kind === "update"
@@ -569,7 +596,7 @@ Item {
             onClicked: root.answer(() => root.request.answerUpdate("skip"))
         }
         Button {
-            visible: root.kind === "update"
+            visible: root.kind === "update" && !root.updateManaged
             flat: true
             text: qsTr("Later")
             onClicked: root.answer(() => root.request.answerUpdate("later"))

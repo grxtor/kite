@@ -852,6 +852,27 @@ void QmlShell::debugClick(const QString& spec)
 	   Qt::NoButton);
 }
 
+void QmlShell::debugUpdateState(const QString& state)
+{
+	UpdateSettingsController::Backend backend;
+	const bool autoCheck = state != QLatin1String("off");
+	const QDateTime lastCheck = QDateTime::currentDateTime().addSecs(-12 * 60);
+	backend.automaticallyChecks = [autoCheck] { return autoCheck; };
+	backend.setAutomaticallyChecks = [](bool) {};
+	backend.lastCheck = [lastCheck] { return lastCheck; };
+	backend.checkNow = [] {};
+	if (state.startsWith(QLatin1String("pending"))) {
+		backend.pendingVersion = [] { return QStringLiteral("1.3.0"); };
+		const bool game = state == QLatin1String("pendingGame");
+		backend.canInstallNow = [game] { return !game; };
+		backend.installPendingNow = [] {};
+	}
+	if (state == QLatin1String("managed")) {
+		backend.managedBy = QStringLiteral("Scoop");
+	}
+	updateSettingsController()->setBackend(std::move(backend));
+}
+
 void QmlShell::debugShowRequest(const QString& kind)
 {
 	if (!m_uiHost) {
@@ -928,6 +949,33 @@ void QmlShell::debugShowRequest(const QString& kind)
 				  mod(QStringLiteral("JourneyMap"), QStringLiteral("A minimap and a full world map."), true),
 				  mod(QStringLiteral("Inventory Tweaks"), QStringLiteral("Sorts your inventory with one click."), false) });
 			m_uiHost->chooseOptionalMods(QStringLiteral("Sky Factory"), mods);
+		});
+	} else if (kind.startsWith(QLatin1String("update"))) {
+		QTimer::singleShot(0, this, [this, kind]() {
+			if (!m_uiHost) {
+				return;
+			}
+			UiHost::UpdateOffer offer;
+			offer.currentVersion = QStringLiteral("1.2.0");
+			offer.availableVersion = QStringLiteral("1.3.0");
+			offer.releaseNotes = QStringLiteral(
+				"Kite 1.3.0 keeps itself up to date.\n\n"
+				"## Highlights\n\n"
+				"- **Updates:** Kite checks when it starts and once a day, and "
+				"installs a new version with one click, or when you close it.\n"
+				"- **Signed:** every update is checked against Kite's own key "
+				"before anything is replaced.\n"
+				"- <span style=\"color:#f00;font-size:40px\">Colours and sizes"
+				"</span> from the release page are dropped.\n\n"
+				"[Full notes](https://github.com/grxtor/kite/releases)");
+			offer.canInstallNow = kind != QLatin1String("updateGame");
+			if (kind == QLatin1String("updateManaged")) {
+				// KiteExternalUpdater's text, which Kite_qml cannot reach.
+				offer.managedHint = QStringLiteral(
+					"Scoop keeps Kite up to date on this computer. To update "
+					"now, run:\nscoop update kite");
+			}
+			m_uiHost->offerUpdate(offer);
 		});
 	} else if (kind == QLatin1String("busySkip")) {
 		// Kept alive by its own skip callback, which ends it.

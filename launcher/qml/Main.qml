@@ -258,6 +258,9 @@ ApplicationWindow {
             // ask=pickAccount|busySkip: questions only a real launch asks.
             else if (key === "ask")
                 root.call("debugShowRequest", value)
+            // updates=idle|pending|pendingGame|managed: Settings > Updates with a stand-in updater.
+            else if (key === "updates")
+                root.call("debugUpdateState", value)
             // sidebar=collapsed is the rail, anything else the labelled sidebar. Both are saved.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
