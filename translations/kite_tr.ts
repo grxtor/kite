@@ -1030,8 +1030,8 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>BundleCatalog</name>
     <message>
-        <location filename="../launcher/modplatform/BundleCatalog.cpp" line="+259"/>
-        <location line="+73"/>
+        <location filename="../launcher/modplatform/BundleCatalog.cpp" line="+235"/>
+        <location line="+67"/>
         <source>Recommended mods</source>
         <translation>Önerilen modlar</translation>
     </message>
@@ -1948,7 +1948,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Oyun çalışıyor. %1, oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+73"/>
+        <location line="+77"/>
         <location line="+5"/>
         <source>Kite Performance could not be set up for this instance.</source>
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
@@ -2068,7 +2068,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Göster</translation>
     </message>
     <message>
-        <location line="+93"/>
+        <location line="+79"/>
         <source>No content</source>
         <translation>İçerik yok</translation>
     </message>
@@ -2624,7 +2624,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorService</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+114"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+98"/>
         <source>Crash rules</source>
         <translation>Çökme kuralları</translation>
     </message>
@@ -5833,7 +5833,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceDetails</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="+345"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="+297"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>
     </message>
@@ -5843,7 +5843,7 @@ Lütfen tekrar dene.</translation>
         <translation>Dünyayı kopyala</translation>
     </message>
     <message>
-        <location line="+141"/>
+        <location line="+149"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -6370,7 +6370,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+149"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+155"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -6431,12 +6431,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+319"/>
+        <location line="+321"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-197"/>
+        <location line="-199"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -6456,7 +6456,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+177"/>
+        <location line="+179"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -7858,12 +7858,12 @@ Neden:
     <message>
         <location line="+7"/>
         <source>Uploading…</source>
-        <translation>Yükleniyor…</translation>
+        <translation>Paylaşılıyor…</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Upload</source>
-        <translation>Yükle</translation>
+        <translation>Paylaş</translation>
     </message>
     <message>
         <location line="+11"/>
@@ -8049,7 +8049,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+323"/>
+        <location filename="../launcher/qml/Main.qml" line="+332"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -8059,7 +8059,7 @@ Neden:
         <translation>Oynamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
     <message>
-        <location line="+142"/>
+        <location line="+146"/>
         <source>No version of %1 for this Minecraft yet. The game may not start.</source>
         <translation>%1 için bu Minecraft sürümüne uygun dosya henüz yok. Oyun açılmayabilir.</translation>
     </message>
@@ -8074,7 +8074,7 @@ Neden:
         <translation>“%1” silinsin mi? Klasörü (dünyalar, modlar, ekran görüntüleri) tamamen kaldırılır.</translation>
     </message>
     <message>
-        <location line="+75"/>
+        <location line="+126"/>
         <location line="+72"/>
         <location line="+7"/>
         <location line="+0"/>
@@ -8109,7 +8109,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+361"/>
+        <location line="+376"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -10402,12 +10402,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     <message>
         <location line="+7"/>
         <source>Uploading…</source>
-        <translation>Yükleniyor…</translation>
+        <translation>Paylaşılıyor…</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Upload</source>
-        <translation>Yükle</translation>
+        <translation>Paylaş</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -12119,7 +12119,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+479"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+482"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -12129,7 +12129,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+341"/>
+        <location line="+371"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -15535,7 +15535,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldCopyTask</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="-444"/>
+        <location filename="../launcher/models/WorldCopyTask.h" line="+65"/>
         <source>The operation failed. See the launcher log for details.</source>
         <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
     </message>
