@@ -532,6 +532,15 @@ Item {
                     onLinkActivated: (link) => ExternalLinks.open(notes, link)
                 }
             }
+            // Quiet, under the notes: not one of the answers the footer offers. Its label lines up with the text.
+            Button {
+                objectName: "updateSkipButton"
+                x: -leftPadding
+                flat: true
+                buttonSize: "sm"
+                text: qsTr("Skip this version")
+                onClicked: root.answer(() => root.request.answerUpdate("skip"))
+            }
         }
 
         Copy {
@@ -544,7 +553,13 @@ Item {
         }
     }
 
-    footer: Row {
+    footer: Item {
+        implicitWidth: footerRow.implicitWidth
+        implicitHeight: footerRow.implicitHeight
+
+    Row {
+        id: footerRow
+        anchors.right: parent.right
         layoutDirection: Qt.RightToLeft
         spacing: Theme.space.sm
         padding: Theme.space.xl
@@ -589,18 +604,6 @@ Item {
             text: qsTr("OK")
             onClicked: root.answer(() => root.request.answerUpdate("later"))
         }
-        Button {
-            visible: root.kind === "update"
-            flat: true
-            text: qsTr("Skip this version")
-            onClicked: root.answer(() => root.request.answerUpdate("skip"))
-        }
-        Button {
-            visible: root.kind === "update" && !root.updateManaged
-            flat: true
-            text: qsTr("Later")
-            onClicked: root.answer(() => root.request.answerUpdate("later"))
-        }
 
         // profileSetup: Create may fail without answering the request (taken name, server error),
         // so it bypasses root.answer(), which would mark it answered; only Cancel ends the request.
@@ -635,6 +638,20 @@ Item {
             text: root.request && root.request.rejectLabel.length > 0 ? root.request.rejectLabel : qsTr("Cancel")
             onClicked: root.answer(() => root.request.reject())
         }
+    }
+
+    // kind == "update": the quiet answer, at the other end from the two that install.
+    Button {
+        objectName: "updateLaterButton"
+        visible: root.kind === "update" && !root.updateManaged
+        anchors.left: parent.left
+        // Its label on the content's edge, as "Skip this version" above it.
+        anchors.leftMargin: Theme.space.xl - leftPadding
+        y: footerRow.topPadding
+        flat: true
+        text: qsTr("Later")
+        onClicked: root.answer(() => root.request.answerUpdate("later"))
+    }
     }
     }
 

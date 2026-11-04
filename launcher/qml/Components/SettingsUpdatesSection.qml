@@ -35,7 +35,7 @@ SettingsScroll {
     }
 
     title: qsTr("Updates")
-    description: qsTr("Whether Kite looks for new versions by itself.")
+    description: qsTr("How Kite gets new versions.")
 
     SettingsGroup {
         width: parent.width

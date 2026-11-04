@@ -15023,8 +15023,8 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Whether Kite looks for new versions by itself.</source>
-        <translation>Kite&apos;ın yeni sürümleri kendiliğinden arayıp aramayacağı.</translation>
+        <source>How Kite gets new versions.</source>
+        <translation>Kite&apos;ın yeni sürümlerini nasıl alacağı.</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -16222,17 +16222,17 @@ inheritsFrom eksik</translation>
         <translation>Yok</translation>
     </message>
     <message>
-        <location line="+106"/>
+        <location line="+52"/>
         <source>Skip this version</source>
         <translation>Bu sürümü atla</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+110"/>
         <source>Later</source>
         <translation>Sonra</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="-37"/>
         <source>Creating…</source>
         <translation>Oluşturuluyor…</translation>
     </message>
@@ -16248,13 +16248,13 @@ inheritsFrom eksik</translation>
         <translation>İptal</translation>
     </message>
     <message>
-        <location line="-46"/>
-        <location line="+40"/>
+        <location line="-34"/>
+        <location line="+28"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location line="-54"/>
+        <location line="-42"/>
         <source>Restart and update</source>
         <translation>Yeniden başlat ve güncelle</translation>
     </message>
@@ -16264,12 +16264,12 @@ inheritsFrom eksik</translation>
         <translation>Kite&apos;ı kapatınca güncelle</translation>
     </message>
     <message>
-        <location line="+47"/>
+        <location line="+35"/>
         <source>Continue</source>
         <translation>Devam</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+34"/>
         <source>All files (*)</source>
         <translation>Tüm dosyalar (*)</translation>
     </message>

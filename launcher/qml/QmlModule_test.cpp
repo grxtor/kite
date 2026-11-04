@@ -1665,7 +1665,8 @@ class QmlModuleTest : public QObject
 
 	/* An update on offer: "Restart and update" only while no game started from Kite runs (Kite is
 	 * never replaced under one), "Update when I close Kite" unless a package manager installs it,
-	 * and each button answers what it says. */
+	 * "Later" at the footer's other end and "Skip this version" under the notes, and each button
+	 * answers what it says. */
 	void updateOfferButtonsFollowTheSituation()
 	{
 		QQmlEngine engine;
@@ -1734,8 +1735,26 @@ class QmlModuleTest : public QObject
 		QVERIFY((onExit = button("updateOnExitButton")) && onExit->isVisible());
 		QVERIFY(now->property("highlighted").toBool());
 		QVERIFY(!onExit->property("highlighted").toBool());
+		QQuickItem* later = button("updateLaterButton");
+		QQuickItem* skip = button("updateSkipButton");
+		QVERIFY(later && later->isVisible());
+		QVERIFY(skip && skip->isVisible());
+		// "Later" sits at the left end, the installing answers at the right.
+		// Once the footer row has laid out.
+		QTRY_VERIFY(later->mapToScene(QPointF(0, 0)).x() < onExit->mapToScene(QPointF(0, 0)).x() &&
+					onExit->mapToScene(QPointF(0, 0)).x() < now->mapToScene(QPointF(0, 0)).x());
 		QVERIFY(QMetaObject::invokeMethod(now, "clicked"));
 		QTRY_COMPARE(window->property("answer").toString(), QStringLiteral("install"));
+
+		QVERIFY(show(true, QString()));
+		QTRY_VERIFY(skip->isVisible());
+		QVERIFY(QMetaObject::invokeMethod(skip, "clicked"));
+		QTRY_COMPARE(window->property("answer").toString(), QStringLiteral("skip"));
+
+		QVERIFY(show(true, QString()));
+		QTRY_VERIFY(later->isVisible());
+		QVERIFY(QMetaObject::invokeMethod(later, "clicked"));
+		QTRY_COMPARE(window->property("answer").toString(), QStringLiteral("later"));
 
 		// A game is running: no restart, and waiting for Kite to close is the main choice.
 		QVERIFY(show(false, QString()));
@@ -1752,6 +1771,8 @@ class QmlModuleTest : public QObject
 		QTRY_VERIFY((ok = button("updateOkButton")) && ok->isVisible());
 		QVERIFY(!now->isVisible());
 		QVERIFY(!onExit->isVisible());
+		QVERIFY(!later->isVisible());
+		QVERIFY(skip->isVisible());
 		QVERIFY(QMetaObject::invokeMethod(ok, "clicked"));
 		QTRY_COMPARE(window->property("answer").toString(), QStringLiteral("later"));
 	}
