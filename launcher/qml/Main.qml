@@ -228,6 +228,8 @@ ApplicationWindow {
             // After newinstance=code: sharecode=<code> types and looks up a code; sharecreate then creates it.
             else if (key === "sharecode")
                 Qt.callLater((code) => root.dialog(newInstanceLoader).enterShareCode(code), value)
+            else if (key === "sharelist")
+                Qt.callLater(() => root.dialog(newInstanceLoader).showShareContents())
             else if (key === "sharecreate")
                 root.devShareSteps = root.devShareSteps.concat(["create"])
             // invite=<address>: the friend picker for that server.

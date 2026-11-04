@@ -888,6 +888,7 @@ set(FRIENDS_SOURCES
     friends/ShareCodesController.h
     friends/ShareCodesController.cpp
     friends/ShareCodesCreate.cpp
+    friends/ShareCodesNames.cpp
     friends/FriendsSessionStore.h
     friends/FriendsSessionStore.cpp
     friends/FriendsHttp.h

@@ -231,5 +231,6 @@ void ShareCodesController::lookUp(const QString& raw)
 						m_lookedUp = found;
 						emit lookedUp(ShareCodes::toMap(*found));
 						finishAction("lookUp", true, QString());
+						lookUpNames(*found);
 					});
 }

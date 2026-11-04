@@ -20,6 +20,9 @@
 #include "ShareContent.h"
 
 #include <QHash>
+#include <QVariantMap>
+
+#include <algorithm>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -163,6 +166,37 @@ namespace ShareContent
 			item.fileSize = file.value("size").toInt();
 			resolved.items.append({entry.kind, item});
 		}
+	}
+
+	QVariantList contentNames(const QList<ShareCodes::Entry>& content,
+							  const QJsonArray& modrinthProjects,
+							  const QJsonArray& curseForgeMods)
+	{
+		static const QStringList kinds = {ShareCodes::Kind::Mod, ShareCodes::Kind::ResourcePack,
+										  ShareCodes::Kind::ShaderPack, ShareCodes::Kind::DataPack};
+		const auto modrinth = projectsById(modrinthProjects, "title");
+		const auto curseForge = projectsById(curseForgeMods, "name");
+		QList<QVariantMap> named;
+		for (const ShareCodes::Entry& entry : content) {
+			const auto& names =
+				entry.platform == ShareCodes::Platform::Modrinth ? modrinth : curseForge;
+			const QString name = names.value(entry.projectId).name;
+			named.append({{"kind", entry.kind},
+						  {"platform", entry.platform},
+						  {"name", name.isEmpty() ? entry.projectId : name}});
+		}
+		std::stable_sort(named.begin(), named.end(), [](const QVariantMap& a, const QVariantMap& b) {
+			const auto kindA = kinds.indexOf(a.value("kind").toString());
+			const auto kindB = kinds.indexOf(b.value("kind").toString());
+			return kindA != kindB ? kindA < kindB
+								  : a.value("name").toString().compare(b.value("name").toString(),
+																	   Qt::CaseInsensitive) < 0;
+		});
+		QVariantList out;
+		for (const QVariantMap& one : named) {
+			out.append(one);
+		}
+		return out;
 	}
 
 	void addCurseForge(Resolved& resolved,

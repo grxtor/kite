@@ -31,6 +31,15 @@ AppDialog {
         return root.query.length > 0 ? all.filter((one) => one.name.toLowerCase().indexOf(root.query) >= 0) : all
     }
     readonly property int listRows: 6
+    readonly property string address: root.plainAddress(root.server.address)
+    // A big server's name from Kite's list, else the name the server was saved under, else its address.
+    readonly property string serverName: {
+        var known = root.places.of(root.placeOf(root.address)).name || ""
+        if (known.length > 0 && known.toLowerCase() !== root.address)
+            return known
+        var saved = root.server.name || ""
+        return saved.length > 0 && saved.toLowerCase() !== root.address ? saved : root.address
+    }
 
     function openFor(server) {
         root.server = server
@@ -44,6 +53,15 @@ AppDialog {
         var lower = String(address || "").trim().toLowerCase().replace(/\.$/, "")
         return lower.endsWith(":" + Format.defaultServerPort) ? lower.slice(0, lower.lastIndexOf(":")) : lower
     }
+    // "host" or "host:port" ([v6]:port) as FriendPlaces reads a friend's place.
+    function placeOf(address) {
+        var bracket = address.indexOf("]")
+        var cut = address.startsWith("[") ? (address.charAt(bracket + 1) === ":" ? bracket + 1 : -1)
+                                          : address.indexOf(":") === address.lastIndexOf(":") ? address.indexOf(":") : -1
+        var host = (cut < 0 ? address : address.slice(0, cut)).replace(/^\[|\]$/g, "")
+        var port = cut < 0 ? Format.defaultServerPort : parseInt(address.slice(cut + 1))
+        return { state: "playing", worldType: "server", host: host, port: port }
+    }
     function invitedHere(uuid) {
         var sent = root.controller ? root.controller.outgoingInvites.find((one) => one.uuid === uuid) : null
         return !!sent && Format.friendAddress(sent) === root.plainAddress(root.server.address)
@@ -55,7 +73,7 @@ AppDialog {
 
     size: "md"
     closeOnOutsidePress: true
-    title: qsTr("Invite friends to %1").arg(root.server.name || root.server.address || "")
+    title: qsTr("Invite friends to %1").arg(root.serverName)
     showCancel: false
     primaryText: qsTr("Done")
 
@@ -69,6 +87,18 @@ AppDialog {
 
     contentItem: ColumnLayout {
         spacing: Theme.space.md
+
+        // The address under a friendly name, as the server list shows it.
+        Copy {
+            Layout.fillWidth: true
+            Layout.topMargin: -Theme.space.sm
+            visible: root.serverName !== root.address
+            text: root.address
+            textFormat: Text.PlainText
+            role: "label"
+            tone: "tertiary"
+            elide: Text.ElideMiddle
+        }
 
         SearchBox {
             id: search

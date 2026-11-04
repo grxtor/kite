@@ -33,6 +33,7 @@
 #include "QObjectPtr.h"
 #include "ShareCodes.h"
 #include "ShareManifest.h"
+#include "net/NetJob.h"
 
 class FriendsController;
 namespace Net
@@ -91,6 +92,9 @@ class ShareCodesController : public QObject
 	void prepared(QString instanceId, QVariantMap preview);
 	void shared(QString instanceId, QString code);
 	void lookedUp(QVariantMap preview);
+	/// What the code lookUp() found holds, named (ShareContent::contentNames()),
+	/// once Modrinth and CurseForge have answered; @p code as display() writes it.
+	void contentNamed(QString code, QVariantList items);
 	void actionFinished(QString action, bool ok, QString message);
 
   private:
@@ -98,6 +102,8 @@ class ShareCodesController : public QObject
 	void emitPrepared(const QString& instanceId);
 	QString errorText(const FriendsApi::Reply& reply, bool lookingUp) const;
 	QString loaderUid(const QString& loader) const;
+	/// ShareCodesNames.cpp: asks the platforms for the names of @p code's content.
+	void lookUpNames(const ShareCodes::Code& code);
 
 	FriendsController* m_friends;
 	QHash<QString, ShareManifest::Built> m_prepared;
@@ -105,6 +111,10 @@ class ShareCodesController : public QObject
 	std::optional<ShareCodes::Code> m_lookedUp;
 	QVariantList m_codes;
 	bool m_codesLoaded = false;
+	/// The names lookUpNames() asks for, one request at a time.
+	NetJob::Ptr m_namesJob;
+	QByteArray m_namesBuffer;
+	unique_qobject_ptr<Net::JsonPost> m_namesPost;
 	/// ShareCodeInstanceTask::missing() of the last instance made.
 	QStringList m_lastMissing;
 };

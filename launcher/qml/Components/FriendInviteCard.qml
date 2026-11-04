@@ -8,7 +8,7 @@ import Kite.Theme
 
 /*
  * A friend's invite to a server, as Discord shows a call: their head, "LadyAgnes invited you", the server's favicon
- * and name with how long the invite lasts (counting down), a × that dismisses it and Join under it. It only says
+ * and whole name, how long the invite lasts (counting down), a × that dismisses it and Join. It only says
  * what was asked for; FriendsWaiting joins (FriendJoinFlow.joinInvite()) or dismisses.
  */
 Rectangle {
@@ -87,21 +87,23 @@ Rectangle {
                         Layout.alignment: Qt.AlignVCenter
                         source: root.place.favicon || ""
                     }
-                    // The server's name gives way before the time left does.
+                    // A long address loses its middle, never its end.
                     Copy {
                         Layout.fillWidth: true
-                        Layout.maximumWidth: implicitWidth
                         text: root.place.name || ""
-                        elide: Text.ElideRight
+                        textFormat: Text.PlainText
+                        elide: Text.ElideMiddle
                         role: "label"
                         tone: "secondary"
                     }
-                    Copy {
-                        text: "· " + Format.inviteTimeLeft(root.invite, root.now)
-                        role: "label"
-                        tone: "secondary"
-                    }
-                    Item { Layout.fillWidth: true }
+                }
+                // On a line of its own, so neither the name nor the place is cut for it.
+                Copy {
+                    width: parent.width
+                    text: Format.inviteTimeLeft(root.invite, root.now)
+                    role: "caption"
+                    tone: "tertiary"
+                    font.features: ({ "tnum": 1 })
                 }
             }
             IconButton {

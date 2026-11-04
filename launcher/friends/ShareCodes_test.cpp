@@ -268,6 +268,24 @@ class ShareCodesTest : public QObject
 				 QByteArray(R"({"fileIds":[5432100,4000000]})"));
 	}
 
+	/* The preview's list: by kind, then name; an unnamed project keeps its id. */
+	void contentIsNamedForThePreview()
+	{
+		const Entry shaders{Kind::ShaderPack, Platform::Modrinth, "HVnmMxH1", "Bqen1mJX"};
+		const Entry lithium{Kind::Mod, Platform::Modrinth, "gvQqBUqZ", "u8pHPXJl"};
+		const QVariantList names = ShareContent::contentNames(
+			{shaders, faithful(), sodium(), lithium},
+			array(R"([ { "id": "AANobbMI", "title": "Sodium" }, { "id": "gvQqBUqZ", "title": "Lithium" },
+					   { "id": "HVnmMxH1", "title": "Complementary Reimagined" } ])"),
+			{});
+		QStringList shown;
+		for (const QVariant& one : names) {
+			shown.append(one.toMap().value("kind").toString() + ":" + one.toMap().value("name").toString());
+		}
+		QCOMPARE(shown, (QStringList{"mod:Lithium", "mod:Sodium", "resourcepack:238222",
+									 "shaderpack:Complementary Reimagined"}));
+	}
+
 	void contentIsAskedForInBatches()
 	{
 		QList<Entry> content;

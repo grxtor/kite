@@ -21,6 +21,12 @@ ColumnLayout {
     // ShareCodes::toMap() of the code found, or null.
     property var preview: null
     property bool lookingUp: false
+    // ShareContent::contentNames() for the code shown, [] until the platforms answer.
+    property var contents: []
+    property bool contentsShown: false
+    readonly property var kindNames: ({ mod: qsTr("Mod"), resourcepack: qsTr("Resource pack"),
+                                        shaderpack: qsTr("Shader pack"), datapack: qsTr("Data pack") })
+    readonly property int contentRows: 8
     property string error: ""
     readonly property bool available: !!root.controller && root.controller.available
     readonly property string typedCode: root.controller ? root.controller.display(field.text) : ""
@@ -29,6 +35,8 @@ ColumnLayout {
     function reset() {
         field.text = ""
         root.preview = null
+        root.contents = []
+        root.contentsShown = false
         root.error = ""
         root.lookingUp = false
     }
@@ -50,6 +58,11 @@ ColumnLayout {
         target: root.controller
         function onLookedUp(preview) {
             root.preview = preview
+            root.contents = []
+        }
+        function onContentNamed(code, items) {
+            if (root.preview && root.preview.code === code)
+                root.contents = items
         }
         function onActionFinished(action, ok, message) {
             if (action !== "lookUp")
@@ -132,9 +145,51 @@ ColumnLayout {
                 size: Theme.icon.lg
                 color: Theme.palette.textSecondary
             }
-            ShareCodeSummary {
+            ColumnLayout {
                 Layout.fillWidth: true
-                info: root.preview || ({})
+                spacing: Theme.space.xs
+
+                ShareCodeSummary {
+                    Layout.fillWidth: true
+                    info: root.preview || ({})
+                }
+                // Its text, not the box it pulls out for the chevron, lines up with the lines above.
+                LinkButton {
+                    id: listLink
+                    Layout.leftMargin: -listLink.chevronBearing
+                    visible: root.contents.length > 0
+                    text: root.contentsShown ? qsTr("Hide the list") : qsTr("See what's in it")
+                    onClicked: root.contentsShown = !root.contentsShown
+                }
+                ListView {
+                    id: contentList
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Math.min(contentList.contentHeight,
+                                                     root.contentRows * Theme.control.heightSm)
+                    visible: root.contentsShown
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: root.contentsShown ? root.contents : []
+                    ScrollBar.vertical: ScrollBar {}
+                    delegate: RowLayout {
+                        required property var modelData
+                        width: contentList.width
+                        height: Theme.control.heightSm
+                        spacing: Theme.space.md
+                        Copy {
+                            Layout.fillWidth: true
+                            text: modelData.name
+                            textFormat: Text.PlainText
+                            role: "label"
+                            elide: Text.ElideRight
+                        }
+                        Copy {
+                            text: root.kindNames[modelData.kind] || ""
+                            role: "caption"
+                            tone: "tertiary"
+                        }
+                    }
+                }
             }
             Copy {
                 Layout.alignment: Qt.AlignTop

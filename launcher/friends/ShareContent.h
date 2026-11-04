@@ -24,6 +24,7 @@
 #include <QList>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 
 #include "ShareCodes.h"
 #include "modplatform/ModDownloadTypes.h"
@@ -72,4 +73,13 @@ namespace ShareContent
 	void addCurseForge(Resolved& resolved,
 					   const QList<ShareCodes::Entry>& wanted,
 					   const QJsonArray& files, const QJsonArray& mods);
+
+	/// For a preview: every entry of @p content as {kind, platform, name},
+	/// kinds in manifest order (mods, resource packs, shader packs, data
+	/// packs) and names sorted within each. Names come from @p modrinthProjects
+	/// (GET /v2/projects) and @p curseForgeMods (`data` of POST /v1/mods); a
+	/// project neither answers for keeps its id as its name.
+	QVariantList contentNames(const QList<ShareCodes::Entry>& content,
+							  const QJsonArray& modrinthProjects,
+							  const QJsonArray& curseForgeMods);
 } // namespace ShareContent

@@ -142,6 +142,10 @@ AppDialog {
         else
             root.presetCode = code
     }
+    // KITE_QML_ROUTE "sharelist": the code's contents listed once they are named.
+    function showShareContents() {
+        codePane.contentsShown = true
+    }
     onOpened: {
         if (root.presetCode.length > 0)
             codePane.enter(root.presetCode)
