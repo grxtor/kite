@@ -589,7 +589,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1565"/>
+        <location filename="../launcher/Application.cpp" line="+1568"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -6071,12 +6071,22 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>GettingStartedCard</name>
     <message>
-        <location filename="../launcher/qml/Components/GettingStartedCard.qml" line="+43"/>
+        <location filename="../launcher/qml/Components/GettingStartedCard.qml" line="+76"/>
         <source>Done</source>
         <translation>Bitti</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+50"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Hide</source>
+        <translation>Gizle</translation>
+    </message>
+    <message>
+        <location line="+21"/>
         <source>Set up Kite</source>
         <translation>Kite&apos;ı kur</translation>
     </message>
@@ -6084,6 +6094,11 @@ Lütfen tekrar dene.</translation>
         <location line="+7"/>
         <source>Sign in with Microsoft</source>
         <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Bring over instances from other launchers</source>
+        <translation>Diğer launcher&apos;lardaki kurulumlarını getir</translation>
     </message>
 </context>
 <context>
@@ -6339,7 +6354,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+215"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+221"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -6385,7 +6400,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeSidePanel</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+125"/>
+        <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+130"/>
         <source>Recent worlds</source>
         <translation>Son dünyalar</translation>
     </message>
@@ -9276,7 +9291,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+387"/>
+        <location line="+389"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>

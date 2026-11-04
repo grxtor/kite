@@ -1046,6 +1046,7 @@ ApplicationWindow {
                         shortcutControllerFor: root.shortcutController
                         shareCodes: root.shareCodes
                         msaSignedIn: root.shellValue("accountKind") === "Microsoft"
+                        launcherImport: root.shellValue("launcherImport")
                         friends: root.friendsController
                         friendPlaces: root.friendPlaces
                         joinFlow: friendJoin
@@ -1058,6 +1059,7 @@ ApplicationWindow {
                         onOpenInstanceRequested: (id) => root.openInstanceSettings(id)
                         onSelectRequested: (id) => root.selectedId = id
                         onSignInRequested: root.page = "accounts"
+                        onImportLaunchersRequested: root.openNewInstance("launchers")
                         onFolderRequested: (id) => root.call("openInstanceFolder", id)
                         onRenameRequested: (id, name) => root.askRename(id, name)
                         onIconRequested: (id, iconKey) => root.askIcon(id, iconKey)
