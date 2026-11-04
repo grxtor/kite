@@ -119,6 +119,8 @@ set(CORE_SOURCES
     InstanceTask.cpp
     LoggedProcess.h
     LoggedProcess.cpp
+    ProcessOutput.h
+    ProcessOutput.cpp
     Logging.h
     Logging.cpp
     MessageLevel.cpp

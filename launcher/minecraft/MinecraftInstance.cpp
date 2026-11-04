@@ -34,6 +34,7 @@
 #include "pathmatcher/MultiMatcher.h"
 #include "FileSystem.h"
 #include "java/JavaVersion.h"
+#include "ProcessOutput.h"
 
 #include "launch/LaunchTask.h"
 #include "launch/steps/LookupServerAddress.h"
@@ -629,6 +630,9 @@ QStringList MinecraftInstance::javaArguments() const
 	}
 
 	args << "-Duser.language=en";
+	// The game prints UTF-8, which is how LoggedProcess reads it, whatever the
+	// system code page (cp1254 on a Turkish Windows).
+	args << ProcessOutput::jvmArguments(javaVersion.major());
 
 	return args;
 }
