@@ -13,7 +13,8 @@
     "start": "node src/main.ts",
     "test": "node --test --test-concurrency=1 \"test/**/*.test.ts\"",
     "typecheck": "tsc",
-    "crash-top": "node scripts/crash-top.ts"
+    "crash-top": "node scripts/crash-top.ts",
+    "mod": "node scripts/mod.ts"
   },
   "dependencies": {
     "@fastify/websocket": "11.3.4",

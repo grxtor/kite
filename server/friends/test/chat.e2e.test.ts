@@ -433,6 +433,9 @@ describe('chat', () => {
           reported_uuid: a.uuid,
           message_id: second.id,
           reason: 'harassment',
+          status: 'open',
+          closed_at: null,
+          resolution_note: null,
           snapshot: {
             reported: { uuid: a.uuid, name: a.name },
             messages: [

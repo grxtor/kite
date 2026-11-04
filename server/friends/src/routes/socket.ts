@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { isMessageId, markRead, sendMessage } from '../chat.ts';
 import { currentUser, minute, type AuthUser, type Context } from '../context.ts';
 import { HttpError } from '../errors.ts';
+import { bannedAmong, sanctionOf } from '../moderation.ts';
 import { uuidPattern } from '../schemas.ts';
 
 /** Largest frame a client may send; `ws` closes the socket with 1009 past it. */
@@ -15,6 +16,7 @@ export const closeCodes = {
   textOnly: 1003,
   tooManyConnections: 4001,
   sessionEnded: 4401,
+  banned: 4403,
 } as const;
 
 const openState = 1;
@@ -106,9 +108,16 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
   }
 
   // A client that ignores the close frame keeps its socket open until `ws` gives up on it.
-  function end(conn: Connection): void {
+  function end(conn: Connection, code: number = closeCodes.sessionEnded, reason = 'Session ended'): void {
     conn.ended = true;
-    conn.socket.close(closeCodes.sessionEnded, 'Session ended');
+    conn.socket.close(code, reason);
+  }
+
+  // `pnpm mod ban` runs in another process, so the heartbeat looks for players banned since.
+  async function closeBanned(): Promise<void> {
+    for (const uuid of await bannedAmong(ctx.pool, [...byUser.keys()])) {
+      for (const conn of byUser.get(uuid) ?? []) end(conn, closeCodes.banned, 'Banned');
+    }
   }
 
   async function handleFrame(conn: Connection, text: string): Promise<void> {
@@ -130,7 +139,7 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
         send(conn, { type: 'error', ref: error.ref, error: 'bad_request', message: error.message });
       } else if (error instanceof HttpError) {
         const retryAfter = error.retryAfterSeconds ?? undefined;
-        send(conn, { type: 'error', ref, error: error.code, message: error.message, retryAfter });
+        send(conn, { type: 'error', ref, error: error.code, message: error.message, retryAfter, ...error.details });
       } else {
         ctx.log.error(error, 'handling a socket frame failed');
         send(conn, { type: 'error', ref, error: 'internal', message: 'Something went wrong' });
@@ -206,15 +215,25 @@ export function registerSocketRoute(app: FastifyInstance, ctx: Context) {
         conn.socket.ping();
       }
     }
+    closeBanned().catch((error: unknown) => ctx.log.error(error, 'closing banned players\' sockets failed'));
   }, ctx.config.heartbeatMs);
   heartbeat.unref();
   app.addHook('onClose', async () => clearInterval(heartbeat));
 
+  // A banned player's upgrade still succeeds, so that the close code can tell the client why
+  // and not to reconnect.
+  const banned = new WeakSet<FastifyRequest>();
   app.route({
     method: 'GET',
     url: '/v1/ws',
+    preHandler: async (request) => {
+      if ((await sanctionOf(ctx.pool, currentUser(request).uuid, ctx.now())).bannedAt) banned.add(request);
+    },
     handler: async (_request, reply) =>
       reply.status(426).header('upgrade', 'websocket').send({ error: 'bad_request', message: 'Connect with a WebSocket' }),
-    wsHandler: (socket: Socket, request) => open(socket, currentUser(request)),
+    wsHandler: (socket: Socket, request) => {
+      if (banned.has(request)) socket.close(closeCodes.banned, 'Banned');
+      else open(socket, currentUser(request));
+    },
   });
 }

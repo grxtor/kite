@@ -26,7 +26,7 @@ describe('me and settings', () => {
     const me = await s.newPlayer();
     const res = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { uuid: me.uuid, name: me.name, settings: defaults });
+    assert.deepEqual(res.body, { uuid: me.uuid, name: me.name, settings: defaults, moderation: { mutedUntil: null, banned: null } });
   });
 
   test('PATCH returns the full settings object', async () => {

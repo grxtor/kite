@@ -97,3 +97,47 @@ export async function startMockMojang(): Promise<MockMojang> {
       }),
   };
 }
+
+export interface WebhookCatcher {
+  url: string;
+  /** The JSON bodies posted so far, oldest first. */
+  bodies: unknown[];
+  /** Waits until `count` bodies have arrived. */
+  received: (count: number, timeoutMs?: number) => Promise<unknown[]>;
+  close: () => Promise<void>;
+}
+
+/** Stands in for the moderators' Discord webhook. */
+export async function startWebhookCatcher(): Promise<WebhookCatcher> {
+  const bodies: unknown[] = [];
+  const server: Server = createServer((req, res) => {
+    let text = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk: string) => {
+      text += chunk;
+    });
+    req.on('end', () => {
+      bodies.push(JSON.parse(text));
+      res.writeHead(204).end();
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}/api/webhooks/1/token`,
+    bodies,
+    received: async (count, timeoutMs = 2000) => {
+      const deadline = Date.now() + timeoutMs;
+      while (bodies.length < count) {
+        if (Date.now() > deadline) throw new Error(`${bodies.length} webhook posts, expected ${count}`);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      return bodies;
+    },
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.closeAllConnections();
+        server.close(() => resolve());
+      }),
+  };
+}

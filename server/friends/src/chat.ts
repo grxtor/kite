@@ -3,6 +3,7 @@ import { publishEvent } from './bus.ts';
 import { day, minute, type Context } from './context.ts';
 import { withTransaction } from './db.ts';
 import { badRequest, notFound } from './errors.ts';
+import { assertMaySendMessages } from './moderation.ts';
 import { cleanText } from './status.ts';
 import { areFriends, hasBlockBetween, lockPair } from './users.ts';
 
@@ -87,6 +88,7 @@ function cleanMessage(raw: string): string {
 export async function sendMessage(ctx: Context, me: string, toRaw: string, rawText: string, origin?: string): Promise<MessageJson> {
   ctx.limit(`chat:${me}`, ctx.config.rateLimits.chatMessagesPerMinute, minute);
   ctx.limit(`chat-day:${me}`, ctx.config.rateLimits.chatMessagesPerDay, day);
+  await assertMaySendMessages(ctx.pool, me, ctx.now());
   const to = toRaw.toLowerCase();
   if (to === me) throw badRequest('That is you');
   const text = cleanMessage(rawText);
@@ -189,8 +191,9 @@ export async function reportMessage(ctx: Context, me: string, otherRaw: string, 
     [me, other, cutoff, id, reportContextSize],
   );
   const { rows: names } = await ctx.pool.query<{ name: string }>('select name from users where uuid = $1', [other]);
+  const reportedName = names[0]?.name ?? null;
   const snapshot = {
-    reported: { uuid: other, name: names[0]?.name ?? null },
+    reported: { uuid: other, name: reportedName },
     messages: [...before.reverse(), message].map(({ id: messageId, sender_uuid, text, created_at }) => ({
       id: messageId,
       // A side, not a uuid: once the reporter deletes their account nothing in the copy names them.
@@ -199,11 +202,20 @@ export async function reportMessage(ctx: Context, me: string, otherRaw: string, 
       createdAt: created_at.toISOString(),
     })),
   };
-  await ctx.pool.query(
-    `insert into chat_reports (reporter_uuid, reported_uuid, message_id, reason, snapshot, created_at)
-     values ($1, $2, $3, $4, $5, $6) on conflict (reporter_uuid, message_id) do nothing`,
-    [me, other, id, reason, JSON.stringify(snapshot), ctx.now()],
+  const now = ctx.now();
+  // The count cannot see the row inserted by the same statement, hence the 1 +.
+  const { rows: filed } = await ctx.pool.query<{ id: string; reports_last_day: number }>(
+    `with filed as (
+       insert into chat_reports (reporter_uuid, reported_uuid, message_id, reason, snapshot, created_at)
+       values ($1, $2, $3, $4, $5, $6) on conflict (reporter_uuid, message_id) do nothing returning id)
+     select f.id, 1 + (select count(*)::int from chat_reports r where r.reported_uuid = $2 and r.created_at > $7) as reports_last_day
+     from filed f`,
+    [me, other, id, reason, JSON.stringify(snapshot), now, new Date(now.getTime() - day)],
   );
+  const report = filed[0];
+  if (report) {
+    ctx.reportNotices.add({ id: report.id, reason, reportedName, reportsLastDay: report.reports_last_day });
+  }
 }
 
 /**

@@ -8,8 +8,10 @@ import type { Config } from './config.ts';
 import { createContext, minute, type Context } from './context.ts';
 import { purgeCrashReports } from './crashStore.ts';
 import { HttpError } from './errors.ts';
+import { purgeModeration } from './moderation.ts';
 import { pushStatus } from './notify.ts';
 import { RateLimiter } from './rateLimit.ts';
+import { ReportNotices } from './reportNotices.ts';
 import { authenticator, registerAuthRoutes, registerLogoutRoute } from './routes/auth.ts';
 import { registerBlockRoutes } from './routes/blocks.ts';
 import { registerChatRoutes } from './routes/chats.ts';
@@ -50,6 +52,7 @@ async function purgeExpired(ctx: Context): Promise<void> {
   await ctx.pool.query('delete from share_codes where expires_at <= $1', [now]);
   await purgeMessages(ctx.pool, now);
   await purgeCrashReports(ctx.pool, now);
+  await purgeModeration(ctx.pool, now);
   ctx.limiter.sweep();
 }
 
@@ -60,7 +63,8 @@ export async function buildApp({ config, pool, clock = Date.now, bus = new Memor
     logController: new LogController({ disableRequestLogging: true }),
     bodyLimit: bodyLimitBytes,
   });
-  const ctx = createContext({ config, pool, clock, limiter: new RateLimiter(clock), bus, log: app.log });
+  const reportNotices = new ReportNotices(config.modWebhookUrl, app.log);
+  const ctx = createContext({ config, pool, clock, limiter: new RateLimiter(clock), bus, log: app.log, reportNotices });
   const clientIp = clientIpReader(config);
   // First, so its hooks run before ours: an upgrade refused by any later hook still gets its
   // socket closed instead of left open.
@@ -76,7 +80,7 @@ export async function buildApp({ config, pool, clock = Date.now, bus = new Memor
   app.setErrorHandler((error: FastifyError | HttpError, request, reply) => {
     if (error instanceof HttpError) {
       if (error.retryAfterSeconds !== null) reply.header('retry-after', String(error.retryAfterSeconds));
-      return reply.status(error.status).send({ error: error.code, message: error.message });
+      return reply.status(error.status).send({ error: error.code, message: error.message, ...error.details });
     }
     if (error.validation || (error.statusCode && error.statusCode < 500)) {
       return reply.status(error.validation ? 400 : (error.statusCode ?? 400)).send({ error: 'bad_request', message: error.message });
@@ -120,6 +124,7 @@ export async function buildApp({ config, pool, clock = Date.now, bus = new Memor
   app.addHook('onClose', async () => {
     clearInterval(purgeTimer);
     pool.off('error', onPoolError);
+    await reportNotices.close();
   });
 
   return app;
