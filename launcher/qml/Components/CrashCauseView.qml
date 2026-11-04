@@ -30,6 +30,8 @@ ColumnLayout {
     property string workingText: ""
     property bool hasCrashReport: false
     property bool canUpload: true
+    // The log upload in ⋯ even with no fix: something else holds the main button (CrashSendBlock).
+    property bool uploadInMenu: false
     // The last fix can still be undone (CrashDoctorModel.undoAction).
     property bool canUndo: false
     signal fixRequested(int fixIndex)
@@ -119,7 +121,7 @@ ColumnLayout {
                 onClicked: root.fixRequested(0)
             }
             Button {
-                visible: root.fixes.length === 0 && root.canUpload
+                visible: root.fixes.length === 0 && root.canUpload && !root.uploadInMenu
                 highlighted: root.main
                 text: qsTr("Share the log")
                 onClicked: root.uploadRequested()
@@ -135,6 +137,7 @@ ColumnLayout {
                     cause: root.cause
                     working: root.working
                     canUpload: root.canUpload
+                    uploadInMenu: root.uploadInMenu
                     hasCrashReport: root.hasCrashReport
                     canUndo: root.canUndo
                     onFixRequested: (fixIndex) => root.fixRequested(fixIndex)

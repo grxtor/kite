@@ -2368,7 +2368,12 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashCauseMenu</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashCauseMenu.qml" line="+44"/>
+        <location filename="../launcher/qml/Components/CrashCauseMenu.qml" line="+49"/>
+        <source>Send to Kite</source>
+        <translation>Kite&apos;a gönder</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>Share the log</source>
         <translation>Günlüğü paylaş</translation>
     </message>
@@ -2391,7 +2396,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashCauseView</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+95"/>
+        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+97"/>
         <source>and %1 more</source>
         <translation>ve %1 tane daha</translation>
     </message>
@@ -2457,7 +2462,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorBody</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashDoctorBody.qml" line="+32"/>
+        <location filename="../launcher/qml/Components/CrashDoctorBody.qml" line="+33"/>
         <source>1 more possible cause</source>
         <translation>1 olası neden daha</translation>
     </message>
@@ -2475,7 +2480,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashDoctorDialog.qml" line="+42"/>
+        <location filename="../launcher/qml/Components/CrashDoctorDialog.qml" line="+45"/>
         <source>Why the game crashed</source>
         <translation>Oyun neden çöktü</translation>
     </message>
@@ -2490,7 +2495,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Kapat</translation>
     </message>
     <message>
-        <location line="+61"/>
+        <location line="+82"/>
         <source>Reading why the game crashed…</source>
         <translation>Oyunun neden çöktüğüne bakılıyor…</translation>
     </message>
@@ -2513,7 +2518,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+73"/>
         <source>Share the log?</source>
         <translation>Günlük paylaşılsın mı?</translation>
     </message>
@@ -2531,7 +2536,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorModel</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+129"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+131"/>
         <source>%1 (needed by %2)</source>
         <translation>%1 (%2 istiyor)</translation>
     </message>
@@ -2568,7 +2573,7 @@ Ayrıntılar günlük dosyasında:
     </message>
     <message>
         <location line="+8"/>
-        <location line="+23"/>
+        <location line="+24"/>
         <source>Close the game first.</source>
         <translation>Önce oyunu kapat.</translation>
     </message>
@@ -2591,9 +2596,14 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorPanel</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashDoctorPanel.qml" line="+77"/>
+        <location filename="../launcher/qml/Components/CrashDoctorPanel.qml" line="+83"/>
         <source>Reading why the game crashed…</source>
         <translation>Oyunun neden çöktüğüne bakılıyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Fix found: %1</source>
+        <translation>Çözüm bulundu: %1</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2607,11 +2617,16 @@ Ayrıntılar günlük dosyasında:
     </message>
     <message>
         <location line="+10"/>
+        <source>Send to Kite</source>
+        <translation>Kite&apos;a gönder</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Share the log</source>
         <translation>Günlüğü paylaş</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+9"/>
         <source>Details</source>
         <translation>Ayrıntılar</translation>
     </message>
@@ -2624,9 +2639,75 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorService</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+98"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+108"/>
         <source>Crash rules</source>
         <translation>Çökme kuralları</translation>
+    </message>
+</context>
+<context>
+    <name>CrashFollowUp</name>
+    <message>
+        <location filename="../launcher/crashdoctor/CrashFollowUp.cpp" line="+206"/>
+        <source>A fix was found</source>
+        <translation>Çözüm bulundu</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Today&apos;s %1 crash has a fix now.</source>
+        <translation>Bugünkü %1 çökmesinin çözümü bulundu.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Yesterday&apos;s %1 crash has a fix now.</source>
+        <translation>Dünkü %1 çökmesinin çözümü bulundu.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Last %1&apos;s %2 crash has a fix now.</source>
+        <translation>Geçen %1 %2 çökmesinin çözümü bulundu.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The %1 crash of %2 has a fix now.</source>
+        <translation>%2 tarihli %1 çökmesinin çözümü bulundu.</translation>
+    </message>
+</context>
+<context>
+    <name>CrashPayloadView</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashPayloadView.qml" line="+49"/>
+        <source>Versions</source>
+        <translation>Sürümler</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Error</source>
+        <translation>Hata</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>1 mod</source>
+        <translation>1 mod</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 mods</source>
+        <translation>%1 mod</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Mod it points at</source>
+        <translation>İşaret ettiği mod</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Rule that matched</source>
+        <translation>Eşleşen kural</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Not sent: your account, your Minecraft name, your IP address, your folders, and the names of your instances and worlds.</source>
+        <translation>Gönderilmeyenler: hesabın, Minecraft adın, IP adresin, klasörlerin, kurulumlarının ve dünyalarının adları.</translation>
     </message>
 </context>
 <context>
@@ -2688,6 +2769,80 @@ Ayrıntılar günlük dosyasında:
         <location line="+6"/>
         <source>Close</source>
         <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>CrashSendBlock</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashSendBlock.qml" line="+42"/>
+        <source>Send this crash to Kite so we can find the fix</source>
+        <translation>Bu çökmeyi Kite&apos;a gönder, çözümünü bulalım</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <location line="+60"/>
+        <source>Sending…</source>
+        <translation>Gönderiliyor…</translation>
+    </message>
+    <message>
+        <location line="-60"/>
+        <source>Send</source>
+        <translation>Gönder</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>From now on, send without asking</source>
+        <translation>Bundan sonra sormadan gönder</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>What is sent</source>
+        <translation>Gönderilecekler</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>What was sent</source>
+        <translation>Gönderilenler</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Ask me before sending</source>
+        <translation>Göndermeden önce bana sor</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Kite doesn&apos;t know this crash yet. Sending it shows us the error lines and the versions, so the fix can come for everyone; your account, your name and your IP address stay here.</source>
+        <translation>Kite bu çökmeyi henüz tanımıyor. Gönderirsen hata satırlarını ve sürümleri görürüz, böylece çözüm herkese gelir; hesabın, adın ve IP adresin burada kalır.</translation>
+    </message>
+    <message>
+        <location line="-13"/>
+        <source>There seems to be no connection right now. Kite sends it once there is.</source>
+        <translation>Şu an bağlantı yok gibi. Bağlantı gelince Kite kendisi gönderir.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Kite sent it by itself, as you allowed. When a fix is found, Kite tells you.</source>
+        <translation>İzin verdiğin için Kite kendisi gönderdi. Çözüm bulununca Kite sana haber verir.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sent, thank you. When a fix is found, Kite tells you.</source>
+        <translation>Gönderildi, teşekkürler. Çözüm bulununca Kite sana haber verir.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Kite&apos;s server did not take it.</source>
+        <translation>Kite&apos;ın sunucusu bunu kabul etmedi.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The fix Kite offered doesn&apos;t seem to have helped. Sending the crash shows us where the rule is wrong; your account, your name and your IP address stay here.</source>
+        <translation>Kite&apos;ın önerdiği düzeltme işe yaramadı gibi. Çökmeyi gönderirsen kuralın nerede yanıldığını görürüz; hesabın, adın ve IP adresin burada kalır.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Kite doesn&apos;t know this crash yet. Sending it shows us the error lines, the versions and the mod list, so the fix can come for everyone; your account, your name and your IP address stay here.</source>
+        <translation>Kite bu çökmeyi henüz tanımıyor. Gönderirsen hata satırlarını, sürümleri ve mod listesini görürüz, böylece çözüm herkese gelir; hesabın, adın ve IP adresin burada kalır.</translation>
     </message>
 </context>
 <context>
@@ -9753,7 +9908,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+871"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+875"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -12748,7 +12903,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+371"/>
+        <location line="+393"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -14467,7 +14622,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsLogUploadSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsLogUploadSection.qml" line="+19"/>
+        <location filename="../launcher/qml/Components/SettingsLogUploadSection.qml" line="+21"/>
         <source>Log upload</source>
         <translation>Günlük yükleme</translation>
     </message>
@@ -14505,6 +14660,21 @@ Currently installed version: %1</source>
         <location line="+7"/>
         <source>Paste your API key here</source>
         <translation>API anahtarını buraya yapıştır</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Crash reports</source>
+        <translation>Çökme raporları</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Send crash reports without asking</source>
+        <translation>Çökme raporlarını sormadan gönder</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>When Kite can&apos;t tell why the game crashed, it sends the error lines, the versions and the mod list to Kite, so the fix can come for everyone. Your account, your name and your IP address are not sent. Off: Kite asks every time.</source>
+        <translation>Kite oyunun neden çöktüğünü bulamazsa hata satırlarını, sürümleri ve mod listesini Kite&apos;a gönderir, böylece çözüm herkese gelir. Hesabın, adın ve IP adresin gönderilmez. Kapalıyken Kite her seferinde sorar.</translation>
     </message>
 </context>
 <context>
