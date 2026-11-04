@@ -2,8 +2,10 @@ import type { FastifyInstance } from 'fastify';
 import { currentUser, type Context } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
+import { pushFriendRemoved } from '../notify.ts';
 import { uuidParams } from '../schemas.ts';
 import { findUserByUuid, lockPair } from '../users.ts';
+import { deleteInvitesBetween } from './invites.ts';
 
 const maxBlocks = 1000;
 
@@ -22,7 +24,7 @@ export function registerBlockRoutes(app: FastifyInstance, ctx: Context) {
     const target = request.params.uuid.toLowerCase();
     if (target === me) throw badRequest('You cannot block yourself');
     if (!(await findUserByUuid(ctx.pool, target))) throw notFound('No such player');
-    await withTransaction(ctx.pool, async (client) => {
+    const wereFriends = await withTransaction(ctx.pool, async (client) => {
       await lockPair(client, me, target);
       const { rows } = await client.query<{ count: number }>(
         'select count(*)::int as count from blocks where blocker = $1 and blocked <> $2',
@@ -35,7 +37,7 @@ export function registerBlockRoutes(app: FastifyInstance, ctx: Context) {
         'insert into blocks (blocker, blocked, created_at) values ($1, $2, $3) on conflict do nothing',
         [me, target, ctx.now()],
       );
-      await client.query(
+      const friendship = await client.query(
         'delete from friendships where user_a = least($1::uuid, $2::uuid) and user_b = greatest($1::uuid, $2::uuid)',
         [me, target],
       );
@@ -44,7 +46,10 @@ export function registerBlockRoutes(app: FastifyInstance, ctx: Context) {
          where (from_uuid = $1 and to_uuid = $2) or (from_uuid = $2 and to_uuid = $1)`,
         [me, target],
       );
+      await deleteInvitesBetween(client, me, target);
+      return (friendship.rowCount ?? 0) > 0;
     });
+    if (wereFriends) pushFriendRemoved(ctx, me, target);
     return reply.status(204).send();
   });
 

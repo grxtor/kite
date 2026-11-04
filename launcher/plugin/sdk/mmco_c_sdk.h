@@ -140,6 +140,10 @@ enum MMCOHookId {
 	 * FriendsMessageNotifications is. The return value is ignored. */
 	MMCO_HOOK_FRIENDS_NOTICE = 0x0900, /* payload: MMCOFriendsNotice* */
 
+	/* Crash doctor: newer crash rules know a crash the launcher could not explain when it
+	 * happened; once per crash. The return value is ignored. */
+	MMCO_HOOK_CRASH_FIX_FOUND = 0x0A00, /* payload: MMCOCrashFixNotice* */
+
 	/* Forces a 32-bit underlying type across C and C++ compilers; never a real hook id. */
 	MMCO_HOOK_FORCE_UINT32 = 0x7FFFFFFF
 };
@@ -273,6 +277,21 @@ typedef struct MMCOFriendsNotice {
 	const char* title;
 	const char* body;
 } MMCOFriendsNotice;
+
+/* Payload for MMCO_HOOK_CRASH_FIX_FOUND. Strings are UTF-8, host-owned and valid only during the
+ * callback; title and body are worded in the launcher's language, ready to show.
+ *   instance_id    the instance that crashed
+ *   instance_name  its name as the library shows it
+ *   rule_id        the crash rule that knows it now, "mods.crashed"
+ *   title          "A fix was found"
+ *   body           "Last Tuesday's Skies crash has a fix now."; never empty */
+typedef struct MMCOCrashFixNotice {
+	const char* instance_id;
+	const char* instance_name;
+	const char* rule_id;
+	const char* title;
+	const char* body;
+} MMCOCrashFixNotice;
 
 typedef int (*MMCOHookCallback)(void* module_handle, uint32_t hook_id,
 								void* payload, void* user_data);

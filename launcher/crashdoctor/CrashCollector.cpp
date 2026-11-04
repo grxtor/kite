@@ -22,17 +22,23 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QSysInfo>
 
+#include <algorithm>
+
 #include "CrashFiles.h"
 #include "Sys.h"
+#include "core/LauncherContext.h"
 #include "java/JavaVersion.h"
 #include "launch/LaunchTask.h"
 #include "launch/LogModel.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/PerformanceSetupRules.h"
+#include "minecraft/auth/AccountList.h"
 #include "minecraft/launch/VerifyJavaInstall.h"
 #include "minecraft/mod/LocalModParseTask.h"
 #include "minecraft/mod/ModFolderModel.h"
@@ -45,6 +51,13 @@ namespace CrashDoctor
 	{
 		const QString kVanilla = QStringLiteral("vanilla");
 		const QString kLatestLog = QStringLiteral("logs/latest.log");
+		const QString kSavesFolder = QStringLiteral("saves");
+		const QHash<QString, QString> kLoaderComponents{
+			{QStringLiteral("fabric"), QStringLiteral("net.fabricmc.fabric-loader")},
+			{QStringLiteral("quilt"), QStringLiteral("org.quiltmc.quilt-loader")},
+			{QStringLiteral("forge"), QStringLiteral("net.minecraftforge")},
+			{QStringLiteral("neoforge"), QStringLiteral("net.neoforged")},
+		};
 		const QStringList kPerformanceBundles{QStringLiteral("performance"),
 											  QStringLiteral("comfort")};
 		/// latest.log is rewritten at each start; without a launch to go by,
@@ -102,6 +115,9 @@ namespace CrashDoctor
 				if (!details.mod_id.isEmpty() && !details.name.isEmpty()) {
 					report.modNames.insert(details.mod_id.toLower(), details.name);
 				}
+				if (!details.mod_id.isEmpty()) {
+					report.mods.append({details.mod_id.toLower(), details.version});
+				}
 				const bool fromPerformance = performanceFiles.contains(
 					ModMetadataIndex::canonicalFileName(jar.fileName()));
 				for (const QString& raw : ids) {
@@ -116,6 +132,19 @@ namespace CrashDoctor
 					}
 				}
 			}
+		}
+		/// The user's home folder and names: the system user's and every
+		/// Minecraft account's; and the names of @p instance and its worlds.
+		Personal personalOf(const MinecraftInstance& instance)
+		{
+			QStringList names{qEnvironmentVariable("USER"), qEnvironmentVariable("USERNAME"),
+							  QDir::home().dirName()};
+			if (auto* context = LAUNCHER; context && context->accounts()) {
+				names << context->accounts()->profileNames();
+			}
+			const QStringList worlds = QDir(QDir(instance.gameRoot()).filePath(kSavesFolder))
+										   .entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+			return Personal({QDir::homePath()}, names, QStringList{instance.name()} + worlds);
 		}
 	} // namespace
 
@@ -162,6 +191,14 @@ namespace CrashDoctor
 		auto profile = instance.getPackProfile();
 		const QString loader = profile ? profile->primaryModLoader() : QString();
 		facts.loader = loader.isEmpty() ? kVanilla : loader;
+		if (profile && kLoaderComponents.contains(facts.loader)) {
+			out.loaderVersion = profile->getComponentVersion(kLoaderComponents.value(facts.loader));
+		}
+		out.personal = personalOf(instance);
+		const QJsonObject lastFix =
+			QJsonDocument::fromJson(settings->get("CrashDoctorLastFix").toString().toUtf8()).object();
+		out.lastFixRule = lastFix.value("rule").toString();
+		out.lastFixAt = QDateTime::fromString(lastFix.value("at").toString(), Qt::ISODate);
 		facts.os = osName();
 		facts.arch = archName();
 		facts.javaNow = JavaVersion(settings->get("JavaVersion").toString()).major();
@@ -197,21 +234,30 @@ namespace CrashDoctor
 		report.modsDir = snapshot.modsDir;
 		report.analysedAt = QDateTime::currentDateTime();
 
+		report.launchedAt = snapshot.since;
+		report.loaderVersion = snapshot.loaderVersion;
+
 		Evidence evidence;
 		QDateTime since = snapshot.since;
-		if (!snapshot.liveLog.isEmpty()) {
+		const QString latest = QDir(snapshot.gameRoot).filePath(kLatestLog);
+		if (!snapshot.files.isEmpty()) {
+			evidence.log = readTail(snapshot.files.log, kMaxLogBytes);
+			report.crashReportPath = snapshot.files.crashReport;
+			report.jvmErrorPath = snapshot.files.jvmError;
+		} else if (!snapshot.liveLog.isEmpty()) {
 			evidence.log = snapshot.liveLog.right(kMaxLogBytes);
 		} else {
-			const QString latest = QDir(snapshot.gameRoot).filePath(kLatestLog);
 			evidence.log = readTail(latest, kMaxLogBytes);
 			if (!since.isValid()) {
 				since = QFileInfo(latest).lastModified().addSecs(-kRunWindowSecs);
 			}
 		}
-		if (since.isValid()) {
+		if (snapshot.files.isEmpty() && since.isValid()) {
 			report.crashReportPath = CrashFiles::newestCrashReport(snapshot.gameRoot, since);
 			report.jvmErrorPath = CrashFiles::newestJvmErrorReport(snapshot.gameRoot, since);
 		}
+		report.files = {report.crashReportPath, report.jvmErrorPath,
+						snapshot.files.isEmpty() ? latest : snapshot.files.log};
 		evidence.crashReport = readTail(report.crashReportPath, kMaxCrashReportBytes);
 		evidence.jvmError = readTail(report.jvmErrorPath, kMaxJvmErrorBytes);
 
@@ -227,6 +273,17 @@ namespace CrashDoctor
 		scanMods(snapshot.modsDir, snapshot.performanceFiles, report, facts);
 
 		report.causes = CrashDoctor::analyse(catalog, evidence, facts, language);
+		report.facts = facts;
+		report.fixDidNotHelp =
+			snapshot.since.isValid() && snapshot.lastFixAt.isValid() && snapshot.lastFixAt < snapshot.since &&
+			std::any_of(report.causes.begin(), report.causes.end(),
+						[&snapshot](const Cause& cause) { return cause.ruleId == snapshot.lastFixRule; });
+		std::sort(report.mods.begin(), report.mods.end(),
+				  [](const ModEntry& a, const ModEntry& b) { return a.id < b.id; });
+		report.lines = reportLines(evidence, snapshot.personal, catalog.classHints, facts.installed);
+		if (!report.lines.lines.isEmpty()) {
+			report.signature = signatureOf(report.lines.lines);
+		}
 		return report;
 	}
 } // namespace CrashDoctor

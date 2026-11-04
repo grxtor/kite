@@ -4,6 +4,7 @@ import { buildApp } from '../src/app.ts';
 import type { Config, RateLimits } from '../src/config.ts';
 import { createPool, migrate } from '../src/db.ts';
 import { createTestDatabase, startMockMojang, type MockMojang } from './infra.ts';
+import { TestSocket } from './socketClient.ts';
 
 export const NOTCH = { name: 'Notch', uuid: '069a79f4-44e9-4726-a5be-fca90e38aaf5' };
 export const JEB = { name: 'jeb_', uuid: '853c80ef-3c37-49fd-aa49-938b674adae6' };
@@ -35,10 +36,12 @@ export interface Settings {
   hideServer: boolean;
   shareIpServers: boolean;
   allowJoin: boolean;
+  allowInvites: boolean;
 }
 
 export interface MeBody extends UserRef {
   settings: Settings;
+  moderation: { mutedUntil: string | null; banned: { at: string; reason: string | null } | null };
 }
 
 export interface WorldBody {
@@ -59,15 +62,29 @@ export interface StatusBody {
 export interface FriendEntry extends UserRef {
   since: string;
   status: StatusBody;
+  unread: number;
 }
 
 export interface RequestEntry extends UserRef {
   createdAt: string;
 }
 
+export interface InviteEntry extends UserRef {
+  host: string;
+  port: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface InvitesBody {
+  incoming: InviteEntry[];
+  outgoing: InviteEntry[];
+}
+
 export interface FriendsBody {
   friends: FriendEntry[];
   requests: { incoming: RequestEntry[]; outgoing: RequestEntry[] };
+  invites: InvitesBody;
 }
 
 export interface ErrorBody {
@@ -103,6 +120,7 @@ export interface TestConfigOverrides extends Partial<Omit<Config, 'rateLimits'>>
 
 export interface TestServer {
   baseUrl: string;
+  databaseUrl: string;
   clock: TestClock;
   mojang: MockMojang;
   api: <T = unknown>(method: string, path: string, options?: ApiOptions) => Promise<ApiResponse<T>>;
@@ -110,6 +128,11 @@ export interface TestServer {
   newPlayer: (name?: string, uuid?: string) => Promise<Player>;
   makeFriends: (a: Player, b: Player) => Promise<void>;
   friendsOf: (player: Player) => Promise<FriendsBody>;
+  /** Opens a socket for `player` and waits for its `ready` frame. */
+  connect: (player: Player) => Promise<TestSocket>;
+  /** Runs the once-a-minute purge now. */
+  purge: () => Promise<void>;
+  query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>;
   close: () => Promise<void>;
 }
 
@@ -121,6 +144,15 @@ const relaxedRateLimits: RateLimits = {
   friendRequestsPerHour: RELAXED_LIMIT,
   friendRequestsPerPairPerDay: RELAXED_LIMIT,
   lookupsPerMinute: RELAXED_LIMIT,
+  invitesPerHour: RELAXED_LIMIT,
+  invitesPerPairPerHour: RELAXED_LIMIT,
+  shareCodesPerHour: RELAXED_LIMIT,
+  shareCodeFetchesPerHour: RELAXED_LIMIT,
+  chatMessagesPerMinute: RELAXED_LIMIT,
+  chatMessagesPerDay: RELAXED_LIMIT,
+  chatReportsPerDay: RELAXED_LIMIT,
+  socketFramesPerMinute: RELAXED_LIMIT,
+  crashReportsPerHour: RELAXED_LIMIT,
 };
 
 export async function startServer(overrides: TestConfigOverrides = {}): Promise<TestServer> {
@@ -149,6 +181,8 @@ export async function startServer(overrides: TestConfigOverrides = {}): Promise<
     statusTtlSeconds: 180,
     sessionTtlDays: 30,
     challengeTtlSeconds: 120,
+    heartbeatMs: 30_000,
+    modWebhookUrl: null,
     ...rest,
     rateLimits: { ...relaxedRateLimits, ...rateLimits },
   };
@@ -200,8 +234,18 @@ export async function startServer(overrides: TestConfigOverrides = {}): Promise<
     return res.body;
   }
 
+  const sockets: TestSocket[] = [];
+  async function connect(player: Player): Promise<TestSocket> {
+    const socket = new TestSocket(`${baseUrl.replace('http', 'ws')}/v1/ws`, player.token);
+    sockets.push(socket);
+    const ready = await socket.next('ready');
+    assert.deepEqual(ready.user, { uuid: player.uuid, name: player.name });
+    return socket;
+  }
+
   return {
     baseUrl,
+    databaseUrl: db.url,
     clock,
     mojang,
     api,
@@ -209,7 +253,11 @@ export async function startServer(overrides: TestConfigOverrides = {}): Promise<
     newPlayer,
     makeFriends,
     friendsOf,
+    connect,
+    purge: () => app.purgeExpired(),
+    query: async <T,>(sql: string, params: unknown[] = []) => (await pool.query(sql, params)).rows as T[],
     close: async () => {
+      for (const socket of sockets) socket.close();
       await app.close();
       await pool.end();
       await mojang.close();

@@ -437,6 +437,12 @@ class QmlShell : public QObject
 	 * opens the "why" window). */
 	Q_INVOKABLE void debugAnalyseCrash(const QString& id);
 	Q_INVOKABLE void debugCrashNow(const QString& id);
+	/* Dev only, for the crash reports' end-to-end run: "crashsend=<id>" sends
+	 * that instance's analysed crash to FriendsServerUrl as Send would;
+	 * "crashrules=<file>" uses that crash-rules.json as if the meta server had
+	 * sent it, which reads kept crashes again. */
+	Q_INVOKABLE void debugSendCrash(const QString& id);
+	Q_INVOKABLE void debugUseCrashRules(const QString& path);
 	/* Dev only: a real mouse click at window point "x,y" for review snapshots
 	 * ("click=x,y[,right[,delayMs]]"). The pointer moves there first so
 	 * hover-only controls show; delayMs defaults to 1000.

@@ -12,9 +12,12 @@
   "scripts": {
     "start": "node src/main.ts",
     "test": "node --test --test-concurrency=1 \"test/**/*.test.ts\"",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "crash-top": "node scripts/crash-top.ts",
+    "mod": "node scripts/mod.ts"
   },
   "dependencies": {
+    "@fastify/websocket": "11.3.4",
     "fastify": "5.12.7",
     "pg": "8.23.1"
   },
@@ -22,5 +25,10 @@
     "@types/node": "^24.19.2",
     "@types/pg": "8.23.1",
     "typescript": "^7.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "ws": "8.22.0"
+    }
   }
 }

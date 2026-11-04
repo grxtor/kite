@@ -12,8 +12,10 @@ import Kite.Theme
  * main fix, Details and ⋯. Details opens the rest under it (CrashDoctorBody): the explanation, the
  * mods it names, the log line, the other possible causes. It stays until the next launch or until
  * ⋯ > Hide this. The window that opens right after a crash (CrashDoctorDialog) says the same.
- * Everything here comes from this computer; the log upload is the only thing that leaves it, and
- * asks first.
+ * Everything here comes from this computer; the log upload and sending the crash to Kite are the
+ * only things that leave it, and only when asked for. When Kite could not tell, the button sends the
+ * crash to Kite (Details shows what goes). When rules that came later know an old crash, the line
+ * says "Fix found" with its fix (CrashFollowUp).
  */
 Item {
     id: root
@@ -31,6 +33,10 @@ Item {
     readonly property var topCause: root.doctor && root.doctor.causes.length > 0 ? root.doctor.causes[0] : null
     readonly property bool hasFix: !!root.topCause && root.topCause.fixes.length > 0
     readonly property bool working: !!root.flows && root.flows.workingCause === 0
+    readonly property bool canSend: !!root.doctor && root.doctor.canSend
+    readonly property bool solved: !!root.doctor && root.doctor.solvedLater
+    // Nothing found: the button sends the crash to Kite, or shares the log without a server.
+    readonly property bool sendIsButton: !root.topCause && root.canSend
 
     visible: root.shown
     implicitHeight: root.shown ? strip.implicitHeight : 0
@@ -68,26 +74,31 @@ Item {
                 }
                 MeshIcon {
                     visible: !root.busy
-                    iconName: "alert-triangle"
+                    iconName: root.solved ? "check" : "alert-triangle"
                     size: Theme.icon.sm
-                    color: Theme.palette.warning
+                    color: root.solved ? Theme.palette.accent : Theme.palette.warning
                 }
                 Copy {
                     Layout.fillWidth: true
                     text: root.busy ? qsTr("Reading why the game crashed…")
+                          : root.solved ? qsTr("Fix found: %1").arg(root.topCause.title)
                           : root.topCause ? qsTr("The game crashed: %1").arg(root.topCause.title)
                           : qsTr("The game crashed; Kite couldn't find the cause")
                     textFormat: Text.PlainText
                     font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
+                // Details open holds Send itself, with what goes; one Send on screen.
                 Button {
-                    visible: !root.busy && (root.hasFix || !root.topCause)
+                    visible: !root.busy && (root.hasFix || !root.topCause) && !(root.sendIsButton && root.expanded)
                     enabled: !root.working
                     text: root.working && root.flows.workingText.length > 0 ? root.flows.workingText
                           : root.hasFix ? root.topCause.fixes[0].label
+                          : root.sendIsButton ? qsTr("Send to Kite")
                           : qsTr("Share the log")
-                    onClicked: root.hasFix ? root.flows.run(0, 0) : root.flows.upload()
+                    onClicked: root.hasFix ? root.flows.run(0, 0)
+                               : root.sendIsButton ? root.doctor.send(false)
+                               : root.flows.upload()
                 }
                 // The same word open or closed, so nothing moves; the chevron says which.
                 Button {
@@ -109,12 +120,16 @@ Item {
                         id: menu
                         cause: root.topCause
                         working: root.working
-                        // "Upload the log" is the button itself when nothing was found.
-                        canUpload: root.hasFix
+                        // "Share the log" is the button itself when nothing was found and there is
+                        // nowhere to send the crash.
+                        canUpload: root.hasFix || root.sendIsButton
+                        uploadInMenu: root.sendIsButton
+                        canSend: root.hasFix && root.canSend
                         hasCrashReport: !!root.doctor && root.doctor.crashReport.length > 0
                         canUndo: !!root.doctor && root.doctor.undoAction.length > 0
                         onFixRequested: (fixIndex) => root.flows.run(0, fixIndex)
                         onUploadRequested: root.flows.upload()
+                        onSendRequested: root.doctor.send(false)
                         onCrashReportRequested: root.flows.openCrashReport()
                         onUndoRequested: root.flows.undo()
                         onDismissRequested: root.doctor.dismiss()

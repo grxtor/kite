@@ -1005,6 +1005,9 @@ void Application::initSettings()
 	m_settings->registerSetting("InstGrouped", true);
 
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
+	// Crash reports to Kite's server (crashdoctor/CrashFollowUp): asked every
+	// time unless this is on, and it is off until the player turns it on.
+	m_settings->registerSetting("CrashReportsAutoSend", false);
 
 	// Friends (server/friends/): on unless turned off. FriendsNoticeSeen is
 	// the one-time "Friends is on" card. The Mojang URL is a test hook for the

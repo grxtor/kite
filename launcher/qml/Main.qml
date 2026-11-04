@@ -297,6 +297,11 @@ ApplicationWindow {
                 root.call("debugAnalyseCrash", value)
             else if (key === "crashwindow")
                 root.call("debugCrashNow", value)
+            // crashsend=<id>: sends that crash to Kite as Send would; crashrules=<file>: newer crash rules.
+            else if (key === "crashsend")
+                root.call("debugSendCrash", value)
+            else if (key === "crashrules")
+                root.call("debugUseCrashRules", value)
             // click=x,y[,right[,delayMs]]: a real click at a window point.
             else if (key === "click")
                 root.call("debugClick", value)

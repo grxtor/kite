@@ -11,6 +11,15 @@ describe('defaultRateLimits', () => {
       friendRequestsPerHour: 30,
       friendRequestsPerPairPerDay: 3,
       lookupsPerMinute: 30,
+      invitesPerHour: 30,
+      invitesPerPairPerHour: 5,
+      shareCodesPerHour: 20,
+      shareCodeFetchesPerHour: 30,
+      chatMessagesPerMinute: 30,
+      chatMessagesPerDay: 2000,
+      chatReportsPerDay: 20,
+      socketFramesPerMinute: 120,
+      crashReportsPerHour: 20,
     });
   });
 });
@@ -32,8 +41,22 @@ describe('loadConfig', () => {
       statusTtlSeconds: 180,
       sessionTtlDays: 30,
       challengeTtlSeconds: 120,
+      heartbeatMs: 30_000,
+      modWebhookUrl: null,
       rateLimits: defaultRateLimits,
     });
+  });
+
+  test('takes MOD_WEBHOOK_URL when it is an http(s) URL, and never repeats it in an error', () => {
+    const secret = 'https://discord.com/api/webhooks/1/s3cret';
+    assert.equal(loadConfig({ DATABASE_URL: 'x', MOD_WEBHOOK_URL: secret }).modWebhookUrl, secret);
+    assert.equal(loadConfig({ DATABASE_URL: 'x', MOD_WEBHOOK_URL: '' }).modWebhookUrl, null);
+    for (const bad of ['not a url s3cret', 'ftp://example.com/s3cret', 'https://user:s3cret@example.com/hook']) {
+      assert.throws(
+        () => loadConfig({ DATABASE_URL: 'x', MOD_WEBHOOK_URL: bad }),
+        (error: Error) => /MOD_WEBHOOK_URL/.test(error.message) && !error.message.includes('s3cret'),
+      );
+    }
   });
 
   test('reads every variable from the environment', () => {

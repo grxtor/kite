@@ -14,13 +14,19 @@ describe('me and settings', () => {
     await s.close();
   });
 
-  const defaults: Settings = { visibility: 'friends', hideServer: false, shareIpServers: false, allowJoin: true };
+  const defaults: Settings = {
+    visibility: 'friends',
+    hideServer: false,
+    shareIpServers: false,
+    allowJoin: true,
+    allowInvites: true,
+  };
 
   test('GET /v1/me returns uuid, name and default settings', async () => {
     const me = await s.newPlayer();
     const res = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { uuid: me.uuid, name: me.name, settings: defaults });
+    assert.deepEqual(res.body, { uuid: me.uuid, name: me.name, settings: defaults, moderation: { mutedUntil: null, banned: null } });
   });
 
   test('PATCH returns the full settings object', async () => {
@@ -34,7 +40,7 @@ describe('me and settings', () => {
     const me = await s.newPlayer();
     await s.api('PATCH', '/v1/me/settings', { token: me.token, body: { visibility: 'invisible', hideServer: true } });
     const res = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { shareIpServers: true } });
-    assert.deepEqual(res.body, { visibility: 'invisible', hideServer: true, shareIpServers: true, allowJoin: true });
+    assert.deepEqual(res.body, { ...defaults, visibility: 'invisible', hideServer: true, shareIpServers: true });
     const mine = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
     assert.deepEqual(mine.body.settings, res.body);
   });
@@ -47,6 +53,17 @@ describe('me and settings', () => {
     const read = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
     assert.equal(read.body.settings.allowJoin, false);
     const on = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { allowJoin: true } });
+    assert.deepEqual(on.body, defaults);
+  });
+
+  test('PATCH turns allowInvites off and on', async () => {
+    const me = await s.newPlayer();
+    const off = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { allowInvites: false } });
+    assert.equal(off.status, 200);
+    assert.deepEqual(off.body, { ...defaults, allowInvites: false });
+    const read = await s.api<MeBody>('GET', '/v1/me', { token: me.token });
+    assert.equal(read.body.settings.allowInvites, false);
+    const on = await s.api<Settings>('PATCH', '/v1/me/settings', { token: me.token, body: { allowInvites: true } });
     assert.deepEqual(on.body, defaults);
   });
 
@@ -71,6 +88,7 @@ describe('me and settings', () => {
     ['a visibility that is not a string', { visibility: true }],
     ['hideServer that is not a boolean', { hideServer: 'yes' }],
     ['allowJoin that is not a boolean', { allowJoin: 'yes' }],
+    ['allowInvites that is not a boolean', { allowInvites: 'yes' }],
     ['shareIpServers that is not a boolean', { shareIpServers: 'maybe' }],
   ];
   for (const [title, body] of rejected) {

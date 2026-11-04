@@ -75,10 +75,15 @@ describe('deleting an account', () => {
     assert.deepEqual(me.body, {
       uuid: leaverUuid,
       name: leaverName,
-      settings: { visibility: 'friends', hideServer: false, shareIpServers: false, allowJoin: true },
+      settings: { visibility: 'friends', hideServer: false, shareIpServers: false, allowJoin: true, allowInvites: true },
+      moderation: { mutedUntil: null, banned: null },
     });
     const again: Player = { uuid: leaverUuid, name: leaverName, token };
-    assert.deepEqual(await s.friendsOf(again), { friends: [], requests: { incoming: [], outgoing: [] } });
+    assert.deepEqual(await s.friendsOf(again), {
+      friends: [],
+      requests: { incoming: [], outgoing: [] },
+      invites: { incoming: [], outgoing: [] },
+    });
     const blocks = await s.api('GET', '/v1/blocks', { token });
     assert.deepEqual(blocks.body, { blocked: [] });
   });

@@ -1,5 +1,5 @@
 export const minecraftNamePattern = '^[A-Za-z0-9_]{1,16}$';
-const uuidPattern = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
+export const uuidPattern = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
 
 export const nameBody = {
   type: 'object',
@@ -35,7 +35,25 @@ export const settingsBody = {
     hideServer: { type: 'boolean' },
     shareIpServers: { type: 'boolean' },
     allowJoin: { type: 'boolean' },
+    allowInvites: { type: 'boolean' },
   },
+} as const;
+
+export const inviteBody = {
+  type: 'object',
+  required: ['host'],
+  additionalProperties: false,
+  properties: {
+    host: { type: 'string', minLength: 1, maxLength: 255 },
+    port: { type: 'integer', minimum: 1, maximum: 65535 },
+  },
+} as const;
+
+// Loose on purpose: normalizeShareCode decides, so "kite-7f3k-9qxm" and "7F3K9QXM" both work.
+export const shareCodeParams = {
+  type: 'object',
+  required: ['code'],
+  properties: { code: { type: 'string', minLength: 1, maxLength: 32 } },
 } as const;
 
 // One flat object rather than oneOf: Ajv's removeAdditional would strip fields

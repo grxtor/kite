@@ -99,6 +99,8 @@ CrashDoctorModel::CrashDoctorModel(std::shared_ptr<MinecraftInstance> instance, 
 			emit busyChanged();
 		}
 	});
+	connect(service, &CrashDoctorService::sendStateChanged, this, &CrashDoctorModel::sendChanged);
+	connect(this, &CrashDoctorModel::changed, this, &CrashDoctorModel::sendChanged);
 }
 
 CrashDoctorModel::~CrashDoctorModel() = default;
@@ -236,6 +238,7 @@ QVariantMap CrashDoctorModel::applyFix(int causeIndex, int fixIndex)
 	if (!CrashDoctor::applyFix(target, fix, *report, &error)) {
 		return fail(error);
 	}
+	noteFixTried(causeIndex);
 	emit undoChanged();
 	return QVariantMap{{"ok", true}, {"message", tr("Done. Play again to see if it works.")}};
 }

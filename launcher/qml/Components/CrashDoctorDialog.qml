@@ -12,6 +12,8 @@ import Kite.Theme
  * while Kite runs (Main.qml, QmlShell::crashAnalysed() with fresh set), never for an old crash.
  * Each cause in its own box with its fix and ⋯; the first is the one Kite is surest of. Anything
  * that belongs to the instance's page (the log, a tab, the upload) closes the window and goes there.
+ * A crash nothing knew, or one whose fix did not help, gets a last box that offers to send it to Kite
+ * (CrashSendBlock); then its Send is the window's one accent button and the log upload goes in ⋯.
  * Afterwards the Log tab's strip (CrashDoctorPanel) keeps saying it.
  */
 AppDialog {
@@ -32,6 +34,7 @@ AppDialog {
     readonly property var doctor: root.details ? root.details.crashDoctor : null
     readonly property var causes: root.doctor ? root.doctor.causes : []
     readonly property bool busy: !!root.doctor && root.doctor.busy
+    readonly property bool sending: !root.busy && !!root.doctor && (root.doctor.canSend || root.doctor.sendState.length > 0)
     readonly property int maxHeight: 640
 
     function show(id) {
@@ -94,6 +97,27 @@ AppDialog {
         model: root.busy ? 0 : Math.max(1, root.causes.length)
         ScrollBar.vertical: ScrollBar {}
 
+        footer: Item {
+            width: list.width
+            implicitHeight: root.sending ? sendBox.implicitHeight + Theme.space.sm : 0
+            visible: root.sending
+            BoxSurface {
+                id: sendBox
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                implicitHeight: send.implicitHeight + Theme.space.lg * 2
+                sunken: true
+                radius: Theme.radius.md
+                CrashSendBlock {
+                    id: send
+                    anchors.fill: parent
+                    anchors.margins: Theme.space.lg
+                    doctor: root.doctor
+                }
+            }
+        }
+
         header: RowLayout {
             width: list.width
             visible: root.busy
@@ -125,7 +149,9 @@ AppDialog {
                 anchors.fill: parent
                 anchors.margins: Theme.space.lg
                 cause: item.known ? root.causes[item.index] : Format.unknownCrashCause(root.doctor)
-                main: item.index === 0
+                // The send box holds the one accent button when there is one.
+                main: item.index === 0 && !(root.sending && root.doctor.canSend)
+                uploadInMenu: !item.known && root.sending && root.doctor.canSend
                 showIcon: false
                 working: item.known && flows.workingCause === item.index
                 workingText: flows.workingText

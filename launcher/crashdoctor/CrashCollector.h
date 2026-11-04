@@ -27,6 +27,8 @@
 #include <QStringList>
 
 #include "CrashEngine.h"
+#include "CrashScrubber.h"
+#include "CrashSignature.h"
 
 class LaunchTask;
 class MinecraftInstance;
@@ -45,6 +47,25 @@ namespace CrashDoctor
 		QString version;
 	};
 
+	/// An enabled mod as its metadata names it, for a crash report.
+	struct ModEntry {
+		QString id;
+		QString version;
+	};
+
+	/// Files to read instead of looking for the newest ones (a crash read
+	/// again later, CrashFollowUp).
+	struct RunFiles {
+		QString crashReport;
+		QString jvmError;
+		QString log;
+
+		bool isEmpty() const
+		{
+			return crashReport.isEmpty() && jvmError.isEmpty() && log.isEmpty();
+		}
+	};
+
 	struct Snapshot {
 		QString instanceId;
 		QString gameRoot;
@@ -56,6 +77,14 @@ namespace CrashDoctor
 		Facts facts;
 		/// File names (ModMetadataIndex keys) Kite Performance installed.
 		QSet<QString> performanceFiles;
+		/// What the crash report's lines must not carry.
+		Personal personal;
+		QString loaderVersion;
+		/// Set: read these and nothing else (no live log).
+		RunFiles files;
+		/// The rule of the last fix tried on this instance, and when.
+		QString lastFixRule;
+		QDateTime lastFixAt;
 	};
 
 	/// The outcome of one analysis, kept until the next launch.
@@ -72,6 +101,25 @@ namespace CrashDoctor
 		QHash<QString, QList<ModFile>> modFiles;
 		/// Mod id -> the name its metadata gives, for the words on screen.
 		QHash<QString, QString> modNames;
+
+		// For a crash report (CrashPayload) and reading it again later.
+		Facts facts;
+		QString loaderVersion;
+		/// The enabled mods by their own id, sorted.
+		QList<ModEntry> mods;
+		/// The files read; log is logs/latest.log, also when the live log was.
+		RunFiles files;
+		/// When the launch began; invalid for a crash read from its files.
+		QDateTime launchedAt;
+		ReportLines lines;
+		/// signatureOf(lines.lines), "" without lines.
+		QString signature;
+		/// The fix Kite offered last time for this crash was tried and the game
+		/// crashed the same way again (CrashDoctorService).
+		bool fixDidNotHelp = false;
+		/// Found by rules that came after the crash (CrashFollowUp): the time
+		/// of the crash, invalid otherwise.
+		QDateTime solvedLaterFor;
 	};
 
 	/// Reads @p instance's settings and @p task's log (null: none).

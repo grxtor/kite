@@ -90,11 +90,11 @@ QtObject {
 
     // The crash doctor's "couldn't tell" as a cause (CrashCauseView), with the exit code when known.
     function unknownCrashCause(doctor) {
-        const text = qsTr("This crash doesn't look like one Kite knows. Share the log to show it to someone who can help; your account details and your user folder are hidden.")
         return {
             title: qsTr("Kite couldn't find the cause"),
-            explanation: doctor && doctor.hasExitCode
-                         ? text + " " + qsTr("The game stopped with code %1.").arg(doctor.exitCode) : text,
+            explanation: qsTr("This crash doesn't look like one Kite knows. Share the log to show it to someone who can help; your account details and your user folder are hidden."),
+            // A raw number is a detail, not part of the sentence.
+            detail: doctor && doctor.hasExitCode ? qsTr("Exit code %1").arg(doctor.exitCode) : "",
             line: "", count: 1, rows: [], fixes: []
         }
     }
