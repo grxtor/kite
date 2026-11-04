@@ -3604,7 +3604,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>Format</name>
     <message>
-        <location filename="../launcher/qml/Components/Format.qml" line="+20"/>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/Format.qml" line="+20"/>
         <source>Never played</source>
         <translation>Hiç oynanmadı</translation>
     </message>
@@ -3685,7 +3685,7 @@ Lütfen tekrar dene.</translation>
         <translation>Minecraft</translation>
     </message>
     <message>
-        <location line="+68"/>
+        <location line="+69"/>
         <source>Singleplayer</source>
         <translation>Tek oyunculu</translation>
     </message>
@@ -3700,7 +3700,27 @@ Lütfen tekrar dene.</translation>
         <translation>Bir sunucuda</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+12"/>
+        <source>In game</source>
+        <translation>Oyunda</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>1 unread message</source>
+        <translation>1 okunmamış mesaj</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 unread messages</source>
+        <translation>%1 okunmamış mesaj</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>%1 min left</source>
+        <translation>%1 dk kaldı</translation>
+    </message>
+    <message>
+        <location line="+22"/>
         <source>Friends needs a Minecraft account that is signed in with Microsoft.</source>
         <translation>Arkadaşlık için Microsoft ile giriş yapmış bir Minecraft hesabı gerekir.</translation>
     </message>
@@ -3759,11 +3779,21 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
-    <name>FriendHeadCard</name>
+    <name>FriendInviteCard</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendHeadCard.qml" line="+133"/>
-        <source>%1 doesn&apos;t let friends join</source>
-        <translation>%1 arkadaşlarının katılmasına izin vermiyor</translation>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendInviteCard.qml" line="+37"/>
+        <source>%1 invited you to %2</source>
+        <translation>%1 seni %2 sunucusuna davet etti</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>%1 invited you</source>
+        <translation>%1 seni davet etti</translation>
+    </message>
+    <message>
+        <location line="+34"/>
+        <source>Dismiss</source>
+        <translation>Kapat</translation>
     </message>
 </context>
 <context>
@@ -3876,6 +3906,21 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendMessageField</name>
+    <message>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendMessageField.qml" line="+24"/>
+        <location line="+31"/>
+        <source>Message %1</source>
+        <translation>%1 ile mesajlaş</translation>
+    </message>
+    <message>
+        <location line="-30"/>
+        <location line="+5"/>
+        <source>Coming soon</source>
+        <translation>Yakında</translation>
+    </message>
+</context>
+<context>
     <name>FriendMoreButton</name>
     <message>
         <location filename="../launcher/qml/Components/FriendMoreButton.qml" line="+24"/>
@@ -3899,6 +3944,67 @@ Lütfen tekrar dene.</translation>
         <location line="+5"/>
         <source>Block…</source>
         <translation>Engelle…</translation>
+    </message>
+</context>
+<context>
+    <name>FriendPlaceBlock</name>
+    <message>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendPlaceBlock.qml" line="+28"/>
+        <source>Singleplayer</source>
+        <translation>Tek oyunculu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>On a server</source>
+        <translation>Bir sunucuda</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Playing</source>
+        <translation>Oynuyor</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 online</source>
+        <translation>%1 çevrimiçi</translation>
+    </message>
+    <message>
+        <location line="+50"/>
+        <source>Invited you · %1</source>
+        <translation>Seni davet etti · %1</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>%1 doesn&apos;t let friends join</source>
+        <translation>%1 arkadaşlarının katılmasına izin vermiyor</translation>
+    </message>
+</context>
+<context>
+    <name>FriendRequestRow</name>
+    <message>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendRequestRow.qml" line="+24"/>
+        <source>Wants to be your friend</source>
+        <translation>Seninle arkadaş olmak istiyor</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Accept</source>
+        <translation>Kabul et</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Accept %1</source>
+        <translation>%1 isteğini kabul et</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Decline</source>
+        <translation>Reddet</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Decline %1</source>
+        <translation>%1 isteğini reddet</translation>
     </message>
 </context>
 <context>
@@ -4266,17 +4372,17 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsFriendsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+36"/>
-        <source>PLAYING — %1</source>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendsFriendsTab.qml" line="+48"/>
+        <source>IN GAME — %1</source>
         <translation>OYUNDA — %1</translation>
     </message>
     <message>
-        <location line="+9"/>
-        <source>ONLINE — %1</source>
-        <translation>ÇEVRİMİÇİ — %1</translation>
+        <location line="+10"/>
+        <source>IN KITE — %1</source>
+        <translation>KITE&apos;TA — %1</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>OFFLINE — %1</source>
         <translation>ÇEVRİMDIŞI — %1</translation>
     </message>
@@ -4410,22 +4516,22 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsPanelFull</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+89"/>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendsPanelFull.qml" line="+101"/>
         <source>IN GAME — %1</source>
         <translation>OYUNDA — %1</translation>
     </message>
     <message>
-        <location line="+12"/>
-        <source>ONLINE — %1</source>
-        <translation>ÇEVRİMİÇİ — %1</translation>
+        <location line="+13"/>
+        <source>IN KITE — %1</source>
+        <translation>KITE&apos;TA — %1</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>OFFLINE — %1</source>
         <translation>ÇEVRİMDIŞI — %1</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+17"/>
         <source>Add friends who use Kite to see where they play.</source>
         <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
     </message>
@@ -4666,9 +4772,14 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsStripHead</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsStripHead.qml" line="+30"/>
+        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendsStripHead.qml" line="+38"/>
         <source>%1, %2</source>
         <translation>%1, %2</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Invited you</source>
+        <translation>Seni davet etti</translation>
     </message>
 </context>
 <context>
