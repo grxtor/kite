@@ -4237,7 +4237,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 seni davet etti</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+36"/>
         <source>Dismiss</source>
         <translation>Kapat</translation>
     </message>
@@ -4255,7 +4255,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendInvitePicker</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendInvitePicker.qml" line="+58"/>
+        <location filename="../launcher/qml/Components/FriendInvitePicker.qml" line="+76"/>
         <source>Invite friends to %1</source>
         <translation>Arkadaşlarını %1 sunucusuna davet et</translation>
     </message>
@@ -4265,7 +4265,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bitti</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+29"/>
         <source>Search friends</source>
         <translation>Arkadaş ara</translation>
     </message>
@@ -8605,7 +8605,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+401"/>
+        <location filename="../launcher/qml/Main.qml" line="+403"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -10516,7 +10516,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+113"/>
+        <location line="+117"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -10629,7 +10629,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-395"/>
+        <location line="-399"/>
         <source>Pick a Minecraft version.</source>
         <translation>Bir Minecraft sürümü seç.</translation>
     </message>
@@ -10651,7 +10651,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
-        <location line="+391"/>
+        <location line="+395"/>
         <source>None for this version</source>
         <translation>Bu sürüm için yok</translation>
     </message>
@@ -14932,7 +14932,27 @@ Currently installed version: %1</source>
 <context>
     <name>ShareCodeImportPane</name>
     <message>
-        <location filename="../launcher/qml/Components/ShareCodeImportPane.qml" line="+72"/>
+        <location filename="../launcher/qml/Components/ShareCodeImportPane.qml" line="+27"/>
+        <source>Mod</source>
+        <translation>Mod</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Resource pack</source>
+        <translation>Kaynak paketi</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Shader pack</source>
+        <translation>Gölgelendirici paketi</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Data pack</source>
+        <translation>Veri paketi</translation>
+    </message>
+    <message>
+        <location line="+57"/>
         <source>Enter the code a friend shared with you, like KITE-7F3K-9QXM. Kite makes the same instance and downloads its mods and packs from Modrinth and CurseForge.</source>
         <translation>Bir arkadaşının seninle paylaştığı kodu gir, örneğin KITE-7F3K-9QXM. Kite aynı kurulumu oluşturur; modlarını ve paketlerini Modrinth ile CurseForge&apos;dan indirir.</translation>
     </message>
@@ -14955,6 +14975,16 @@ Currently installed version: %1</source>
         <location line="+0"/>
         <source>Look up</source>
         <translation>Bul</translation>
+    </message>
+    <message>
+        <location line="+45"/>
+        <source>Hide the list</source>
+        <translation>Listeyi gizle</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>See what&apos;s in it</source>
+        <translation>İçinde ne var?</translation>
     </message>
 </context>
 <context>
@@ -15127,6 +15157,12 @@ Currently installed version: %1</source>
         <location line="+3"/>
         <source>%1 is ready, but %2 couldn&apos;t be downloaded</source>
         <translation>%1 hazır, ama %2 indirilemedi</translation>
+    </message>
+    <message>
+        <location filename="../launcher/friends/ShareCodesNames.cpp" line="+59"/>
+        <location line="+20"/>
+        <source>Share code content</source>
+        <translation>Paylaşım kodu içeriği</translation>
     </message>
 </context>
 <context>
