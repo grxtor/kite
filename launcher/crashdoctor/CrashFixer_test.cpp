@@ -105,9 +105,11 @@ class CrashFixerTest : public QObject
 	void setMemoryAndUndo()
 	{
 		Fixture f;
-		const auto undo = applyFix(f.target(), fix("setMemory", {{"maxMb", 6144}}), f.report, nullptr);
+		/* Small enough not to be clamped on a 7 GB CI Mac: the fix leaves
+		 * kKeepForSystemMb of the computer's memory alone. */
+		const auto undo = applyFix(f.target(), fix("setMemory", {{"maxMb", 3072}}), f.report, nullptr);
 		QVERIFY(undo.has_value());
-		QCOMPARE(f.settings->get("MaxMemAlloc").toInt(), 6144);
+		QCOMPARE(f.settings->get("MaxMemAlloc").toInt(), 3072);
 		QCOMPARE(f.settings->get("MinMemAlloc").toInt(), 512);
 		QVERIFY(f.settings->get("OverrideMemory").toBool());
 		QVERIFY(!f.settings->get("CrashDoctorUndo").toString().isEmpty());
