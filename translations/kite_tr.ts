@@ -8966,7 +8966,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+408"/>
+        <location line="+411"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -13308,7 +13308,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QuickJoinAddDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinAddDialog.qml" line="+62"/>
+        <location filename="../launcher/qml/Components/QuickJoinAddDialog.qml" line="+71"/>
         <source>Add a server</source>
         <translation>Sunucu ekle</translation>
     </message>
@@ -13374,7 +13374,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QuickJoinEditDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinEditDialog.qml" line="+57"/>
+        <location filename="../launcher/qml/Components/QuickJoinEditDialog.qml" line="+75"/>
         <source>Edit the bar</source>
         <translation>Barı düzenle</translation>
     </message>
@@ -13389,9 +13389,14 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Varsayılana dön</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+20"/>
         <source>Drag to change the order. Untick a server to hide it from the bar.</source>
         <translation>Sırayı değiştirmek için sürükle. Bir sunucuyu bardan gizlemek için işaretini kaldır.</translation>
+    </message>
+    <message>
+        <location line="+63"/>
+        <source>Add a server…</source>
+        <translation>Sunucu ekle…</translation>
     </message>
 </context>
 <context>
@@ -17237,10 +17242,16 @@ inheritsFrom eksik</translation>
 <context>
     <name>WhatsNewDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/WhatsNewDialog.qml" line="+27"/>
+        <location filename="../launcher/qml/Components/WhatsNewDialog.qml" line="+31"/>
+        <source>What&apos;s new since %1</source>
+        <extracomment>%1 is a Kite version such as 1.2.0, the one the player ran before this update.</extracomment>
+        <translation>%1 sürümünden beri neler var</translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>What&apos;s new in Kite %1</source>
-        <extracomment>%1 is a Kite release such as 1.3.0; notes are only written for releases ending in .0.</extracomment>
-        <translation>Kite %1&apos;da neler var</translation>
+        <extracomment>%1 is a Kite version such as 1.3.1.</extracomment>
+        <translation>Kite %1 sürümünde neler var</translation>
     </message>
     <message>
         <location line="+0"/>
@@ -17256,6 +17267,11 @@ inheritsFrom eksik</translation>
         <location line="+11"/>
         <source>All notes</source>
         <translation>Tüm notlar</translation>
+    </message>
+    <message>
+        <location line="+52"/>
+        <source>Kite %1</source>
+        <translation>Kite %1</translation>
     </message>
 </context>
 <context>
