@@ -158,6 +158,14 @@ class FriendChatPanelQmlTest : public FriendChatQmlHarness
 	}
 };
 
-QTEST_MAIN(FriendChatPanelQmlTest)
+int main(int argc, char* argv[])
+{
+	/* Offscreen keeps it runnable on a headless runner, as QmlModule_test. */
+	qputenv("QT_QPA_PLATFORM", "offscreen");
+
+	QGuiApplication app(argc, argv);
+	FriendChatPanelQmlTest test;
+	return QTest::qExec(&test, argc, argv);
+}
 
 #include "FriendChatPanelQml_test.moc"
