@@ -34,6 +34,7 @@
 #include "pathmatcher/MultiMatcher.h"
 #include "FileSystem.h"
 #include "java/JavaVersion.h"
+#include "ProcessOutput.h"
 
 #include "launch/LaunchTask.h"
 #include "launch/steps/LookupServerAddress.h"
@@ -220,13 +221,15 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	 * does not ask for it. CrashDoctorUndo holds what undoes the last fix;
 	 * CrashDoctorLastFix the rule it was for and when ({"rule", "at"}), so a
 	 * crash the same way after it can be sent to Kite as a fix that did not
-	 * help. */
+	 * help. CrashDoctorNativeCrashes counts the native crashes in a row
+	 * (crashdoctor/CrashStreak). */
 	m_settings->registerSetting("JavaMajorAtLeast", 0);
 	m_settings->registerSetting("JavaRepick", false);
 	m_settings->registerSetting("RepairGameFiles", false);
 	m_settings->registerSetting("MacStartOnFirstThread", false);
 	m_settings->registerSetting("CrashDoctorUndo", "");
 	m_settings->registerSetting("CrashDoctorLastFix", "");
+	m_settings->registerSetting("CrashDoctorNativeCrashes", "");
 	// The mod bridge session ends with the game.
 	connect(this, &BaseInstance::runningStatusChanged, this,
 			[this](bool running) {
@@ -629,6 +632,9 @@ QStringList MinecraftInstance::javaArguments() const
 	}
 
 	args << "-Duser.language=en";
+	// The game prints UTF-8, which is how LoggedProcess reads it, whatever the
+	// system code page (cp1254 on a Turkish Windows).
+	args << ProcessOutput::jvmArguments(javaVersion.major());
 
 	return args;
 }

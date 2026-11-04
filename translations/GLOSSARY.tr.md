@@ -17,7 +17,8 @@ Bu sözlük Kite'ın Türkçe arayüz metinleri için. Terimler her yerde aynı 
 | mod / mods | mod / modlar |
 | modpack | mod paketi |
 | resource pack | kaynak paketi |
-| shader pack | gölgelendirici paketi |
+| shader pack | shader paketi (çoğulu: shader paketleri) |
+| shaders | shader'lar |
 | data pack | veri paketi |
 | world | dünya |
 | server | sunucu |

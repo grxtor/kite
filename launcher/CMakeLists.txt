@@ -119,6 +119,8 @@ set(CORE_SOURCES
     InstanceTask.cpp
     LoggedProcess.h
     LoggedProcess.cpp
+    ProcessOutput.h
+    ProcessOutput.cpp
     Logging.h
     Logging.cpp
     MessageLevel.cpp
@@ -1074,6 +1076,8 @@ set(CRASHDOCTOR_SOURCES
     crashdoctor/CrashDoctorService.cpp
     crashdoctor/CrashEngine.h
     crashdoctor/CrashEngine.cpp
+    crashdoctor/CrashExitCodes.h
+    crashdoctor/CrashExitCodes.cpp
     crashdoctor/CrashFiles.h
     crashdoctor/CrashFiles.cpp
     crashdoctor/CrashFixer.h
@@ -1090,6 +1094,8 @@ set(CRASHDOCTOR_SOURCES
     crashdoctor/CrashScrubber.cpp
     crashdoctor/CrashSignature.h
     crashdoctor/CrashSignature.cpp
+    crashdoctor/CrashStreak.h
+    crashdoctor/CrashStreak.cpp
     crashdoctor/CrashTrace.h
     crashdoctor/CrashTrace.cpp
     crashdoctor/CrashWatchList.h
@@ -1581,6 +1587,10 @@ target_link_libraries(Kite_core PUBLIC
 )
 # The friends server's realtime socket (friends/FriendsSocket.cpp); nothing else uses it.
 target_link_libraries(Kite_core PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
+# GpuPreference counts the graphics cards through DXGI.
+if(WIN32)
+    target_link_libraries(Kite_core PUBLIC dxgi)
+endif()
 
 # QtWidgets is linked here and only here (enforced by Kite_core_link_check).
 target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)

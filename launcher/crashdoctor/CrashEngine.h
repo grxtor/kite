@@ -65,6 +65,11 @@ namespace CrashDoctor
 		QSet<QString> installed;
 		/// Ids of the mods Kite Performance put in.
 		QSet<QString> performanceMods;
+		/// A shader mod (Iris, Oculus) is installed and its settings have a
+		/// shader pack on: turning shaders off would change something.
+		bool shadersOn = false;
+		/// Two or more graphics cards: the faster one can be picked.
+		bool severalGpus = false;
 
 		bool modded() const;
 		/// Memory to offer after an out-of-memory crash.
@@ -94,6 +99,8 @@ namespace CrashDoctor
 	struct Cause {
 		QString ruleId;
 		int score = 0;
+		/// The rule is a fallback (Rule::fallback): Kite saw it, but can't say why.
+		bool fallback = false;
 		QList<Finding> findings;
 		QString title;
 		QString explanation;
@@ -108,6 +115,12 @@ namespace CrashDoctor
 
 	/// CRLF to LF, no ANSI escapes, no Minecraft "§x" formatting codes.
 	QString normalize(const QString& text);
+
+	/// The first cause that is no fallback, or null: Kite could not say why.
+	const Cause* firstExplained(const QList<Cause>& causes);
+	/// What the crash window shows of @p causes: without the fallbacks once a
+	/// cause that is none explains the crash, as they would only repeat it.
+	QList<Cause> shownCauses(const QList<Cause>& causes);
 
 	inline constexpr int kLogTailLines = 400;
 	inline constexpr int kMaxFindingsPerRule = 10;

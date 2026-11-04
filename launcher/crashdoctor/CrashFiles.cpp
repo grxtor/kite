@@ -27,6 +27,7 @@ namespace
 	const QString kCrashReportsFolder = QStringLiteral("crash-reports");
 	const QString kCrashReportPattern = QStringLiteral("crash-*.txt");
 	const QString kJvmErrorPattern = QStringLiteral("hs_err_pid*.log");
+	const QString kJvmErrorName = QStringLiteral("hs_err_pid%1.log");
 	// File systems keep coarser times than the clock (FAT: 2 s), so a file
 	// written right after the start can look older than it.
 	constexpr int kClockSlackSecs = 2;
@@ -58,9 +59,18 @@ namespace CrashFiles
 						   kCrashReportPattern, since);
 	}
 
-	QString newestJvmErrorReport(const QString& gameRoot,
-								 const QDateTime& since)
+	QString newestJvmErrorReport(const QString& gameRoot, const QDateTime& since,
+								 const QList<qint64>& pids)
 	{
+		const QStringList folders{gameRoot, QDir::tempPath()};
+		for (const qint64 pid : pids) {
+			for (const QString& folder : folders) {
+				const QFileInfo file(QDir(folder).filePath(kJvmErrorName.arg(pid)));
+				if (file.isFile() && file.lastModified() >= since.addSecs(-kClockSlackSecs)) {
+					return file.absoluteFilePath();
+				}
+			}
+		}
 		return newestSince(QDir(gameRoot), kJvmErrorPattern, since);
 	}
 } // namespace CrashFiles

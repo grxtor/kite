@@ -90,7 +90,7 @@ void CrashFollowUp::analysed(const CrashDoctor::Report& report, bool fresh, int 
 	if (!fresh || report.signature.isEmpty()) {
 		return;
 	}
-	if (report.causes.isEmpty()) {
+	if (!CrashDoctor::firstExplained(report.causes)) {
 		const QDateTime when = report.launchedAt.isValid() ? report.launchedAt : report.analysedAt;
 		replace(CrashWatch::added(m_entries, {report.instanceId, report.signature, when.toUTC(), report.files,
 											  catalogVersion, QString()}));
@@ -177,12 +177,13 @@ void CrashFollowUp::reread(const CrashWatch::Entry& entry, int catalogVersion, b
 		return;
 	}
 	it->catalogVersion = std::max(it->catalogVersion, catalogVersion);
-	if (report.causes.isEmpty()) {
+	const CrashDoctor::Cause* explained = CrashDoctor::firstExplained(report.causes);
+	if (!explained) {
 		replace(entries);
 		return;
 	}
 	const bool news = it->solvedBy.isEmpty();
-	it->solvedBy = report.causes.first().ruleId;
+	it->solvedBy = explained->ruleId;
 	replace(entries);
 	CrashDoctor::Report solvedReport = report;
 	solvedReport.solvedLaterFor = entry.crashedAt;
@@ -202,7 +203,11 @@ void CrashFollowUp::notify(const CrashWatch::Entry& entry, const CrashDoctor::Re
 	}
 	const QByteArray id = entry.instanceId.toUtf8();
 	const QByteArray name = instance->name().toUtf8();
-	const QByteArray rule = report.causes.first().ruleId.toUtf8();
+	const CrashDoctor::Cause* explained = CrashDoctor::firstExplained(report.causes);
+	if (!explained) {
+		return;
+	}
+	const QByteArray rule = explained->ruleId.toUtf8();
 	const QByteArray title = tr("A fix was found").toUtf8();
 	const QByteArray body = fixFoundText(instance->name(), entry.crashedAt, QDateTime::currentDateTimeUtc(),
 										 MetaCatalog::selectedLanguage())

@@ -1,0 +1,8 @@
+{
+ "note": "Mesa 24.1+ keeps its drivers in libgallium",
+ "verify": false,
+ "docs": {
+  "hsErr": "#\n# A fatal error has been detected by the Java Runtime Environment:\n#\n#  SIGSEGV (0xb) at pc=0x000074a1c9df1e42, pid=40211, tid=10240\n#\n# JRE version: OpenJDK Runtime Environment (21.0.5+11) (build 21.0.5+11-Ubuntu-1ubuntu124.04)\n# Java VM: OpenJDK 64-Bit Server VM (21.0.5+11-Ubuntu-1ubuntu124.04, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, linux-amd64)\n# Problematic frame:\n# C  [libgallium-24.2.8.so+0x9f1e42]\n#\n# No core dump will be written. Minidumps are not enabled by default on client versions of Windows\n#\n# The crash happened outside the Java Virtual Machine in native code.\n# See problematic frame for where to report the bug.\n#\n\n---------------  T H R E A D  ---------------\n\nCurrent thread (0x0000021f6e4a1230):  JavaThread \"Render thread\" [_thread_in_native, id=10240, stack(0x000000b5c1a00000,0x000000b5c1b00000) (1024K)]\n\nStack: [0x000000b5c1a00000,0x000000b5c1b00000],  sp=0x000000b5c1afe1a0,  free space=1016k\nNative frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)\nC  [libgallium-24.2.8.so+0x9f1e42]\nC  [liblwjgl_opengl.so+0x31a7f]\nj  org.lwjgl.opengl.GL11C.nglDrawElements(IIIJ)V+0\nj  com.mojang.blaze3d.platform.GlStateManager._drawElements(IIIJ)V+12\n\n",
+  "log": "Process crashed with exitcode 6.\n"
+ }
+}

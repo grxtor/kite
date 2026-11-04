@@ -1,0 +1,7 @@
+{
+ "note": "the exit code logged unsigned, as a wrapper passes it on",
+ "verify": false,
+ "docs": {
+  "log": "[20:34:38] [Render thread/INFO]: Loaded 1290 recipes\nGame process exited with code 3221226505\nExiting with 3221226505\nProcess crashed with exitcode 3221226505.\n"
+ }
+}

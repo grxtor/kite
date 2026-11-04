@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QDateTime>
+#include <QList>
 #include <QString>
 
 // Where a game run leaves its evidence, found by time so files from earlier
@@ -30,7 +31,10 @@ namespace CrashFiles
 	/// <gameRoot>/crash-reports/crash-*.txt. Forge and NeoForge write one
 	/// for a mod loading error and then let the game exit with code 0.
 	QString newestCrashReport(const QString& gameRoot, const QDateTime& since);
-	/// <gameRoot>/hs_err_pid*.log, the JVM's own fatal error report (it writes
-	/// it to the working directory, which is the game root).
-	QString newestJvmErrorReport(const QString& gameRoot, const QDateTime& since);
+	/// hs_err_pid<pid>.log, the JVM's own fatal error report. The JVM writes it
+	/// to its working directory, the game root, or to the temporary folder when
+	/// it cannot. The report of one of @p pids first (the JVM that crashed,
+	/// named in the log), in either folder; else the newest in the game root.
+	QString newestJvmErrorReport(const QString& gameRoot, const QDateTime& since,
+								 const QList<qint64>& pids = {});
 } // namespace CrashFiles

@@ -1358,7 +1358,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>Shaders</source>
-        <translation>Gölgelendiriciler</translation>
+        <translation>Shader&apos;lar</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -1885,22 +1885,22 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>Shader packs</source>
-        <translation>Gölgelendirici paketleri</translation>
+        <translation>Shader paketleri</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>shader packs</source>
-        <translation>gölgelendirici paketi</translation>
+        <translation>shader paketi</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>No shader packs</source>
-        <translation>Gölgelendirici paketi yok</translation>
+        <translation>Shader paketi yok</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Needs a shader-capable renderer, such as Iris or OptiFine, to have any effect.</source>
-        <translation>Etkili olması için Iris veya OptiFine gibi gölgelendirici destekli bir oluşturucu gerekir.</translation>
+        <translation>Etkili olması için Iris veya OptiFine gibi shader destekli bir oluşturucu gerekir.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2075,7 +2075,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>This instance cannot have mods, resource packs or shader packs.</source>
-        <translation>Bu kurulumda mod, kaynak paketi veya gölgelendirici paketi kullanılamaz.</translation>
+        <translation>Bu kurulumda mod, kaynak paketi veya shader paketi kullanılamaz.</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -2396,7 +2396,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashCauseView</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+107"/>
+        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+109"/>
         <source>and %1 more</source>
         <translation>ve %1 tane daha</translation>
     </message>
@@ -2518,7 +2518,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
     </message>
     <message>
-        <location line="+73"/>
+        <location line="+77"/>
         <source>Share the log?</source>
         <translation>Günlük paylaşılsın mı?</translation>
     </message>
@@ -2536,7 +2536,12 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorModel</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+131"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+135"/>
+        <source>Lately it crashed like this %1 times, then started on a later try.</source>
+        <translation>Son zamanlarda %1 kez böyle çöktü, sonraki denemede açıldı.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>%1 (needed by %2)</source>
         <translation>%1 (%2 istiyor)</translation>
     </message>
@@ -2566,7 +2571,12 @@ Ayrıntılar günlük dosyasında:
         <translation>Bu kurulumun özel Java ayarları kapatılsın mı? Geri al onları geri getirir.</translation>
     </message>
     <message>
-        <location line="+69"/>
+        <location line="+52"/>
+        <source>Exit code %1</source>
+        <translation>Çıkış kodu %1</translation>
+    </message>
+    <message>
+        <location line="+28"/>
         <location line="+4"/>
         <source>This crash is no longer known.</source>
         <translation>Bu çökmenin kaydı artık yok.</translation>
@@ -2639,15 +2649,48 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorService</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+108"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+132"/>
         <source>Crash rules</source>
         <translation>Çökme kuralları</translation>
     </message>
 </context>
 <context>
+    <name>CrashExitCodes</name>
+    <message>
+        <location filename="../launcher/crashdoctor/CrashExitCodes.cpp" line="+38"/>
+        <source>memory access violation</source>
+        <translation>bellek erişim hatası</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>stack buffer overrun</source>
+        <translation>yığın arabelleği taşması</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>illegal instruction</source>
+        <translation>geçersiz işlemci komutu</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>stack overflow</source>
+        <translation>yığın taşması</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>heap corruption</source>
+        <translation>bellek bozulması</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>breakpoint</source>
+        <translation>kesme noktası</translation>
+    </message>
+</context>
+<context>
     <name>CrashFollowUp</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashFollowUp.cpp" line="+206"/>
+        <location filename="../launcher/crashdoctor/CrashFollowUp.cpp" line="+211"/>
         <source>A fix was found</source>
         <translation>Çözüm bulundu</translation>
     </message>
@@ -3252,12 +3295,12 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+4"/>
         <source>1 shader pack</source>
-        <translation>1 gölgelendirici paketi</translation>
+        <translation>1 shader paketi</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>%1 shader packs</source>
-        <translation>%1 gölgelendirici paketi</translation>
+        <translation>%1 shader paketi</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -4152,12 +4195,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bu çökme Kite&apos;ın tanıdığı bir şeye benzemiyor. Günlüğü paylaş, yardım edebilecek birine göster; hesap bilgilerin ve kullanıcı klasörün gizlenir.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Exit code %1</source>
-        <translation>Çıkış kodu %1</translation>
-    </message>
-    <message>
-        <location line="-3"/>
+        <location line="-1"/>
         <source>Kite couldn&apos;t find the cause</source>
         <translation>Kite nedenini bulamadı</translation>
     </message>
@@ -4167,7 +4205,7 @@ Lütfen tekrar dene.</translation>
         <translation>Minecraft</translation>
     </message>
     <message>
-        <location line="+69"/>
+        <location line="+74"/>
         <source>Singleplayer</source>
         <translation>Tek oyunculu</translation>
     </message>
@@ -8683,7 +8721,7 @@ Neden:
 <context>
     <name>LoggedProcess</name>
     <message>
-        <location filename="../launcher/LoggedProcess.cpp" line="+105"/>
+        <location filename="../launcher/LoggedProcess.cpp" line="+91"/>
         <source>Process exited with code %1.</source>
         <translation>İşlem %1 koduyla çıktı.</translation>
     </message>
@@ -8802,7 +8840,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+411"/>
+        <location filename="../launcher/qml/Main.qml" line="+414"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -9908,7 +9946,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+875"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+881"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -12903,7 +12941,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+393"/>
+        <location line="+398"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -15070,22 +15108,22 @@ Currently installed version: %1</source>
     <message>
         <location filename="../launcher/minecraft/mod/ShaderPackFolderModel.cpp" line="+38"/>
         <source>Is the shader pack enabled?</source>
-        <translation>Gölgelendirici paketi açık mı?</translation>
+        <translation>Shader paketi açık mı?</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>The name of the shader pack.</source>
-        <translation>Gölgelendirici paketinin adı.</translation>
+        <translation>Shader paketinin adı.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>The version of the shader pack.</source>
-        <translation>Gölgelendirici paketinin sürümü.</translation>
+        <translation>Shader paketinin sürümü.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>The date and time this shader pack was last changed (or added).</source>
-        <translation>Gölgelendirici paketinin en son değiştirildiği (veya eklendiği) tarih ve saat.</translation>
+        <translation>Shader paketinin en son değiştirildiği (veya eklendiği) tarih ve saat.</translation>
     </message>
 </context>
 <context>
@@ -15179,7 +15217,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>Shader pack</source>
-        <translation>Gölgelendirici paketi</translation>
+        <translation>Shader paketi</translation>
     </message>
     <message>
         <location line="+0"/>
@@ -15271,12 +15309,12 @@ Currently installed version: %1</source>
     <message>
         <location line="+2"/>
         <source>1 shader pack</source>
-        <translation>1 gölgelendirici paketi</translation>
+        <translation>1 shader paketi</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>%1 shader packs</source>
-        <translation>%1 gölgelendirici paketi</translation>
+        <translation>%1 shader paketi</translation>
     </message>
     <message>
         <location line="+2"/>

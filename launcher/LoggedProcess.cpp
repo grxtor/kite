@@ -65,39 +65,25 @@ LoggedProcess::~LoggedProcess()
 #endif
 }
 
-QStringList reprocess(const QByteArray& data, QString& leftover)
-{
-	QString str = leftover + QString::fromLocal8Bit(data);
-
-	str.remove('\r');
-	QStringList lines = str.split("\n");
-	leftover = lines.takeLast();
-	return lines;
-}
-
 void LoggedProcess::on_stdErr()
 {
-	auto lines = reprocess(readAllStandardError(), m_err_leftover);
-	emit log(lines, MessageLevel::StdErr);
+	emit log(m_err.feed(readAllStandardError()), MessageLevel::StdErr);
 }
 
 void LoggedProcess::on_stdOut()
 {
-	auto lines = reprocess(readAllStandardOutput(), m_out_leftover);
-	emit log(lines, MessageLevel::StdOut);
+	emit log(m_out.feed(readAllStandardOutput()), MessageLevel::StdOut);
 }
 
 void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 {
 	m_exit_code = exit_code;
 
-	if (!m_err_leftover.isEmpty()) {
-		emit log({m_err_leftover}, MessageLevel::StdErr);
-		m_err_leftover.clear();
+	if (const QString last = m_err.finish(); !last.isEmpty()) {
+		emit log({last}, MessageLevel::StdErr);
 	}
-	if (!m_out_leftover.isEmpty()) {
-		emit log({m_out_leftover}, MessageLevel::StdOut);
-		m_out_leftover.clear();
+	if (const QString last = m_out.finish(); !last.isEmpty()) {
+		emit log({last}, MessageLevel::StdOut);
 	}
 
 	if (!m_is_aborting) {
