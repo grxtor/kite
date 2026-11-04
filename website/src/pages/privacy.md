@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: "Privacy Policy"
 description: "What Kite and kiteclient.com do with your data."
-updated: "2026-10-25"
+updated: "2026-11-04"
 ---
 
 Kite is a Minecraft launcher made by grxtor. This policy covers the Kite app and this website, kiteclient.com. If anything here is unclear, write to [contact@kiteclient.com](mailto:contact@kiteclient.com).
@@ -11,7 +11,8 @@ Kite is a Minecraft launcher made by grxtor. This policy covers the Kite app and
 
 - Kite has no analytics, no telemetry and no advertising. It does not create an ID for you or your computer.
 - Kite has no account system of its own. Your Microsoft sign-in, your settings and your instances stay on your computer.
-- Friends is the one feature that uses a server of ours. It is on by default once you sign in with a Microsoft account, and you can turn it off in Settings → Friends. When it is on, Kite's server keeps your Minecraft name, your friends and what you are playing, and you can delete all of it from inside Kite.
+- Friends and crash reports are the features that use a server of ours. Friends is on by default once you sign in with a Microsoft account, and you can turn it off in Settings → Friends. When it is on, Kite's server keeps your Minecraft name, your friends and what you are playing, and you can delete all of it from inside Kite.
+- When Kite can't tell why the game crashed, it offers to send the crash to Kite. Nothing goes unless you press Send, or turn on sending without asking. A report holds the error lines, the versions and the mod list, never your account, your name or your IP address. See [Crash reports](#crash-reports).
 - Kite talks to the services it needs to work: Microsoft and Mojang to sign you in and download the game, and mod sites such as Modrinth when you browse or update mods. Each of those services sees your IP address and handles your data under its own privacy policy.
 
 ## The website
@@ -37,6 +38,7 @@ That folder holds:
 - Kite's own logs
 - `accounts.json`, which holds your Minecraft profile (name, UUID, skin and capes) and the sign-in tokens Kite needs to keep you signed in
 - while Friends is on: `friends.json`, with the token for Kite's friends server, and your friends' heads in `cache/friendfaces`
+- `crash-reports/`: the crashes Kite couldn't explain, for 30 days, so newer crash rules can read them again, and the crash reports you chose to send that are waiting for a connection
 
 The tokens are not encrypted, but `accounts.json` and `friends.json` can only be read by your own user account. Removing an account in Kite deletes its tokens. Uninstalling Kite and deleting the data folder removes everything.
 
@@ -64,6 +66,8 @@ Kite contacts these services as part of normal use. Kite does not add any person
 | Image hosts chosen by pack authors | When you open a modpack's description | Requests for the images in that description |
 | GitHub | About once a day in release builds, to check for a new version of Kite. Also at start, when `git` is installed, to update Kite's offline copy of its wiki. | Download requests |
 | Kite's friends server (`api.kiteclient.com`) | Only while Friends is on: when it signs in, then once a minute while Kite runs | See [Friends](#friends) below |
+| Kite's server (`api.kiteclient.com`), for crash reports | Only when you send a crash, or after a crash once you allowed sending without asking | See [Crash reports](#crash-reports) below |
+| Kite's metadata server (`meta.kiteclient.com`) | When an instance is launched, and at start while Kite keeps crashes to read again | A request for the newest crash rules |
 | Mojang's session server (`sessionserver.mojang.com`) and `textures.minecraft.net` | Only while Friends is on: when it signs in, and to show the heads of your friends | At sign-in, a join request with your Minecraft token, the same one the game sends when you join a server. For heads, the UUIDs of the players in your friends list, your requests and your blocks. |
 | paste.ee | When you press Upload on a log. If Kite itself crashes, its crash reporter uploads Kite's own log right away and shows you the link. | The log text, which becomes a public link. Kite removes sign-in tokens, UUIDs and your home folder path first. Your player name, instance names and mod list stay in the log. |
 
@@ -122,13 +126,37 @@ Turning Friends off tells the server that you are offline, signs Kite out, and d
 
 **Delete my friends data** in Settings → Friends deletes your account on Kite's server and everything stored with it: tokens, status, settings, friendships, requests in both directions and the blocks you placed. Blocks that other players placed on you stay, because they belong to them. It also turns Friends off.
 
+## Crash reports
+
+When the game crashes, Kite reads what the game left behind, on your computer, to tell you why. When it can't tell, or the fix it offered didn't help, the crash window offers to send the crash to Kite, so we can write a fix that then works for everyone. Kite asks every time. Ticking **From now on, send without asking** before you press Send changes that; so does **Send crash reports without asking** in Settings → Log upload, where you can turn it off again. It is off unless you turn it on.
+
+### What a report holds
+
+- the error lines of the crash: the error and its message, and the code it happened in. Before anything leaves your computer, Kite removes paths, your user name and Minecraft names, UUIDs, IP and server addresses, times and other numbers from them. **What is sent** in the crash window shows the exact report before you send it.
+- Kite's version, your operating system and processor type, and the Java version
+- the Minecraft version, the mod loader and its version
+- the ids and versions of your mods, the crash rules that matched, and the mod the crash points at
+
+A report holds no account, no Minecraft name, no instance or world name and no file paths. Kite sends it without signing in, so it can't be tied to you or to your other reports.
+
+### What the server keeps
+
+- for each kind of crash: its error lines, how many reports came, and the first and last time one came. Deleted a year after the last one.
+- the 20 newest reports of each kind, for 90 days, with the day (not the time) they came
+
+The server doesn't log the request. It sees your IP address and keeps it only in memory, to limit how many reports one address can send. Because a report names nobody, nobody can find or delete it afterwards, us included.
+
+### When a fix is found
+
+Kite keeps the crashes it couldn't explain on your computer for 30 days. When new crash rules arrive from `meta.kiteclient.com`, Kite reads those crashes again on your computer. If a rule knows one now, the instance's Log tab says **Fix found** with the fix, and Kite shows a notification. Kite's server is never asked whether you had that crash.
+
 ## Children
 
-Kite and this site don't ask for personal data from anyone, including children. While Friends is on, Kite's server keeps only what is listed under [Friends](#friends). Sign-in for younger players is handled by Microsoft's own family settings.
+Kite and this site don't ask for personal data from anyone, including children. While Friends is on, Kite's server keeps only what is listed under [Friends](#friends). Crash reports hold nothing personal, and Kite asks before sending each one unless you told it not to. Sign-in for younger players is handled by Microsoft's own family settings.
 
 ## Your rights
 
-Unless you use Friends, we don't hold an account or profile about you, so in most cases there is nothing for us to look up, correct or delete. Your data is in Kite's folder on your computer, and you can delete it at any time. If you use Friends, **Delete my friends data** deletes what Kite's server holds about you. If you've emailed us, you can ask us to delete those emails. If you are in the EU, UK or Türkiye, you can also contact your data protection authority.
+Unless you use Friends, we don't hold an account or profile about you, so in most cases there is nothing for us to look up, correct or delete. Your data is in Kite's folder on your computer, and you can delete it at any time. If you use Friends, **Delete my friends data** deletes what Kite's server holds about you. Crash reports are not tied to anyone, so there is nothing in them to look up. If you've emailed us, you can ask us to delete those emails. If you are in the EU, UK or Türkiye, you can also contact your data protection authority.
 
 ## Changes
 
