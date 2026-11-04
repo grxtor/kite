@@ -3,7 +3,8 @@
 The service behind Kite's friends list: add a friend by Minecraft name, see
 whether they are online, playing, and on which server, and invite them to a
 server, and chat with them one to one. It also keeps share codes that hand
-an instance's Minecraft version, loader and mods to someone else. There is
+an instance's Minecraft version, loader and mods to someone else, and the
+[crash reports](#crash-reports) players choose to send. There is
 no group chat, no voice and no world sharing. The launcher talks to it over
 HTTPS and keeps a [WebSocket](#realtime-socket) open for pushed events and
 chat; polling once a minute without the socket keeps working.
@@ -48,8 +49,8 @@ All bodies are JSON. Times are ISO 8601 strings in UTC. UUIDs are written
 with dashes (`069a79f4-44e9-4726-a5be-fca90e38aaf5`). Minecraft names are 1 to
 16 characters of `A-Z a-z 0-9 _`.
 
-Every endpoint except the two `auth` ones needs the session token, the
-WebSocket upgrade included:
+Every endpoint except the two `auth` ones and `POST /v1/crash-reports` needs
+the session token, the WebSocket upgrade included:
 
 ```
 Authorization: Bearer kfs_...
@@ -75,7 +76,7 @@ Failures return a status code and a body like this:
 | 409 | `limit_reached` | Too many friends (500), pending outgoing requests (100), blocks (1000) or share codes (50) |
 | 409 | `address_not_shared` | Invite to a raw IP or local address while your `shareIpServers` is off |
 | 409 | `invites_off` | Invite to a friend whose `allowInvites` is off |
-| 413 | `bad_request` | The body is larger than 8 KB (64 KB for a share code manifest) |
+| 413 | `bad_request` | The body is larger than 8 KB (64 KB for a share code manifest or a crash report) |
 | 426 | `bad_request` | `GET /v1/ws` without a WebSocket upgrade |
 | 429 | `rate_limited` | Too many requests. Wait for the `Retry-After` header (seconds) |
 | 502 | `mojang_unavailable` | Mojang's session server failed or timed out. Try again later |
@@ -766,6 +767,71 @@ There is no moderation screen yet. Reports are read in the database:
 select created_at, reason, reported_uuid, snapshot from chat_reports order by created_at desc;
 ```
 
+### Crash reports
+
+When the launcher's crash doctor cannot tell why a game crashed (no rule in
+`crash-rules.json` matched, or its fix did not help), the player can send the
+crash here. The launcher asks every time unless the player turned on "send
+without asking"; both are off by default. Reports are grouped by signature,
+someone reads the most common unknown ones and writes rules for them, and the
+next `crash-rules.json` fixes that crash for everyone (see
+[the workflow](#crash-reports-workflow)).
+
+No sign-in: a token, if one is sent, is not read, so a report never leads to
+an account.
+
+```http
+POST /v1/crash-reports
+{
+  "formatVersion": 1,
+  "signature": "4f0c…64 hex…",
+  "kite": "1.2.0",
+  "os": "macos",
+  "arch": "arm64",
+  "java": 17,
+  "minecraft": "1.20.1",
+  "loader": { "type": "forge", "version": "47.3.0" },
+  "rules": [],
+  "culprit": "create",
+  "mods": [{ "id": "create", "version": "0.5.1.j" }, { "id": "flywheel", "version": "0.6.11-13" }],
+  "lines": [
+    "java.lang.NullPointerException: Cannot invoke \"net.minecraft.world.level.Level.getBlockState(<n>)\" because \"<local4>\" is null",
+    "at com.simibubi.create.content.trains.Carriage.tick(Carriage.java)",
+    "at net.minecraft.server.level.ServerLevel.tick(ServerLevel.java)"
+  ]
+}
+```
+
+`202` with an empty body: nothing comes back that could tie the launcher to
+the report. The body is checked strictly; a field that is not listed here
+makes it `400`, and so does anything else that is off:
+
+- `formatVersion`: `1`.
+- `lines`: 1 to 24 strings of 1 to 300 characters (UTF-16 code units), the
+  launcher's normalized error lines: the exception and message, the root
+  cause and its top frames, without line numbers, jar names, paths, names,
+  UUIDs, addresses, hex numbers or times (`docs/crash-doctor.md`, "Crash
+  reports", has the algorithm). No control or bidi characters. A line that
+  still holds a UUID, an IPv4 or IPv6 address, a path under `/Users/`,
+  `/home/` or `C:\Users\`, or an e-mail address is refused, so a launcher
+  whose scrubber broke cannot leak them.
+- `signature`: SHA-256, lowercase hex, of the UTF-8 `lines` joined with
+  `\n`. The server computes it again and refuses a mismatch.
+- `kite`: the launcher version, `A-Z a-z 0-9 . _ + -`, up to 32.
+- `os`: `macos`, `windows` or `linux`. `arch`: `arm64` or `x86_64`.
+- `java`: the Java major the game ran on (5 to 99), or `null` if unknown.
+- `minecraft`: up to 32 of `A-Z a-z 0-9 . _ + -` and space.
+- `loader`: `{ "type": "vanilla" }` or `{ "type": "fabric" | "quilt" | "forge"
+  | "neoforge", "version"?: "…" }`.
+- `rules`: up to 20 crash rule ids that matched (empty when none did; set
+  when a fix was tried and the game crashed the same way).
+- `culprit` (optional): the mod id the launcher blames, when it knows one.
+- `mods`: up to 500 `{ "id", "version" }` of the enabled mods; ids are
+  lowercase `a-z 0-9 _ . -`, versions up to 64 of `A-Z a-z 0-9 . _ + -` (may
+  be empty). Each id once; none for vanilla.
+
+20 reports an hour per address; the address is only counted in memory.
+
 ### Rate limits
 
 | Scope | Limit |
@@ -782,6 +848,7 @@ select created_at, reason, reported_uuid, snapshot from chat_reports order by cr
 | Chat reports, per user | 20 a day |
 | Socket frames, per user (all sockets together) | 120 a minute |
 | Open sockets, per user | 5 |
+| Crash reports, per IP | 20 an hour |
 
 A refused message or report still counts. The launcher's normal load is
 two requests a minute; the socket upgrade counts as one request.
@@ -830,9 +897,66 @@ Raw IP and local server addresses are not stored unless `shareIpServers` is
 on, in statuses and invites alike. Requests and socket frames are not
 logged. Client IPs are only kept in memory for rate limiting.
 
+Crash reports are kept apart from everything above and lead to nobody:
+no account, no token, no IP address, no instance or world name, no file
+paths. What is stored:
+
+- For each signature: the normalized error lines (the same for every report
+  of it), the number of reports, when it was first and last sent, and the
+  crash rule that recognises it once there is one. Deleted a year after the
+  last report of it.
+- For each report: the launcher version, OS and architecture, Java major,
+  Minecraft version, loader and its version, the crash rule ids that
+  matched, the blamed mod id and the enabled mods' ids and versions, with
+  the day (not the time) it came. Only the newest 20 reports of a signature
+  are kept, and none longer than 90 days.
+
+Nobody's report can be found or deleted afterwards, because nothing in it
+says whose it is.
+
 Chat is meant to be safe for younger players: only friends, who both
 accepted each other, can write to each other; a block stops messages both
 ways and hides the history; any message can be reported.
+
+## Crash reports workflow
+
+There is no admin screen. The one who writes crash rules (the lead, or an
+agent) reads the top unknown crashes with `scripts/crash-top.ts`, and the
+user approves a rule by merging its pull request:
+
+```sh
+# Locally, against any copy of the database:
+DATABASE_URL=postgres://… pnpm crash-top              # top 20 unresolved signatures
+DATABASE_URL=postgres://… pnpm crash-top --all --limit 50
+DATABASE_URL=postgres://… pnpm crash-top --signature 4f0c1d2e --dump ./crash-dumps
+DATABASE_URL=postgres://… pnpm crash-top --resolve 4f0c1d2e --rule mods.create-carriage-tick
+
+# On the server, where the database is internal:
+docker exec $(docker ps -q -f name=<friends service>) node scripts/crash-top.ts
+docker exec $(docker ps -q -f name=<friends service>) node scripts/crash-top.ts --signature 4f0c1d2e --dump /tmp/crash-dumps
+docker cp $(docker ps -q -f name=<friends service>):/tmp/crash-dumps ./crash-dumps
+```
+
+A signature can be given by its first 8 or more characters. Each listed
+signature shows its report count, first and last day, its lines, the
+Minecraft versions, loaders and blamed mods of its samples, and the mods at
+least half of the samples have (the mod overlap). `--dump` writes
+`lines.txt` (the lines as a crash report shows them, frames indented),
+`summary.json`, `samples/<n>.json`, and `case.json`, a synthetic case for
+`launcher/crashdoctor/testdata/synthetic/` to start the rule's test from.
+
+1. `pnpm crash-top`, pick a signature that is common and clear.
+2. `--dump` it, write the rule in `launcher/resources/kite/crash-rules.json`
+   (patterns run on the real files, which still have line numbers and jar
+   names, so keep them loose), add the case to `testdata/expected.json`, raise
+   `catalogVersion`, and open the pull request. Name the signature in it.
+3. When the user merges it and the meta server serves the new rules, every
+   launcher reads its kept unresolved crashes again; players who had this one
+   get a notification that a fix exists.
+4. `pnpm crash-top --resolve <signature> --rule <rule id>` so it leaves the
+   list. Reports that keep coming for a resolved signature are still
+   counted (`--all` shows them): a rule that does not catch every case, or
+   launchers that have not fetched the new rules.
 
 ## Deploying
 

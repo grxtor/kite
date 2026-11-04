@@ -6,12 +6,14 @@ import { purgeMessages } from './chat.ts';
 import { clientIpReader } from './clientIp.ts';
 import type { Config } from './config.ts';
 import { createContext, minute, type Context } from './context.ts';
+import { purgeCrashReports } from './crashStore.ts';
 import { HttpError } from './errors.ts';
 import { pushStatus } from './notify.ts';
 import { RateLimiter } from './rateLimit.ts';
 import { authenticator, registerAuthRoutes, registerLogoutRoute } from './routes/auth.ts';
 import { registerBlockRoutes } from './routes/blocks.ts';
 import { registerChatRoutes } from './routes/chats.ts';
+import { registerCrashReportRoutes } from './routes/crashReports.ts';
 import { registerFriendRoutes } from './routes/friends.ts';
 import { registerInviteRoutes } from './routes/invites.ts';
 import { registerMeRoutes } from './routes/me.ts';
@@ -47,6 +49,7 @@ async function purgeExpired(ctx: Context): Promise<void> {
   await ctx.pool.query('delete from invites where expires_at <= $1', [now]);
   await ctx.pool.query('delete from share_codes where expires_at <= $1', [now]);
   await purgeMessages(ctx.pool, now);
+  await purgeCrashReports(ctx.pool, now);
   ctx.limiter.sweep();
 }
 
@@ -90,6 +93,7 @@ export async function buildApp({ config, pool, clock = Date.now, bus = new Memor
   });
 
   registerAuthRoutes(app, ctx, clientIp);
+  registerCrashReportRoutes(app, ctx, clientIp);
 
   await app.register(async (scope) => {
     scope.addHook('onRequest', authenticator(ctx));

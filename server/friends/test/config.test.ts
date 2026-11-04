@@ -19,6 +19,7 @@ describe('defaultRateLimits', () => {
       chatMessagesPerDay: 2000,
       chatReportsPerDay: 20,
       socketFramesPerMinute: 120,
+      crashReportsPerHour: 20,
     });
   });
 });

@@ -13,6 +13,7 @@ export interface RateLimits {
   chatMessagesPerDay: number;
   chatReportsPerDay: number;
   socketFramesPerMinute: number;
+  crashReportsPerHour: number;
 }
 
 export interface Config {
@@ -45,6 +46,7 @@ export const defaultRateLimits: RateLimits = {
   chatMessagesPerDay: 2000,
   chatReportsPerDay: 20,
   socketFramesPerMinute: 120,
+  crashReportsPerHour: 20,
 };
 
 function positiveInt(env: Record<string, string | undefined>, key: string, fallback: number): number {
