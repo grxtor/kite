@@ -2,10 +2,11 @@
 
 The service behind Kite's friends list: add a friend by Minecraft name, see
 whether they are online, playing, and on which server, and invite them to a
-server. It also keeps share codes that hand an instance's Minecraft version,
-loader and mods to someone else. There is no chat, no voice and no world
-sharing. The launcher talks to it over plain HTTPS and
-polls once a minute; there is no WebSocket.
+server, and chat with them one to one. It also keeps share codes that hand
+an instance's Minecraft version, loader and mods to someone else. There is
+no group chat, no voice and no world sharing. The launcher talks to it over
+HTTPS and keeps a [WebSocket](#realtime-socket) open for pushed events and
+chat; polling once a minute without the socket keeps working.
 
 - Production: `https://api.kiteclient.com` (not deployed yet)
 - Stack: Node 24+, TypeScript (run directly by Node's type stripping),
@@ -47,7 +48,8 @@ All bodies are JSON. Times are ISO 8601 strings in UTC. UUIDs are written
 with dashes (`069a79f4-44e9-4726-a5be-fca90e38aaf5`). Minecraft names are 1 to
 16 characters of `A-Z a-z 0-9 _`.
 
-Every endpoint except the two `auth` ones needs the session token:
+Every endpoint except the two `auth` ones needs the session token, the
+WebSocket upgrade included:
 
 ```
 Authorization: Bearer kfs_...
@@ -67,13 +69,14 @@ Failures return a status code and a body like this:
 | 400 | `challenge_invalid` | Login with an unknown, used or expired challenge |
 | 401 | `unauthorized` | Missing, unknown or expired token. Log in again |
 | 401 | `not_joined` | Mojang did not confirm the `join` for this challenge |
-| 404 | `not_found` | The player, request, friend, invite or share code does not exist, or you may not see it |
+| 404 | `not_found` | The player, request, friend, invite, message or share code does not exist, or you may not see it |
 | 409 | `already_friends` | Friend request to someone who already is a friend |
 | 409 | `blocked_by_you` | Friend request to someone you blocked. Unblock first |
 | 409 | `limit_reached` | Too many friends (500), pending outgoing requests (100), blocks (1000) or share codes (50) |
 | 409 | `address_not_shared` | Invite to a raw IP or local address while your `shareIpServers` is off |
 | 409 | `invites_off` | Invite to a friend whose `allowInvites` is off |
 | 413 | `bad_request` | The body is larger than 8 KB (64 KB for a share code manifest) |
+| 426 | `bad_request` | `GET /v1/ws` without a WebSocket upgrade |
 | 429 | `rate_limited` | Too many requests. Wait for the `Retry-After` header (seconds) |
 | 502 | `mojang_unavailable` | Mojang's session server failed or timed out. Try again later |
 
@@ -203,8 +206,15 @@ DELETE /v1/me
 
 `204`. Deletes the account and everything stored about it: tokens, status,
 settings, friendships, requests and invites in both directions, your share
-codes, and the blocks you placed. Blocks other players placed on you stay, because they belong to
-them. Signing in again later creates a new, empty account.
+codes, the blocks you placed and your read markers. Reports you filed stay
+as evidence but lose your UUID (see [Reports](#reports)). The text of every
+chat message you sent is deleted; the people you wrote to
+keep a placeholder (`"text": null, "deleted": true`) until it ages out, and
+are told with a [`chat.deleted`](#events) event. Messages you received are
+hidden from you for good. Blocks other players placed on you stay, because
+they belong to them, and so do reports others filed about your messages (see
+[Reports](#reports)). Your open sockets close with `4401`. Signing in again
+later creates a new, empty account with no chat history.
 
 ### Reporting your status
 
@@ -310,7 +320,8 @@ GET /v1/friends
       "since": "2026-10-20T12:00:00.000Z",
       "status": { "state": "playing", "instance": "Hypixel", "version": "1.8.9",
                   "world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
-                  "joinable": true }
+                  "joinable": true },
+      "unread": 2
     }
   ],
   "requests": {
@@ -325,7 +336,9 @@ GET /v1/friends
 }
 ```
 
-`invites` are the live [invites](#invites) to and from you. Friends are sorted by name. Only players who signed in to Kite at least once
+`invites` are the live [invites](#invites) to and from you. `unread` is the
+number of [chat](#chat) messages from that friend after your read marker.
+Friends are sorted by name. Only players who signed in to Kite at least once
 can be added.
 
 ```http
@@ -567,6 +580,192 @@ DELETE /v1/share-codes/{code}
 
 `204`, or `404` if you have no such code. Someone else's code looks unknown.
 
+### Realtime socket
+
+```http
+GET /v1/ws
+Upgrade: websocket
+Authorization: Bearer kfs_...
+```
+
+The launcher and the game mod open one WebSocket each and keep it open. It
+is signed in like every other request, with the token in the
+`Authorization` header of the upgrade (Qt's `QWebSocket` takes it through
+the `QNetworkRequest`, Java's `WebSocket.Builder` through `header`); a
+missing or bad token is a plain `401` before any upgrade, and a token in the
+URL is not accepted. Once open, the server sends:
+
+```json
+{ "type": "ready", "user": { "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5", "name": "Notch" } }
+```
+
+Every frame either way is a JSON object in a text frame, with a `type`.
+
+- The server pings every 30 seconds. A socket that has not answered the
+  previous ping with a pong is dropped, so a dead connection goes within a
+  minute. WebSocket libraries answer pings on their own. A client that hears
+  nothing (no ping, no event) for 75 seconds should reconnect.
+- At most 5 sockets per player; a sixth closes the oldest with `4001`.
+- A frame is at most 16 KB (close `1009`). Binary frames close the socket
+  with `1003`. A client that does not read what it is sent, so that more
+  than 1 MB waits for it, is dropped.
+- A player's sockets together may send 120 frames a minute, and
+  reconnecting does not start the minute again. Past that each socket gets
+  one `rate_limited` error, and frames are dropped until the minute is over.
+- `4401` means the session ended: logged out, dropped by an eleventh
+  sign-in, expired, or the account was deleted. Nothing sent after it is
+  handled. Sign in again before reconnecting. For any other close, reconnect with a growing delay (1 s,
+  2 s, 4 s, up to a minute); Cloudflare also drops sockets when it updates
+  its servers.
+
+After every (re)connect, call `GET /v1/friends` and, for each conversation
+the client has open, `GET /v1/chats/{uuid}/messages?after=<newest id it
+has>`: events sent while the socket was down are not replayed. The same
+message may then arrive both ways; message ids tell them apart.
+
+#### Events
+
+What the server pushes. Statuses, users and invites look exactly as they do
+in `GET /v1/friends`.
+
+| `type` | Fields | When |
+|---|---|---|
+| `friend.status` | `uuid`, `status` | A friend's status as you see it, when a report differs from the last one, when they go offline or their status runs out, and when they change a setting that changes what you see |
+| `friend.request` | `user`, `createdAt` | Someone sent you a friend request |
+| `friend.accepted` | `user` | Your request was accepted. Fetch `GET /v1/friends` for their status |
+| `friend.removed` | `uuid` | You are no longer friends: either of you unfriended or blocked the other, or they deleted their account. Drop their invites with them |
+| `invite` | `invite` | A friend invited you; `invite` is an entry of `invites.incoming` |
+| `invite.cancelled` | `uuid` | The friend cancelled their invite to you |
+| `chat.message` | `message` | A message to you, or one you sent from another socket or over HTTP |
+| `chat.read` | `with`, `upTo` | You moved your read marker from another socket or over HTTP |
+| `chat.deleted` | `uuid` | That player deleted their account; show their messages as deleted |
+
+Declined requests, dismissed invites and read markers are not pushed to
+the other player, as they are not shown to them anywhere else either.
+
+#### Frames the client sends
+
+```json
+{ "type": "chat.send", "ref": "c1", "to": "853c80ef-3c37-49fd-aa49-938b674adae6", "text": "gg" }
+{ "type": "chat.read", "ref": "c2", "with": "853c80ef-3c37-49fd-aa49-938b674adae6", "upTo": "1042" }
+```
+
+They do what `POST /v1/chats/{uuid}/messages` and `POST /v1/chats/{uuid}/read`
+do, with the same rules and limits. `ref` is optional, 1 to 64 characters
+of `A-Z a-z 0-9 _ -`, and comes back in the answer:
+
+```json
+{ "type": "chat.sent", "ref": "c1", "message": { ... } }
+{ "type": "chat.read", "ref": "c2", "with": "853c80ef-...", "upTo": "1042" }
+{ "type": "error", "ref": "c1", "error": "not_found", "message": "Not friends with this player" }
+```
+
+`error` uses the codes in [Errors](#errors); `rate_limited` comes with
+`retryAfter` in seconds. A frame that is not JSON, has an unknown `type` or
+a field that does not belong is a `bad_request` error, and the socket stays
+open. Frames from one socket are handled in order.
+
+### Chat
+
+One-to-one messages between friends. There are no group chats and no
+attachments.
+
+```http
+POST /v1/chats/{uuid}/messages
+{ "text": "gg" }
+```
+
+```json
+201
+{
+  "id": "1042",
+  "from": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+  "to": "853c80ef-3c37-49fd-aa49-938b674adae6",
+  "text": "gg",
+  "createdAt": "2026-10-24T18:00:00.000Z",
+  "deleted": false
+}
+```
+
+`{uuid}` is the friend. The same can be sent over the
+[socket](#frames-the-client-sends), which is what the launcher should use
+while it has one.
+
+- `text`: 1 to 1000 characters, counted in UTF-16 code units the way Java
+  and Qt count a string's length (an emoji is usually two). Control and bidi
+  characters, line breaks included, are removed and the ends trimmed;
+  nothing else is changed, so clients must show `text` as plain text. The
+  game mod must not let `§` codes in it format anything.
+- `id` is a string of digits; ids only grow.
+
+| Response | Meaning |
+|---|---|
+| `201` | Sent. It also reaches the friend's sockets and your other ones |
+| `400 bad_request` | The text is empty after cleaning or too long, or the uuid is yours |
+| `404 not_found` | Not friends with this player (a block either way, an unknown player and a pending request look the same) |
+| `429 rate_limited` | More than 30 messages a minute or 2000 a day |
+
+```http
+GET /v1/chats/{uuid}/messages
+GET /v1/chats/{uuid}/messages?before=1042&limit=50
+GET /v1/chats/{uuid}/messages?after=1042
+```
+
+```json
+200
+{ "messages": [ { "id": "1041", ... }, { "id": "1042", ... } ], "more": true }
+```
+
+The conversation with that player, oldest first. Without `before` or
+`after` it is the newest page; `before` pages back to older messages and
+`after` gets the ones after a message you have (the catch-up after a
+reconnect). `more` says whether there are further messages past the page
+in that direction. `limit` is 1 to 100, 50 by default; `before` and `after`
+cannot be used together.
+
+History stays readable after you stop being friends, until it ages out.
+While either of you blocks the other, it is empty for both of you. A
+message whose sender deleted their account has `"text": null` and
+`"deleted": true`.
+
+```http
+POST /v1/chats/{uuid}/read
+{ "upTo": "1042" }
+```
+
+`200 { "upTo": "1042" }`. Marks the conversation read up to that message,
+which must be one you can see in it. The marker never moves back; the
+answer is where it is now. It drives `unread` in `GET /v1/friends` and is
+pushed to your other sockets, not to the friend: there are no read
+receipts. Send it when the conversation is on screen, not for every
+message.
+
+#### Reports
+
+```http
+POST /v1/chats/{uuid}/messages/{id}/report
+{ "reason": "harassment" }
+```
+
+`204`. Reports a message that player sent you; `reason` is `spam`,
+`harassment` or `other`. It works after blocking them too, which is the
+usual order. The server keeps a copy of the message, the 20 messages before
+it in the conversation (from both of you) and the reported player's name,
+for moderation; reporting the same message again changes nothing. `404` if
+no such message from that player to you is visible. 20 reports a day.
+
+In the copy each message says only which side wrote it (`"from":
+"reporter"` or `"reported"`), not who the reporter is. If the reporter
+deletes their account, the report stays, so the evidence against the
+reported player is not lost; its `reporter_uuid` becomes `null`, and nothing
+left in it points at the deleted account.
+
+There is no moderation screen yet. Reports are read in the database:
+
+```sql
+select created_at, reason, reported_uuid, snapshot from chat_reports order by created_at desc;
+```
+
 ### Rate limits
 
 | Scope | Limit |
@@ -579,8 +778,13 @@ DELETE /v1/share-codes/{code}
 | Invites sent, per user | 30 an hour, 5 an hour to the same friend |
 | Share codes made, per user | 20 an hour |
 | Share code fetches, per user | 30 an hour |
+| Chat messages sent, per user | 30 a minute, 2000 a day |
+| Chat reports, per user | 20 a day |
+| Socket frames, per user (all sockets together) | 120 a minute |
+| Open sockets, per user | 5 |
 
-The launcher's normal load is two requests a minute.
+A refused message or report still counts. The launcher's normal load is
+two requests a minute; the socket upgrade counts as one request.
 
 ### Health
 
@@ -593,7 +797,8 @@ GET /healthz
 ## Privacy
 
 What the server stores, all of it deleted by `DELETE /v1/me` (except blocks
-other players placed on you):
+other players placed on you, reports they filed about your messages, and
+reports you filed, which are kept without your UUID):
 
 - Minecraft UUID and name, and when they were last seen
 - Settings
@@ -606,11 +811,28 @@ other players placed on you):
 - Share codes: the code, who made it and the manifest (name, Minecraft
   version, loader and platform project ids). Kept until the owner deletes it
   or 90 days pass without a fetch; who fetched a code is not recorded.
+- Chat messages: sender, recipient, text and time. Deleted 30 days after
+  they were sent. Deleting your account deletes the text of what you sent
+  at once (the recipient keeps an empty placeholder until the 30 days are
+  up) and hides what you received from you.
+- Read markers: how far you have read each conversation. They go with the
+  messages they point at.
+- Chat reports: who reported whom, the reason, and a copy of the reported
+  message with up to 20 messages before it and the reported player's name.
+  The copy marks each message as the reporter's or the reported player's,
+  without the reporter's UUID. Kept 180 days so a moderator can act on
+  them, even after the messages age out or either player deletes their
+  account. When the reporter deletes theirs, the report keeps the copy and
+  loses the reporter's UUID, so it no longer leads back to them.
 - Session tokens, stored only as SHA-256 hashes
 
 Raw IP and local server addresses are not stored unless `shareIpServers` is
-on, in statuses and invites alike. Requests are not logged. Client IPs are only kept in memory for rate
-limiting.
+on, in statuses and invites alike. Requests and socket frames are not
+logged. Client IPs are only kept in memory for rate limiting.
+
+Chat is meant to be safe for younger players: only friends, who both
+accepted each other, can write to each other; a block stops messages both
+ways and hides the history; any message can be reported.
 
 ## Deploying
 
@@ -643,6 +865,27 @@ whatever it claims. On the Dokploy server Traefik also turns direct
 requests for `api.kiteclient.com` away with 418 (the edge guard in
 `/etc/dokploy/traefik/dynamic/00-edge-guard.yml`). Without Cloudflare in
 front, use `x-real-ip`.
+
+### WebSockets through Cloudflare and Traefik
+
+- Cloudflare proxies WebSockets on every plan, as long as the zone's
+  **Network → WebSockets** setting is on (the default). It closes a socket
+  that carries no traffic either way for about 100 seconds; the server's
+  ping every 30 seconds is traffic, so open sockets stay up. Cloudflare also
+  drops sockets when it restarts its own servers, which is one reason
+  clients reconnect.
+- Traefik passes the upgrade through by itself; the Dokploy domain needs no
+  extra middleware. After the first deploy, keep a socket open for five
+  minutes (`websocat -H 'Authorization: Bearer kfs_...'
+  wss://api.kiteclient.com/v1/ws`). If it drops at a fixed interval, an
+  entry point timeout (`respondingTimeouts`) is shorter than the 30-second
+  heartbeat allows.
+- One container is all it takes: sockets and their events live in that
+  process. Running a second instance needs the in-memory event bus
+  (`src/bus.ts`) replaced, e.g. by Postgres `LISTEN/NOTIFY`, and the rate
+  limits moved out of memory too.
+- A deploy restarts the container, which closes every socket; clients
+  reconnect and catch up through the history.
 
 `docker-compose.yml` runs the same image with its own Postgres, for a local
 run.
