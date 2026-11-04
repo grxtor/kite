@@ -164,6 +164,7 @@ Item {
         }
 
         friendsState: root.friendsState
+        places: root.places
         joinFlow: root.joinFlow
         menu: personMenu
         onExpandRequested: root.expandedRequested(true)

@@ -7,9 +7,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The card a click on a head in the friends strip opens: bigger head, name, where they are, Join and ⋯. One card
- * for the strip, since a card in a head would close under the pointer when the lists are rebuilt. A click on the
- * strip does not close it (the strip decides): a press that closed it first would reopen it on that head.
+ * The card a click on a head in the friends strip opens, a profile popout like Discord's: the head bigger with the
+ * name and a word on where they are, then where they play (FriendPlaceBlock: the server's live favicon, players,
+ * version, Join) and a Message field with the unread count (chat is coming). ⋯ holds Remove and Block. One card for
+ * the strip, since a card in a head would close under the pointer when the lists are rebuilt. A click on the strip
+ * does not close it (the strip decides): a press that closed it first would reopen it on that head.
  */
 Popup {
     id: root
@@ -19,16 +21,19 @@ Popup {
     // The panel's FriendPersonMenu.
     property var menu: null
     property var joinFlow: null
+    // Main.qml's FriendPlaces and FriendsState.invites.
+    property FriendPlaces places: FriendPlaces {}
+    property var invites: []
     property bool stale: false
     property bool actionsEnabled: true
     property string friendUuid
 
     readonly property var friend: root.find(root.controller ? root.controller.friends : [], root.friendUuid)
     readonly property bool known: root.friend.uuid !== undefined
-    readonly property var status: Format.friendStatus(root.friend)
+    readonly property var presence: Format.friendPresence(root.friend)
 
-    readonly property int cardWidth: 232
-    readonly property int headSize: 24
+    readonly property int cardWidth: 296
+    readonly property int headSize: 48
 
     signal joinRequested(var friend)
 
@@ -55,7 +60,7 @@ Popup {
     x: -root.width - Theme.space.sm
     y: Math.round(root.centreY - root.height / 2)
     width: root.cardWidth
-    padding: Theme.space.sm
+    padding: Theme.space.lg
     margins: Theme.space.sm
     // Esc only reaches a popup that has the focus.
     focus: true
@@ -69,11 +74,11 @@ Popup {
     }
 
     contentItem: ColumnLayout {
-        spacing: Theme.space.sm
+        spacing: Theme.space.md
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.sm
+            spacing: Theme.space.md
 
             FriendHead {
                 Layout.alignment: Qt.AlignVCenter
@@ -83,7 +88,6 @@ Popup {
                         : root.stale && root.friend.state !== "offline" ? "" : root.friend.state
                 ringColor: Theme.glass.popup
             }
-
             Column {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
@@ -94,19 +98,17 @@ Popup {
                     width: parent.width
                     text: root.known ? root.friend.name : ""
                     elide: Text.ElideRight
-                    role: "label"
-                    font.weight: Font.DemiBold
+                    role: "title"
                 }
-                Text {
+                Copy {
                     width: parent.width
-                    text: root.known ? Format.friendStatusLine(root.friend) : ""
-                    elide: Text.ElideMiddle
-                    color: root.status.tone === "faint" ? Theme.palette.textTertiary : Theme.palette.textSecondary
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.overline.pixelSize
+                    text: root.known ? root.presence.text : ""
+                    elide: Text.ElideRight
+                    role: "label"
+                    // A list that could not be updated says nothing for sure.
+                    tone: root.stale ? "tertiary" : root.presence.tone
                 }
             }
-
             FriendMoreButton {
                 Layout.alignment: Qt.AlignTop
                 menu: root.menu
@@ -116,24 +118,23 @@ Popup {
             }
         }
 
-        FriendJoinButton {
+        FriendPlaceBlock {
             Layout.fillWidth: true
-            enabled: root.actionsEnabled
             friend: root.friend
+            place: root.places.of(root.friend)
+            invite: root.invites.find((one) => one.uuid === root.friendUuid) || null
             joinFlow: root.joinFlow
-            onClicked: {
+            actionsEnabled: root.actionsEnabled
+            onJoinRequested: {
                 root.close()
                 root.joinRequested(root.friend)
             }
         }
 
-        Copy {
+        FriendMessageField {
             Layout.fillWidth: true
-            visible: root.known && Format.friendJoinOff(root.friend)
-            text: root.known ? qsTr("%1 doesn't let friends join").arg(root.friend.name) : ""
-            wrapMode: Text.Wrap
-            role: "label"
-            tone: "tertiary"
+            name: root.known ? root.friend.name : ""
+            unread: root.friend.unread || 0
         }
     }
 }

@@ -7,7 +7,8 @@ import Kite.Theme
 
 /*
  * The friends panel folded to a strip: buttons at the top (show the full panel, requests waiting, add a friend),
- * then friends' heads (in game, online, offline) with a hairline between groups. A head opens a small card
+ * then friends' heads with a hairline between groups: first whoever waits on you (an invite, unread messages, as
+ * Discord lifts a chat with news), then in game, in Kite, offline. A head opens the friend's card
  * (FriendHeadCard). With no lists one button stands in and opens the full panel.
  */
 Item {
@@ -17,6 +18,8 @@ Item {
     property FriendsState friendsState: FriendsState {}
     property var joinFlow: null
     property var menu: null
+    // Main.qml's FriendPlaces, for the server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
     property color surface: Theme.palette.canvas
 
     signal expandRequested()
@@ -31,10 +34,16 @@ Item {
                                      : qsTr("Can't connect")
     readonly property string stateIcon: root.failed ? "alert-triangle" : root.friendsState.signInFirst ? "user" : "users"
 
-    readonly property var ordered: root.friendsState.groups.playing.concat(root.friendsState.groups.online,
-                                                                           root.friendsState.groups.offline)
+    readonly property var ordered: {
+        var groups = root.friendsState.groups
+        var all = groups.playing.concat(groups.online, groups.offline)
+        return all.filter((one) => root.friendsState.wantsYou(one))
+                  .concat(all.filter((one) => !root.friendsState.wantsYou(one)))
+    }
+    // 0 waits on you, 1 in game, 2 in Kite, 3 offline.
     function groupOf(friend) {
-        return friend.state === "playing" ? 0 : friend.state === "online" ? 1 : 2
+        return root.friendsState.wantsYou(friend) ? 0
+             : friend.state === "playing" ? 1 : friend.state === "online" ? 2 : 3
     }
 
     function toggleCard(head, uuid) {
@@ -159,6 +168,8 @@ Item {
                             id: head
                             width: slot.width
                             friend: slot.modelData
+                            place: root.places.of(slot.modelData)
+                            invited: !!root.friendsState.inviteFrom(slot.modelData.uuid)
                             stale: root.friendsState.stale
                             selected: card.opened && card.friendUuid === slot.modelData.uuid
                             onClicked: root.toggleCard(head, slot.modelData.uuid)
@@ -186,6 +197,8 @@ Item {
     FriendHeadCard {
         id: card
         controller: root.friendsState.controller
+        places: root.places
+        invites: root.friendsState.invites
         menu: root.menu
         joinFlow: root.joinFlow
         stale: root.friendsState.stale

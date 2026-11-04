@@ -27,4 +27,16 @@ QtObject {
     readonly property int incomingCount: root.controller ? root.controller.incomingCount : 0
     // Format.friendsGrouped(): { playing, online, offline }.
     readonly property var groups: Format.friendsGrouped(root.controller ? root.controller.friends : [])
+    // Invites to you, newest first: [{ uuid, name, face, host, port, expiresAt }]. [] until the controller has them
+    // (the friends server's invites, PR #14).
+    readonly property var invites: root.controller && root.controller.invites ? root.controller.invites : []
+
+    // The invite from the friend with @p uuid, or null.
+    function inviteFrom(uuid) {
+        return root.invites.find((one) => one.uuid === uuid) || null
+    }
+    // A friend who waits on you: an invite from them, or messages you have not read.
+    function wantsYou(friend) {
+        return (friend.unread || 0) > 0 || !!root.inviteFrom(friend.uuid)
+    }
 }
