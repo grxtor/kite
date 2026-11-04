@@ -97,6 +97,11 @@ enum MMCOHookId : uint32_t {
 	 * FriendsMessageNotifications is). Payload: MMCOFriendsNotice*. The return value is
 	 * ignored. */
 	MMCO_HOOK_FRIENDS_NOTICE = 0x0900,
+
+	/* MMCO_HOOK_CRASH_FIX_FOUND: newer crash rules know a crash Kite could not explain when it
+	 * happened, worth a desktop notification; once per crash. Payload: MMCOCrashFixNotice*. The
+	 * return value is ignored. */
+	MMCO_HOOK_CRASH_FIX_FOUND = 0x0A00,
 };
 
 /* Hook callback signature.
@@ -248,6 +253,16 @@ struct MMCOSessionFillEvent {
 
 /* Payload for MMCO_HOOK_FRIENDS_NOTICE. Strings are UTF-8, owned by the host and valid only during
  * the callback. title and body are worded by Kite in the launcher's language, ready to show. */
+/* Payload for MMCO_HOOK_CRASH_FIX_FOUND. Strings are UTF-8, owned by the host and valid only during
+ * the callback. title and body are worded by Kite in the launcher's language, ready to show. */
+struct MMCOCrashFixNotice {
+	const char* instance_id;   /* the instance that crashed */
+	const char* instance_name; /* its name as the library shows it */
+	const char* rule_id;	   /* the crash rule that knows it now, "mods.crashed" */
+	const char* title;		   /* "A fix was found" */
+	const char* body;		   /* "Last Tuesday's Skies crash has a fix now."; never empty */
+};
+
 struct MMCOFriendsNotice {
 	const char* kind;  /* "online" (came online or started playing) | "request" (sent a request) |
 						* "message" (sent a chat message that is not on screen; the

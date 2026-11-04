@@ -217,12 +217,16 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	 * VerifyJavaInstall choose the Java again once, as if none were set;
 	 * RepairGameFiles makes LibrariesTask download every library again once;
 	 * MacStartOnFirstThread adds -XstartOnFirstThread even when the version
-	 * does not ask for it. CrashDoctorUndo holds what undoes the last fix. */
+	 * does not ask for it. CrashDoctorUndo holds what undoes the last fix;
+	 * CrashDoctorLastFix the rule it was for and when ({"rule", "at"}), so a
+	 * crash the same way after it can be sent to Kite as a fix that did not
+	 * help. */
 	m_settings->registerSetting("JavaMajorAtLeast", 0);
 	m_settings->registerSetting("JavaRepick", false);
 	m_settings->registerSetting("RepairGameFiles", false);
 	m_settings->registerSetting("MacStartOnFirstThread", false);
 	m_settings->registerSetting("CrashDoctorUndo", "");
+	m_settings->registerSetting("CrashDoctorLastFix", "");
 	// The mod bridge session ends with the game.
 	connect(this, &BaseInstance::runningStatusChanged, this,
 			[this](bool running) {

@@ -38,6 +38,10 @@ class MinecraftInstance;
  * count, rows (one line per finding of a grouped card), fixes. Each fix:
  * action, label, params, runner ("fixer", "flow", "navigation"), confirm
  * (the question to ask first, "" for none).
+ *
+ * Sending the crash to Kite (CrashDoctorModelSend.cpp): canSend while there is
+ * one to send and it was not sent, sendState after, payload what goes, in
+ * words (CrashPayload::readable()).
  */
 class CrashDoctorModel : public QObject
 {
@@ -49,6 +53,16 @@ class CrashDoctorModel : public QObject
 	Q_PROPERTY(int exitCode READ exitCode NOTIFY changed)
 	Q_PROPERTY(bool hasExitCode READ hasExitCode NOTIFY changed)
 	Q_PROPERTY(QString undoAction READ undoAction NOTIFY undoChanged)
+	Q_PROPERTY(bool canSend READ canSend NOTIFY sendChanged)
+	/// "", "sending", "queued" (no connection yet), "sent" or "failed".
+	Q_PROPERTY(QString sendState READ sendState NOTIFY sendChanged)
+	/// Sent right after the crash because the player allowed sending without asking.
+	Q_PROPERTY(bool autoSent READ autoSent NOTIFY sendChanged)
+	Q_PROPERTY(QVariantMap payload READ payload NOTIFY changed)
+	/// The fix tried last time was for this crash, and it crashed the same way.
+	Q_PROPERTY(bool fixDidNotHelp READ fixDidNotHelp NOTIFY changed)
+	/// Rules that came after the crash know it: "Fix found".
+	Q_PROPERTY(bool solvedLater READ solvedLater NOTIFY changed)
 
   public:
 	explicit CrashDoctorModel(std::shared_ptr<MinecraftInstance> instance,
@@ -64,6 +78,12 @@ class CrashDoctorModel : public QObject
 	bool hasExitCode() const;
 	/// The action the last fix of this instance was, while it can be undone.
 	QString undoAction() const;
+	bool canSend() const;
+	QString sendState() const;
+	bool autoSent() const;
+	QVariantMap payload() const;
+	bool fixDidNotHelp() const;
+	bool solvedLater() const;
 
 	/// Reads the last run's files again (logs/latest.log, crash report).
 	Q_INVOKABLE void analyse();
@@ -79,11 +99,18 @@ class CrashDoctorModel : public QObject
 	Q_INVOKABLE QStringList fileKeysFor(const QStringList& modIds) const;
 	/// The file name of the crash report, or "".
 	Q_INVOKABLE QString crashReportName() const;
+	/// Sends the crash to Kite; @p alwaysFromNow: from now on without asking.
+	Q_INVOKABLE void send(bool alwaysFromNow);
+	/// A fix of cause @p causeIndex was tried (also an install or an update):
+	/// if the game crashes the same way, the crash can be sent as one it did
+	/// not fix.
+	Q_INVOKABLE void noteFixTried(int causeIndex);
 
   signals:
 	void changed();
 	void busyChanged();
 	void undoChanged();
+	void sendChanged();
 
   private:
 	std::shared_ptr<MinecraftInstance> m_instance;

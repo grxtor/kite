@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QSet>
 #include <QString>
+#include <functional>
 #include <optional>
 
 #include "CrashCollector.h"
@@ -30,6 +31,7 @@
 #include "QObjectPtr.h"
 #include "net/NetJob.h"
 
+class CrashFollowUp;
 class LaunchTask;
 class MinecraftInstance;
 
@@ -39,7 +41,8 @@ class MinecraftInstance;
  * crash report) analyses it on a worker thread and keeps the report until the
  * instance launches again. The catalog is the embedded one, replaced by the
  * meta server's copy when that one is valid and not older (asked once a run).
- * Nothing leaves the computer: the only network use is fetching the catalog.
+ * A crash nothing knew is kept and read again with newer rules, and sent to
+ * Kite only when the player asks or allowed it (CrashFollowUp).
  */
 class CrashDoctorService : public QObject
 {
@@ -71,6 +74,15 @@ class CrashDoctorService : public QObject
 	/// The title of the first cause of @p instanceId's report; "" without one.
 	QString topCause(const QString& instanceId) const;
 
+	/// Once the launcher is up (QmlShell): sends crash reports that wait, and
+	/// reads kept crashes again with the newest rules.
+	void startFollowUp();
+	CrashFollowUp* followUp();
+	/// Sends @p instanceId's crash to Kite (the player asked).
+	void send(const QString& instanceId, bool alwaysFromNow);
+	/// Dev route "crashrules=<file>": uses that catalog as if it was downloaded.
+	bool debugUseCatalog(const QString& path);
+
   signals:
 	/// A report for @p instanceId is ready, possibly with no known cause.
 	/// @p fresh: the crash of a launch that just ended, as opposed to one
@@ -78,6 +90,8 @@ class CrashDoctorService : public QObject
 	void analysed(const QString& instanceId, bool fresh);
 	void busyChanged(const QString& instanceId);
 	void forgotten(const QString& instanceId);
+	/// A crash report was sent, queued or refused.
+	void sendStateChanged();
 
   private:
 	explicit CrashDoctorService(QObject* parent = nullptr);
@@ -85,10 +99,14 @@ class CrashDoctorService : public QObject
 	void refreshCatalog();
 	void onFinished(LaunchTask* task, const QString& instanceId);
 	void run(const CrashDoctor::Snapshot& snapshot, bool fresh);
+	void analyseAsync(const CrashDoctor::Snapshot& snapshot,
+					  std::function<void(const CrashDoctor::Report&)> done);
+	void keepSolved(const CrashDoctor::Report& report);
 
 	CrashDoctor::Catalog m_catalog;
 	QHash<QString, CrashDoctor::Report> m_reports;
 	QSet<QString> m_busy;
 	bool m_refreshed = false;
 	NetJob::Ptr m_refreshJob;
+	CrashFollowUp* m_followUp = nullptr;
 };

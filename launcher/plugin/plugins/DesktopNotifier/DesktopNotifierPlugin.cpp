@@ -19,7 +19,8 @@
  *    timeout_ms       notification timeout              (default 5000)
  *
  *  Friends notices (FRIENDS_NOTICE) have no key here: the launcher's own setting
- *  (Settings > Friends) decides whether they are sent, already worded.
+ *  (Settings > Friends) decides whether they are sent, already worded. The same for
+ *  CRASH_FIX_FOUND, once per crash newer crash rules know.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -190,6 +191,18 @@ static int on_friends_notice(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
+/* CRASH_FIX_FOUND: newer crash rules know a crash of an instance; Kite words both lines. */
+static int on_crash_fix_found(void* /*mh*/, uint32_t /*hook_id*/, void* payload,
+							  void* /*ud*/)
+{
+	auto* notice = static_cast<MMCOCrashFixNotice*>(payload);
+	if (!notice || !notice->title || !notice->body)
+		return 0;
+	notify(QString::fromUtf8(notice->title), QString::fromUtf8(notice->body),
+		   1);
+	return 0;
+}
+
 /* ── lifecycle ────────────────────────────────────────────────────── */
 
 extern "C" {
@@ -233,6 +246,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   on_news_updated, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_FRIENDS_NOTICE,
 					   on_friends_notice, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_CRASH_FIX_FOUND,
+					   on_crash_fix_found, nullptr);
 
 	MMCO_LOG(ctx, "DesktopNotifier initialized.");
 	return 0;
