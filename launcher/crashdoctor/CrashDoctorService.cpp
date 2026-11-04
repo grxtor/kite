@@ -59,8 +59,9 @@ namespace
 		} else {
 			after = streak.afterCleanRun(QDateTime::currentDateTimeUtc());
 		}
+		// No write for an instance that never crashed natively.
 		const QString json = after.toJson();
-		if (json != before) {
+		if (json != streak.toJson()) {
 			settings->set(CrashDoctor::kNativeCrashesSetting, json);
 		}
 	}
