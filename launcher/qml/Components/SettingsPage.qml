@@ -38,8 +38,11 @@ Item {
     // The default account's name if it is a Microsoft one ("" if not): the
     // account whose Friends data Delete in "Friends" removes.
     property string friendsAccountName: ""
+    // QmlShell.whatsNew, for About's "What's new"; null hides that row.
+    property var whatsNew: null
 
     signal openPathRequested(string path)
+    signal whatsNewRequested()
 
     // "layers" is a mod loader elsewhere in the app, so Java does not wear it.
     readonly property var sections: [
@@ -196,6 +199,8 @@ Item {
             SettingsUpdatesSection {}
             SettingsAboutSection {
                 about: root.about
+                whatsNew: root.whatsNew
+                onWhatsNewRequested: root.whatsNewRequested()
             }
         }
     }

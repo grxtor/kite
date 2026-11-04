@@ -322,6 +322,8 @@ qt_add_qml_module(Kite_qml_components
         LegacyUpgradeNotice.qml
         ContentResultRow.qml
         ContentProjectPanel.qml
+        WhatsNewDialog.qml
+        WhatsNewItem.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg
@@ -369,8 +371,10 @@ qt_add_qml_module(Kite_qml_components
         icons/server.svg
         icons/settings.svg
         icons/share.svg
+        icons/shield-check.svg
         icons/sliders.svg
         icons/sort.svg
+        icons/stethoscope.svg
         icons/stop.svg
         icons/sun.svg
         icons/terminal.svg

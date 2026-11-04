@@ -177,6 +177,11 @@ ApplicationWindow {
                 root.dialog(newInstanceLoader).openModPicker()
             else if (key === "nav")
                 root.navigate(value)
+            // The newest "What's new" notes, whatever this build's version.
+            else if (key === "whatsnew") {
+                root.whatsNew.debugShowNewest()
+                root.dialog(whatsNewLoader).open()
+            }
             else if (key === "import")
                 root.openImport(value)
             else if (key === "friends")
@@ -1070,7 +1075,9 @@ ApplicationWindow {
                                 shareCodes: root.shareCodes
                                 friendsAccountName: root.shellValue("accountKind") === "Microsoft"
                                                     ? root.shellValue("accountName", "") : ""
+                                whatsNew: root.whatsNew
                                 onOpenPathRequested: (path) => root.call("openPath", path)
+                                onWhatsNewRequested: root.dialog(whatsNewLoader).open()
                         }
                     }
 
@@ -1212,6 +1219,22 @@ ApplicationWindow {
             onCreated: root.page = "home"
             onOpenInstanceRequested: (id) => root.navigate("instance/" + id + "/content")
         }
+    }
+
+    // "What's new in Kite 1.3.0", once after an update and from Settings → About.
+    readonly property var whatsNew: root.shellValue("whatsNew")
+    Loader {
+        id: whatsNewLoader
+        active: false
+        sourceComponent: WhatsNewDialog {
+            notes: root.whatsNew
+        }
+    }
+    // Waits for onboarding and a moment for the window to settle; never over another dialog it would hide.
+    Timer {
+        interval: 600
+        running: !!root.whatsNew && root.whatsNew.pending && !root.onboarding && root.visible
+        onTriggered: if (!whatsNewLoader.item || !whatsNewLoader.item.visible) root.dialog(whatsNewLoader).open()
     }
 
     Loader {
