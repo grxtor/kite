@@ -7934,8 +7934,12 @@ Neden: %1.</translation>
     </message>
     <message>
         <location line="+11"/>
-        <source>Your account is currently not logged in. Please enter your password to log in again. &lt;br /&gt; &lt;br /&gt; This could be caused by a password change.</source>
-        <translation>Hesabın şu anda giriş yapmış durumda değil. Yeniden giriş yapmak için parolanı gir. &lt;br /&gt; &lt;br /&gt; Bunun sebebi bir parola değişikliği olabilir.</translation>
+        <source>Your account is currently not logged in. Please enter your password to log in again.
+
+This could be caused by a password change.</source>
+        <translation>Hesabın şu anda giriş yapmış durumda değil. Yeniden giriş yapmak için parolanı gir.
+
+Bunun sebebi bir parola değişikliği olabilir.</translation>
     </message>
     <message>
         <location line="+72"/>
@@ -8736,8 +8740,12 @@ Neden:
     <name>MainWindow</name>
     <message>
         <location filename="../launcher/core/InstancePathProblems.cpp" line="+34"/>
-        <source>This is a problem: &lt;br/&gt; - Kite will likely be deleted without warning by the operating system &lt;br/&gt; - close Kite now and extract it to a real location, not a temporary folder</source>
-        <translation>Bu bir sorun: &lt;br/&gt; - Kite büyük ihtimalle işletim sistemi tarafından uyarı verilmeden silinecek &lt;br/&gt; - Kite&apos;ı şimdi kapat ve geçici bir klasöre değil, gerçek bir konuma çıkar</translation>
+        <source>This is a problem:
+- Kite will likely be deleted without warning by the operating system
+- close Kite now and extract it to a real location, not a temporary folder</source>
+        <translation>Bu bir sorun:
+- Kite büyük ihtimalle işletim sistemi tarafından uyarı verilmeden silinecek
+- Kite&apos;ı şimdi kapat ve geçici bir klasöre değil, gerçek bir konuma çıkar</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -8746,8 +8754,12 @@ Neden:
     </message>
     <message>
         <location line="+5"/>
-        <source>You have now two options: &lt;br/&gt; - change the instance folder in the settings &lt;br/&gt; - move this installation of %1 to a different folder</source>
-        <translation>İki seçeneğin var: &lt;br/&gt; - ayarlardan kurulum klasörünü değiştir &lt;br/&gt; - bu %1 kurulumunu başka bir klasöre taşı</translation>
+        <source>You have now two options:
+- change the instance folder in the settings
+- move this installation of %1 to a different folder</source>
+        <translation>İki seçeneğin var:
+- ayarlardan kurulum klasörünü değiştir
+- bu %1 kurulumunu başka bir klasöre taşı</translation>
     </message>
     <message>
         <location line="+12"/>

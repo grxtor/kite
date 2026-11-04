@@ -145,7 +145,7 @@ void LaunchController::login()
 	// the failure. the default failure.
 	const QString needLoginAgain =
 		tr("Your account is currently not logged in. Please enter your "
-		   "password to log in again. <br /> <br /> This could be caused by a "
+		   "password to log in again.\n\nThis could be caused by a "
 		   "password change.");
 	QString failReason = needLoginAgain;
 	/* Set when the user takes "Play offline" while the account refreshes:

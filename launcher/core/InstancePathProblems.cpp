@@ -30,13 +30,13 @@ QList<InstancePathProblem> instancePathProblems(const QStringList& folders,
 												const QString& tempPath)
 {
 	/* Translated in MainWindow's context, where these strings have always
-	 * lived, so existing translations keep applying. */
+	 * lived. Plain text with newlines: the dialog shows text as it is. */
 	const QString tempFolderText = QCoreApplication::translate(
 		"MainWindow",
-		"This is a problem: <br/>"
-		" - Kite will likely be deleted without warning "
-		"by the operating system <br/>"
-		" - close Kite now and extract it to a real "
+		"This is a problem:\n"
+		"- Kite will likely be deleted without warning "
+		"by the operating system\n"
+		"- close Kite now and extract it to a real "
 		"location, not a temporary folder");
 
 	QList<InstancePathProblem> problems;
@@ -51,9 +51,9 @@ QList<InstancePathProblem> instancePathProblems(const QStringList& folders,
 					  .arg(folder),
 				  QCoreApplication::translate(
 					  "MainWindow",
-					  "You have now two options: <br/>"
-					  " - change the instance folder in the settings <br/>"
-					  " - move this installation of %1 to a different folder")
+					  "You have now two options:\n"
+					  "- change the instance folder in the settings\n"
+					  "- move this installation of %1 to a different folder")
 					  .arg(BuildConfig.KITE_NAME) });
 		}
 

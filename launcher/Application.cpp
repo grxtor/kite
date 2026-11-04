@@ -2153,7 +2153,7 @@ void Application::reportInstancePathProblems()
 		instancePathProblems(instances()->instanceDirs(), QDir::tempPath());
 	for (const auto& problem : problems) {
 		uiHost()->message(tr("Check your instance folder"),
-						  problem.text + QStringLiteral("<br/><br/>") +
+						  problem.text + QStringLiteral("\n\n") +
 							  problem.advice,
 						  UiHost::Severity::Warning);
 	}
