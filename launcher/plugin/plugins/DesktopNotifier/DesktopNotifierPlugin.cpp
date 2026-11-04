@@ -178,7 +178,7 @@ static int on_news_updated(void* /*mh*/, uint32_t /*hook_id*/,
 	return 0;
 }
 
-/* FRIENDS_NOTICE: a friend came online or sent a request; Kite words both lines. */
+/* FRIENDS_NOTICE: a friend came online, sent a request or a message; Kite words both lines. */
 static int on_friends_notice(void* /*mh*/, uint32_t /*hook_id*/,
 							 void* payload, void* /*ud*/)
 {

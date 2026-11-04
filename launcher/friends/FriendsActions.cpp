@@ -283,9 +283,11 @@ void FriendsController::block(const QString& uuid)
 	}
 	const QString name = nameOf(uuid);
 	act("block", kPut, FriendsApi::Path::block(uuid), QByteArray(),
-		[this, name](const FriendsApi::Reply& reply, bool* ok) {
+		[this, name, uuid](const FriendsApi::Reply& reply, bool* ok) {
 			*ok = reply.ok();
 			if (*ok) {
+				/* A block hides the history from both. */
+				m_chat->forget(uuid);
 				loadBlocked([](const FriendsApi::Reply&, bool) {});
 				return tr("%1 is blocked").arg(name);
 			}

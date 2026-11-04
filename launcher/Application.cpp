@@ -1009,6 +1009,8 @@ void Application::initSettings()
 	m_settings->registerSetting("FriendsNoticeSeen", false);
 	// Desktop notifications when a friend comes online or sends a request.
 	m_settings->registerSetting("FriendsNotifications", true);
+	// Desktop notifications for a chat message whose conversation is not on screen.
+	m_settings->registerSetting("FriendsMessageNotifications", true);
 	// Friends panel on the QML shell's right edge. FriendsPanelExpanded: names
 	// and groups shown; FriendsPanelWidth: pixel width the user dragged it to.
 	m_settings->registerSetting("FriendsPanelOpen", true);

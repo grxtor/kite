@@ -161,6 +161,7 @@ namespace FriendsDisplay
 		/* The friend turned joining off; a server that says nothing (older) is not blamed on them. */
 		map["joinOff"] = hostShown && status.joinableSaid && !status.joinable;
 		map["statusText"] = statusText(status, now);
+		map["unread"] = one.unread;
 		return map;
 	}
 

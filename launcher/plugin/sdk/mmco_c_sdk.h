@@ -136,7 +136,8 @@ enum MMCOHookId {
 	MMCO_HOOK_SESSION_FILL = 0x0801, /* payload: MMCOSessionFillEvent* */
 
 	/* Friends: a friend came online or sent a request, while the launcher's FriendsNotifications
-	 * setting is on. The return value is ignored. */
+	 * setting is on, or sent a chat message that is not on screen, while FriendsMessageNotifications
+	 * is. The return value is ignored. */
 	MMCO_HOOK_FRIENDS_NOTICE = 0x0900, /* payload: MMCOFriendsNotice* */
 
 	/* Forces a 32-bit underlying type across C and C++ compilers; never a real hook id. */
@@ -258,11 +259,12 @@ typedef struct MMCOSessionFillEvent {
 
 /* Payload for MMCO_HOOK_FRIENDS_NOTICE. Strings are UTF-8, host-owned and valid only during the
  * callback; title and body are worded in the launcher's language, ready to show.
- *   kind   "online" (came online or started playing) | "request" (sent a friend request)
+ *   kind   "online" (came online or started playing) | "request" (sent a friend request) |
+ *          "message" (sent a chat message that is not on screen)
  *   uuid   the friend's Minecraft UUID
  *   name   the friend's Minecraft name
- *   title  "Alex is online"
- *   body   "On mc.hypixel.net"; never empty */
+ *   title  "Alex is online"; the sender's name for a message
+ *   body   "On mc.hypixel.net", or the message's text; never empty */
 typedef struct MMCOFriendsNotice {
 	const char* kind;
 	const char* uuid;

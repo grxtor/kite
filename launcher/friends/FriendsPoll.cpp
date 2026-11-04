@@ -356,8 +356,10 @@ void FriendsController::fetchFriends(std::function<void(bool)> done)
 }
 
 void FriendsController::applySnapshot(
-	const FriendsApi::FriendsSnapshot& snapshot)
+	const FriendsApi::FriendsSnapshot& received)
 {
+	m_snapshot = chatSeen(received);
+	const FriendsApi::FriendsSnapshot& snapshot = m_snapshot;
 	/* Status lines carry "5 min ago", so they are worded afresh each time and the view hears of it. */
 	const bool wasLoaded = m_loaded;
 	m_loaded = true;
@@ -396,6 +398,8 @@ void FriendsController::clearData()
 	m_settingsLoaded = false;
 	m_dataProfile.clear();
 	m_noticeMemory = {};
+	m_snapshot = {};
+	stopRealtime();
 	if (hadUpdate) {
 		emit updatedAtChanged();
 	}

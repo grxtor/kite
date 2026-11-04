@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "FriendsApi.h"
+#include "FriendsChat.h"
 #include "FriendsHttp.h"
 #include "FriendsNotices.h"
 #include "modbridge/ModBridgeJson.h"
@@ -40,11 +41,13 @@
 class BaseInstance;
 class FriendsFaces;
 class FriendsGameWatcher;
+class FriendsSocket;
 
 /*
  * The friends list for QML (QmlShell.friends). On unless the FriendsEnabled
  * setting is off; off sends nothing. On, it signs in with the default
- * Minecraft account and polls once a minute. See server/friends/README.md.
+ * Minecraft account, polls once a minute and keeps the server's socket open
+ * for what happens in between (FriendsRealtime.cpp). See server/friends/README.md.
  * Every invokable that talks to the server ends with actionFinished().
  */
 class FriendsController : public QObject
@@ -85,6 +88,11 @@ class FriendsController : public QObject
 	Q_PROPERTY(QVariantMap myStatus READ myStatus NOTIFY changed)
 	Q_PROPERTY(int onlineCount READ onlineCount NOTIFY changed)
 	Q_PROPERTY(int incomingCount READ incomingCount NOTIFY changed)
+	/// The socket to the server is up: events arrive as they happen, and the
+	/// poll is only the minute's safety net.
+	Q_PROPERTY(bool live READ live NOTIFY changed)
+	/// One-to-one chats with friends.
+	Q_PROPERTY(FriendsChat* chat READ chat CONSTANT)
 
   public:
 	/// @p dataDir is where friends.json lives.
@@ -113,6 +121,8 @@ class FriendsController : public QObject
 	QVariantMap myStatus() const;
 	int onlineCount() const;
 	int incomingCount() const;
+	bool live() const;
+	FriendsChat* chat() const;
 
 	Q_INVOKABLE void refresh();
 	Q_INVOKABLE void sendRequest(const QString& name);
@@ -148,6 +158,7 @@ class FriendsController : public QObject
 	static constexpr const char* kServerUrlSetting = "FriendsServerUrl";
 	static constexpr const char* kMojangUrlSetting = "FriendsMojangSessionUrl";
 	static constexpr const char* kNotifySetting = "FriendsNotifications";
+	static constexpr const char* kMessageNotifySetting = "FriendsMessageNotifications";
 
 	enum class State { Off, NoAccount, SigningIn, Ready, Error };
 	using SessionDone = std::function<void(bool)>;
@@ -164,7 +175,7 @@ class FriendsController : public QObject
 	void onAccountActivity();
 	void onAboutToQuit();
 	void onPresenceChanged();
-	/// Polls every ten seconds while the account plays, else every minute.
+	/// Polls every ten seconds while the account plays and the socket is down, else every minute.
 	void followPlay();
 	void pushStatus();
 	QString storePath() const;
@@ -232,11 +243,30 @@ class FriendsController : public QObject
 	void fetchFaces();
 	void onFacesChanged();
 
+	// The socket and what it pushes (FriendsRealtime.cpp)
+	void setUpRealtime();
+	/// The socket runs while Friends is on with a usable session, on its token.
+	void followSession();
+	void stopRealtime();
+	void onSocketUp(bool up);
+	void onSocketFrame(const QJsonObject& frame);
+	void onSocketSessionEnded();
+	void onChatMessage(const FriendsChatApi::Message& message);
+	void onChatRead(const QString& uuid);
+	/// Shows a snapshot a live event changed.
+	void applyLive(const FriendsApi::FriendsSnapshot& snapshot);
+	/// @p snapshot without unread messages in the conversation on screen.
+	FriendsApi::FriendsSnapshot chatSeen(const FriendsApi::FriendsSnapshot& snapshot) const;
+	/// invite / invite.cancelled frames (FriendsInviteStub.cpp until the invites land).
+	void applyInviteEvent(const QJsonObject& event);
+
 	// Desktop notifications (FriendsNotify.cpp)
 	/// Tells the plugins (DesktopNotifier) who came online and which requests
 	/// arrived since the last snapshot, while kNotifySetting is on.
 	void notifyChanges(const FriendsApi::FriendsSnapshot& snapshot,
 					   const QDateTime& now);
+	/// A message from a friend whose conversation is not on screen, while kMessageNotifySetting is on.
+	void notifyMessage(const FriendsChatApi::Message& message);
 
 	// Actions (FriendsActions.cpp)
 	/// Words the outcome with @p interpret (sets *ok, returns the message); a success re-reads the lists.
@@ -260,6 +290,9 @@ class FriendsController : public QObject
 	QTimer m_pushTimer;
 	QTimer m_facesTimer;
 	QTimer m_renewalTimer;
+	FriendsSocket* m_socket = nullptr;
+	FriendsChat* m_chat = nullptr;
+	bool m_live = false;
 
 	bool m_enabled = false;
 	bool m_quitting = false;
@@ -316,6 +349,8 @@ class FriendsController : public QObject
 	QDateTime m_updatedAt;
 	/// What the next snapshot's notices are worked out against; reset with the data.
 	FriendsNotices::Memory m_noticeMemory;
+	/// The lists as last shown, which live events change.
+	FriendsApi::FriendsSnapshot m_snapshot;
 
 	struct SelfView {
 		FriendsApi::Presence sent;

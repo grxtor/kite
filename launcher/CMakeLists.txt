@@ -895,6 +895,12 @@ set(FRIENDS_SOURCES
     friends/FriendsChat.cpp
     friends/FriendsChatHistory.cpp
     friends/FriendsChatSend.cpp
+    friends/FriendsEvents.h
+    friends/FriendsEvents.cpp
+    friends/FriendsSocket.h
+    friends/FriendsSocket.cpp
+    friends/FriendsRealtime.cpp
+    friends/FriendsInviteStub.cpp
     modbridge/ModBridgeProtocol.h
     modbridge/ModBridgeProtocol.cpp
     modbridge/ModBridgeAnswers.cpp
@@ -936,6 +942,24 @@ add_unit_test(FriendsFaces
 add_unit_test(FriendsChat
     SOURCES friends/FriendsChat_test.cpp
     LIBS Kite_core
+    )
+
+add_unit_test(FriendsEvents
+    SOURCES friends/FriendsEvents_test.cpp
+    LIBS Kite_core
+    )
+
+# Talks to a QWebSocketServer of its own.
+add_unit_test(FriendsSocket
+    SOURCES friends/FriendsSocket_test.cpp
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::WebSockets
+    )
+
+# Two players chatting through a real friends server; skipped unless
+# KITE_FRIENDS_E2E_URL names one (see the test's header).
+add_unit_test(FriendsChatE2E
+    SOURCES friends/FriendsChatE2E_test.cpp
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::WebSockets
     )
 
 set(SERVERS_SOURCES

@@ -95,6 +95,7 @@ FriendsController::FriendsController(const QString& dataDir, QObject* parent)
 		connect(LAUNCHER->accounts().get(), &AccountList::defaultAccountChanged,
 				this, &FriendsController::onDefaultAccountChanged);
 	}
+	setUpRealtime();
 	if (LAUNCHER && LAUNCHER->settings()->get(kEnabledSetting).toBool()) {
 		start();
 	}
@@ -292,13 +293,15 @@ void FriendsController::start()
 	m_pollTimer.start();
 	setState(sessionUsable() ? State::Ready : State::SigningIn);
 	emit changed();
+	followSession();
 	tick();
 }
 
 void FriendsController::followPlay()
 {
-	const int interval = gamePresence().playing ? kPlayingPollIntervalMs
-												: kPollIntervalMs;
+	/* With the socket up, friends' statuses come as they change. */
+	const int interval = gamePresence().playing && !m_live ? kPlayingPollIntervalMs
+														   : kPollIntervalMs;
 	/* setInterval() restarts a running timer: only when it changes. */
 	if (m_pollTimer.interval() != interval) {
 		m_pollTimer.setInterval(interval);
@@ -351,12 +354,14 @@ void FriendsController::setSession(const FriendsApi::Session& session)
 		FriendsSessionStore::save(storePath(), session);
 	}
 	emit changed();
+	followSession();
 }
 
 void FriendsController::clearSession()
 {
 	m_session = {};
 	FriendsSessionStore::forget(storePath());
+	followSession();
 }
 
 bool FriendsController::sessionUsable() const

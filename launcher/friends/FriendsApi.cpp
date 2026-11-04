@@ -24,6 +24,8 @@
 #include <QJsonDocument>
 #include <QRegularExpression>
 
+#include <algorithm>
+
 namespace FriendsApi
 {
 	namespace Code
@@ -546,6 +548,7 @@ namespace FriendsApi
 			one.since = parseTime(friendObject.value("since"));
 			one.status =
 				parseStatus(friendObject.value("status").toObject());
+			one.unread = std::max(0, friendObject.value("unread").toInt());
 			if (!one.uuid.isEmpty() && !one.name.isEmpty()) {
 				snapshot.friends.append(one);
 			}

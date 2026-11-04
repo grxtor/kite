@@ -110,6 +110,8 @@ namespace FriendsApi
 		QString name;
 		QDateTime since;
 		Status status;
+		/// Chat messages from them after our read marker.
+		int unread = 0;
 	};
 
 	struct FriendsSnapshot {
