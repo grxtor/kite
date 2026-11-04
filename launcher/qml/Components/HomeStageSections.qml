@@ -14,10 +14,13 @@ Grid {
 
     property bool hasInstances: false
     property bool signedIn: false
+    // QmlShell.launcherImport, or null.
+    property var importer: null
     // NewsModel, or null.
     property var news: null
 
     signal signInRequested()
+    signal importRequested()
 
     readonly property int setupWidth: 340
     readonly property int newsMaxWidth: 620
@@ -35,7 +38,9 @@ Grid {
         visible: setup.shown
         hasInstances: root.hasInstances
         signedIn: root.signedIn
+        importer: root.importer
         onSignInRequested: root.signInRequested()
+        onImportRequested: root.importRequested()
     }
 
     HomeNews {

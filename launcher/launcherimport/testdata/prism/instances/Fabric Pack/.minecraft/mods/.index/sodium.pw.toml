@@ -1,0 +1,13 @@
+name = "Sodium"
+filename = "sodium.jar"
+side = "client"
+
+[download]
+mode = "url"
+url = "https://cdn.modrinth.com/data/AANobbMI/versions/OihdIimA/sodium.jar"
+hash-format = "sha1"
+hash = "0000000000000000000000000000000000000000"
+
+[update.modrinth]
+mod-id = "AANobbMI"
+version = "OihdIimA"

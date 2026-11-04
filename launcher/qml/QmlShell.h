@@ -47,6 +47,7 @@ class TaskWatcher;
 class TechnicModpackModel;
 class AccountsController;
 class NewInstanceController;
+class LauncherImportController;
 class JavaController;
 class JavaDownloadController;
 class FolderSettingsController;
@@ -131,6 +132,8 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* recentWorlds READ recentWorlds CONSTANT)
 	Q_PROPERTY(QObject* accountsController READ accountsController CONSTANT)
 	Q_PROPERTY(QObject* newInstance READ newInstance CONSTANT)
+	/* LauncherImportController: instances from other launchers. */
+	Q_PROPERTY(QObject* launcherImport READ launcherImport CONSTANT)
 	Q_PROPERTY(QObject* javaController READ javaController CONSTANT)
 	Q_PROPERTY(QObject* javaDownload READ javaDownload CONSTANT)
 	Q_PROPERTY(QObject* folderSettings READ folderSettings CONSTANT)
@@ -273,6 +276,7 @@ class QmlShell : public QObject
 	Q_INVOKABLE QObject* contentDrop(const QString& id);
 	QObject* accountsController() const;
 	QObject* newInstance() const;
+	QObject* launcherImport() const;
 	QObject* javaController() const;
 	QObject* javaDownload() const;
 	QObject* folderSettings() const;
@@ -559,6 +563,7 @@ class QmlShell : public QObject
 	std::unique_ptr<InstanceShortcutController> m_shortcutController;
 	std::unique_ptr<AccountsController> m_accountsController;
 	mutable std::unique_ptr<NewInstanceController> m_newInstance;
+	mutable std::unique_ptr<LauncherImportController> m_launcherImport;
 	mutable std::unique_ptr<JavaController> m_javaController;
 	mutable std::unique_ptr<JavaDownloadController> m_javaDownload;
 	mutable std::unique_ptr<FolderSettingsController> m_folderSettings;

@@ -26,6 +26,7 @@
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
 #include "core/LauncherContext.h"
+#include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
 
@@ -111,6 +112,14 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 									 const QString& rootDir)
 	: BaseInstance(globalSettings, settings, rootDir)
 {
+	/* Set by an import from another launcher (launcherimport/ImportBuild),
+	 * first because gameRoot() reads it. LinkedGameDir is the other
+	 * launcher's game folder an instance imported with Link plays in;
+	 * ImportedFrom names the instance it came from, so that one is not
+	 * offered again. */
+	m_settings->registerSetting("LinkedGameDir", "");
+	m_settings->registerSetting("ImportedFrom", "");
+
 	// Java Settings
 	auto javaOverride = m_settings->registerSetting("OverrideJava", false);
 	auto locationOverride =
@@ -364,8 +373,22 @@ bool MinecraftInstance::supportsDemo() const
 
 QString MinecraftInstance::gameRoot() const
 {
-	QFileInfo mcDir(FS::PathCombine(instanceRoot(), "minecraft"));
-	QFileInfo dotMCDir(FS::PathCombine(instanceRoot(), ".minecraft"));
+	return gameRootFor(instanceRoot(),
+					   m_settings->get("LinkedGameDir").toString());
+}
+
+QString MinecraftInstance::gameRootFor(const QString& instanceRoot,
+									   const QString& linkedGameDir)
+{
+	/* A linked folder that is gone (the other launcher deleted it) is not
+	 * made again: the instance falls back to its own folder. */
+	if (!linkedGameDir.isEmpty() && QDir::isAbsolutePath(linkedGameDir) &&
+		QFileInfo(linkedGameDir).isDir()) {
+		return QDir::cleanPath(linkedGameDir);
+	}
+
+	QFileInfo mcDir(FS::PathCombine(instanceRoot, "minecraft"));
+	QFileInfo dotMCDir(FS::PathCombine(instanceRoot, ".minecraft"));
 
 	if (mcDir.exists() && !dotMCDir.exists())
 		return mcDir.filePath();

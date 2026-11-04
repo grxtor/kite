@@ -34,6 +34,8 @@
 #include "archive/ExportToZipTask.h"
 #include "core/LauncherContext.h"
 #include "icons/IconList.h"
+#include "launcherimport/ImportCopy.h"
+#include "launcherimport/LinkedGame.h"
 #include "minecraft/MinecraftInstance.h"
 #include "modplatform/flame/FlamePackExportTask.h"
 #include "modplatform/modrinth/ModrinthPackExportTask.h"
@@ -476,8 +478,10 @@ Task* InstanceExportController::buildTask(const QString& output)
 				setError(tr("The instance's files could not be read."));
 				return nullptr;
 			}
-			return new MMCZip::ExportToZipTask(
+			auto* task = new MMCZip::ExportToZipTask(
 				output, m_instance->instanceRoot(), files, QString(), true);
+			addLinkedGameFiles(task);
+			return task;
 		}
 		case Format::ModrinthPack:
 			return new ModrinthPackExportTask(packName, m_packVersion,
@@ -498,6 +502,30 @@ Task* InstanceExportController::buildTask(const QString& output)
 		}
 	}
 	return nullptr;
+}
+
+void InstanceExportController::addLinkedGameFiles(MMCZip::ExportToZipTask* task) const
+{
+	/* The zip stands on its own: its instance.cfg names no link, whose folder
+	 * would not exist where it is imported (or would be shared again here). */
+	QFile config(FS::PathCombine(m_instance->instanceRoot(), "instance.cfg"));
+	if (config.open(QIODevice::ReadOnly)) {
+		task->setExcludeFiles({QStringLiteral("instance.cfg")});
+		task->addExtraFile(QStringLiteral("instance.cfg"),
+						   LauncherImport::withoutLink(config.readAll()));
+	}
+
+	/* A linked instance's game files live in the other launcher's folder; they
+	 * go in under the instance's own game folder, as a Copy import takes them
+	 * (never that launcher's own files or sign-in). */
+	const QString linkedGame = LauncherImport::outsideGameRoot(*m_instance);
+	if (linkedGame.isEmpty()) {
+		return;
+	}
+	const LauncherImport::CopyPlan plan = LauncherImport::planCopy(linkedGame);
+	for (const auto& file : plan.files) {
+		task->addMappedFile(file.source, QStringLiteral("minecraft/") + file.relative);
+	}
 }
 
 void InstanceExportController::saveInstanceIcon() const

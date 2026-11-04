@@ -255,6 +255,9 @@ qt_add_qml_module(Kite_qml_components
         ShareCodeBox.qml
         ShareCodeDialog.qml
         ShareCodeImportPane.qml
+        LauncherMark.qml
+        LauncherImportRow.qml
+        LauncherImportPane.qml
         ShareCodesGroup.qml
         FriendsPending.qml
         FriendJoinDialog.qml

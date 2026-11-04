@@ -29,6 +29,8 @@ Item {
     property var recentWorldsModel: null
     property var news: null
     property bool msaSignedIn: false
+    // QmlShell.launcherImport, or null.
+    property var launcherImport: null
 
     // group -> that group's model; without it the library is one grid with no headers.
     property var sectionModelFor: null
@@ -46,6 +48,8 @@ Item {
     signal createRequested()
     signal discoverRequested()
     signal signInRequested()
+    // "Set up Kite" offers the instances other launchers have: New instance on its "From another launcher" tab.
+    signal importLaunchersRequested()
     // tab: "friends", "requests" or "add".
     signal friendsRequested(string tab)
     signal joinRequested(var friend)
@@ -198,8 +202,10 @@ Item {
                 visible: root.isStage && stageSections.hasContent
                 hasInstances: root.hasLibrary
                 signedIn: root.msaSignedIn
+                importer: root.launcherImport
                 news: root.news
                 onSignInRequested: root.signInRequested()
+                onImportRequested: root.importLaunchersRequested()
             }
 
             Column {
@@ -317,6 +323,7 @@ Item {
         visible: root.showSide
         hasInstances: root.hasLibrary
         signedIn: root.msaSignedIn
+        importer: root.launcherImport
         news: root.news
         recentWorldsModel: root.recentWorldsModel
         friends: root.friends
@@ -327,6 +334,7 @@ Item {
         onNavigateRequested: (target) => root.navigateRequested(target)
         onJoinRequested: (friend) => root.joinRequested(friend)
         onSignInRequested: root.signInRequested()
+        onImportRequested: root.importLaunchersRequested()
         onWorldRequested: (id) => root.openInstanceWorldsRequested(id)
     }
 }

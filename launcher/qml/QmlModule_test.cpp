@@ -1180,6 +1180,203 @@ class QmlModuleTest : public QObject
 		QTest::mouseRelease(window, Qt::LeftButton, Qt::NoModifier, at + QPoint(40, 5));
 	}
 
+	/* The "From another launcher" pane against a stand-in controller: its
+	 * footer line counts the pick (singular and plural), Import is off when the
+	 * copies do not fit, and start() hands over to the controller. */
+	void launcherImportPaneFollowsItsController()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(
+			"import QtQuick\n"
+			"import Kite.Components\n"
+			"Item {\n"
+			"  width: 800; height: 600\n"
+			"  property alias pane: pane\n"
+			"  property alias fake: fake\n"
+			"  QtObject { id: fake\n"
+			"    property bool running: false; property bool scanning: false; property bool scanned: true\n"
+			"    property int availableCount: 2; property var unsupported: ['ATLauncher']; property var unreadable: []\n"
+			"    property int selectedCount: 1; property bool allSelected: false; property bool anyLinked: false\n"
+			"    property int linkedCount: 0; property int foundCount: 2\n"
+			"    property string selectedSizeText: '1.2 GB'; property string freeSpaceText: '10 GB'\n"
+			"    property string space: 'ok'; property real progress: -1; property string status: ''\n"
+			"    property int importedCount: 0; property int failedCount: 0; property var errors: []\n"
+			"    property int started: 0\n"
+			"    property var model: ListModel { ListElement { key: 'prism:a'; launcher: 'prism';\n"
+			"      launcherName: 'Prism Launcher'; name: 'Pack'; minecraftVersion: '1.20.1'; loader: 'fabric';\n"
+			"      loaderVersion: '0.15.11'; sizeText: '1.2 GB'; lastPlayed: 0; checked: true; linked: false;\n"
+			"      linkable: true; linkBlocker: ''; problem: ''; imported: false; leftBehind: '';\n"
+			"      iconKey: 'default'; iconFile: '' } }\n"
+			"    function scan() {} function setChecked(k, c) {} function setAllChecked(c) {}\n"
+			"    function setMode(k, m) {} function openFolder(k) {} function cancel() {}\n"
+			"    function launcherName(k) { return 'Prism Launcher' }\n"
+			"    function start() { started++; running = true; return true }\n"
+			"  }\n"
+			"  LauncherImportPane { id: pane; anchors.fill: parent; controller: fake }\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/LauncherImport.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		QTest::failOnWarning(QRegularExpression(QStringLiteral("TypeError|ReferenceError")));
+		std::unique_ptr<QObject> root(component.create());
+		QVERIFY2(root, qPrintable(component.errorString()));
+		auto* pane = root->property("pane").value<QObject*>();
+		auto* fake = root->property("fake").value<QObject*>();
+		QVERIFY(pane && fake);
+
+		QCOMPARE(pane->property("summary").toString(),
+				 QStringLiteral("1 instance selected, 1.2 GB to copy"));
+		QVERIFY(pane->property("canImport").toBool());
+		fake->setProperty("selectedCount", 3);
+		QCOMPARE(pane->property("summary").toString(),
+				 QStringLiteral("3 instances selected, 1.2 GB to copy"));
+		fake->setProperty("linkedCount", 1);
+		QCOMPARE(pane->property("summary").toString(),
+				 QStringLiteral("3 instances selected, 1.2 GB to copy, 1 linked"));
+		fake->setProperty("selectedCount", 1);
+		QCOMPARE(pane->property("summary").toString(), QStringLiteral("1 instance selected, 1 linked"));
+		fake->setProperty("linkedCount", 0);
+		fake->setProperty("space", QStringLiteral("short"));
+		QVERIFY(!pane->property("canImport").toBool());
+		fake->setProperty("space", QStringLiteral("ok"));
+
+		QVERIFY(QMetaObject::invokeMethod(pane, "start"));
+		QCOMPARE(fake->property("started").toInt(), 1);
+		QVERIFY(pane->property("running").toBool());
+		QVERIFY(!pane->property("canImport").toBool());
+		QCOMPARE(pane->property("summary").toString(), QString());
+	}
+
+	/* Home's "Set up Kite" offers the other launchers' instances only while
+	 * the scan found some and the player has neither imported nor hidden the
+	 * step; the scan is asked for once, and only by a card that can show it. */
+	void setUpKiteOffersTheOtherLaunchersInstances()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(
+			"import QtQuick\n"
+			"import Kite.Components\n"
+			"Item {\n"
+			"  width: 400; height: 300\n"
+			"  property alias card: card\n"
+			"  property alias fake: fake\n"
+			"  property alias settings: settings\n"
+			"  property int asked: 0\n"
+			"  QtObject { id: settings\n"
+			"    property var saved: ({})\n"
+			"    signal valueChanged(string id)\n"
+			"    function value(k) { return saved[k] }\n"
+			"    function defaultValue(k) { return false }\n"
+			"    function setValue(k, v) { var s = saved; s[k] = v; saved = s; valueChanged(k) }\n"
+			"  }\n"
+			"  QtObject { id: fake\n"
+			"    property bool scanned: false; property bool scanning: false\n"
+			"    property int availableCount: 0; property int scans: 0\n"
+			"    signal finished(int imported, int failed, bool cancelled)\n"
+			"    function scan() { scans++; scanning = true; scanning = false; scanned = true; availableCount = 2 }\n"
+			"  }\n"
+			"  GettingStartedCard { id: card; width: parent.width; hasInstances: false; signedIn: true\n"
+			"    importer: fake; onImportRequested: asked++ }\n"
+			"  Component.onCompleted: SettingsStore.adapter = settings\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/SetUpKite.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		QTest::failOnWarning(QRegularExpression(QStringLiteral("TypeError|ReferenceError")));
+		std::unique_ptr<QObject> root(component.create());
+		QVERIFY2(root, qPrintable(component.errorString()));
+		auto* card = root->property("card").value<QObject*>();
+		auto* fake = root->property("fake").value<QObject*>();
+		QVERIFY(card && fake);
+		auto* step = card->findChild<QQuickItem*>(QStringLiteral("importStep"));
+		QVERIFY(step);
+
+		// No instances yet: no card, and no look at the other launchers.
+		QTest::qWait(50);
+		QCOMPARE(fake->property("scans").toInt(), 0);
+		QVERIFY(!card->property("shown").toBool());
+
+		// A first instance: the one look finds some, and the step shows.
+		card->setProperty("hasInstances", true);
+		QTRY_COMPARE(fake->property("scans").toInt(), 1);
+		QVERIFY(step->isVisible());
+		QVERIFY(card->property("shown").toBool());
+		QVERIFY(QMetaObject::invokeMethod(step, "clicked"));
+		QCOMPARE(root->property("asked").toInt(), 1);
+
+		// Nothing found: the card is gone, since signing in is done.
+		fake->setProperty("availableCount", 0);
+		QVERIFY(!step->isVisible());
+		QVERIFY(!card->property("shown").toBool());
+		fake->setProperty("availableCount", 2);
+		QVERIFY(step->isVisible());
+
+		// Hiding it (the step's ⋯) settles it for good.
+		QVERIFY(QMetaObject::invokeMethod(step, "hideRequested"));
+		QVERIFY(!step->isVisible());
+		QVERIFY(!card->property("shown").toBool());
+		QVERIFY(root->property("settings").value<QObject*>()->property("saved").toMap()
+					.value(QStringLiteral("SetupImportDone")).toBool());
+		QTest::qWait(50);
+		QCOMPARE(fake->property("scans").toInt(), 1);
+	}
+
+	void setUpKiteStepEndsWithAnImport()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(
+			"import QtQuick\n"
+			"import Kite.Components\n"
+			"Item {\n"
+			"  width: 400; height: 300\n"
+			"  property alias card: card\n"
+			"  property alias fake: fake\n"
+			"  QtObject { id: settings\n"
+			"    property var saved: ({})\n"
+			"    signal valueChanged(string id)\n"
+			"    function value(k) { return saved[k] }\n"
+			"    function defaultValue(k) { return false }\n"
+			"    function setValue(k, v) { var s = saved; s[k] = v; saved = s; valueChanged(k) }\n"
+			"  }\n"
+			"  QtObject { id: fake\n"
+			"    property bool scanned: true; property bool scanning: false\n"
+			"    property int availableCount: 3; property int scans: 0\n"
+			"    signal finished(int imported, int failed, bool cancelled)\n"
+			"    function scan() { scans++ }\n"
+			"  }\n"
+			"  GettingStartedCard { id: card; width: parent.width; hasInstances: true; signedIn: false\n"
+			"    importer: fake }\n"
+			"  Component.onCompleted: SettingsStore.adapter = settings\n"
+			"}\n",
+			QUrl(QStringLiteral("qrc:/test/SetUpKiteImport.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		QTest::failOnWarning(QRegularExpression(QStringLiteral("TypeError|ReferenceError")));
+		std::unique_ptr<QObject> root(component.create());
+		QVERIFY2(root, qPrintable(component.errorString()));
+		auto* card = root->property("card").value<QObject*>();
+		auto* fake = root->property("fake").value<QObject*>();
+		QVERIFY(card && fake);
+		auto* step = card->findChild<QQuickItem*>(QStringLiteral("importStep"));
+		QVERIFY(step);
+
+		// Already looked: it does not look again, and the step is there.
+		QTest::qWait(50);
+		QCOMPARE(fake->property("scans").toInt(), 0);
+		QVERIFY(step->isVisible());
+
+		// An import that brought nothing over leaves it; one that did ends it
+		// while the card stays for the sign-in.
+		QVERIFY(QMetaObject::invokeMethod(fake, "finished", Q_ARG(int, 0), Q_ARG(int, 1), Q_ARG(bool, false)));
+		QVERIFY(step->isVisible());
+		QVERIFY(QMetaObject::invokeMethod(fake, "finished", Q_ARG(int, 2), Q_ARG(int, 0), Q_ARG(bool, false)));
+		QVERIFY(!step->isVisible());
+		QVERIFY(card->property("shown").toBool());
+	}
+
 	/* The overlay's card says "Drop to add" and one line per kind dragged; the
 	 * data pack line adds that a world will be asked for. */
 	void dropOverlayNamesWhatIsDragged()
