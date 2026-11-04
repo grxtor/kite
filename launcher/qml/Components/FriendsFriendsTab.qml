@@ -5,8 +5,8 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Friends page's "Friends" tab: everyone on the list in three groups -- in game, in Kite, offline
- * (FriendsGroup).
+ * The Friends page's "Friends" tab: invites to a server first (FriendsWaiting), then everyone on the list in three
+ * groups -- in game, in Kite, offline (FriendsGroup).
  * With nobody on the list it is FriendsEmptyState; until the list has been read it is neither, so a person with
  * friends is not told they have none while it loads.
  */
@@ -19,6 +19,8 @@ Item {
     property var joinFlow: null
     property bool stale: false
     property bool actionsEnabled: true
+    // FriendsPage's FriendsState, for the invites.
+    property FriendsState friendsState: FriendsState { controller: root.controller }
     // Main.qml's FriendPlaces, for the server names and favicons.
     property FriendPlaces places: FriendPlaces {}
 
@@ -34,6 +36,13 @@ Item {
         spacing: Theme.space.sm
         emptyState: FriendsEmptyState { myName: root.controller ? root.controller.myName : "" }
 
+        FriendsWaiting {
+            width: parent.width
+            friendsState: root.friendsState
+            places: root.places
+            joinFlow: root.joinFlow
+            onJoinRequested: (friend) => root.joinRequested(friend)
+        }
         FriendsGroup {
             width: parent.width
             title: qsTr("IN GAME — %1").arg(root.groups.playing.length)

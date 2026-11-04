@@ -127,6 +127,14 @@ Column {
         onSettingsRequested: root.navigateRequested("settings/friends")
     }
 
+    FriendsWaiting {
+        width: parent.width
+        friendsState: root.friendsState
+        places: root.places
+        joinFlow: root.joinFlow
+        onJoinRequested: (friend) => root.joinRequested(friend)
+    }
+
     HomeFriendsRequestsLink {
         visible: root.friendsState.connected && root.friendsState.incomingCount > 0
         x: -Theme.space.sm

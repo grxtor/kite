@@ -632,6 +632,41 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("|1 unread message|3 unread messages|8 min left|1 min left|In game|success|tertiary"));
 	}
 
+	/* Join on an invite goes to the invite's server with the inviter's game
+	 * version; while they are not in a game there is no version to pick an
+	 * instance by, so no Join. */
+	void inviteJoinUsesTheInvitersVersion()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(QStringLiteral(R"(
+			import QtQuick
+			import Kite.Components
+			FriendsWaiting {
+				friendsState: FriendsState { controller: %1 }
+				function targets() {
+					return invites.map((one) => {
+						var target = joinTarget(one)
+						return target.host + ":" + target.version + ":" + Format.friendJoinable(target)
+					}).join(",")
+				}
+			})")
+							  .arg(fakeFriends(QStringLiteral(R"([
+				{ uuid: "a", name: "Ann", state: "playing", worldType: "server", host: "mc.example.net", port: 25565,
+				  version: "1.21.4", instance: "PvP" },
+				{ uuid: "b", name: "Bea", state: "online", statusText: "In Kite" }])"),
+											   QStringLiteral(R"([
+				{ uuid: "a", name: "Ann", host: "play.other.net", port: 25565, expiresAt: "" },
+				{ uuid: "b", name: "Bea", host: "mc.example.net", port: 25565, expiresAt: "" }])")))
+							  .toUtf8(),
+						  QUrl());
+		std::unique_ptr<QObject> waiting(component.create());
+		QVERIFY2(waiting, qPrintable(component.errorString()));
+		QCOMPARE(callString(waiting.get(), "targets"),
+				 QStringLiteral("play.other.net:1.21.4:true,mc.example.net::false"));
+	}
+
 	/* A quick-join entry's tooltip says what a click does and what is
 	 * live there. */
 	void quickJoinEntryTipSaysWhatAClickDoes()

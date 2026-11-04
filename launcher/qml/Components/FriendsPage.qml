@@ -119,6 +119,7 @@ Item {
 
             FriendsFriendsTab {
                 controller: root.controller
+                friendsState: root.friendsState
                 places: root.places
                 menu: personMenu
                 joinFlow: root.joinFlow

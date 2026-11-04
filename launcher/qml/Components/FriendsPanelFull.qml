@@ -6,9 +6,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The friends panel opened out: header, then who is in game, in Kite and, folded until opened, offline
- * (FriendsPanelGroup). Requests, blocked people and adding by name stay on the Friends page. FriendsSidePanel
- * builds this once and never tears it down, so the folds hold for the session.
+ * The friends panel opened out: header, then what waits on you (invites to a server, friend requests to accept or
+ * decline; FriendsWaiting), then who is in game, in Kite and, folded until opened, offline (FriendsPanelGroup).
+ * Sent requests, blocked people and adding by name stay on the Friends page. FriendsSidePanel builds this once and
+ * never tears it down, so the folds hold for the session.
  */
 Item {
     id: root
@@ -84,6 +85,15 @@ Item {
                     width: parent.width
                     controller: root.friendsState.controller
                     onSettingsRequested: root.navigateRequested("settings/friends")
+                }
+
+                FriendsWaiting {
+                    width: parent.width
+                    friendsState: root.friendsState
+                    places: root.places
+                    joinFlow: root.joinFlow
+                    withRequests: true
+                    onJoinRequested: (friend) => root.joinRequested(friend)
                 }
 
                 FriendsPanelGroup {

@@ -129,6 +129,9 @@ qt_add_qml_module(Kite_qml_components
         ServerFavicon.qml
         FriendPlaceBlock.qml
         FriendMessageField.qml
+        FriendInviteCard.qml
+        FriendRequestRow.qml
+        FriendsWaiting.qml
         GroupHeading.qml
         HomeWorldList.qml
         InstanceArt.qml
