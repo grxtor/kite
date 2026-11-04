@@ -11,7 +11,9 @@ import Kite.Theme
  * The paste.ee key used for uploaded logs (PasteEEAPIKey: either the literal
  * string "kite", or a key of the account's own). `ownKey` is local UI state, not
  * a live binding: deriving it from the setting would snap the "own key" radio
- * back to "Kite key" the moment it is picked, before a key is typed.
+ * back to "Kite key" the moment it is picked, before a key is typed. Below it,
+ * whether crashes Kite could not explain go to Kite without asking
+ * (CrashReportsAutoSend, off unless the player turned it on).
  */
 SettingsScroll {
     id: root
@@ -60,6 +62,16 @@ SettingsScroll {
                                            SettingsStore.setValue("PasteEEAPIKey", text.trim())
                 }
             }
+        }
+    }
+
+    SettingsGroup {
+        width: parent.width
+        title: qsTr("Crash reports")
+        SettingSwitch {
+            key: "CrashReportsAutoSend"
+            label: qsTr("Send crash reports without asking")
+            description: qsTr("When Kite can't tell why the game crashed, it sends the error lines, the versions and the mod list to Kite, so the fix can come for everyone. Your account, your name and your IP address are not sent. Off: Kite asks every time.")
         }
     }
 }

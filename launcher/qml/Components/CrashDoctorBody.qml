@@ -12,6 +12,7 @@ import Kite.Theme
  * first cause with its fix, the other possible causes folded under one row, or, when it found
  * nothing, that it could not tell and the log upload. Under the Log tab's strip, which says the first
  * cause's title and holds its buttons, the first cause shows only its details (firstDetailsOnly).
+ * Last, the offer to send the crash to Kite when nothing knew it or its fix did not help.
  */
 ColumnLayout {
     id: root
@@ -129,5 +130,18 @@ ColumnLayout {
             onDismissRequested: root.doctor.dismiss()
             onUndoRequested: root.flows.undo()
         }
+    }
+
+    Rectangle {
+        Layout.fillWidth: true
+        visible: sendBlock.visible
+        implicitHeight: 1
+        color: Theme.palette.border
+    }
+    CrashSendBlock {
+        id: sendBlock
+        Layout.fillWidth: true
+        visible: !root.busy && sendBlock.shown
+        doctor: root.doctor
     }
 }

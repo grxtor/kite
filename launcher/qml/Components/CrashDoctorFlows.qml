@@ -147,6 +147,9 @@ Item {
         content: root.details ? root.details.content : null
         kind: "mods"
         onNotify: (message, tone) => {
+            // A fix that installed something counts as tried, like one the model ran.
+            if (tone === "success" && root.workingCause >= 0 && root.doctor)
+                root.doctor.noteFixTried(root.workingCause)
             root.workingCause = -1
             if (tone === "success")
                 root.played(message)

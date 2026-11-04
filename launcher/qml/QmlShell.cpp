@@ -162,6 +162,7 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 			[this](const QString& id, bool fresh) {
 				emit crashAnalysed(id, CrashDoctorService::instance()->topCause(id), fresh);
 			});
+	CrashDoctorService::instance()->startFollowUp();
 
 	recomputeSetupSteps();
 }
@@ -795,6 +796,28 @@ void QmlShell::debugAnalyseCrash(const QString& id)
 void QmlShell::debugCrashNow(const QString& id)
 {
 	debugCrash(id, true);
+}
+
+void QmlShell::debugSendCrash(const QString& id)
+{
+	// The route also asks for the analysis, which runs on a worker thread.
+	auto* service = CrashDoctorService::instance();
+	if (service->report(id) && !service->busy(id)) {
+		service->send(id, false);
+		return;
+	}
+	auto once = std::make_shared<QMetaObject::Connection>();
+	*once = connect(service, &CrashDoctorService::analysed, this, [service, id, once](const QString& done) {
+		if (done == id) {
+			QObject::disconnect(*once);
+			service->send(id, false);
+		}
+	});
+}
+
+void QmlShell::debugUseCrashRules(const QString& path)
+{
+	CrashDoctorService::instance()->debugUseCatalog(path);
 }
 
 void QmlShell::debugClick(const QString& spec)

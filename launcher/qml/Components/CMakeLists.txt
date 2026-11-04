@@ -111,6 +111,8 @@ qt_add_qml_module(Kite_qml_components
         CrashDoctorDialog.qml
         CrashDoctorFlows.qml
         CrashDoctorPanel.qml
+        CrashPayloadView.qml
+        CrashSendBlock.qml
         LogSourcePicker.qml
         LogLines.qml
         LogFindBar.qml

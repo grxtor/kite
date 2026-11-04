@@ -20,10 +20,14 @@
 #include "CrashDoctorService.h"
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QFile>
+#include <QTimer>
 #include <QFutureWatcher>
 #include <QtConcurrent>
 
+#include "CrashFollowUp.h"
+#include "CrashOutbox.h"
 #include "Logging.h"
 #include "core/LauncherContext.h"
 #include "launch/LaunchTask.h"
@@ -34,6 +38,9 @@ namespace
 {
 	const QString kEmbeddedCatalog = QStringLiteral(":/kite/crash-rules.json");
 	const QString kCatalogPath = QStringLiteral("kite/crash-rules.json");
+	const QString kFollowUpDir = QStringLiteral("crash-reports");
+	// After the window is up and the first requests of the start are done.
+	constexpr int kFollowUpDelayMs = 20 * 1000;
 } // namespace
 
 CrashDoctorService* CrashDoctorService::instance()
@@ -79,6 +86,9 @@ bool CrashDoctorService::useCatalog(const QByteArray& json, const QString& from)
 		return false;
 	}
 	m_catalog = std::move(*parsed);
+	if (m_followUp) {
+		m_followUp->catalogChanged(m_catalog.catalogVersion);
+	}
 	return true;
 }
 
@@ -106,6 +116,7 @@ void CrashDoctorService::watch(const shared_qobject_ptr<LaunchTask>& task)
 	}
 	const QString id = task->instance()->id();
 	forget(id);
+	followUp()->launched(id);
 	refreshCatalog();
 	LaunchTask* raw = task.get();
 	connect(raw, &Task::finished, this, [this, raw, id] { onFinished(raw, id); });
@@ -114,11 +125,15 @@ void CrashDoctorService::watch(const shared_qobject_ptr<LaunchTask>& task)
 void CrashDoctorService::onFinished(LaunchTask* task, const QString& instanceId)
 {
 	auto instance = std::dynamic_pointer_cast<MinecraftInstance>(task->instance());
-	// A Kill is no crash, and a clean run has nothing to say.
-	if (!instance || task->isAborting() || !instance->hasCrashed()) {
+	// A Kill is no crash, and a clean run has nothing to say, but that its old
+	// crashes are done with.
+	if (!instance || task->isAborting()) {
 		return;
 	}
-	Q_UNUSED(instanceId);
+	if (!instance->hasCrashed()) {
+		followUp()->ranClean(instanceId);
+		return;
+	}
 	run(CrashDoctor::snapshot(*instance, task), true);
 }
 
@@ -136,19 +151,79 @@ void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh)
 	const QString id = snapshot.instanceId;
 	m_busy.insert(id);
 	emit busyChanged(id);
+	analyseAsync(snapshot, [this, id, fresh](const CrashDoctor::Report& report) {
+		m_reports.insert(id, report);
+		m_busy.remove(id);
+		emit busyChanged(id);
+		emit analysed(id, fresh);
+		followUp()->analysed(report, fresh, m_catalog.catalogVersion);
+	});
+}
+
+void CrashDoctorService::analyseAsync(const CrashDoctor::Snapshot& snapshot,
+									  std::function<void(const CrashDoctor::Report&)> done)
+{
 	auto* watcher = new QFutureWatcher<CrashDoctor::Report>(this);
 	connect(watcher, &QFutureWatcher<CrashDoctor::Report>::finished, this,
-			[this, watcher, id, fresh] {
-				m_reports.insert(id, watcher->result());
-				m_busy.remove(id);
+			[watcher, done = std::move(done)] {
+				done(watcher->result());
 				watcher->deleteLater();
-				emit busyChanged(id);
-				emit analysed(id, fresh);
 			});
 	watcher->setFuture(QtConcurrent::run(
 		[catalog = m_catalog, snapshot, lang = MetaCatalog::selectedLanguage()] {
 			return CrashDoctor::analyse(catalog, snapshot, lang);
 		}));
+}
+
+CrashFollowUp* CrashDoctorService::followUp()
+{
+	if (!m_followUp) {
+		m_followUp = new CrashFollowUp(
+			QDir::current().filePath(kFollowUpDir),
+			[this](const CrashDoctor::Snapshot& snapshot, std::function<void(const CrashDoctor::Report&)> done) {
+				analyseAsync(snapshot, std::move(done));
+			},
+			this);
+		connect(m_followUp, &CrashFollowUp::solved, this, &CrashDoctorService::keepSolved);
+		connect(m_followUp->outbox(), &CrashOutbox::stateChanged, this, &CrashDoctorService::sendStateChanged);
+	}
+	return m_followUp;
+}
+
+void CrashDoctorService::keepSolved(const CrashDoctor::Report& report)
+{
+	const QString id = report.instanceId;
+	// A crash since then, or one being read, says more than an old one.
+	const auto shown = m_reports.constFind(id);
+	if (busy(id) || (shown != m_reports.constEnd() && !shown->solvedLaterFor.isValid())) {
+		return;
+	}
+	m_reports.insert(id, report);
+	emit analysed(id, false);
+}
+
+void CrashDoctorService::startFollowUp()
+{
+	QTimer::singleShot(kFollowUpDelayMs, this, [this] {
+		if (followUp()->hasCrashes()) {
+			refreshCatalog();
+		}
+		followUp()->start(m_catalog.catalogVersion);
+	});
+}
+
+void CrashDoctorService::send(const QString& instanceId, bool alwaysFromNow)
+{
+	if (const auto it = m_reports.constFind(instanceId); it != m_reports.constEnd()) {
+		followUp()->send(*it, alwaysFromNow);
+	}
+}
+
+bool CrashDoctorService::debugUseCatalog(const QString& path)
+{
+	QFile file(path);
+	followUp();
+	return file.open(QIODevice::ReadOnly) && useCatalog(file.readAll(), QStringLiteral("dev"));
 }
 
 std::optional<CrashDoctor::Report> CrashDoctorService::report(const QString& instanceId) const
@@ -167,9 +242,15 @@ bool CrashDoctorService::busy(const QString& instanceId) const
 
 void CrashDoctorService::forget(const QString& instanceId)
 {
-	if (m_reports.remove(instanceId) > 0) {
-		emit forgotten(instanceId);
+	const auto it = m_reports.constFind(instanceId);
+	if (it == m_reports.constEnd()) {
+		return;
 	}
+	if (it->solvedLaterFor.isValid()) {
+		followUp()->dismissed(instanceId);
+	}
+	m_reports.remove(instanceId);
+	emit forgotten(instanceId);
 }
 
 QString CrashDoctorService::topCause(const QString& instanceId) const

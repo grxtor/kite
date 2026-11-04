@@ -2,7 +2,7 @@
 layout: ../../layouts/LegalLayout.astro
 title: "Gizlilik Politikası"
 description: "Kite’ın ve kiteclient.com’un verilerinle ne yaptığı."
-updated: "2026-10-25"
+updated: "2026-11-04"
 ---
 
 Kite, grxtor’un yaptığı bir Minecraft başlatıcısı. Bu politika Kite uygulamasını ve bu siteyi, kiteclient.com’u kapsar. Anlaşılmayan bir yer olursa [contact@kiteclient.com](mailto:contact@kiteclient.com) adresine yaz.
@@ -11,7 +11,8 @@ Kite, grxtor’un yaptığı bir Minecraft başlatıcısı. Bu politika Kite uyg
 
 - Kite’ta analitik, telemetri ya da reklam yok. Kite sana veya bilgisayarına bir kimlik numarası vermez.
 - Kite’ın kendine ait bir hesap sistemi yok. Microsoft girişin, ayarların ve kurulumların senin bilgisayarında kalır.
-- Arkadaşlar, bizim bir sunucumuzu kullanan tek özellik. Microsoft hesabıyla giriş yaptığında varsayılan olarak açıktır; Ayarlar → Arkadaşlar’dan kapatabilirsin. Açıkken Kite’ın sunucusu Minecraft adını, arkadaşlarını ve ne oynadığını tutar; bunların hepsini Kite’ın içinden silebilirsin.
+- Bizim bir sunucumuzu kullanan özellikler Arkadaşlar ve çökme raporları. Arkadaşlar, Microsoft hesabıyla giriş yaptığında varsayılan olarak açıktır; Ayarlar → Arkadaşlar’dan kapatabilirsin. Açıkken Kite’ın sunucusu Minecraft adını, arkadaşlarını ve ne oynadığını tutar; bunların hepsini Kite’ın içinden silebilirsin.
+- Kite oyunun neden çöktüğünü bulamazsa çökmeyi Kite’a göndermeyi önerir. Gönder’e basmadıkça ya da sormadan göndermeyi açmadıkça hiçbir şey gitmez. Bir rapor hata satırlarını, sürümleri ve mod listesini taşır; hesabını, adını ya da IP adresini asla. Bkz. [Çökme raporları](#çökme-raporları).
 - Kite, çalışmak için gereken servislerle konuşur. Seni giriş yaptırmak ve oyunu indirmek için Microsoft ve Mojang’la, mod ararken ya da güncellerken Modrinth gibi mod siteleriyle bağlantı kurar. Bu servislerin her biri IP adresini görür ve verini kendi gizlilik politikasına göre işler.
 
 ## Site
@@ -37,6 +38,7 @@ Bu klasörde şunlar vardır:
 - Kite’ın kendi kayıtları (log)
 - `accounts.json`: Minecraft profilin (ad, UUID, skin ve pelerinler) ve Kite’ın oturumunu açık tutmak için gereken giriş anahtarları (token)
 - Arkadaşlar açıkken: Kite’ın arkadaşlık sunucusunun anahtarını tutan `friends.json` ve `cache/friendfaces` içinde arkadaşlarının kafaları
+- `crash-reports/`: Kite’ın açıklayamadığı çökmeler, daha yeni çökme kuralları onları yeniden okuyabilsin diye 30 gün; bir de göndermeyi seçtiğin ve bağlantı bekleyen çökme raporları
 
 Giriş anahtarları şifrelenmez, ama `accounts.json` ve `friends.json` dosyalarını yalnızca kendi kullanıcı hesabın okuyabilir. Kite’ta bir hesabı kaldırınca onun anahtarları da silinir. Kite’ı kaldırıp veri klasörünü silersen her şey gider.
 
@@ -64,6 +66,8 @@ Kite normal kullanımda şu servislere bağlanır. Her isteğe, o istek için ge
 | Paket yazarlarının seçtiği görsel sunucuları | Bir mod paketinin açıklamasını açtığında | O açıklamadaki görsellerin istekleri |
 | GitHub | Sürüm derlemelerinde günde yaklaşık bir kez, Kite’ın yeni sürümü var mı diye bakmak için. Ayrıca `git` kuruluysa açılışta, Kite’ın çevrimdışı wiki kopyasını güncellemek için. | İndirme istekleri |
 | Kite’ın arkadaşlık sunucusu (`api.kiteclient.com`) | Yalnızca Arkadaşlar açıkken: giriş yaparken, sonra Kite açık olduğu sürece dakikada bir | Aşağıdaki [Arkadaşlar](#arkadaşlar) bölümüne bak |
+| Kite’ın sunucusu (`api.kiteclient.com`), çökme raporları için | Yalnızca bir çökmeyi gönderdiğinde ya da sormadan göndermeye izin verdikten sonra bir çökmede | Aşağıdaki [Çökme raporları](#çökme-raporları) bölümüne bak |
+| Kite’ın meta sunucusu (`meta.kiteclient.com`) | Bir kurulum başlatıldığında, bir de Kite yeniden okunacak çökmeler tutarken açılışta | En yeni çökme kuralları için bir istek |
 | Mojang’ın oturum sunucusu (`sessionserver.mojang.com`) ve `textures.minecraft.net` | Yalnızca Arkadaşlar açıkken: giriş yaparken ve arkadaşlarının kafalarını göstermek için | Girişte, Minecraft anahtarınla bir katılma isteği; oyunun bir sunucuya girerken gönderdiğinin aynısı. Kafalar için arkadaş listendeki, isteklerindeki ve engellediklerindeki oyuncuların UUID’leri. |
 | paste.ee | Bir log için Yükle’ye bastığında. Kite’ın kendisi çökerse, çökme bildiricisi Kite’ın kendi logunu hemen yükler ve sana bağlantısını gösterir. | Log metni; herkese açık bir bağlantı olur. Kite önce giriş anahtarlarını, UUID’leri ve ev klasörünün yolunu çıkarır. Oyuncu adın, kurulum adların ve mod listen logda kalır. |
 
@@ -122,13 +126,37 @@ Arkadaşlar’ı kapatınca Kite sunucuya çevrimdışı olduğunu bildirir, otu
 
 Ayarlar → Arkadaşlar’daki **Arkadaşlık verilerimi sil**, Kite’ın sunucusundaki hesabını ve onunla saklanan her şeyi siler: anahtarlar, durum, ayarlar, arkadaşlıklar, iki yöndeki istekler ve senin koyduğun engeller. Başka oyuncuların seni engellemesi kalır, çünkü o kayıtlar onlarındır. Arkadaşlar da kapanır.
 
+## Çökme raporları
+
+Oyun çöktüğünde Kite, neden çöktüğünü söylemek için oyunun geride bıraktıklarını bilgisayarında okur. Bulamazsa ya da önerdiği düzeltme işe yaramadıysa çökme penceresi, çökmeyi Kite’a göndermeyi önerir; böylece bir düzeltme yazarız ve o düzeltme herkes için çalışır. Kite her seferinde sorar. Gönder’e basmadan önce **Bundan sonra sormadan gönder** kutusunu işaretlersen bu değişir; Ayarlar → Günlük yükleme’deki **Çökme raporlarını sormadan gönder** de aynısını yapar ve onu oradan yeniden kapatabilirsin. Sen açmadıkça kapalıdır.
+
+### Bir raporda neler var
+
+- çökmenin hata satırları: hata ve mesajı, bir de hatanın çıktığı kod. Bilgisayarından bir şey çıkmadan önce Kite bu satırlardan dosya yollarını, kullanıcı adını ve Minecraft adlarını, UUID’leri, IP ve sunucu adreslerini, zamanları ve diğer sayıları çıkarır. Çökme penceresindeki **Gönderilecekler**, raporu göndermeden önce olduğu gibi gösterir.
+- Kite’ın sürümü, işletim sistemin ve işlemci türün, Java sürümü
+- Minecraft sürümü, mod yükleyici ve sürümü
+- modlarının kimlikleri ve sürümleri, eşleşen çökme kuralları ve çökmenin işaret ettiği mod
+
+Raporda hesap, Minecraft adı, kurulum ya da dünya adı ve dosya yolu yoktur. Kite onu giriş yapmadan gönderir; bu yüzden rapor ne sana ne de diğer raporlarına bağlanabilir.
+
+### Sunucunun tuttukları
+
+- her çökme türü için: hata satırları, kaç rapor geldiği, ilk ve son raporun ne zaman geldiği. Sonuncusundan bir yıl sonra silinir.
+- her türün en yeni 20 raporu, 90 gün boyunca, geldikleri günle (saatiyle değil)
+
+Sunucu isteği kaydetmez. IP adresini görür ve onu yalnızca bellekte, bir adresin ne kadar rapor gönderebileceğini sınırlamak için tutar. Rapor kimsenin adını taşımadığı için sonradan kimse onu bulamaz ya da silemez; biz de.
+
+### Bir düzeltme bulununca
+
+Kite açıklayamadığı çökmeleri 30 gün bilgisayarında tutar. `meta.kiteclient.com`’dan yeni çökme kuralları gelince Kite bu çökmeleri bilgisayarında yeniden okur. Bir kural artık birini tanıyorsa kurulumun Günlük sekmesi düzeltmesiyle birlikte **Çözüm bulundu** der ve Kite bir bildirim gösterir. Kite’ın sunucusuna o çökmeyi yaşayıp yaşamadığın hiç sorulmaz.
+
 ## Çocuklar
 
-Kite ve bu site, çocuklar dahil hiç kimseden kişisel veri istemez. Arkadaşlar açıkken Kite’ın sunucusu yalnızca [Arkadaşlar](#arkadaşlar) bölümünde yazanları tutar. Küçük oyuncuların girişi Microsoft’un kendi aile ayarlarıyla yönetilir.
+Kite ve bu site, çocuklar dahil hiç kimseden kişisel veri istemez. Arkadaşlar açıkken Kite’ın sunucusu yalnızca [Arkadaşlar](#arkadaşlar) bölümünde yazanları tutar. Çökme raporlarında kişisel bir şey yoktur ve sen aksini söylemedikçe Kite her birini göndermeden önce sorar. Küçük oyuncuların girişi Microsoft’un kendi aile ayarlarıyla yönetilir.
 
 ## Hakların
 
-Arkadaşlar’ı kullanmıyorsan senin hakkında bir hesap ya da profil tutmuyoruz. Bu yüzden çoğu durumda bakabileceğimiz, düzeltebileceğimiz ya da silebileceğimiz bir şey yok. Verilerin bilgisayarındaki Kite klasöründe durur ve onları istediğin zaman silebilirsin. Arkadaşlar’ı kullanıyorsan **Arkadaşlık verilerimi sil**, Kite’ın sunucusunun senin hakkında tuttuklarını siler. Bize e-posta attıysan o e-postaları silmemizi isteyebilirsin. Türkiye’de, AB’de ya da Birleşik Krallık’taysan veri koruma kurumuna da başvurabilirsin (Türkiye’de KVKK).
+Arkadaşlar’ı kullanmıyorsan senin hakkında bir hesap ya da profil tutmuyoruz. Bu yüzden çoğu durumda bakabileceğimiz, düzeltebileceğimiz ya da silebileceğimiz bir şey yok. Verilerin bilgisayarındaki Kite klasöründe durur ve onları istediğin zaman silebilirsin. Arkadaşlar’ı kullanıyorsan **Arkadaşlık verilerimi sil**, Kite’ın sunucusunun senin hakkında tuttuklarını siler. Çökme raporları kimseye bağlı değildir; bu yüzden onlarda bakılacak bir şey yoktur. Bize e-posta attıysan o e-postaları silmemizi isteyebilirsin. Türkiye’de, AB’de ya da Birleşik Krallık’taysan veri koruma kurumuna da başvurabilirsin (Türkiye’de KVKK).
 
 ## Değişiklikler
 
