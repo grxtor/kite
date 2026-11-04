@@ -564,8 +564,8 @@ class LauncherImportTest : public QObject
 	/* A look at this computer's real launchers, by hand only:
 	 *   KITE_LAUNCHER_IMPORT_DRYRUN=<empty scratch folder> LauncherImport_test realLaunchersDryRun
 	 * KITE_LAUNCHER_IMPORT_ALSO=<data folder> adds one more folder in Prism's format (Kite's own, say).
-	 * Prints counts only. The smallest instance found is built into the scratch folder, and its
-	 * source must be byte for byte the same afterwards. */
+	 * Prints counts only. The smallest instance with a world or mods in it is built into the scratch
+	 * folder, and its source must be byte for byte the same afterwards. */
 	void realLaunchersDryRun()
 	{
 		const QString scratch = qEnvironmentVariable("KITE_LAUNCHER_IMPORT_DRYRUN");
@@ -578,7 +578,10 @@ class LauncherImportTest : public QObject
 			found.append(scanMultiMc(Source::MeshMC, also));
 		}
 		countCopySizes(&found);
+		// The smallest with real content (a world or mods), else the smallest with any.
+		constexpr qint64 kRealContentBytes = 1024 * 1024;
 		const FoundInstance* smallest = nullptr;
+		const FoundInstance* smallestReal = nullptr;
 		for (const FoundLauncher& launcher : found) {
 			int importable = 0, linkable = 0, mods = 0, leftBehind = 0;
 			qint64 bytes = 0;
@@ -588,8 +591,13 @@ class LauncherImportTest : public QObject
 				mods += instance.mods.size();
 				leftBehind += instance.leftBehind.isEmpty() ? 0 : 1;
 				bytes += qMax<qint64>(0, instance.copyBytes);
-				if (instance.importable() && (!smallest || instance.copyBytes < smallest->copyBytes)) {
+				if (instance.importable() && instance.copyBytes > 0 &&
+					(!smallest || instance.copyBytes < smallest->copyBytes)) {
 					smallest = &instance;
+				}
+				if (instance.importable() && instance.copyBytes >= kRealContentBytes &&
+					(!smallestReal || instance.copyBytes < smallestReal->copyBytes)) {
+					smallestReal = &instance;
 				}
 			}
 			qInfo().noquote() << QString("%1: %2 instances, %3 importable, %4 linkable, %5 with parts left behind, "
@@ -603,6 +611,9 @@ class LauncherImportTest : public QObject
 									 .arg(bytes / (1024 * 1024))
 									 .arg(launcher.problem.isEmpty() ? QString() : " (list unreadable)");
 		}
+		if (smallestReal) {
+			smallest = smallestReal;
+		}
 		if (!smallest) {
 			qInfo() << "Nothing importable found.";
 			return;
@@ -611,9 +622,9 @@ class LauncherImportTest : public QObject
 		const BuildResult result = build(*smallest, Mode::Copy, scratch + "/staging");
 		QVERIFY2(result.ok, qPrintable(result.error));
 		QCOMPARE(snapshot(smallest->gameDir), before);
-		qInfo().noquote() << QString("Built the smallest one into the scratch folder: %1 KiB copied, %2 links "
+		qInfo().noquote() << QString("Built the smallest one into the scratch folder: %1 bytes copied, %2 links "
 									 "skipped, %3 mod origins written; its source is unchanged.")
-								 .arg(result.copiedBytes / 1024)
+								 .arg(result.copiedBytes)
 								 .arg(result.skippedLinks)
 								 .arg(result.mappedMods);
 	}
