@@ -149,13 +149,14 @@ QtObject {
         return groups
     }
 
-    // The second line of a friend's row: { text, suffix, tone }. On a server it is the host and game version;
-    // singleplayer and a hidden server say so; online and offline use FriendsDisplay's wording.
-    // Only the offline line is "faint", the rest "secondary".
-    function friendStatus(friend) {
+    // The second line of a friend's row: { text, suffix, tone }. On a server it is the server's name from @p place
+    // (FriendPlaces.of(), optional) or else the host, and the game version; singleplayer and a hidden server say so;
+    // online and offline use FriendsDisplay's wording. Only the offline line is "faint", the rest "secondary".
+    function friendStatus(friend, place) {
         if (friend.state === "playing") {
             if (friend.worldType === "server" && friend.host)
-                return { text: friend.host, suffix: friend.version, tone: "secondary" }
+                return { text: place && place.name ? place.name : friend.host, suffix: friend.version,
+                         tone: "secondary" }
             return {
                 text: friend.worldType === "singleplayer" ? qsTr("Singleplayer")
                     : friend.worldType === "server" ? qsTr("On a server") : qsTr("Playing"),
@@ -166,9 +167,29 @@ QtObject {
         return { text: friend.statusText, suffix: "", tone: friend.state === "offline" ? "faint" : "secondary" }
     }
 
+    // A friend's state in a word or two, for their card: { text, tone }. "In game" and "In Kite" are "success",
+    // last seen or offline "tertiary".
+    function friendPresence(friend) {
+        if (friend.state === "playing")
+            return { text: qsTr("In game"), tone: "success" }
+        return { text: friend.statusText || "", tone: friend.state === "online" ? "success" : "tertiary" }
+    }
+
+    // "1 unread message", "3 unread messages"; "" for none.
+    function unreadMessages(count) {
+        return count > 0 ? (count === 1 ? qsTr("1 unread message") : qsTr("%1 unread messages").arg(count)) : ""
+    }
+
+    // How long an invite still lasts, compactly: "8 min left" (its expiresAt is an ISO time; never under a minute).
+    readonly property int minuteMs: 60 * 1000
+    function inviteTimeLeft(invite) {
+        var minutes = Math.max(1, Math.ceil((Date.parse(invite.expiresAt) - Date.now()) / root.minuteMs))
+        return qsTr("%1 min left").arg(minutes)
+    }
+
     // The same line on one line, for a tip or a card.
-    function friendStatusLine(friend) {
-        var status = root.friendStatus(friend)
+    function friendStatusLine(friend, place) {
+        var status = root.friendStatus(friend, place)
         return status.suffix ? status.text + " · " + status.suffix : status.text
     }
 

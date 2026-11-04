@@ -7,9 +7,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One group of the friends panel ("ONLINE — 3"): a caption that folds the group away over compact FriendStatusRow
- * rows. A joinable friend has a small Join; the ⋯ (`menu`) fades in with the pointer or keyboard focus, its room
- * always kept so names do not shorten. Hides itself while empty; the panel confirms and acts.
+ * One group of the friends panel ("IN KITE — 3"): a caption that folds the group away over compact FriendStatusRow
+ * rows, each saying where the friend plays (server favicon and name, game version). A joinable friend has a small
+ * Join; the ⋯ (`menu`) fades in with the pointer or keyboard focus, its room always kept so names do not shorten.
+ * Hides itself while empty; the panel confirms and acts.
  */
 Column {
     id: root
@@ -21,6 +22,8 @@ Column {
     property var joinFlow: null
     property bool stale: false
     property bool actionsEnabled: true
+    // Main.qml's FriendPlaces, for the server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
 
     signal toggled()
     signal joinRequested(var friend)
@@ -86,9 +89,7 @@ Column {
                     stale: root.stale
                     compact: true
                     headSlot: row.headSize
-                    // The narrow column cannot fit host, version and Join: the host tells friends apart, so the
-                    // version is left to the Friends page.
-                    detailSuffix: ""
+                    place: root.places.of(slot.modelData)
 
                     FriendJoinButton {
                         enabled: root.actionsEnabled

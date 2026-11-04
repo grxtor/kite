@@ -8,7 +8,8 @@ import Kite.Theme
 /*
  * One person in a list (Friends page, Home's side panel, right-edge panel): head with presence dot, name, a quiet
  * line; whatever goes inside lands on the right, in `trailing`. `presence`: "online", "playing", "offline" or ""
- * (not a friend yet). `detailTone`: "primary", "secondary" or "faint".
+ * (not a friend yet). `detailTone`: "primary", "secondary" or "faint". `detailServer`: the line names a server, so
+ * its favicon (`detailIcon`, a server glyph until it answers) leads it.
  */
 Item {
     id: root
@@ -19,6 +20,8 @@ Item {
     property string detail
     property string detailSuffix
     property string detailTone: "secondary"
+    property bool detailServer: false
+    property string detailIcon
     property bool compact: false
     property bool interactive: false
     readonly property bool hovered: hoverHandler.hovered
@@ -106,6 +109,13 @@ Item {
                 spacing: Theme.space.xs
                 visible: root.detail.length > 0
 
+                // The room the line has after the favicon; the version goes before the text is shortened.
+                readonly property real textRoom: detailRow.width
+                                                 - (favicon.visible ? favicon.width + detailRow.spacing : 0)
+                readonly property bool suffixFits: root.detailSuffix.length > 0
+                                                   && detailMetrics.advanceWidth + detailRow.spacing
+                                                      + suffix.implicitWidth <= detailRow.textRoom
+
                 // The elided text is worked out here: an elided Text keeps its full box and leaves a gap before the
                 // version.
                 TextMetrics {
@@ -114,7 +124,14 @@ Item {
                     font.pixelSize: Theme.type.label.pixelSize
                     text: root.detail
                     elide: Text.ElideMiddle
-                    elideWidth: Math.max(0, detailRow.width - (suffix.visible ? suffix.implicitWidth + detailRow.spacing : 0))
+                    elideWidth: Math.max(0, detailRow.textRoom
+                                            - (suffix.visible ? suffix.implicitWidth + detailRow.spacing : 0))
+                }
+                ServerFavicon {
+                    id: favicon
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.detailServer
+                    source: root.detailIcon
                 }
                 Copy {
                     text: detailMetrics.elidedText
@@ -123,7 +140,7 @@ Item {
                 }
                 Copy {
                     id: suffix
-                    visible: root.detailSuffix.length > 0
+                    visible: detailRow.suffixFits
                     text: "· " + root.detailSuffix
                     role: "label"
                     tone: "secondary"

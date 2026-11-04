@@ -15,6 +15,8 @@ Item {
 
     // FriendsController, or null.
     property var controller: null
+    // Where friends play (Main.qml's FriendPlaces): server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
     // Your own head ("image://accountface/..."); the launcher already has it.
     property string myFace: ""
     property var joinFlow: null
@@ -89,6 +91,7 @@ Item {
             id: selfCard
             Layout.fillWidth: true
             controller: root.controller
+            places: root.places
             face: root.myFace
             online: root.friendsState.connected
         }
@@ -116,6 +119,8 @@ Item {
 
             FriendsFriendsTab {
                 controller: root.controller
+                friendsState: root.friendsState
+                places: root.places
                 menu: personMenu
                 joinFlow: root.joinFlow
                 stale: root.friendsState.stale

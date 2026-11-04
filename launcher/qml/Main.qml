@@ -272,6 +272,14 @@ ApplicationWindow {
     property bool friendsPanelExpanded: false
     property int friendsPanelWidth: 320
     readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
+    // Where friends play, shared by every friends view; their servers are pinged while one of them is on screen.
+    readonly property FriendPlaces friendPlaces: FriendPlaces {
+        pinger: root.serverPinger
+        featured: root.featuredList
+        friends: root.friendsController ? root.friendsController.friends : []
+        active: Format.friendsPhase(root.friendsController) === "ready"
+                && (root.friendsPanelShown || root.page === "friends" || root.page === "home")
+    }
     function setFriendsPanelOpen(open) {
         root.friendsPanelOpen = open
         SettingsStore.setValue("FriendsPanelOpen", open)
@@ -822,6 +830,7 @@ ApplicationWindow {
         expandedWidth: root.friendsPanelWidth
         roomWidth: root.width - sidebar.width
         controller: root.friendsController
+        places: root.friendPlaces
         joinFlow: friendJoin
         onExpandedRequested: (expanded) => root.setFriendsPanelExpanded(expanded)
         onWidthCommitted: (panelWidth) => root.setFriendsPanelWidth(panelWidth)
@@ -927,6 +936,7 @@ ApplicationWindow {
                         shortcutControllerFor: root.shortcutController
                         msaSignedIn: root.shellValue("accountKind") === "Microsoft"
                         friends: root.friendsController
+                        friendPlaces: root.friendPlaces
                         joinFlow: friendJoin
                         friendsInPanel: root.friendsPanelShown
                         onFriendsRequested: (tab) => root.openFriends(tab)
@@ -1043,6 +1053,7 @@ ApplicationWindow {
                         sourceComponent: FriendsPage {
                                 shown: friendsLoader.StackLayout.isCurrentItem
                                 controller: root.friendsController
+                                places: root.friendPlaces
                                 myFace: root.shellValue("accountFace", "")
                                 joinFlow: friendJoin
                                 onNavigateRequested: (target) => root.navigate(target)

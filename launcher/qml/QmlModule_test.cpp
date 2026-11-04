@@ -169,6 +169,36 @@ class FakeDrop : public QObject
 	}
 };
 
+namespace
+{
+	/* A fake FriendsController for the friends views: ready, with these
+	 * friends and invites. */
+	QString fakeFriends(const QString& friends, const QString& invites)
+	{
+		return QStringLiteral(R"(QtObject {
+			property bool enabled: true
+			property string state: "ready"
+			property bool loaded: true
+			property var friends: %1
+			property var invites: %2
+			property var incoming: []
+			property var outgoing: []
+			property var blocked: []
+			property int onlineCount: 0
+			property int incomingCount: 0
+			signal changed()
+			signal actionFinished(string action, bool ok, string message)
+		})").arg(friends, invites);
+	}
+
+	QString callString(QObject* object, const char* method)
+	{
+		QVariant result;
+		QMetaObject::invokeMethod(object, method, Q_RETURN_ARG(QVariant, result));
+		return result.toString();
+	}
+} // namespace
+
 class QmlModuleTest : public QObject
 {
 	Q_OBJECT
@@ -435,6 +465,206 @@ class QmlModuleTest : public QObject
 		QCOMPARE(bar->property("hidden").toList().size(), servers - shown);
 		// Sized by every entry, so moving some into the menu does not shrink it.
 		QCOMPARE(bar->property("fullWidth").toInt(), full);
+	}
+
+	/* Where a friend plays: a big server by its name, any other by its
+	 * address, the favicon once the server answers; servers are pinged only
+	 * while a view shows them, each once. */
+	void friendPlacesNameServersAndPingWhileShown()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			FriendPlaces {
+				id: places
+				property var asked: []
+				featured: [{ id: "hypixel", name: "Hypixel", address: "mc.hypixel.net" }]
+				friends: [
+					{ name: "jeb_", state: "playing", worldType: "server", host: "mc.hypixel.net", port: 25565 },
+					{ name: "Kai", state: "playing", worldType: "server", host: "smp.example.com", port: 25570 },
+					{ name: "Alex", state: "playing", worldType: "server", host: "mc.hypixel.net", port: 0 },
+					{ name: "Dinnerbone", state: "playing", worldType: "singleplayer", host: "", port: 0 },
+					{ name: "Notch", state: "online", worldType: "", host: "", port: 0 }
+				]
+				pinger: QtObject {
+					property int revision: 0
+					function ping(address) { places.asked.push(address) }
+					function status(address) {
+						return address === "mc.hypixel.net" ? { state: "online", online: 26776, favicon: "data:x" }
+															: { state: "pending" }
+					}
+					function friendsOn(address, people) {
+						return people.filter((one) => one.host === address)
+					}
+				}
+				function nameOfIndex(i) { return of(friends[i]).name || "" }
+				function faviconOfIndex(i) { return of(friends[i]).favicon || "" }
+				function onlineOfIndex(i) { return of(friends[i]).online }
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> places(component.create());
+		QVERIFY2(places, qPrintable(component.errorString()));
+
+		auto call = [&](const char* method, int index) {
+			QVariant result;
+			QMetaObject::invokeMethod(places.get(), method, Q_RETURN_ARG(QVariant, result),
+									  Q_ARG(QVariant, index));
+			return result;
+		};
+		QCOMPARE(call("nameOfIndex", 0).toString(), QStringLiteral("Hypixel"));
+		QCOMPARE(call("faviconOfIndex", 0).toString(), QStringLiteral("data:x"));
+		QCOMPARE(call("onlineOfIndex", 0).toInt(), 26776);
+		// Not a server Kite knows, and no answer yet.
+		QCOMPARE(call("nameOfIndex", 1).toString(), QStringLiteral("smp.example.com:25570"));
+		QCOMPARE(call("faviconOfIndex", 1).toString(), QString());
+		QCOMPARE(call("onlineOfIndex", 1).toInt(), -1);
+		// Not on a server whose address they show.
+		QCOMPARE(call("nameOfIndex", 3).toString(), QString());
+
+		QCOMPARE(places->property("asked").toList().size(), 0);
+		places->setProperty("active", true);
+		const QStringList asked = places->property("asked").toStringList();
+		QCOMPARE(asked, QStringList({ QStringLiteral("mc.hypixel.net"), QStringLiteral("smp.example.com:25570") }));
+	}
+
+	/* The strip lifts whoever waits on you (an invite, unread messages)
+	 * above the groups, which keep their order: in game, in Kite, offline. */
+	void friendsStripPutsWhoWaitsOnYouFirst()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(QStringLiteral(R"(
+			import QtQuick
+			import Kite.Components
+			FriendsPanelStrip {
+				width: 64
+				height: 600
+				friendsState: FriendsState { controller: %1 }
+				function names() { return ordered.map((one) => one.name).join(",") }
+				function groups() { return ordered.map((one) => groupOf(one)).join(",") }
+			})")
+							  .arg(fakeFriends(QStringLiteral(R"([
+				{ uuid: "a", name: "Ann", face: "", state: "offline", statusText: "Offline" },
+				{ uuid: "b", name: "Bea", face: "", state: "playing", worldType: "singleplayer", version: "1.21.4" },
+				{ uuid: "c", name: "Cem", face: "", state: "online", statusText: "In Kite", unread: 2 },
+				{ uuid: "d", name: "Dan", face: "", state: "online", statusText: "In Kite" },
+				{ uuid: "e", name: "Eda", face: "", state: "offline", statusText: "Offline" }])"),
+											   QStringLiteral(R"([{ uuid: "e", name: "Eda", host: "mc.example.net",
+				port: 25565, expiresAt: "" }])")))
+							  .toUtf8(),
+						  QUrl());
+		std::unique_ptr<QObject> strip(component.create());
+		QVERIFY2(strip, qPrintable(component.errorString()));
+		QCOMPARE(callString(strip.get(), "names"), QStringLiteral("Cem,Eda,Bea,Dan,Ann"));
+		QCOMPARE(callString(strip.get(), "groups"), QStringLiteral("0,0,1,2,3"));
+	}
+
+	/* A friend's card says where they play: a server by its name with its
+	 * players and the game version, singleplayer and a server they keep to
+	 * themselves in words; nothing while they are not in a game. */
+	void friendCardSaysWhereAFriendPlays()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			Item {
+				FriendPlaceBlock {
+					id: server
+					friend: ({ name: "jeb_", state: "playing", worldType: "server", host: "mc.hypixel.net",
+							   version: "1.21.4" })
+					place: ({ address: "mc.hypixel.net", name: "Hypixel", favicon: "", online: 812 })
+				}
+				FriendPlaceBlock {
+					id: single
+					friend: ({ state: "playing", worldType: "singleplayer", version: "1.21.4" })
+				}
+				FriendPlaceBlock {
+					id: hidden
+					friend: ({ state: "playing", worldType: "server", version: "1.20.1" })
+				}
+				FriendPlaceBlock {
+					id: away
+					friend: ({ state: "offline" })
+				}
+				function lines() {
+					return [server.title, server.facts, single.title, single.facts, hidden.title, away.visible].join("|")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> blocks(component.create());
+		QVERIFY2(blocks, qPrintable(component.errorString()));
+		QCOMPARE(callString(blocks.get(), "lines"),
+				 QStringLiteral("Hypixel|812 online · 1.21.4|Singleplayer|1.21.4|On a server|false"));
+	}
+
+	/* The words of the friends views: unread messages with a real plural,
+	 * an invite's time left (never under a minute), a friend's presence. */
+	void friendsWordsCountAndLast()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			QtObject {
+				function words() {
+					var soon = new Date(Date.now() + 8 * 60000 - 5000).toISOString()
+					var gone = new Date(Date.now() - 1000).toISOString()
+					return [Format.unreadMessages(0), Format.unreadMessages(1), Format.unreadMessages(3),
+							Format.inviteTimeLeft({ expiresAt: soon }), Format.inviteTimeLeft({ expiresAt: gone }),
+							Format.friendPresence({ state: "playing" }).text,
+							Format.friendPresence({ state: "online", statusText: "In Kite" }).tone,
+							Format.friendPresence({ state: "offline", statusText: "Last seen yesterday" }).tone].join("|")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> words(component.create());
+		QVERIFY2(words, qPrintable(component.errorString()));
+		QCOMPARE(callString(words.get(), "words"),
+				 QStringLiteral("|1 unread message|3 unread messages|8 min left|1 min left|In game|success|tertiary"));
+	}
+
+	/* Join on an invite goes to the invite's server with the inviter's game
+	 * version; while they are not in a game there is no version to pick an
+	 * instance by, so no Join. */
+	void inviteJoinUsesTheInvitersVersion()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(QStringLiteral(R"(
+			import QtQuick
+			import Kite.Components
+			FriendsWaiting {
+				friendsState: FriendsState { controller: %1 }
+				function targets() {
+					return invites.map((one) => {
+						var target = joinTarget(one)
+						return target.host + ":" + target.version + ":" + Format.friendJoinable(target)
+					}).join(",")
+				}
+			})")
+							  .arg(fakeFriends(QStringLiteral(R"([
+				{ uuid: "a", name: "Ann", state: "playing", worldType: "server", host: "mc.example.net", port: 25565,
+				  version: "1.21.4", instance: "PvP" },
+				{ uuid: "b", name: "Bea", state: "online", statusText: "In Kite" }])"),
+											   QStringLiteral(R"([
+				{ uuid: "a", name: "Ann", host: "play.other.net", port: 25565, expiresAt: "" },
+				{ uuid: "b", name: "Bea", host: "mc.example.net", port: 25565, expiresAt: "" }])")))
+							  .toUtf8(),
+						  QUrl());
+		std::unique_ptr<QObject> waiting(component.create());
+		QVERIFY2(waiting, qPrintable(component.errorString()));
+		QCOMPARE(callString(waiting.get(), "targets"),
+				 QStringLiteral("play.other.net:1.21.4:true,mc.example.net::false"));
 	}
 
 	/* A quick-join entry's tooltip says what a click does and what is

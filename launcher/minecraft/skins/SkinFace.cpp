@@ -31,6 +31,30 @@ namespace SkinFace
 		constexpr int kHatX = 40;
 		constexpr int kHatY = 8;
 		constexpr int kFaceExtent = 8;
+		// A skin from before 1.8 is 64x32; its overlay area is the right half.
+		constexpr int kLegacyHeight = 32;
+		constexpr int kOverlayX = 32;
+		constexpr int kOverlayExtent = 32;
+		// The game takes alpha below this as see-through.
+		constexpr int kOpaqueAlpha = 128;
+
+		/* The game clears the overlay of a 64x32 skin that is opaque all
+		 * over: skins of that time often filled it with black. */
+		bool overlayIsFilled(const QImage& skin)
+		{
+			if (skin.height() != kLegacyHeight ||
+				skin.width() < kOverlayX + kOverlayExtent) {
+				return false;
+			}
+			for (int y = 0; y < kOverlayExtent; ++y) {
+				for (int x = kOverlayX; x < kOverlayX + kOverlayExtent; ++x) {
+					if (qAlpha(skin.pixel(x, y)) < kOpaqueAlpha) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
 	} // namespace
 
 	QImage fromSkin(const QImage& skin)
@@ -47,8 +71,10 @@ namespace SkinFace
 		QPainter painter(&face);
 		painter.drawImage(
 			0, 0, skin.copy(kFaceX, kFaceY, kFaceExtent, kFaceExtent));
-		painter.drawImage(
-			0, 0, skin.copy(kHatX, kHatY, kFaceExtent, kFaceExtent));
+		if (!overlayIsFilled(skin)) {
+			painter.drawImage(
+				0, 0, skin.copy(kHatX, kHatY, kFaceExtent, kFaceExtent));
+		}
 		painter.end();
 		return face;
 	}

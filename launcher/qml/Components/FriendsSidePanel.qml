@@ -14,6 +14,8 @@ Item {
 
     // FriendsController, or null.
     property var controller: null
+    // Where friends play (Main.qml's FriendPlaces): server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
     property var joinFlow: null
     property bool open: false
     // Main.qml keeps the choice; this asks via expandedRequested.
@@ -162,6 +164,7 @@ Item {
         }
 
         friendsState: root.friendsState
+        places: root.places
         joinFlow: root.joinFlow
         menu: personMenu
         onExpandRequested: root.expandedRequested(true)
@@ -182,6 +185,7 @@ Item {
         }
 
         friendsState: root.friendsState
+        places: root.places
         joinFlow: root.joinFlow
         menu: personMenu
         onFriendsRequested: (tab) => root.friendsRequested(tab)

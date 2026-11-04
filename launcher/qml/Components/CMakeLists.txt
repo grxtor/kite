@@ -125,6 +125,13 @@ qt_add_qml_module(Kite_qml_components
         FriendJoinButton.qml
         FriendsRetry.qml
         FriendsState.qml
+        FriendPlaces.qml
+        ServerFavicon.qml
+        FriendPlaceBlock.qml
+        FriendMessageField.qml
+        FriendInviteCard.qml
+        FriendRequestRow.qml
+        FriendsWaiting.qml
         GroupHeading.qml
         HomeWorldList.qml
         InstanceArt.qml
@@ -322,6 +329,8 @@ qt_add_qml_module(Kite_qml_components
         icons/library.svg
         icons/list.svg
         icons/log-out.svg
+        icons/mail.svg
+        icons/message-circle.svg
         icons/more.svg
         icons/moon.svg
         icons/package.svg

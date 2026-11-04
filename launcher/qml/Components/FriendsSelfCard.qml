@@ -7,9 +7,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * You, at the top of the Friends page: head and name (a click copies it), what friends can see of you, and where
- * to add someone by Minecraft name. A request is on its way until FriendsController says how it went
- * (actionFinished); the name stays in the field until it is accepted.
+ * You, at the top of the Friends page: head and name (a click copies it), what friends can see of you (a big
+ * server by its name and favicon, as in your friends' rows), and where to add someone by Minecraft name. A request
+ * is on its way until FriendsController says how it went (actionFinished); the name stays in the field until it is
+ * accepted.
  */
 Rectangle {
     id: root
@@ -19,6 +20,8 @@ Rectangle {
     property string face: ""
     // The friends server answers; without it a request cannot go.
     property bool online: true
+    // Main.qml's FriendPlaces.
+    property FriendPlaces places: FriendPlaces {}
 
     readonly property string typedName: nameField.text.trim()
     // Minecraft's own rule for a name.
@@ -29,11 +32,18 @@ Rectangle {
     // What friends see of you: playing, worldType, host, serverHidden, joinable.
     readonly property var mine: root.controller ? root.controller.myStatus : ({})
     readonly property bool playing: !!root.mine.playing && root.visibility !== "invisible"
+    // The server you are on, put the way your friends' rows put theirs; ({}) when it is not shown to them.
+    readonly property var place: root.online && root.playing && root.mine.host
+                                 ? root.places.of({ state: "playing", worldType: "server", host: root.mine.host,
+                                                    port: 0 })
+                                 : ({})
+    readonly property string serverName: root.place.name || root.mine.host || ""
     // Not while the server does not answer: nothing says friends see you then.
     readonly property string statusLine: !root.online ? qsTr("Not connected · friends see your last status")
         : root.visibility === "invisible" ? qsTr("Invisible")
-        : root.playing && root.mine.host ? (root.mine.joinable ? qsTr("Playing on %1 · friends can join").arg(root.mine.host)
-                                                                : qsTr("Playing on %1").arg(root.mine.host))
+        : root.playing && root.mine.host ? (root.mine.joinable
+                                            ? qsTr("Playing on %1 · friends can join").arg(root.serverName)
+                                            : qsTr("Playing on %1").arg(root.serverName))
         : root.playing && root.mine.serverHidden ? qsTr("Playing · server hidden")
         : root.playing && root.mine.worldType === "singleplayer" ? qsTr("Playing · singleplayer")
         : root.playing ? qsTr("Playing")
@@ -41,6 +51,8 @@ Rectangle {
         : qsTr("Online · friends can see you")
     readonly property int sideBySideWidth: 640
     readonly property int addFieldWidth: 232
+    // As big as in a friend's card, so you and they look alike.
+    readonly property int headSize: 48
 
     function focusField() {
         nameField.forceActiveFocus()
@@ -70,7 +82,7 @@ Rectangle {
 
             FriendHead {
                 Layout.alignment: Qt.AlignVCenter
-                size: Theme.control.height
+                size: root.headSize
                 face: root.face
                 // Invisible: no dot, a dimmed head. Not connected: no dot, as nothing says you are online.
                 presence: !root.online ? ""
@@ -88,12 +100,23 @@ Rectangle {
                     pixelSize: Theme.type.title.pixelSize
                     weight: Theme.type.title.weight
                 }
-                Copy {
+                Row {
                     width: parent.width
-                    text: root.statusLine
-                    elide: Text.ElideRight
-                    role: "label"
-                    tone: !root.online || root.visibility === "invisible" ? "tertiary" : "secondary"
+                    spacing: Theme.space.xs
+
+                    ServerFavicon {
+                        id: favicon
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: !!root.place.address
+                        source: root.place.favicon || ""
+                    }
+                    Copy {
+                        width: parent.width - (favicon.visible ? favicon.width + parent.spacing : 0)
+                        text: root.statusLine
+                        elide: Text.ElideRight
+                        role: "label"
+                        tone: !root.online || root.visibility === "invisible" ? "tertiary" : "secondary"
+                    }
                 }
             }
         }

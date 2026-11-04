@@ -21,6 +21,8 @@ Item {
     property var instanceModel: null
     // FriendsController, or null.
     property var friends: null
+    // Main.qml's FriendPlaces.
+    property FriendPlaces friendPlaces: FriendPlaces {}
     property var joinFlow: null
     // The friends panel on the right edge is out; the side panel leaves the friends to it.
     property bool friendsInPanel: false
@@ -315,6 +317,7 @@ Item {
         news: root.news
         recentWorldsModel: root.recentWorldsModel
         friends: root.friends
+        friendPlaces: root.friendPlaces
         joinFlow: root.joinFlow
         friendsInPanel: root.friendsInPanel
         onFriendsRequested: (tab) => root.friendsRequested(tab)
