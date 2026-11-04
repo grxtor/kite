@@ -1007,6 +1007,8 @@ set(SERVERS_SOURCES
     servers/ServerPinger.cpp
     servers/FeaturedServers.h
     servers/FeaturedServers.cpp
+    servers/QuickJoinLayout.h
+    servers/QuickJoinLayout.cpp
 )
 
 add_unit_test(ServerStatus
@@ -1021,6 +1023,11 @@ add_unit_test(ServerPing
 
 add_unit_test(FeaturedServers
     SOURCES servers/FeaturedServers_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(QuickJoinLayout
+    SOURCES servers/QuickJoinLayout_test.cpp
     LIBS Kite_core
     )
 

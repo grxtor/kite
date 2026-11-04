@@ -81,6 +81,7 @@
 #include "friends/FriendsController.h"
 #include "friends/ShareCodesController.h"
 #include "servers/FeaturedServers.h"
+#include "servers/QuickJoinLayout.h"
 #include "servers/ServerPinger.h"
 #include "news/WhatsNew.h"
 #include "models/ModUpdateReminder.h"
@@ -167,8 +168,11 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 	CrashDoctorService::instance()->startFollowUp();
 
 	/* Now, before onboarding picks a language: a new install is told apart by
-	 * having none. It needs no notes. */
+	 * having none. It needs neither the notes nor the quick-join hint. */
 	m_whatsNew = std::make_unique<WhatsNew>();
+	if (m_whatsNew->freshInstall()) {
+		LAUNCHER->settings()->set(QuickJoinLayout::kHintSetting, true);
+	}
 	// The notes resolve their language on each read; only the bindings need telling.
 	connect(LAUNCHER->settings()->getSetting("Language").get(), &Setting::SettingChanged,
 			m_whatsNew.get(), &WhatsNew::changed);
@@ -1485,6 +1489,16 @@ QObject* QmlShell::featuredServers() const
 		m_featuredServers->refresh();
 	}
 	return expose(m_featuredServers.get());
+}
+
+QObject* QmlShell::quickJoin() const
+{
+	if (!m_quickJoin) {
+		featuredServers();
+		m_quickJoin = std::make_unique<QuickJoinLayout>(m_featuredServers.get(),
+														LAUNCHER->settings());
+	}
+	return expose(m_quickJoin.get());
 }
 
 QObject* QmlShell::whatsNew() const

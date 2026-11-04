@@ -899,6 +899,13 @@ void Application::initSettings()
 	m_settings->registerSetting("ModUpdateNotifications", false);
 	m_settings->registerSetting("ModUpdateNotifiedAt", QVariant(qlonglong(0)));
 
+	/* Home's quick-join bar as the player arranged it (servers/QuickJoinLayout):
+	 * a JSON object of the order, the hidden big servers and their own; empty
+	 * for the big servers as they come. QuickJoinHintSeen: the one-time hint
+	 * on how to arrange it was closed. */
+	m_settings->registerSetting("QuickJoinLayout", QString());
+	m_settings->registerSetting("QuickJoinHintSeen", false);
+
 	/* Whether a web link that came from the network or from files (a mod's
 	 * homepage, a changelog) names its host and asks before the browser opens
 	 * it (qml/Components/ExternalLinks.qml). */
