@@ -238,6 +238,7 @@ qt_add_qml_module(Kite_qml_components
         FriendChatDaySeparator.qml
         FriendChatComposer.qml
         FriendReportDialog.qml
+        FriendPlaceLine.qml
         FriendsPanelHeader.qml
         FriendsPanelGroup.qml
         FriendsPanelToggle.qml

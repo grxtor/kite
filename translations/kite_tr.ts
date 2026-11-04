@@ -4074,12 +4074,17 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendChatHeader</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendChatHeader.qml" line="+41"/>
+        <location filename="../launcher/qml/Components/FriendChatHeader.qml" line="+49"/>
         <source>Back to friends</source>
         <translation>Arkadaşlara dön</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+14"/>
+        <source>%1&apos;s card</source>
+        <translation>Profil kartı: %1</translation>
+    </message>
+    <message>
+        <location line="+42"/>
         <source>Not your friend any more</source>
         <translation>Artık arkadaşın değil</translation>
     </message>
@@ -4171,7 +4176,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendChatView</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendChatView.qml" line="+83"/>
+        <location filename="../launcher/qml/Components/FriendChatView.qml" line="+102"/>
         <source>%1 is not on your friends list any more, so you can&apos;t message them.</source>
         <translation>%1 artık arkadaş listende değil, bu yüzden mesaj gönderemezsin.</translation>
     </message>
@@ -4607,7 +4612,7 @@ Lütfen tekrar dene.</translation>
     <name>FriendsController</name>
     <message>
         <location filename="../launcher/friends/FriendsActions.cpp" line="+64"/>
-        <location filename="../launcher/friends/FriendsRealtime.cpp" line="+62"/>
+        <location filename="../launcher/friends/FriendsRealtime.cpp" line="+63"/>
         <source>Friends is turned off</source>
         <translation>Arkadaşlık kapalı</translation>
     </message>

@@ -7,8 +7,9 @@ import Kite.Theme
 /*
  * A conversation with one friend in the friends panel, like a Discord DM: the friend on top (FriendChatHeader),
  * the messages (FriendChatList), the field to write in (FriendChatComposer). It shows whatever FriendsChat has
- * open; Back or Esc closes it. Someone removed from the friends list keeps the history on screen, without the
- * field. ⋯ on a message copies, retries or reports it (FriendReportDialog).
+ * open; Back or Esc closes it. The head or name in the header opens the friend's card (FriendHeadCard, as the strip's
+ * heads do). Someone removed from the friends list keeps the history on screen, without the field. ⋯ on a message
+ * copies, retries or reports it (FriendReportDialog).
  */
 Item {
     id: root
@@ -20,6 +21,12 @@ Item {
     property string myFace
     property bool connected: true
     property bool stale: false
+    // Main.qml's FriendPlaces and FriendJoinFlow, and FriendsState.invites, for the header and the card.
+    property FriendPlaces places: FriendPlaces {}
+    property var joinFlow: null
+    property var invites: []
+
+    signal joinRequested(var friend)
 
     readonly property var chat: root.controller ? root.controller.chat : null
     readonly property string uuid: root.chat ? root.chat.openUuid : ""
@@ -40,7 +47,11 @@ Item {
 
     // Not through isFriend: a handler may run before the bindings that hang on the same change.
     onListedChanged: if (root.listed.uuid !== undefined) root.lastKnown = root.listed
-    onUuidChanged: if (root.uuid.length > 0) Qt.callLater(composer.focusField)
+    onUuidChanged: {
+        card.close()
+        if (root.uuid.length > 0)
+            Qt.callLater(composer.focusField)
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -55,9 +66,17 @@ Item {
         friend: root.friend
         known: root.isFriend
         menu: root.menu
+        place: root.places.of(root.friend)
         stale: root.stale
         actionsEnabled: root.connected
+        cardOpen: card.opened
         onBackRequested: root.chat.close()
+        onProfileRequested: (head) => {
+            if (card.opened)
+                card.close()
+            else
+                card.openFor(head, root.uuid)
+        }
     }
 
     FriendChatList {
@@ -83,6 +102,22 @@ Item {
         reason: !root.isFriend ? qsTr("%1 is not on your friends list any more, so you can't message them.").arg(root.friend.name || "")
                                : qsTr("Messages can't be sent until Kite's friends server answers.")
         onCloseRequested: root.chat.close()
+    }
+
+    // Beside the panel, level with the header's head; a press outside the header closes it. Its Message field only
+    // closes it, as this is that conversation.
+    FriendHeadCard {
+        id: card
+        objectName: "chatProfileCard"
+        parent: header
+        controller: root.controller
+        places: root.places
+        invites: root.invites
+        menu: root.menu
+        joinFlow: root.joinFlow
+        stale: root.stale
+        actionsEnabled: root.connected
+        onJoinRequested: (friend) => root.joinRequested(friend)
     }
 
     ClipboardText { id: clipboard }

@@ -183,5 +183,9 @@ Item {
         myFace: root.myFace
         connected: root.friendsState.connected
         stale: root.friendsState.stale
+        places: root.places
+        joinFlow: root.joinFlow
+        invites: root.friendsState.invites
+        onJoinRequested: (friend) => root.joinRequested(friend)
     }
 }

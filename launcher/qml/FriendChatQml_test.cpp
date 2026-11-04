@@ -58,7 +58,8 @@ class FriendChatQmlTest : public FriendChatQmlHarness
 					property string myName: "Notch"
 					property var friends: [
 						{ uuid: "%3", name: "jeb_", face: "%5", state: "playing", worldType: "server",
-						  host: "mc.hypixel.net", statusText: "On mc.hypixel.net", unread: 0 },
+						  host: "mc.hypixel.net", port: 25565, version: "1.21.4", joinable: true,
+						  statusText: "On mc.hypixel.net", unread: 0 },
 						{ uuid: "%4", name: "Dinnerbone", face: "%6", state: "online", statusText: "In Kite" }]
 					property string blocked: ""
 					function block(uuid) { fakeController.blocked = uuid }
@@ -120,6 +121,22 @@ class FriendChatQmlTest : public FriendChatQmlHarness
 		QVERIFY(showing(QStringLiteral("jeb_")));
 		QVERIFY(showing(QStringLiteral("Try again")));
 		shot(QStringLiteral("chat-conversation"));
+	}
+
+	/* The header says where they play as the friend rows do, and its head or name opens their card. */
+	void theHeaderSaysWhereTheyPlayAndOpensTheirCard()
+	{
+		openJeb();
+		QTRY_VERIFY(showing(QStringLiteral("mc.hypixel.net")));
+		QVERIFY(showing(QStringLiteral("· 1.21.4")));
+		QObject* profile = find("chatProfile");
+		QObject* card = find("chatProfileCard");
+		QVERIFY(profile && card);
+		QVERIFY(QMetaObject::invokeMethod(profile, "clicked"));
+		QTRY_VERIFY(card->property("opened").toBool());
+		QCOMPARE(card->property("friendUuid").toString(), kJeb);
+		QVERIFY(QMetaObject::invokeMethod(profile, "clicked"));
+		QTRY_VERIFY(!card->property("visible").toBool());
 	}
 
 	void enterSendsAndTheFieldStopsAtTheLimit()

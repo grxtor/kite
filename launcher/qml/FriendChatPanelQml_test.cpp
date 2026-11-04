@@ -88,8 +88,10 @@ class FriendChatPanelQmlTest : public FriendChatQmlHarness
 					property string state: "ready"
 					property bool loaded: true
 					property string myName: "Notch"
-					property var friends: [{ uuid: "%2", name: "jeb_", face: "%3", state: "online",
-											 statusText: "In Kite", unread: 2 }]
+					property var friends: [{ uuid: "%2", name: "jeb_", face: "%3", state: "playing",
+											 worldType: "server", host: "mc.hypixel.net", port: 25565,
+											 version: "1.21.4", joinable: true, statusText: "On mc.hypixel.net",
+											 unread: 2 }]
 					property var invites: []
 					property var incoming: []
 					property var outgoing: []
@@ -147,6 +149,12 @@ class FriendChatPanelQmlTest : public FriendChatQmlHarness
 		QTRY_VERIFY(showing(QStringLiteral("you on tonight?")));
 		QCOMPARE(m_chat->viewing(), QGuiApplication::applicationState() == Qt::ApplicationActive);
 		shot(QStringLiteral("chat-in-panel"));
+
+		QObject* profile = find("chatProfile");
+		QVERIFY(profile);
+		QVERIFY(QMetaObject::invokeMethod(profile, "clicked"));
+		QTRY_VERIFY(find("chatProfileCard")->property("opened").toBool());
+		shot(QStringLiteral("chat-header-card"));
 	}
 };
 

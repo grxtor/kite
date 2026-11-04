@@ -143,7 +143,11 @@ class FriendChatQmlHarness : public QObject
 	/* A fresh FriendsChat and server; the style QmlShell::show() picks. */
 	void setUp()
 	{
-		QQuickStyle::setStyle(QStringLiteral("Kite.Style"));
+		/* Once: the style cannot change after the first QML that uses it. */
+		const QString style = QStringLiteral("Kite.Style");
+		if (QQuickStyle::name() != style) {
+			QQuickStyle::setStyle(style);
+		}
 		m_server = FriendsChatFake::Server();
 		m_chat = std::make_unique<FriendsChat>();
 		m_chat->setTransport(m_server.transport());
