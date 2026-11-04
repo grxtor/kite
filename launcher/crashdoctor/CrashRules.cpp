@@ -35,6 +35,7 @@ namespace CrashDoctor
 		/// pattern stays far below it on the corpus.
 		constexpr int kMatchLimit = 2000000;
 		constexpr int kMaxFixes = 3;
+		constexpr int kMaxNotes = 3;
 		constexpr int kMaxPatterns = 8;
 		constexpr int kMaxTextLength = 400;
 
@@ -399,6 +400,27 @@ namespace CrashDoctor
 						}
 					}
 				}
+			}
+
+			for (const QJsonValue& item : object.value("notes").toArray()) {
+				if (rule.notes.size() == kMaxNotes) {
+					break;
+				}
+				const QJsonObject note = item.toObject();
+				Note parsed;
+				readConditions(note.value("when").toObject(), &parsed.when);
+				parsed.text = note.value("text").toObject();
+				if (!hasBothLanguages(parsed.text)) {
+					return fail(QStringLiteral("note needs en and tr"));
+				}
+				for (const QJsonValue& value : parsed.text) {
+					for (const QString& placeholder : placeholders(value.toString())) {
+						if (!names.contains(placeholder)) {
+							return fail(QStringLiteral("unknown placeholder %1").arg(placeholder));
+						}
+					}
+				}
+				rule.notes.append(parsed);
 			}
 
 			const QJsonArray fixes = object.value("fixes").toArray();

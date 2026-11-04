@@ -19,6 +19,8 @@
 
 #include "CrashActions.h"
 
+#include <QHash>
+
 namespace CrashActions
 {
 	namespace
@@ -96,6 +98,8 @@ namespace CrashActions
 				navigation("openBackups"),
 				navigation("openContentTab",
 						   {param("kind", ParamType::Choice, true, contentKinds)}),
+				navigation("openDriverPage",
+						   {param("vendor", ParamType::Choice, false, {"amd", "intel", "nvidia"})}),
 				navigation("openJavaSettings"),
 				navigation("openMemorySettings"),
 				navigation("openLog"),
@@ -103,6 +107,7 @@ namespace CrashActions
 			for (Spec& spec : specs) {
 				if (spec.name == QLatin1String("useDedicatedGpu")) {
 					spec.windowsOnly = true;
+					spec.needsSeveralGpus = true;
 				}
 				if (spec.name == QLatin1String("disableMod")) {
 					spec.batch = true;
@@ -119,6 +124,16 @@ namespace CrashActions
 	{
 		static const QList<Spec> specs = makeAll();
 		return specs;
+	}
+
+	QString driverPage(const QString& vendor)
+	{
+		static const QHash<QString, QString> kPages{
+			{QStringLiteral("amd"), QStringLiteral("https://www.amd.com/en/support/download/drivers.html")},
+			{QStringLiteral("intel"), QStringLiteral("https://www.intel.com/content/www/us/en/support/detect.html")},
+			{QStringLiteral("nvidia"), QStringLiteral("https://www.nvidia.com/en-us/drivers/")},
+		};
+		return kPages.value(vendor);
 	}
 
 	const Spec* find(const QString& name)

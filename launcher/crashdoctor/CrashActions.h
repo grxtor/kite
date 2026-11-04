@@ -76,6 +76,8 @@ namespace CrashActions
 		bool windowsOnly = false;
 		/// Offered only while a shader pack is on (Facts::shadersOn).
 		bool needsShaders = false;
+		/// Offered only with two or more graphics cards (Facts::severalGpus).
+		bool needsSeveralGpus = false;
 		/// Several findings of one card can share one run (all ids at once).
 		bool batch = false;
 	};
@@ -83,6 +85,11 @@ namespace CrashActions
 	/// The spec of action @p name, or null for a name not in the set.
 	const Spec* find(const QString& name);
 	const QList<Spec>& all();
+
+	/// The driver download page of graphics card maker @p vendor (a choice of
+	/// openDriverPage: "amd", "intel", "nvidia"), or "". The addresses are
+	/// Kite's; a rule only picks the maker.
+	QString driverPage(const QString& vendor);
 
 	inline constexpr int kMinJavaMajor = 8;
 	inline constexpr int kMaxJavaMajor = 40;

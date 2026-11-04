@@ -690,7 +690,8 @@ namespace CrashDoctor
 			for (const FixSpec& fix : rule.fixes) {
 				const CrashActions::Spec* spec = CrashActions::find(fix.action);
 				if (!spec || (spec->windowsOnly && facts.os != QLatin1String("windows")) ||
-					(spec->needsShaders && !facts.shadersOn)) {
+					(spec->needsShaders && !facts.shadersOn) ||
+					(spec->needsSeveralGpus && !facts.severalGpus)) {
 					continue;
 				}
 				QList<ResolvedFix> each;
@@ -823,6 +824,11 @@ namespace CrashDoctor
 				group && !rule.groupExplanation.isEmpty() ? rule.groupExplanation : rule.explanation;
 			cause.title = fill(localized(title, language), first, facts, count);
 			cause.explanation = fill(localized(explanation, language), first, facts, count);
+			for (const Note& note : rule.notes) {
+				if (factsAllow(note.when, facts)) {
+					cause.explanation += QLatin1Char(' ') + fill(localized(note.text, language), first, facts, count);
+				}
+			}
 			cause.fixes = fixesFor(rule, match.findings, facts, language);
 			causes.append(cause);
 		}

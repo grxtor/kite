@@ -34,6 +34,7 @@
 #include "CrashStreak.h"
 #include "Sys.h"
 #include "core/LauncherContext.h"
+#include "java/GpuPreference.h"
 #include "java/JavaVersion.h"
 #include "launch/LaunchTask.h"
 #include "launch/LogModel.h"
@@ -272,6 +273,7 @@ namespace CrashDoctor
 				.retried(QDateTime::currentDateTimeUtc());
 		facts.os = osName();
 		facts.arch = archName();
+		facts.severalGpus = GpuPreference::hasSeveralGraphicsCards();
 		facts.javaNow = JavaVersion(settings->get("JavaVersion").toString()).major();
 		facts.javaRecommended = VerifyJavaInstall::requiredJavaMajor(instance);
 		facts.memoryMb = settings->get("MaxMemAlloc").toInt();

@@ -68,6 +68,8 @@ namespace CrashDoctor
 		/// A shader mod (Iris, Oculus) is installed and its settings have a
 		/// shader pack on: turning shaders off would change something.
 		bool shadersOn = false;
+		/// Two or more graphics cards: the faster one can be picked.
+		bool severalGpus = false;
 
 		bool modded() const;
 		/// Memory to offer after an out-of-memory crash.

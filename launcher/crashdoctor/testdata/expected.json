@@ -1543,7 +1543,7 @@
    "modded": true
   },
   "expect": {
-   "top": "gpu.driver-native-crash",
+   "top": "gpu.amd-driver-crash",
    "captures": {
     "lib": "atio6axx.dll"
    },
@@ -1997,9 +1997,9 @@
   "note": "OptiFine/Sodium names in a normal mod list"
  },
  {
-  "name": "gpu.driver-native-crash.intel",
+  "name": "gpu.intel-driver-crash",
   "kind": "synthetic",
-  "file": "synthetic/gpu.driver-native-crash.intel.json",
+  "file": "synthetic/gpu.intel-driver-crash.json",
   "source": null,
   "facts": {
    "os": "windows",
@@ -2018,7 +2018,7 @@
    "modded": true
   },
   "expect": {
-   "top": "gpu.driver-native-crash",
+   "top": "gpu.intel-driver-crash",
    "captures": {
     "lib": "ig9icd64.dll"
    },
@@ -2033,9 +2033,9 @@
   "note": "Intel OpenGL driver"
  },
  {
-  "name": "gpu.driver-native-crash.nvidia-compiler",
+  "name": "gpu.nvidia-driver-crash.compiler",
   "kind": "synthetic",
-  "file": "synthetic/gpu.driver-native-crash.nvidia-compiler.json",
+  "file": "synthetic/gpu.nvidia-driver-crash.compiler.json",
   "source": null,
   "facts": {
    "os": "windows",
@@ -2054,7 +2054,7 @@
    "modded": true
   },
   "expect": {
-   "top": "gpu.driver-native-crash",
+   "top": "gpu.nvidia-driver-crash",
    "captures": {
     "lib": "nvgpucomp64.dll"
    },
@@ -2096,9 +2096,9 @@
   "note": "Mesa 24.1+ keeps its drivers in libgallium"
  },
  {
-  "name": "gpu.driver-crash-sodium",
+  "name": "gpu.amd-driver-crash.sodium",
   "kind": "synthetic",
-  "file": "synthetic/gpu.driver-crash-sodium.json",
+  "file": "synthetic/gpu.amd-driver-crash.sodium.json",
   "source": null,
   "facts": {
    "os": "windows",
@@ -2121,7 +2121,7 @@
    "modded": true
   },
   "expect": {
-   "top": "gpu.driver-crash-sodium",
+   "top": "gpu.amd-driver-crash",
    "captures": {
     "lib": "atio6axx.dll"
    },
@@ -2193,7 +2193,7 @@
     "lib": "RTSSHooks64.dll"
    },
    "also": [
-    "gpu.driver-native-crash"
+    "gpu.amd-driver-crash"
    ],
    "absent": [
     "native.unknown-library"

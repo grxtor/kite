@@ -105,6 +105,13 @@ namespace CrashDoctor
 		QHash<QString, bool> installed;
 	};
 
+	/// A sentence added to a rule's explanation while its conditions hold
+	/// (only the ones on the facts: no per-finding conditions).
+	struct Note {
+		Conditions when;
+		QJsonObject text;
+	};
+
 	struct Rule {
 		QString id;
 		int priority = 0;
@@ -130,6 +137,7 @@ namespace CrashDoctor
 		QJsonObject groupTitle;
 		QJsonObject explanation;
 		QJsonObject groupExplanation;
+		QList<Note> notes;
 		QList<FixSpec> fixes;
 	};
 

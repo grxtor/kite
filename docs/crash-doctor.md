@@ -49,8 +49,9 @@ launch.
   (0xC0000005, 0xC0000409, 0xC000001D, 0xC00000FD, 0xC0000374, 0x80000003, in either their signed or
   unsigned form), the plain number for any other code.
 - When the instance crashed like that at least twice in a row and a later launch then worked, in
-  the last 30 days, the first cause says so: it points at a driver or an overlay, not at a mod. The
-  count is the instance's `CrashDoctorNativeCrashes` (`CrashStreak`).
+  the last 30 days, a muted line under the first cause says so, above the exit code ("Lately it
+  crashed like this 2 times, then started on a later try."). The count is the instance's
+  `CrashDoctorNativeCrashes` (`CrashStreak`).
 - When rules that came later know a crash Kite could not explain, the strip says "Fix found:
   <cause>" with its fix, and a desktop notification says so once.
 
@@ -79,6 +80,7 @@ reports: `crashsend=<id>` sends that crash as Send would, `crashrules=<file>` us
   "title": { "en": "{byName|by} needs {modName|mod}", "tr": "{byName|by}, {modName|mod} modunu istiyor" },
   "groupTitle": { "en": "{count} mods are missing", "tr": "{count} mod eksik" },
   "explanation": { "en": "…", "tr": "…" },
+  "notes": [{ "when": { "mods": ["sodium"] }, "text": { "en": "…", "tr": "…" } }],
   "fixes": [{ "action": "installMissingDependency", "params": { "mod": "{mod}" },
               "label": { "en": "Install {modName|mod}", "tr": "{modName|mod} modunu yükle" } }]
 }
@@ -95,6 +97,9 @@ in the run gets the blame.
 (`aboveRecommended` / `belowRecommended`), `customJvmArgs`, `memoryRoom`, `exitCode` (a Windows
 status matches in its signed and unsigned form), `exitStatus`, `mods` (one of these mod ids is
 installed), and per finding `inSet` (`performanceMods`, `installed`) and `installed`.
+
+**`notes`** (at most 3): a sentence added to the explanation while its `when` holds (conditions on
+the facts only), such as "Sodium and Iris are known to crash on old drivers." for a driver crash.
 
 A **fallback** rule names what Kite saw without knowing why (a native frame no rule knows, an exit
 code alone). Its card shows only while no other cause explains the crash, and the crash still counts
@@ -134,7 +139,10 @@ reach (an overlay's thread, `__fastfail`) leaves only the exit code.
 
 | Seen | Rule | Says |
 |---|---|---|
-| A graphics driver as the problematic frame (AMD `atio6axx`, Intel `ig*icd*`/`igc64`, NVIDIA `nvoglv*`/`nvgpucomp*`, Mesa, Apple) | `gpu.driver-native-crash`, `gpu.driver-crash-sodium` with Sodium, Embeddium, Rubidium, Iris or Oculus | Update the driver from the card's maker; shaders off |
+| AMD's driver as the problematic frame (`atio6axx`, `amdvlk64`, `amdxc64`, …) | `gpu.amd-driver-crash` | "AMD ekran kartı sürücüsü çöktü": AMD's driver page; shaders off |
+| Intel's (`ig*icd*`, `igc64`, `igvk64`) | `gpu.intel-driver-crash` | The same with Intel's page |
+| NVIDIA's (`nvoglv*`, `nvgpucomp*`, `libnvidia-glcore`, …) | `gpu.nvidia-driver-crash` | The same with NVIDIA's page |
+| Another driver (Mesa, Apple, a Vulkan driver) | `gpu.driver-native-crash` | Update it; on Linux and macOS with the system |
 | An overlay's DLL on the crashing thread (`RTSSHooks64`, `GameOverlayRenderer64`, `DiscordHook64`, `graphics-hook64`, `nvspcap64`) | `overlay.rivatuner`, `.steam`, `.discord`, `.obs`, `.nvidia` | Turn that overlay off for Minecraft |
 | An antivirus hook on the crashing thread (`aswhook`, `atcuf64`, `hmpalert`, `sysfer`, `mbae64`, …) | `native.antivirus-hook` | Add Java and Kite as exceptions |
 | `V  [jvm.dll+…]` | `native.jvm-crash` (fallback) | Java itself; the Java Kite picks |
@@ -162,13 +170,14 @@ when the file loads.
 | `resetOptions` | | Moves `options.txt` aside | yes |
 | `turnOffShaders` | | `enableShaders=false` in Iris / Oculus settings; offered only while one of them has a shader pack on | |
 | `setGraphicsBackend` | `backend` | 26.2+ Graphics API (`opengl`, `default`) | |
-| `useDedicatedGpu` | | Windows: the faster graphics card for Java | |
+| `useDedicatedGpu` | | Windows with two or more graphics cards: the faster one for Java | |
 | `repairGameFiles` | | Next launch downloads every library again | |
 | `installMissingDependency` | `mod` | The Mods tab's install review | the review |
 | `updateMod` | `mods` | The install review, replacing the files | the review |
 | `updateLoader` | | Opens the Version tab | |
 | `rematchPerformanceMods` | | Runs Kite Performance's setup again | |
 | `uploadLog` | | Shares the log through paste.ee (the link is copied) | yes |
+| `openDriverPage` | `vendor` (`amd`, `intel`, `nvidia`) | Opens that maker's driver download page; the addresses are Kite's (`CrashActions::driverPage`) | |
 | `open…` | | Mods / instance / worlds folder, Backups, Content, Java or memory settings, the log | |
 
 Nothing is deleted: files are renamed aside, and the last fix of an instance can be undone, also
@@ -181,6 +190,7 @@ The rules come from the network and the log comes from mods, servers and chat; n
 - A rule picks words and actions from the table above, with parameters bound to its captures. It
   cannot run anything, pass a JVM argument or a URL, or name a path: file parameters are names
   resolved inside this instance's `mods/` or `config/`, checked again after links are resolved.
+  `openDriverPage` picks one of three makers; their pages are written into Kite.
 - The confirmations are Kite's, and name the exact files; a rule cannot word them.
 - Texts are plain text with a length cap; no links, no formatting.
 - Patterns: at most 600 characters, no PCRE verbs or inline flags, a match-step limit Kite sets, and

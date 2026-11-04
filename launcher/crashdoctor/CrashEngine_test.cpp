@@ -45,7 +45,7 @@ using namespace CrashDoctor;
  */
 namespace
 {
-	constexpr int kCatalogRules = 51;
+	constexpr int kCatalogRules = 53;
 	constexpr int kAccessViolation = -1073741819;
 	constexpr qint64 kAccessViolationUnsigned = 3221225477LL;
 	constexpr int kBudgetMs = 8000;
@@ -283,6 +283,9 @@ class CrashEngineTest : public QObject
 		QVERIFY(!mac.isEmpty());
 		QVERIFY(mac.first().fixes.isEmpty());
 		facts.os = QStringLiteral("windows");
+		// One graphics card: there is no faster one to pick.
+		QVERIFY(analyse(m_catalog, {log, {}, {}}, facts, QStringLiteral("en")).first().fixes.isEmpty());
+		facts.severalGpus = true;
 		const QList<Cause> windows = analyse(m_catalog, {log, {}, {}}, facts, QStringLiteral("en"));
 		QCOMPARE(windows.first().fixes.first().action, QStringLiteral("useDedicatedGpu"));
 	}
@@ -480,8 +483,9 @@ class CrashEngineTest : public QObject
 		QVERIFY(analyse(*catalog, {QStringLiteral("boom\n"), {}, {}}, facts, QStringLiteral("en")).isEmpty());
 	}
 
-	// Turning shaders off is offered only when a shader pack is on.
-	void shaderFixNeedsAShaderPack()
+	// The maker's driver page first; turning shaders off only when a shader
+	// pack is on, the faster card only when there are two.
+	void driverCrashFixes()
 	{
 		const Evidence evidence{
 			QStringLiteral("Process crashed with exitcode -1073741819.\n"), {},
@@ -498,9 +502,54 @@ class CrashEngineTest : public QObject
 			}
 			return out;
 		};
-		QCOMPARE(actions(), QStringList({"useDedicatedGpu"}));
+		QCOMPARE(actions(), QStringList({"openDriverPage"}));
 		facts.shadersOn = true;
-		QCOMPARE(actions(), QStringList({"useDedicatedGpu", "turnOffShaders"}));
+		QCOMPARE(actions(), QStringList({"openDriverPage", "turnOffShaders"}));
+		facts.severalGpus = true;
+		QCOMPARE(actions(), QStringList({"openDriverPage", "turnOffShaders", "useDedicatedGpu"}));
+
+		const Cause top = analyse(m_catalog, evidence, facts, QStringLiteral("tr")).first();
+		QCOMPARE(top.title, QStringLiteral("AMD ekran kartı sürücüsü çöktü"));
+		QCOMPARE(top.explanation, QStringLiteral("Oyunu Minecraft ya da bir mod değil, AMD sürücüsü (atio6axx.dll) "
+												 "çökertti. Sürücünü AMD'nin sitesinden güncelle."));
+		QCOMPARE(top.fixes.first().params.value("vendor").toString(), QStringLiteral("amd"));
+		QCOMPARE(top.fixes.first().label, QStringLiteral("AMD sürücüsünü güncelle"));
+		// With Sodium or Iris, the note about old drivers.
+		facts.installed = {QStringLiteral("sodium")};
+		QVERIFY(analyse(m_catalog, evidence, facts, QStringLiteral("en"))
+					.first()
+					.explanation.endsWith(QStringLiteral("Sodium and Iris are known to crash on old drivers.")));
+	}
+
+	// A rule picks the maker; the address is Kite's. A rule cannot name a
+	// page, nor another maker.
+	void driverPageIsKitesOwn()
+	{
+		QVERIFY(CrashActions::driverPage(QStringLiteral("amd")).startsWith(QStringLiteral("https://www.amd.com/")));
+		QVERIFY(CrashActions::driverPage(QStringLiteral("intel")).startsWith(QStringLiteral("https://www.intel.com/")));
+		QVERIFY(CrashActions::driverPage(QStringLiteral("nvidia")).startsWith(QStringLiteral("https://www.nvidia.com/")));
+		QVERIFY(CrashActions::driverPage(QStringLiteral("https://evil.example")).isEmpty());
+
+		const auto rule = [](const QJsonObject& params) {
+			return QJsonObject{
+				{"id", "test.driver"},
+				{"priority", 50},
+				{"match", QJsonObject{{"any", QJsonArray{QJsonObject{{"re", "boom"}}}}}},
+				{"title", QJsonObject{{"en", "Boom"}, {"tr", "Bum"}}},
+				{"explanation", QJsonObject{{"en", "It went boom."}, {"tr", "Bum dedi."}}},
+				{"fixes", QJsonArray{QJsonObject{{"action", "openDriverPage"},
+												 {"params", params},
+												 {"label", QJsonObject{{"en", "Go"}, {"tr", "Git"}}}}}}};
+		};
+		for (const QJsonObject& bad : {QJsonObject{{"vendor", "https://evil.example"}},
+									   QJsonObject{{"vendor", "amd"}, {"url", "https://evil.example"}}}) {
+			const QJsonObject root{{"formatVersion", kFormatVersion}, {"rules", QJsonArray{rule(bad)}}};
+			QStringList skipped;
+			const auto catalog = Catalog::parse(QJsonDocument(root).toJson(), nullptr, &skipped);
+			QVERIFY(catalog.has_value());
+			QVERIFY(catalog->rules.first().fixes.isEmpty());
+			QCOMPARE(skipped.size(), 1);
+		}
 	}
 
 	// A fallback names what Kite saw; the crash is still one Kite could not

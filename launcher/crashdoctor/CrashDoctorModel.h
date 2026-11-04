@@ -35,10 +35,12 @@ class MinecraftInstance;
  * the parameters given here.
  *
  * Each cause: ruleId, title, explanation, line (the log line that shows it),
- * count, rows (one line per finding of a grouped card), detail (the first
- * cause of a native crash: its exit code in words, else ""), fixes. Each fix:
- * action, label, params, runner ("fixer", "flow", "navigation"), confirm
- * (the question to ask first, "" for none).
+ * count, rows (one line per finding of a grouped card), detail (under the
+ * first cause of a native crash: how often it crashed like this before a
+ * start, and the exit code in words; else ""), fixes. Each fix: action,
+ * label, params, runner ("fixer", "flow", "navigation"), confirm (the question
+ * to ask first, "" for none), url (openDriverPage: Kite's address of the
+ * maker's driver page).
  *
  * Sending the crash to Kite (CrashDoctorModelSend.cpp): canSend while there is
  * one to send and it was not sent, sendState after, payload what goes, in
