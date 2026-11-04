@@ -31,19 +31,40 @@ using FriendChatQml::kPanelHeight;
 using FriendChatQml::localIso;
 using FriendsChatFake::kJeb;
 
+/* FriendsController's `chat` as QML meets it: a property typed FriendsChat*. */
+class ChatHolder : public QObject
+{
+	Q_OBJECT
+	Q_PROPERTY(FriendsChat* chat READ chat CONSTANT)
+
+  public:
+	explicit ChatHolder(FriendsChat* chat) : m_chat(chat) {}
+	FriendsChat* chat() const
+	{
+		return m_chat;
+	}
+
+  private:
+	FriendsChat* m_chat;
+};
+
 class FriendChatPanelQmlTest : public FriendChatQmlHarness
 {
 	Q_OBJECT
+
+	std::unique_ptr<ChatHolder> m_holder;
 
   private slots:
 	void init()
 	{
 		setUp();
+		m_holder = std::make_unique<ChatHolder>(m_chat.get());
 	}
 
 	void cleanup()
 	{
 		tearDown();
+		m_holder.reset();
 	}
 
 	/* Message in a friend's ⋯ opens the conversation in the friends panel, opening it out; it counts as read only
@@ -62,7 +83,7 @@ class FriendChatPanelQmlTest : public FriendChatQmlHarness
 				QtObject {
 					id: fakeController
 					objectName: "controller"
-					property var chat: fakeChat
+					property var chat: chatHolder.chat
 					property bool enabled: true
 					property string state: "ready"
 					property bool loaded: true
@@ -103,7 +124,8 @@ class FriendChatPanelQmlTest : public FriendChatQmlHarness
 			})")
 							  .arg(kPanelHeight)
 							  .arg(kJeb, face("jeb_"), face("Notch"))
-							  .toUtf8());
+							  .toUtf8(),
+			 {{QStringLiteral("chatHolder"), QVariant::fromValue<QObject*>(m_holder.get())}});
 
 		const auto entries = [&](bool removable, const QVariant& messagable) {
 			QVariant result;

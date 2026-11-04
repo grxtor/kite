@@ -123,13 +123,16 @@ class FriendChatQmlHarness : public QObject
 		QVERIFY(image.save(QDir(dir).filePath(name + QStringLiteral(".png"))));
 	}
 
-	/* @p qml (a Window) loaded and shown. */
-	void load(const QByteArray& qml)
+	/* @p qml (a Window) loaded and shown; @p extra are more context objects by name. */
+	void load(const QByteArray& qml, const QVariantMap& extra = {})
 	{
 		m_root.reset();
 		m_engine = std::make_unique<QQmlEngine>();
 		m_engine->addImportPath(QStringLiteral("qrc:/qt/qml"));
 		m_engine->rootContext()->setContextProperty(QStringLiteral("fakeChat"), m_chat.get());
+		for (auto it = extra.cbegin(); it != extra.cend(); ++it) {
+			m_engine->rootContext()->setContextProperty(it.key(), it.value());
+		}
 		QQmlComponent component(m_engine.get());
 		component.setData(qml, QUrl());
 		m_root.reset(component.create());
