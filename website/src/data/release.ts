@@ -21,7 +21,7 @@ export interface Release {
 // The release the download buttons serve. Flip it to the next version only once that release
 // is published (not while it is a draft): the site deploys from main, and an unpublished
 // release's files are 404s.
-const SITE_DOWNLOAD_VERSION = '1.2.0';
+const SITE_DOWNLOAD_VERSION = '1.3.0';
 // macOS Apple silicon and Intel Legacy (macOS 12) separately: v1.3.0 is going out without those
 // two builds. Flip this to SITE_DOWNLOAD_VERSION once the 1.3.0 arm64 and Legacy .dmg files are
 // on the release.
