@@ -1,5 +1,5 @@
 {
-    "##": "Filled in and pushed to grxtor/scoop-bucket by .github/workflows/publish.yml. The updater is removed because Scoop updates Kite now.",
+    "##": "Filled in and pushed to grxtor/scoop-bucket by .github/workflows/publish.yml. Scoop updates Kite: updates-managed-by.txt makes Kite only announce new releases, and its updater refuses to install them.",
     "version": "@VERSION@",
     "description": "Minecraft launcher with multi-instance management",
     "homepage": "https://kiteclient.com",
@@ -17,7 +17,7 @@
             "hash": "@SHA256:Kite-Windows-MSVC-Qt6-arm64-@TAG@.zip@"
         }
     },
-    "pre_install": "Remove-Item \"$dir\\kite-updater.exe\" -ErrorAction SilentlyContinue",
+    "pre_install": "Set-Content -LiteralPath \"$dir\\updates-managed-by.txt\" -Value 'scoop' -Encoding ascii",
     "bin": "kite.exe",
     "shortcuts": [
         [

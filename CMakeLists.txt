@@ -27,6 +27,15 @@ include(CTest)
 include(ECMAddTests)
 if(BUILD_TESTING)
     enable_testing()
+
+    # The script the release workflow makes and signs the update feeds with: its tests use a fake
+    # release, so they run with every build rather than only on a tag.
+    find_package(Python3 3.9 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME UpdateFeedScript
+            COMMAND "${Python3_EXECUTABLE}" -I -B -m unittest discover
+                -s "${CMAKE_CURRENT_SOURCE_DIR}/packaging/update-feed" -t "${CMAKE_CURRENT_SOURCE_DIR}/packaging/update-feed")
+    endif()
 endif()
 
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BUILD_DIR}" IS_IN_SOURCE_BUILD)
@@ -324,6 +333,12 @@ set(Kite_BUILD_PLATFORM "" CACHE STRING "A short string identifying the platform
 
 set(Kite_UPDATER_GITHUB_REPO "" CACHE STRING "GitHub repository the updater reads releases from. Defaults to Kite_Git.")
 
+# kite-updater (Windows, Linux) installs a release only when its kite-update.json carries an Ed25519
+# signature by this key; the release workflow signs it with the KITE_UPDATE_ED_PRIVATE_KEY secret and
+# fails if that secret is not this key's. A fork publishing its own releases sets its own key. Base64
+# of the 32-byte public key.
+set(Kite_UPDATE_PUBLIC_KEY "6dOlOyj2F8eqxeWJSbnIYY6V1PBak2YHHn02CydQblY=" CACHE STRING "Public Ed25519 key the release manifest must be signed with (base64).")
+
 # A beta build enables pre-releases by default; users can change that. Not
 # Kite_VERSION_CHANNEL, which is the git branch name.
 set(Kite_UPDATE_CHANNEL "stable" CACHE STRING "Release channel this build subscribes to: stable | beta.")
@@ -480,12 +495,25 @@ if(UNIX AND APPLE)
         set(MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION_KEY
             "<key>LSMinimumSystemVersion</key>\n    <string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>")
     endif()
-    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "" CACHE STRING "Public key for Sparkle update feed")
+    # Sparkle installs an update only when its archive carries an EdDSA signature by this key
+    # (SUPublicEDKey); the release workflow signs with the SPARKLE_ED_PRIVATE_KEY secret and fails if
+    # that secret is not this key's. Changing it strands every installed copy: Sparkle accepts a new
+    # key only from an update signed with the old one.
+    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "1xiINdScFsbf7TYDhMqXWSVkZKl3/VWODTwwa6f4Z0o=" CACHE STRING "Public key for Sparkle update feed")
+    # Empty: the appcast the release workflow attaches to the latest GitHub release for this build
+    # (appcast-<Kite_BUILD_ARTIFACT>.xml). A local build has no artifact name and so no updater.
     set(MACOSX_SPARKLE_UPDATE_FEED_URL "" CACHE STRING "URL for Sparkle update feed")
+    if(MACOSX_SPARKLE_UPDATE_FEED_URL STREQUAL "" AND NOT Kite_BUILD_ARTIFACT STREQUAL "")
+        set(MACOSX_SPARKLE_UPDATE_FEED_URL
+            "${Kite_UPDATER_GITHUB_REPO}/releases/latest/download/appcast-${Kite_BUILD_ARTIFACT}.xml")
+    endif()
 
-    set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.8.0/Sparkle-2.8.0.tar.xz" CACHE STRING "URL to Sparkle release archive")
-    set(MACOSX_SPARKLE_SHA256 "fd5681ee92bf238aaac2d08214ceaf0cc8976e452d7f882d80bac1e61581f3b1" CACHE STRING "SHA256 checksum for Sparkle release archive")
-    set(MACOSX_SPARKLE_DIR "${CMAKE_BINARY_DIR}/frameworks/Sparkle")
+    # Pinned, not cache variables: a build directory configured before a bump must not keep fetching
+    # the old archive. The directory is versioned for the same reason.
+    set(MACOSX_SPARKLE_VERSION "2.10.0")
+    set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/${MACOSX_SPARKLE_VERSION}/Sparkle-${MACOSX_SPARKLE_VERSION}.tar.xz")
+    set(MACOSX_SPARKLE_SHA256 "c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c")
+    set(MACOSX_SPARKLE_DIR "${CMAKE_BINARY_DIR}/frameworks/Sparkle-${MACOSX_SPARKLE_VERSION}")
 
     install(FILES ${Kite_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${Kite_AppID}.icns)
 
@@ -610,6 +638,7 @@ add_subdirectory(libraries/xz-embedded) # xz compression
 add_subdirectory(libraries/localpeer) # fork of a library from Qt solutions
 add_subdirectory(libraries/classparser) # Java class file parser
 add_subdirectory(libraries/katabasis) # OAuth2 library
+add_subdirectory(libraries/monocypher) # Ed25519 check of the update manifest
 
 # The shared libraries go where the launcher loads them: beside the binary on
 # Windows, covered by the RPATH elsewhere. Installed by hand: RUNTIME_DEPENDENCY_SET

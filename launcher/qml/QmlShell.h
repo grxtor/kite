@@ -455,8 +455,13 @@ class QmlShell : public QObject
 	/* Dev only, for snapshots ("ask=<kind>"): "pickAccount" asks the launch
 	 * account picker; "busySkip" shows the account-refresh wait with its "Play
 	 * offline" button; "modal" a sample plugin prompt; "optionalMods" a sample
-	 * ATLauncher optional-mods question. No-op for any other kind. */
+	 * ATLauncher optional-mods question; "update" an update on offer,
+	 * "updateGame" the same while a game runs, "updateManaged" one a package
+	 * manager installs. No-op for any other kind. */
 	Q_INVOKABLE void debugShowRequest(const QString& kind);
+	/* Dev only, for snapshots ("updates=<state>"): Settings > Updates with a
+	 * stand-in updater: "idle", "pending", "pendingGame" or "managed". */
+	Q_INVOKABLE void debugUpdateState(const QString& state);
 
 	QStringList groups() const;
 	QObject* iconsModel() const;

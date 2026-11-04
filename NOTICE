@@ -15,3 +15,10 @@ and the git history records every change.
 
 "MeshMC" and "Project Tick" are names of their respective owners, used here
 only to say where this code comes from.
+
+Third-party code shipped with Kite, besides the libraries listed in COPYING.md:
+- Monocypher 4.0.3 (https://monocypher.org), vendored unmodified in
+  libraries/monocypher; 2-clause BSD or CC0 1.0. kite-updater uses it to
+  verify the signature on a release's update manifest.
+- Sparkle 2.10.0 (https://sparkle-project.org), embedded in the macOS app;
+  MIT licence. It installs Kite's macOS updates.

@@ -153,6 +153,39 @@ class UpdateLockFileTest : public QObject
 		QCOMPARE(read.stage, 0);
 		QCOMPARE(read.pid, 0);
 	}
+
+	/*! The packaging templates (Scoop, AUR) drop updates-managed-by.txt into the installation; Kite
+	 * then only announces releases. Anything but a plain word is ignored rather than shown. */
+	void test_managedBy_data()
+	{
+		QTest::addColumn<QByteArray>("contents");
+		QTest::addColumn<QString>("expected");
+
+		QTest::newRow("scoop") << QByteArray("scoop\n") << QStringLiteral("scoop");
+		QTest::newRow("windows line end") << QByteArray("scoop\r\n") << QStringLiteral("scoop");
+		QTest::newRow("pacman, spaces") << QByteArray("  pacman  ") << QStringLiteral("pacman");
+		QTest::newRow("empty") << QByteArray() << QString();
+		QTest::newRow("markup") << QByteArray("<b>x</b>") << QString();
+		QTest::newRow("sentence") << QByteArray("my package manager") << QString();
+		QTest::newRow("too long") << QByteArray(40, 'a') << QString();
+	}
+
+	void test_managedBy()
+	{
+		QFETCH(QByteArray, contents);
+		QFETCH(QString, expected);
+
+		QTemporaryDir root;
+		QVERIFY(root.isValid());
+		QCOMPARE(UpdateLockFile::managedBy(root.path()), QString());
+
+		QFile file(QDir(root.path()).absoluteFilePath(
+			QLatin1String(UpdateLockFile::kManagedByFileName)));
+		QVERIFY(file.open(QIODevice::WriteOnly));
+		file.write(contents);
+		file.close();
+		QCOMPARE(UpdateLockFile::managedBy(root.path()), expected);
+	}
 };
 
 QTEST_GUILESS_MAIN(UpdateLockFileTest)

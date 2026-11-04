@@ -20,16 +20,20 @@
 
 #pragma once
 
+#include <QDateTime>
 #include <QObject>
+#include <QString>
+
 #include <functional>
 
 /*
- * The launcher's update settings for QML: automatic checks, their interval and
- * "Check now". The updater lives in Application, which core code cannot reach,
- * so Application hands in a Backend of plain functions once it exists. Until
- * then (and in a build with no updater) available is false and everything does
- * nothing, which is how the Settings page knows to hide itself. The interval is
- * in whole hours; 0 means "only when the launcher starts".
+ * The launcher's update settings for QML: automatic checks (when Kite starts
+ * and once a day), the release channel, when Kite last checked, "Check now",
+ * and an update waiting for Kite to close. The updater lives in Application,
+ * which core code cannot reach, so Application hands in a Backend of plain
+ * functions once it exists. Until then (and in a build with no updater)
+ * available is false and everything does nothing, which is how the Settings
+ * page knows to hide itself.
  */
 class UpdateSettingsController : public QObject
 {
@@ -37,17 +41,33 @@ class UpdateSettingsController : public QObject
 
 	Q_PROPERTY(bool available READ available NOTIFY changed)
 	Q_PROPERTY(bool autoCheck READ autoCheck WRITE setAutoCheck NOTIFY changed)
-	Q_PROPERTY(int intervalHours READ intervalHours WRITE setIntervalHours
-				   NOTIFY changed)
+	/// "stable" (the only one there is yet) or "beta".
+	Q_PROPERTY(QString channel READ channel NOTIFY changed)
+	/// When the last check finished, in ms since the epoch; 0 for never.
+	Q_PROPERTY(qint64 lastCheckedMs READ lastCheckedMs NOTIFY changed)
+	/// The version that installs once Kite closes; empty when none waits.
+	Q_PROPERTY(QString pendingVersion READ pendingVersion NOTIFY changed)
+	/// Whether Kite may restart into an update now: not while a game runs.
+	Q_PROPERTY(bool canInstallNow READ canInstallNow NOTIFY changed)
+	/// The package manager that updates Kite here ("Scoop"), empty when Kite
+	/// updates itself.
+	Q_PROPERTY(QString managedBy READ managedBy NOTIFY changed)
 
   public:
 	struct Backend {
+		// Required: without these the controller stays unavailable.
 		std::function<bool()> automaticallyChecks;
 		std::function<void(bool)> setAutomaticallyChecks;
-		/// Seconds between checks; 0 = only at startup.
-		std::function<double()> intervalSeconds;
-		std::function<void(double)> setIntervalSeconds;
+		std::function<QDateTime()> lastCheck;
 		std::function<void()> checkNow;
+
+		// Optional: Sparkle keeps its own pending update and has none of these.
+		std::function<QString()> pendingVersion;
+		std::function<bool()> canInstallNow;
+		std::function<void()> installPendingNow;
+
+		QString channel = QStringLiteral("stable");
+		QString managedBy;
 	};
 
 	explicit UpdateSettingsController(QObject* parent = nullptr);
@@ -58,12 +78,19 @@ class UpdateSettingsController : public QObject
 	bool available() const;
 	bool autoCheck() const;
 	void setAutoCheck(bool check);
-	int intervalHours() const;
-	void setIntervalHours(int hours);
+	QString channel() const;
+	qint64 lastCheckedMs() const;
+	QString pendingVersion() const;
+	bool canInstallNow() const;
+	QString managedBy() const;
 
 	Q_INVOKABLE void checkNow();
+	Q_INVOKABLE void installPendingNow();
 
-	static constexpr int secondsPerHour = 3600;
+  public slots:
+	/// The updater's state moved (a check finished, a game started or
+	/// ended, an update began waiting): QML reads it again.
+	void refresh();
 
   signals:
 	void changed();

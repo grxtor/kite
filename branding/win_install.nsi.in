@@ -460,6 +460,18 @@ Section /o "Shell Association (Open-With dialog)" SHELL_ASSOC
   !insertmacro NotifyShell_AssocChanged
 SectionEnd
 
+; Last, so Kite starts on a complete installation. /Relaunch: kite-updater asked for it; it had to
+; exit before this installer could replace it, so it cannot start Kite itself.
+Section "-Relaunch"
+  ${GetParameters} $R0
+  ClearErrors
+  ${GetOptions} $R0 "/Relaunch" $R1
+  ${IfNot} ${Errors}
+    SetOutPath $INSTDIR
+    Exec '"$INSTDIR\@Kite_AppBinaryName@.exe"'
+  ${EndIf}
+SectionEnd
+
 
 ;--------------------------------
 
@@ -517,5 +529,27 @@ ${GetOptions} $R0 "/NoShortcuts" $R1
 ${IfNot} ${Errors}
   !insertmacro UnselectSection ${SM_SHORTCUTS}
   !insertmacro UnselectSection ${DESKTOP_SHORTCUTS}
+${EndIf}
+
+; /Update: kite-updater runs this installer silently (/S /Update [/Relaunch]) to update Kite.
+ClearErrors
+${GetOptions} $R0 "/Update" $R1
+${IfNot} ${Errors}
+  ; kite-updater exits right after starting this; its files are among those replaced. It has
+  ; nothing left to do, so one that is still up after the wait is stopped.
+  Sleep 2000
+  nsExec::Exec /TIMEOUT=2000 'TaskKill /IM @Kite_AppBinaryName@-updater.exe /F'
+  ; Uninstalling the old version removes the shortcuts and the file association, and the defaults
+  ; would bring back only the Start Menu shortcut: keep what the installation has now.
+  ${IfNot} ${FileExists} "$SMPROGRAMS\@Kite_DisplayName@.lnk"
+    !insertmacro UnselectSection ${SM_SHORTCUTS}
+  ${EndIf}
+  ${If} ${FileExists} "$DESKTOP\@Kite_DisplayName@.lnk"
+    !insertmacro SelectSection ${DESKTOP_SHORTCUTS}
+  ${EndIf}
+  ReadRegStr $R2 HKCU "Software\Classes\${APPID}" ""
+  ${If} $R2 != ""
+    !insertmacro SelectSection ${SHELL_ASSOC}
+  ${EndIf}
 ${EndIf}
 FunctionEnd

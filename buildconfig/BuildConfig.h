@@ -53,6 +53,10 @@ class Config
 
 	QString UPDATER_GITHUB_REPO;
 
+	/// Base64 Ed25519 key a release's kite-update.json must be signed with
+	/// before kite-updater installs anything from it.
+	QString UPDATE_PUBLIC_KEY;
+
 	QString BUILD_DATE;
 
 	QString USER_AGENT;

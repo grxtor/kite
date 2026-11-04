@@ -28,16 +28,23 @@ namespace
 	// A stand-in updater that remembers what it was told.
 	struct FakeUpdater {
 		bool autoCheck = true;
-		double interval = 24 * 3600.0;
+		QDateTime last;
 		int checks = 0;
+		QString pending;
+		bool gamesRunning = false;
+		int installs = 0;
 
 		UpdateSettingsController::Backend backend()
 		{
-			return {[this] { return autoCheck; },
-					[this](bool v) { autoCheck = v; },
-					[this] { return interval; },
-					[this](double v) { interval = v; },
-					[this] { ++checks; }};
+			UpdateSettingsController::Backend b;
+			b.automaticallyChecks = [this] { return autoCheck; };
+			b.setAutomaticallyChecks = [this](bool v) { autoCheck = v; };
+			b.lastCheck = [this] { return last; };
+			b.checkNow = [this] { ++checks; };
+			b.pendingVersion = [this] { return pending; };
+			b.canInstallNow = [this] { return !gamesRunning; };
+			b.installPendingNow = [this] { ++installs; };
+			return b;
 		}
 	};
 } // namespace
@@ -49,9 +56,12 @@ class UpdateSettingsControllerTest : public QObject
   private slots:
 	void isUnavailableWithoutAnUpdater();
 	void readsTheUpdatersSettings();
-	void writesHoursAsSeconds();
-	void zeroHoursMeansOnlyAtStartup();
+	void lastCheckIsMillisecondsOrZero();
+	void channelAndManager();
 	void checkNowReachesTheUpdater();
+	void installsAPendingUpdateOnlyWhenNoGameRuns();
+	void sparkleNeedsNoPendingFunctions();
+	void refreshTellsQml();
 	void anIncompleteBackendStaysUnavailable();
 };
 
@@ -60,11 +70,14 @@ void UpdateSettingsControllerTest::isUnavailableWithoutAnUpdater()
 	UpdateSettingsController controller;
 	QVERIFY(!controller.available());
 	QVERIFY(!controller.autoCheck());
-	QCOMPARE(controller.intervalHours(), 0);
+	QCOMPARE(controller.lastCheckedMs(), qint64(0));
+	QVERIFY(controller.channel().isEmpty());
+	QVERIFY(controller.pendingVersion().isEmpty());
+	QVERIFY(!controller.canInstallNow());
 	// Nothing to talk to: all of these must be harmless.
 	controller.setAutoCheck(true);
-	controller.setIntervalHours(6);
 	controller.checkNow();
+	controller.installPendingNow();
 	QVERIFY(!controller.autoCheck());
 }
 
@@ -76,7 +89,6 @@ void UpdateSettingsControllerTest::readsTheUpdatersSettings()
 	controller.setBackend(updater.backend());
 	QVERIFY(controller.available());
 	QVERIFY(controller.autoCheck());
-	QCOMPARE(controller.intervalHours(), 24);
 	QCOMPARE(changed.count(), 1);
 
 	controller.setAutoCheck(false);
@@ -87,29 +99,29 @@ void UpdateSettingsControllerTest::readsTheUpdatersSettings()
 	QCOMPARE(changed.count(), 2);
 }
 
-void UpdateSettingsControllerTest::writesHoursAsSeconds()
+void UpdateSettingsControllerTest::lastCheckIsMillisecondsOrZero()
 {
 	FakeUpdater updater;
 	UpdateSettingsController controller;
 	controller.setBackend(updater.backend());
-	controller.setIntervalHours(6);
-	QCOMPARE(updater.interval, 6 * 3600.0);
-	QCOMPARE(controller.intervalHours(), 6);
-	// An interval that is not a whole number of hours is rounded.
-	updater.interval = 5400;
-	QCOMPARE(controller.intervalHours(), 2);
+	// Never checked: 0, which the page shows as "Never".
+	QCOMPARE(controller.lastCheckedMs(), qint64(0));
+	updater.last = QDateTime::fromMSecsSinceEpoch(1'793'000'000'000LL);
+	QCOMPARE(controller.lastCheckedMs(), 1'793'000'000'000LL);
 }
 
-void UpdateSettingsControllerTest::zeroHoursMeansOnlyAtStartup()
+void UpdateSettingsControllerTest::channelAndManager()
 {
 	FakeUpdater updater;
 	UpdateSettingsController controller;
-	controller.setBackend(updater.backend());
-	controller.setIntervalHours(0);
-	QCOMPARE(updater.interval, 0.0);
-	// Never negative.
-	controller.setIntervalHours(-4);
-	QCOMPARE(updater.interval, 0.0);
+	auto backend = updater.backend();
+	controller.setBackend(backend);
+	QCOMPARE(controller.channel(), QStringLiteral("stable"));
+	QVERIFY(controller.managedBy().isEmpty());
+
+	backend.managedBy = QStringLiteral("Scoop");
+	controller.setBackend(backend);
+	QCOMPARE(controller.managedBy(), QStringLiteral("Scoop"));
 }
 
 void UpdateSettingsControllerTest::checkNowReachesTheUpdater()
@@ -120,6 +132,56 @@ void UpdateSettingsControllerTest::checkNowReachesTheUpdater()
 	controller.checkNow();
 	controller.checkNow();
 	QCOMPARE(updater.checks, 2);
+}
+
+void UpdateSettingsControllerTest::installsAPendingUpdateOnlyWhenNoGameRuns()
+{
+	FakeUpdater updater;
+	UpdateSettingsController controller;
+	controller.setBackend(updater.backend());
+
+	// Nothing waiting: nothing to install.
+	controller.installPendingNow();
+	QCOMPARE(updater.installs, 0);
+
+	updater.pending = QStringLiteral("1.3.0");
+	updater.gamesRunning = true;
+	QCOMPARE(controller.pendingVersion(), QStringLiteral("1.3.0"));
+	QVERIFY(!controller.canInstallNow());
+	controller.installPendingNow();
+	QCOMPARE(updater.installs, 0);
+
+	updater.gamesRunning = false;
+	QVERIFY(controller.canInstallNow());
+	controller.installPendingNow();
+	QCOMPARE(updater.installs, 1);
+}
+
+void UpdateSettingsControllerTest::sparkleNeedsNoPendingFunctions()
+{
+	FakeUpdater updater;
+	UpdateSettingsController::Backend backend = updater.backend();
+	backend.pendingVersion = nullptr;
+	backend.canInstallNow = nullptr;
+	backend.installPendingNow = nullptr;
+	UpdateSettingsController controller;
+	controller.setBackend(backend);
+	QVERIFY(controller.available());
+	QVERIFY(controller.pendingVersion().isEmpty());
+	QVERIFY(controller.canInstallNow());
+	controller.installPendingNow();
+}
+
+void UpdateSettingsControllerTest::refreshTellsQml()
+{
+	FakeUpdater updater;
+	UpdateSettingsController controller;
+	controller.setBackend(updater.backend());
+	QSignalSpy changed(&controller, &UpdateSettingsController::changed);
+	updater.last = QDateTime::currentDateTime();
+	controller.refresh();
+	QCOMPARE(changed.count(), 1);
+	QVERIFY(controller.lastCheckedMs() > 0);
 }
 
 void UpdateSettingsControllerTest::anIncompleteBackendStaysUnavailable()

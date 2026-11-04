@@ -20,21 +20,66 @@
 
 #include "MacSparkleUpdater.h"
 
+#include <QMetaObject>
+#include <QTimer>
+
 #include <Cocoa/Cocoa.h>
 #include <Sparkle/Sparkle.h>
 
-/*! Answers Sparkle's questions about which appcast channels we accept. */
+/*! Answers Sparkle's questions: which appcast channels we accept, and whether a relaunch into an
+ * update has to wait for a game. */
 @interface KiteUpdaterDelegate : NSObject <SPUUpdaterDelegate>
 
 @property(nonatomic, copy) NSSet<NSString*>* allowedChannels;
+@property(nonatomic, assign) MacSparkleUpdater* owner;
+//! Sparkle's go-ahead for a relaunch that is waiting for a game to end.
+@property(nonatomic, copy) void (^postponedInstall)(void);
+
+- (void)runPostponedInstall;
 
 @end
 
 @implementation KiteUpdaterDelegate
 
+- (void)dealloc
+{
+	[_allowedChannels release];
+	[_postponedInstall release];
+	[super dealloc];
+}
+
 - (NSSet<NSString*>*)allowedChannelsForUpdater:(SPUUpdater*)updater
 {
 	return self.allowedChannels ?: [NSSet set];
+}
+
+- (BOOL)updater:(SPUUpdater*)updater
+	shouldPostponeRelaunchForUpdate:(SUAppcastItem*)item
+				 untilInvokingBlock:(void (^)(void))installHandler
+{
+	// Relaunching quits Kite, and with it a game started from it.
+	if (!self.owner || !self.owner->gamesRunning())
+		return NO;
+	self.postponedInstall = installHandler;
+	self.owner->notifyRelaunchPostponed();
+	return YES;
+}
+
+- (void)updater:(SPUUpdater*)updater
+	didFinishUpdateCycleForUpdateCheck:(SPUUpdateCheck)updateCheck
+								 error:(NSError*)error
+{
+	if (self.owner)
+		self.owner->notifyCycleFinished();
+}
+
+- (void)runPostponedInstall
+{
+	void (^install)(void) = [self.postponedInstall retain];
+	self.postponedInstall = nil;
+	if (install)
+		install();
+	[install release];
 }
 
 @end
@@ -55,16 +100,25 @@ MacSparkleUpdater::MacSparkleUpdater() : priv(new MacSparkleUpdater::Private())
 	priv->pool = [[NSAutoreleasePool alloc] init];
 
 	priv->delegate = [[KiteUpdaterDelegate alloc] init];
+	priv->delegate.owner = this;
 
-	// startingUpdater:true arms Sparkle's own schedule, so no timer of ours is involved.
+	// startingUpdater:true arms Sparkle's own schedule (daily, SUScheduledCheckInterval), so no
+	// timer of ours is involved.
 	priv->controller = [[SPUStandardUpdaterController alloc]
 		initWithStartingUpdater:true
 				updaterDelegate:priv->delegate
 			 userDriverDelegate:nil];
+
+	// Kite checks at every start too. Sparkle allows that only right after starting the updater,
+	// and only with automatic checks on; a found update shows Sparkle's window, nothing else does.
+	if (priv->controller.updater.automaticallyChecksForUpdates) {
+		[priv->controller.updater checkForUpdatesInBackground];
+	}
 }
 
 MacSparkleUpdater::~MacSparkleUpdater()
 {
+	priv->delegate.owner = nullptr;
 	[priv->controller release];
 	[priv->delegate release];
 	[priv->pool release];
@@ -84,9 +138,37 @@ bool MacSparkleUpdater::getAutomaticallyChecksForUpdates()
 	return priv->controller.updater.automaticallyChecksForUpdates;
 }
 
-double MacSparkleUpdater::getUpdateCheckInterval()
+QDateTime MacSparkleUpdater::lastCheck()
 {
-	return priv->controller.updater.updateCheckInterval;
+	NSDate* date = priv->controller.updater.lastUpdateCheckDate;
+	return date ? QDateTime::fromNSDate(date) : QDateTime();
+}
+
+void MacSparkleUpdater::setGamesRunning(bool running)
+{
+	ExternalUpdater::setGamesRunning(running);
+	if (running)
+		return;
+	// Queued: this runs inside the launch controller's "finished" handling, and Sparkle's
+	// go-ahead quits Kite.
+	QMetaObject::invokeMethod(
+		this,
+		[this] {
+			if (!m_gamesRunning)
+				[priv->delegate runPostponedInstall];
+		},
+		Qt::QueuedConnection);
+}
+
+void MacSparkleUpdater::notifyRelaunchPostponed()
+{
+	// After Sparkle's callback has returned: what Application shows waits for the user.
+	QTimer::singleShot(0, this, [this] { emit installWaitsForGame(); });
+}
+
+void MacSparkleUpdater::notifyCycleFinished()
+{
+	emit stateChanged();
 }
 
 QSet<QString> MacSparkleUpdater::getAllowedChannels()
@@ -106,11 +188,6 @@ bool MacSparkleUpdater::getBetaAllowed()
 void MacSparkleUpdater::setAutomaticallyChecksForUpdates(bool check)
 {
 	priv->controller.updater.automaticallyChecksForUpdates = check ? YES : NO;
-}
-
-void MacSparkleUpdater::setUpdateCheckInterval(double seconds)
-{
-	priv->controller.updater.updateCheckInterval = seconds;
 }
 
 void MacSparkleUpdater::clearAllowedChannels()

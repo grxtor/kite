@@ -270,8 +270,7 @@ namespace
 			unanswered("confirmUntrustedMods", QString());
 			return false;
 		}
-		UpdateChoice offerUpdate(const QString&, const QString&,
-								 const QString&) override
+		UpdateChoice offerUpdate(const UpdateOffer&) override
 		{
 			unanswered("offerUpdate", QString());
 			return UpdateChoice::Later;
@@ -1109,9 +1108,14 @@ void Application::initSubsystems()
 		/* The "On Launch" check asks questions from the constructor. Nothing
 		 * can answer yet, so it is made once the QML presenter is up. */
 		runWhenQmlPresenterReady([this, startUpdater]() {
+			// A package manager's copy only hears of new releases.
+			const QString managedBy =
+				DesktopServices::isFlatpak()
+					? QStringLiteral("flatpak")
+					: UpdateLockFile::managedBy(m_rootPath);
 			startUpdater(new KiteExternalUpdater(
 				m_rootPath, m_dataPath,
-				m_settings->get("AutoUpdate").toBool()));
+				m_settings->get("AutoUpdate").toBool(), managedBy));
 		});
 #endif
 	} else {
@@ -1238,6 +1242,10 @@ void Application::initSubsystems()
 
 void Application::shutdownForExit()
 {
+	// First: "Update when I close Kite" starts the updater, which waits for this process to end.
+	if (m_updater) {
+		m_updater->applicationExiting();
+	}
 	if (m_instances) {
 		m_instances->saveNow();
 	}
@@ -1625,6 +1633,7 @@ bool Application::kill(InstancePtr instance)
 void Application::addRunningInstance()
 {
 	m_runningInstances++;
+	tellUpdaterAboutGames();
 }
 
 void Application::subRunningInstance()
@@ -1635,6 +1644,26 @@ void Application::subRunningInstance()
 		return;
 	}
 	m_runningInstances--;
+	tellUpdaterAboutGames();
+}
+
+void Application::showInstallWaitsForGame()
+{
+	uiHost()->message(tr("Update Ready"),
+					  tr("Kite restarts to finish the update as soon as your "
+						 "game closes."),
+					  UiHost::Severity::Information);
+}
+
+void Application::tellUpdaterAboutGames()
+{
+	if (!m_updater) {
+		return;
+	}
+	m_updater->setGamesRunning(m_runningInstances > 0);
+	if (m_qmlShell) {
+		m_qmlShell->updateSettingsController()->refresh();
+	}
 }
 
 bool Application::shouldExitNow() const
@@ -1691,12 +1720,27 @@ void Application::connectUpdaterToQmlShell()
 	m_qmlShell->setUpdaterAvailable(updaterEnabled() && m_updater);
 	if (m_updater && updaterEnabled()) {
 		ExternalUpdater* updater = m_updater.get();
-		m_qmlShell->updateSettingsController()->setBackend(
-			{[updater] { return updater->getAutomaticallyChecksForUpdates(); },
-			 [updater](bool v) { updater->setAutomaticallyChecksForUpdates(v); },
-			 [updater] { return updater->getUpdateCheckInterval(); },
-			 [updater](double s) { updater->setUpdateCheckInterval(s); },
-			 [this] { triggerUpdateCheck(); }});
+		UpdateSettingsController* controller =
+			m_qmlShell->updateSettingsController();
+		UpdateSettingsController::Backend backend;
+		backend.automaticallyChecks = [updater] {
+			return updater->getAutomaticallyChecksForUpdates();
+		};
+		backend.setAutomaticallyChecks = [updater](bool v) {
+			updater->setAutomaticallyChecksForUpdates(v);
+		};
+		backend.lastCheck = [updater] { return updater->lastCheck(); };
+		backend.checkNow = [this] { triggerUpdateCheck(); };
+		backend.pendingVersion = [updater] { return updater->pendingInstall(); };
+		backend.canInstallNow = [this] { return m_runningInstances == 0; };
+		backend.installPendingNow = [updater] { updater->installPendingNow(); };
+		backend.channel = BuildConfig.UPDATE_CHANNEL;
+		backend.managedBy = updater->managedBy();
+		controller->setBackend(std::move(backend));
+		connect(updater, &ExternalUpdater::stateChanged, controller,
+				&UpdateSettingsController::refresh, Qt::UniqueConnection);
+		connect(updater, &ExternalUpdater::installWaitsForGame, this,
+				&Application::showInstallWaitsForGame, Qt::UniqueConnection);
 	}
 }
 

@@ -24,6 +24,13 @@
 #include <QSet>
 #include <QString>
 
+/*! Sparkle 2 with EdDSA-signed updates and Sparkle's own windows. The feed and the public key come
+ * from Info.plist (SUFeedURL, SUPublicEDKey). Kite is ad-hoc signed, so Sparkle trusts an update on
+ * its EdDSA signature alone (it still requires a valid, if different, code signature).
+ *
+ * Games: Sparkle relaunches Kite to install, and quitting Kite would take a game started from it
+ * down, so while one runs the relaunch waits for it to end. An update downloaded and not installed
+ * yet goes in when Kite quits, which is Sparkle's "install on quit". */
 class MacSparkleUpdater : public ExternalUpdater
 {
 	Q_OBJECT
@@ -35,12 +42,14 @@ class MacSparkleUpdater : public ExternalUpdater
 	void checkForUpdates() override;
 
 	bool getAutomaticallyChecksForUpdates() override;
-	double getUpdateCheckInterval() override;
 	bool getBetaAllowed() override;
 
 	void setAutomaticallyChecksForUpdates(bool check) override;
-	void setUpdateCheckInterval(double seconds) override;
 	void setBetaAllowed(bool allowed) override;
+
+	QDateTime lastCheck() override;
+
+	void setGamesRunning(bool running) override;
 
 	QSet<QString> getAllowedChannels();
 	void setAllowedChannel(const QString& channel);
@@ -48,6 +57,16 @@ class MacSparkleUpdater : public ExternalUpdater
 
 	//! Back to release-only.
 	void clearAllowedChannels();
+
+	// For the Sparkle delegate.
+	bool gamesRunning() const
+	{
+		return m_gamesRunning;
+	}
+	//! Sparkle wanted to relaunch into an update while a game runs: installWaitsForGame().
+	void notifyRelaunchPostponed();
+	//! An update cycle is over: lastCheck() may have moved.
+	void notifyCycleFinished();
 
   private:
 	class Private;

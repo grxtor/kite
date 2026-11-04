@@ -111,15 +111,24 @@ class UiHost
 	/* Files that failed the trust check. True means install them anyway. */
 	virtual bool confirmUntrustedMods(const QStringList& suspectPaths) = 0;
 
-	enum class UpdateChoice { Install, Later, Skip };
+	/* Install: now, restarting Kite. InstallOnExit: once Kite closes. */
+	enum class UpdateChoice { Install, InstallOnExit, Later, Skip };
 
-	/* A release being offered: the current version, the version on offer and
-	 * its release notes. Separate from choose() because the notes are
+	/* A release being offered. Separate from choose() because the notes are
 	 * formatted content (Markdown), which a plain message-box body would
 	 * flatten. */
-	virtual UpdateChoice offerUpdate(const QString& currentVersion,
-									 const QString& availableVersion,
-									 const QString& releaseNotes) = 0;
+	struct UpdateOffer {
+		QString currentVersion;
+		QString availableVersion;
+		QString releaseNotes;
+		/* False while a game started from Kite runs: Kite is never replaced
+		 * under one, so only InstallOnExit (or not at all) is on offer. */
+		bool canInstallNow = true;
+		/* Set when a package manager updates Kite here: what to tell the
+		 * user to run, and no install is offered at all. */
+		QString managedHint;
+	};
+	virtual UpdateChoice offerUpdate(const UpdateOffer& offer) = 0;
 
 	/* A Microsoft account that owns Minecraft but has no profile (username)
 	 * yet: checks name availability live as the user types and creates the

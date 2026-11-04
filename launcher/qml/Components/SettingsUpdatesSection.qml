@@ -4,27 +4,66 @@
 
 import QtQuick
 import QtQuick.Controls
+import Kite.Theme
 
 /*
- * The "Updates" section of SettingsPage.qml: automatic update checks and a manual
- * "Check now". It hides itself while this build has no updater.
+ * The "Updates" section of SettingsPage.qml: automatic update checks, the release channel, when Kite last
+ * looked and "Check now", and an update waiting for Kite to close. It hides itself while this build has no
+ * updater. Where a package manager updates Kite, Kite only tells; the text says so.
  */
 SettingsScroll {
     id: root
 
     readonly property var updates: LauncherStore.updates
     readonly property bool shown: !!updates && updates.available
-    readonly property int intervalFieldWidth: 168
+    readonly property string managedBy: shown ? updates.managedBy : ""
+    readonly property string pendingVersion: shown ? updates.pendingVersion : ""
+
+    // "5 min ago" goes stale while the page is open; this moves it on.
+    property int clock: 0
+    Timer {
+        interval: 60000
+        repeat: true
+        running: root.visible && root.shown
+        onTriggered: root.clock++
+    }
+
+    function lastCheckedText() {
+        root.clock
+        var ms = root.shown ? root.updates.lastCheckedMs : 0
+        return ms > 0 ? Format.lastPlayed(ms) : qsTr("Never")
+    }
 
     title: qsTr("Updates")
-    description: qsTr("Whether Kite looks for new versions by itself.")
+    description: qsTr("How Kite gets new versions.")
+
+    SettingsGroup {
+        width: parent.width
+        visible: root.pendingVersion.length > 0
+        title: qsTr("Ready to install")
+        SettingRow {
+            objectName: "pendingUpdateRow"
+            label: qsTr("Kite %1").arg(root.pendingVersion)
+            description: root.shown && root.updates.canInstallNow
+                         ? qsTr("Installs when you close Kite, or now with a restart.")
+                         : qsTr("Installs when you close Kite. A game is running, so Kite cannot restart now.")
+            Button {
+                text: qsTr("Restart and update")
+                highlighted: true
+                enabled: root.shown && root.updates.canInstallNow
+                onClicked: root.updates.installPendingNow()
+            }
+        }
+    }
 
     SettingsGroup {
         width: parent.width
         title: qsTr("Update checks")
         SettingRow {
             label: qsTr("Check for updates automatically")
-            description: qsTr("Kite asks the update server in the background and tells you when a new version is out.")
+            description: root.managedBy.length > 0
+                         ? qsTr("When Kite starts and once a day. %1 installs updates on this computer; Kite tells you when one is out.").arg(root.managedBy)
+                         : qsTr("When Kite starts and once a day. Kite asks before it installs anything.")
             Switch {
                 checked: !!root.updates && root.updates.autoCheck
                 Accessible.name: qsTr("Check for updates automatically")
@@ -35,34 +74,22 @@ SettingsScroll {
             }
         }
         SettingRow {
-            label: qsTr("How often")
-            description: qsTr("0 means only when Kite starts.")
-            enabled: !!root.updates && root.updates.autoCheck
-            SpinBox {
-                width: root.intervalFieldWidth
-                from: 0
-                to: 24 * 30
-                stepSize: 6
-                editable: true
-                value: root.updates ? root.updates.intervalHours : 0
-                textFromValue: (value, locale) => value === 0 ? qsTr("On launch")
-                                                              : qsTr("Every %1 h").arg(Number(value).toLocaleString(locale, "f", 0))
-                valueFromText: (text, locale) => {
-                    var digits = text.replace(/[^0-9]/g, "")
-                    return digits.length > 0 ? parseInt(digits, 10) : (root.updates ? root.updates.intervalHours : 0)
-                }
-                Accessible.name: qsTr("Hours between update checks")
-                onValueModified: {
-                    root.updates.intervalHours = value
-                    value = Qt.binding(() => root.updates ? root.updates.intervalHours : 0)
-                }
+            showDivider: true
+            label: qsTr("Channel")
+            description: qsTr("Finished releases only. Kite has no test builds to offer yet.")
+            Copy {
+                text: root.shown && root.updates.channel === "beta" ? qsTr("Beta") : qsTr("Stable")
+                role: "label"
+                tone: "secondary"
             }
         }
         SettingRow {
-            label: qsTr("Check now")
-            description: qsTr("Looks for a new version right away.")
+            objectName: "lastCheckedRow"
+            showDivider: true
+            label: qsTr("Last checked")
+            description: root.lastCheckedText()
             Button {
-                text: qsTr("Check for updates")
+                text: qsTr("Check now")
                 icon.source: Icons.url("refresh")
                 onClicked: root.updates.checkNow()
             }

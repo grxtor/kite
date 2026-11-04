@@ -67,6 +67,16 @@ class ModUtilsTest : public QObject
 			<< "2.2.0" << "1.2" << false << false;
 		QTest::newRow("greaterThan, two-digit")
 			<< "1.42" << "1.41" << false << false;
+
+		// What the updaters compare: Kite_VERSION_* against a release tag without its "v".
+		QTest::newRow("updater, hotfix below the next minor")
+			<< "1.2.99" << "1.3.0" << true << false;
+		QTest::newRow("updater, minor past nine")
+			<< "1.9.0" << "1.10.0" << true << false;
+		QTest::newRow("updater, same release")
+			<< "1.3.0" << "1.3.0" << false << true;
+		QTest::newRow("updater, installed is newer")
+			<< "1.10.0" << "1.9.3" << false << false;
 	}
 
   private slots:

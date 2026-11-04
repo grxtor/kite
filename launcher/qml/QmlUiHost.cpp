@@ -42,6 +42,7 @@
 #include "minecraft/auth/MinecraftServices.h"
 #include "modplatform/flame/FlameApi.h"
 #include "models/AtlOptionalModsModel.h"
+#include "models/RichBody.h"
 
 namespace
 {
@@ -196,14 +197,21 @@ void QmlUiRequest::setUntrustedModsFiles(QStringList files)
 	m_untrustedModsFiles = std::move(files);
 }
 
-void QmlUiRequest::setUpdateInfo(QString currentVersion,
-								 QString availableVersion,
-								 QString releaseNotes)
+void QmlUiRequest::setUpdateInfo(const UiHost::UpdateOffer& offer)
 {
 	m_updateInfo = QVariantMap{
-		{ QStringLiteral("currentVersion"), currentVersion },
-		{ QStringLiteral("availableVersion"), availableVersion },
-		{ QStringLiteral("releaseNotes"), releaseNotes },
+		{ QStringLiteral("currentVersion"), offer.currentVersion },
+		{ QStringLiteral("availableVersion"), offer.availableVersion },
+		// The GitHub release's Markdown, raw HTML and all, rewritten by the
+		// sanitizer that mod pages go through: semantic tags only, http(s)
+		// and mail links only.
+		{ QStringLiteral("releaseNotes"),
+		  offer.releaseNotes.trimmed().isEmpty()
+			  ? QString()
+			  : RichBody::toArticleHtml(offer.releaseNotes,
+										RichBody::Format::Markdown) },
+		{ QStringLiteral("canInstallNow"), offer.canInstallNow },
+		{ QStringLiteral("managedHint"), offer.managedHint },
 	};
 }
 
@@ -309,6 +317,8 @@ void QmlUiRequest::answerUpdate(const QString& choice)
 	m_answered = true;
 	if (choice == QLatin1String("install")) {
 		m_updateChoice = UiHost::UpdateChoice::Install;
+	} else if (choice == QLatin1String("installOnExit")) {
+		m_updateChoice = UiHost::UpdateChoice::InstallOnExit;
 	} else if (choice == QLatin1String("skip")) {
 		m_updateChoice = UiHost::UpdateChoice::Skip;
 	} else {
@@ -680,18 +690,25 @@ bool QmlUiHost::confirmUntrustedMods(const QStringList& suspectPaths)
 	return request.accepted();
 }
 
-UiHost::UpdateChoice QmlUiHost::offerUpdate(const QString& currentVersion,
-											const QString& availableVersion,
-											const QString& releaseNotes)
+UiHost::UpdateChoice QmlUiHost::offerUpdate(const UpdateOffer& offer)
 {
-	QmlUiRequest request(
-		QmlUiRequest::Kind::Update,
-		tr("A new version of %1 is available!")
-			.arg(BuildConfig.KITE_DISPLAYNAME),
-		tr("Version %1 is now available - you have %2 . Would you like to "
-		   "download it now?")
-			.arg(availableVersion, currentVersion));
-	request.setUpdateInfo(currentVersion, availableVersion, releaseNotes);
+	QString text;
+	if (!offer.managedHint.isEmpty()) {
+		text = offer.managedHint;
+	} else if (offer.canInstallNow) {
+		text = tr("Kite restarts to install it. Your instances, accounts and "
+				  "settings stay as they are.");
+	} else {
+		text = tr("A game is running, so Kite waits: it installs the update "
+				  "when you close Kite. Your instances, accounts and settings "
+				  "stay as they are.");
+	}
+	QmlUiRequest request(QmlUiRequest::Kind::Update,
+						 tr("%1 %2 is available")
+							 .arg(BuildConfig.KITE_DISPLAYNAME,
+								  offer.availableVersion),
+						 text);
+	request.setUpdateInfo(offer);
 	runRequest(request);
 	return request.updateChoice();
 }

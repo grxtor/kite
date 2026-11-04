@@ -225,7 +225,6 @@ jobs:
           apple-notarize-apple-id: ${{ secrets.APPLE_NOTARIZE_APPLE_ID }}
           apple-notarize-team-id: ${{ secrets.APPLE_NOTARIZE_TEAM_ID }}
           apple-notarize-password: ${{ secrets.APPLE_NOTARIZE_PASSWORD }}
-          sparkle-ed25519-key: ${{ secrets.SPARKLE_ED25519_KEY }}
 
       - name: Package (Windows)
         if: ${{ runner.os == 'Windows' }}

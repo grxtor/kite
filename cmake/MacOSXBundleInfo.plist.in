@@ -53,6 +53,12 @@
     <string>${MACOSX_SPARKLE_UPDATE_PUBLIC_KEY}</string>
     <key>SUFeedURL</key>
     <string>${MACOSX_SPARKLE_UPDATE_FEED_URL}</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
+    <key>SUVerifyUpdateBeforeExtraction</key>
+    <true/>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>

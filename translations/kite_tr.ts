@@ -589,7 +589,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1557"/>
+        <location filename="../launcher/Application.cpp" line="+1565"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -599,7 +599,17 @@
         <translation>Bu kuruluma bir yedek geri yükleniyor. Geri yükleme bitince kurulumu başlat.</translation>
     </message>
     <message>
-        <location line="+161"/>
+        <location line="+86"/>
+        <source>Update Ready</source>
+        <translation>Güncelleme hazır</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Kite restarts to finish the update as soon as your game closes.</source>
+        <translation>Oyunun kapanır kapanmaz Kite güncellemeyi bitirmek için yeniden başlar.</translation>
+    </message>
+    <message>
+        <location line="+110"/>
         <source>This installation has an update lock file at: %1
 
 Timestamp: %2
@@ -7975,27 +7985,27 @@ Kurulumu başlattığında indirilecekler.</translation>
 <context>
     <name>KiteExternalUpdater</name>
     <message>
-        <location filename="../launcher/updater/KiteExternalUpdater.cpp" line="+200"/>
+        <location filename="../launcher/updater/KiteExternalUpdater.cpp" line="+207"/>
         <location line="+12"/>
         <source>Checking for updates...</source>
         <translation>Güncellemeler denetleniyor...</translation>
     </message>
     <message>
-        <location line="+56"/>
-        <location line="+20"/>
+        <location line="+62"/>
+        <location line="+22"/>
         <location line="+6"/>
         <source>Update Check Failed</source>
         <translation>Güncelleme denetimi başarısız</translation>
     </message>
     <message>
-        <location line="-25"/>
+        <location line="-27"/>
         <source>Failed to start the updater.
 Reason: %1.</source>
         <translation>Güncelleyici başlatılamadı.
 Sebep: %1.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+22"/>
         <source>The updater did not finish within 60 seconds.</source>
         <translation>Güncelleyici 60 saniye içinde bitmedi.</translation>
     </message>
@@ -8005,7 +8015,7 @@ Sebep: %1.</translation>
         <translation>Güncelleyici 5 saniye içinde başlamadı.</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+29"/>
         <source>No Update Available</source>
         <translation>Güncelleme yok</translation>
     </message>
@@ -8015,20 +8025,20 @@ Sebep: %1.</translation>
         <translation>En son sürümü kullanıyorsun.</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <location line="+27"/>
+        <location line="+11"/>
+        <location line="+31"/>
         <source>Update Check Error</source>
         <translation>Güncelleme denetimi hatası</translation>
     </message>
     <message>
-        <location line="-26"/>
-        <location line="+28"/>
+        <location line="-29"/>
+        <location line="+31"/>
         <source>There was an error running the update check.</source>
         <translation>Güncelleme denetimi çalıştırılırken bir hata oluştu.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <location line="+21"/>
+        <location line="+22"/>
         <source>StdOut: %1
 StdErr: %2</source>
         <translation>StdOut: %1
@@ -8047,7 +8057,7 @@ Exit Code: %1</source>
 Çıkış kodu: %1</translation>
     </message>
     <message>
-        <location line="+88"/>
+        <location line="+138"/>
         <source>Update Failed</source>
         <translation>Güncelleme başarısız</translation>
     </message>
@@ -8057,6 +8067,47 @@ Exit Code: %1</source>
 Reason: %1.</source>
         <translation>Güncelleyici başlatılamadı.
 Neden: %1.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>the program at %1 did not start</source>
+        <translation>%1 konumundaki program başlamadı</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Update Installed</source>
+        <translation>Güncelleme yüklendi</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The new version starts the next time you open Kite.</source>
+        <translation>Yeni sürüm, Kite&apos;ı bir sonraki açışında başlar.</translation>
+    </message>
+    <message>
+        <location line="+76"/>
+        <source>Scoop keeps Kite up to date on this computer. To update now, run:
+scoop update kite</source>
+        <translation>Bu bilgisayarda Kite&apos;ı Scoop güncel tutuyor. Şimdi güncellemek için şunu çalıştır:
+scoop update kite</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Your package manager keeps Kite (the AUR package kite-bin) up to date. To update now, run for example:
+yay -Syu kite-bin</source>
+        <translation>Kite&apos;ı (AUR paketi kite-bin) paket yöneticin güncel tutuyor. Şimdi güncellemek için örneğin şunu çalıştır:
+yay -Syu kite-bin</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Flatpak keeps Kite up to date. To update now, run:
+flatpak update %1</source>
+        <translation>Kite&apos;ı Flatpak güncel tutuyor. Şimdi güncellemek için şunu çalıştır:
+flatpak update %1</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>%1 keeps Kite up to date on this computer; update it from there.</source>
+        <translation>Bu bilgisayarda Kite&apos;ı %1 güncel tutuyor; güncellemeyi oradan yap.</translation>
     </message>
 </context>
 <context>
@@ -8840,7 +8891,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+414"/>
+        <location filename="../launcher/qml/Main.qml" line="+417"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -9224,7 +9275,7 @@ Neden:
 <context>
     <name>MeshUpdaterApp</name>
     <message>
-        <location filename="../launcher/updater/meshupdater/MeshUpdaterApp.cpp" line="+358"/>
+        <location filename="../launcher/updater/meshupdater/MeshUpdaterApp.cpp" line="+369"/>
         <source>Installs %1 updates.</source>
         <translation>%1 güncellemelerini yükler.</translation>
     </message>
@@ -9309,7 +9360,7 @@ Neden:
         <translation>Hata ayıklama çıktısını konsola yaz.</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+4"/>
         <source>Select the version to install with a GUI.</source>
         <translation>Yüklenecek sürümü arayüzle seç.</translation>
     </message>
@@ -9319,7 +9370,7 @@ Neden:
         <translation>Daha eski bir sürüme geçmeye izin ver.</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+31"/>
         <source>default</source>
         <translation>varsayılan</translation>
     </message>
@@ -9330,18 +9381,20 @@ Neden:
     </message>
     <message>
         <location line="+29"/>
-        <location line="+854"/>
+        <location line="+1024"/>
         <location line="+19"/>
         <location line="+23"/>
-        <location line="+26"/>
+        <location line="+28"/>
         <location line="+27"/>
-        <location line="+582"/>
-        <location line="+125"/>
+        <location line="+559"/>
+        <location line="+25"/>
+        <location line="+14"/>
+        <location line="+208"/>
         <source>Update Failed</source>
         <translation>Güncelleme başarısız</translation>
     </message>
     <message>
-        <location line="-1655"/>
+        <location line="-1926"/>
         <source>The update marker at %1 does not say where to install to.</source>
         <translation>%1 konumundaki güncelleme işareti nereye yükleneceğini belirtmiyor.</translation>
     </message>
@@ -9356,18 +9409,18 @@ Neden:
         <translation>Güncelleyici macOS üzerindeki kurulumları desteklemiyor. Güncellemeleri başlatıcının kendisi yapar.</translation>
     </message>
     <message>
-        <location line="+14"/>
-        <location line="+11"/>
+        <location line="+18"/>
+        <location line="+13"/>
         <source>Unsupported Installation</source>
         <translation>Desteklenmeyen kurulum</translation>
     </message>
     <message>
-        <location line="-10"/>
+        <location line="-12"/>
         <source>This looks like an AppImage, but the APPIMAGE environment variable is missing, so there is no file to update.</source>
         <translation>Bu bir AppImage gibi görünüyor, ama APPIMAGE ortam değişkeni eksik, bu yüzden güncellenecek bir dosya yok.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+13"/>
         <source>The updater cannot find the main executable at:
 %1</source>
         <translation>Güncelleyici ana yürütülebilir dosyayı bulamıyor:
@@ -9435,7 +9488,7 @@ Bu düzelene kadar güncelleyici devam edemez.</translation>
         <translation> (ön sürümler hariç)</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+55"/>
         <source>Updating Flatpak Is Not Supported</source>
         <translation>Flatpak güncellemesi desteklenmiyor</translation>
     </message>
@@ -9455,7 +9508,7 @@ flatpak update %2
 Güncelleme denetimi çalışır, ama burada yüklemek çalışmaz.</translation>
     </message>
     <message>
-        <location line="+39"/>
+        <location line="+36"/>
         <source>No Release for That Version</source>
         <translation>Bu sürüm için yayın yok</translation>
     </message>
@@ -9470,7 +9523,7 @@ Güncelleme denetimi çalışır, ama burada yüklemek çalışmaz.</translation
         <translation>Hiçbir sürüm seçilmedi.</translation>
     </message>
     <message>
-        <location line="+66"/>
+        <location line="+179"/>
         <source>No Valid Release Assets</source>
         <translation>Geçerli yayın dosyası yok</translation>
     </message>
@@ -9480,12 +9533,67 @@ Güncelleme denetimi çalışır, ama burada yüklemek çalışmaz.</translation
         <translation>%1 yayınında bu kurulum için dosya yok: %2, taşınabilir: %3.</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="-252"/>
+        <location line="+256"/>
         <source>unknown build</source>
         <translation>bilinmeyen derleme</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="-822"/>
+        <source>Do not start the launcher again once the update is installed.</source>
+        <translation>Güncelleme yüklendikten sonra başlatıcıyı yeniden açma.</translation>
+    </message>
+    <message>
+        <location line="+558"/>
+        <source>%1 cannot be installed by the updater: %2</source>
+        <translation>%1 güncelleyiciyle yüklenemiyor: %2</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>%1 has no signed file for this installation (%2).</source>
+        <translation>%1 yayınında bu kurulum için imzalı dosya yok (%2).</translation>
+    </message>
+    <message>
+        <location line="+46"/>
+        <source>Updated by %1</source>
+        <translation>%1 güncelliyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 was installed with %2, which also updates it. Update it with %2 instead.</source>
+        <translation>%1, %2 ile kuruldu ve onu %2 güncelliyor. Güncellemeyi %2 ile yap.</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Update Not Signed</source>
+        <translation>Güncelleme imzalı değil</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 cannot be installed: %2
+
+Your installation has not been changed. You can download the release yourself from %3.</source>
+        <translation>%1 yüklenemiyor: %2
+
+Kurulumun değişmedi. Yayını kendin %3 adresinden indirebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>could not download %1: %2</source>
+        <translation>%1 indirilemedi: %2</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>%1 is empty or too large</source>
+        <translation>%1 boş ya da çok büyük</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>the release has no signed file list (%1)</source>
+        <translation>yayının imzalı dosya listesi yok (%1)</translation>
+    </message>
+    <message>
+        <location line="+109"/>
         <source>yes</source>
         <translation>evet</translation>
     </message>
@@ -9510,7 +9618,7 @@ Güncelleme denetimi çalışır, ama burada yüklemek çalışmaz.</translation
         <translation>Güncelleme dosyası indirilemedi.</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+74"/>
         <source>An update is already in progress.</source>
         <translation>Bir güncelleme zaten sürüyor.</translation>
     </message>
@@ -9548,12 +9656,17 @@ Bu kilidi yoksayıp yine de güncellemek için &quot;Yoksay&quot;ı seç.</trans
         <translation>Güncelleme durduruldu: %1 konumunda önceki bir denemeden kalan güncelleme kilidi var.</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+8"/>
+        <source>The update was cancelled: %1 is still running.</source>
+        <translation>Güncelleme iptal edildi: %1 hâlâ açık.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
         <source>Updating from %1 to %2</source>
         <translation>%1 sürümünden %2 sürümüne güncelleniyor</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+20"/>
         <source>Updating the installation at %1</source>
         <translation>%1 konumundaki kurulum güncelleniyor</translation>
     </message>
@@ -9563,7 +9676,12 @@ Bu kilidi yoksayıp yine de güncellemek için &quot;Yoksay&quot;ı seç.</trans
         <translation>%1 konumundaki yükleyici çalıştırılıyor</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+22"/>
+        <source>Starting the installer: %1 %2 /D=%3</source>
+        <translation>Yükleyici başlatılıyor: %1 %2 /D=%3</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>The installer was started.</source>
         <translation>Yükleyici başlatıldı.</translation>
     </message>
@@ -9651,7 +9769,7 @@ Nelerin denendiği ve her denemenin neden başarısız olduğu güncelleme günl
 %1</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+20"/>
         <source>Starting the second pass: %1 %2</source>
         <translation>İkinci geçiş başlatılıyor: %1 %2</translation>
     </message>
@@ -9871,43 +9989,103 @@ Kurulumun değişmedi. Ayrıntılar güncelleme günlüğünde:
         <translation>%1 yüklenemedi: %2</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+35"/>
+        <source>Not restarting the launcher, as asked.</source>
+        <translation>İstendiği gibi başlatıcı yeniden açılmıyor.</translation>
+    </message>
+    <message>
+        <location line="+39"/>
+        <source>Replacing the AppImage at %1</source>
+        <translation>%1 konumundaki AppImage değiştiriliyor</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Could not write next to the AppImage: %1</source>
+        <translation>AppImage&apos;ın yanına yazılamadı: %1</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The new AppImage could not be written next to the current one in %1:
+%2
+
+Your installation has not been changed. Download the new version yourself, or move the AppImage to a folder you can write to.</source>
+        <translation>Yeni AppImage, %1 klasöründeki mevcut olanın yanına yazılamadı:
+%2
+
+Kurulumun değişmedi. Yeni sürümü kendin indir ya da AppImage&apos;ı yazabildiğin bir klasöre taşı.</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Could not prepare the new AppImage at %1</source>
+        <translation>%1 konumundaki yeni AppImage hazırlanamadı</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Could not prepare the new AppImage at %1.
+
+Your installation has not been changed.</source>
+        <translation>%1 konumundaki yeni AppImage hazırlanamadı.
+
+Kurulumun değişmedi.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Could not replace the AppImage: %1</source>
+        <translation>AppImage değiştirilemedi: %1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Could not replace %1:
+%2
+
+Your installation has not been changed.</source>
+        <translation>%1 değiştirilemedi:
+%2
+
+Kurulumun değişmedi.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Could not start the new AppImage: %1</source>
+        <translation>Yeni AppImage başlatılamadı: %1</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>%1 is in use; waiting for %2 to close.</source>
+        <translation>%1 kullanımda; %2&apos;ın kapanması bekleniyor.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Close %1</source>
+        <translation>%1&apos;ı kapat</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 is still running.</source>
+        <translation>%1 hâlâ açık.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Close %1, and any game started from it, then choose Retry to install the update.</source>
+        <translation>Güncellemeyi yüklemek için %1&apos;ı ve ondan başlattığın oyunları kapat, sonra Yeniden dene&apos;yi seç.</translation>
+    </message>
+    <message>
+        <location line="+21"/>
         <source>There were errors installing the update.</source>
         <translation>Güncelleme yüklenirken hatalar oluştu.</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>The update succeeded.</source>
         <translation>Güncelleme tamamlandı.</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="-156"/>
         <source>Could not restart the launcher: %1</source>
         <translation>Başlatıcı yeniden başlatılamadı: %1</translation>
     </message>
     <message>
-        <location line="+34"/>
-        <source>AppImageUpdate Not Found</source>
-        <translation>AppImageUpdate bulunamadı</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>This AppImage is updated with AppImageUpdate, which could not be found.
-
-Install AppImageUpdate, or download the new version manually.</source>
-        <translation>Bu AppImage, bulunamayan AppImageUpdate ile güncellenir.
-
-AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
-    </message>
-    <message>
-        <location line="+17"/>
-        <source>Could not start AppImageUpdate:
-%1</source>
-        <translation>AppImageUpdate başlatılamadı:
-%1</translation>
-    </message>
-    <message>
-        <location line="+79"/>
+        <location line="+232"/>
         <source>The installation was not modified; dropped the update lock.</source>
         <translation>Kurulum değiştirilmedi; güncelleme kilidi bırakıldı.</translation>
     </message>
@@ -12941,7 +13119,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+398"/>
+        <location line="+419"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -12951,7 +13129,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>Varsayılan hesap ayarlanmamış. Oynamak için birini seç.</translation>
     </message>
     <message>
-        <location line="+62"/>
+        <location line="+89"/>
         <source>Refreshing account…</source>
         <translation>Hesap yenileniyor…</translation>
     </message>
@@ -12964,7 +13142,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlUiHost</name>
     <message>
-        <location filename="../launcher/qml/QmlUiHost.cpp" line="+601"/>
+        <location filename="../launcher/qml/QmlUiHost.cpp" line="+611"/>
         <source>Optional mods for %1</source>
         <translation>%1 için isteğe bağlı modlar</translation>
     </message>
@@ -13004,16 +13182,21 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     </message>
     <message>
         <location line="+12"/>
-        <source>A new version of %1 is available!</source>
-        <translation>%1 için yeni bir sürüm var!</translation>
+        <source>Kite restarts to install it. Your instances, accounts and settings stay as they are.</source>
+        <translation>Kite yüklemek için yeniden başlar. Kurulumların, hesapların ve ayarların olduğu gibi kalır.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Version %1 is now available - you have %2 . Would you like to download it now?</source>
-        <translation>%1 sürümü yayında, sendeki sürüm %2 . Şimdi indirmek ister misin?</translation>
+        <location line="+3"/>
+        <source>A game is running, so Kite waits: it installs the update when you close Kite. Your instances, accounts and settings stay as they are.</source>
+        <translation>Bir oyun açık, bu yüzden Kite bekliyor: güncellemeyi Kite&apos;ı kapattığında yükler. Kurulumların, hesapların ve ayarların olduğu gibi kalır.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+5"/>
+        <source>%1 %2 is available</source>
+        <translation>%1 %2 çıktı</translation>
+    </message>
+    <message>
+        <location line="+21"/>
         <source>Choose a Minecraft name</source>
         <translation>Bir Minecraft adı seç</translation>
     </message>
@@ -13051,7 +13234,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QmlUiRequest</name>
     <message>
-        <location line="-455"/>
+        <location line="-462"/>
         <source>Name must be 3-16 characters long: letters, numbers and underscores only.</source>
         <translation>Ad 3-16 karakter uzunluğunda olmalı: yalnızca harf, rakam ve alt çizgi.</translation>
     </message>
@@ -15037,70 +15220,95 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsUpdatesSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsUpdatesSection.qml" line="+19"/>
+        <location filename="../launcher/qml/Components/SettingsUpdatesSection.qml" line="+37"/>
         <source>Updates</source>
         <translation>Güncellemeler</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Whether Kite looks for new versions by itself.</source>
-        <translation>Kite&apos;ın yeni sürümleri kendiliğinden arayıp aramayacağı.</translation>
+        <location line="-3"/>
+        <source>Never</source>
+        <translation>Henüz yapılmadı</translation>
     </message>
     <message>
         <location line="+4"/>
+        <source>How Kite gets new versions.</source>
+        <translation>Kite&apos;ın yeni sürümlerini nasıl alacağı.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Ready to install</source>
+        <translation>Yüklenmeye hazır</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Kite %1</source>
+        <translation>Kite %1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Installs when you close Kite, or now with a restart.</source>
+        <translation>Kite&apos;ı kapattığında yüklenir; istersen şimdi yeniden başlatarak da yükleyebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Installs when you close Kite. A game is running, so Kite cannot restart now.</source>
+        <translation>Kite&apos;ı kapattığında yüklenir. Bir oyun açık, bu yüzden Kite şimdi yeniden başlayamaz.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Restart and update</source>
+        <translation>Yeniden başlat ve güncelle</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Update checks</source>
         <translation>Güncelleme denetimleri</translation>
     </message>
     <message>
         <location line="+2"/>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Check for updates automatically</source>
         <translation>Güncellemeleri otomatik denetle</translation>
     </message>
     <message>
-        <location line="-3"/>
-        <source>Kite asks the update server in the background and tells you when a new version is out.</source>
-        <translation>Kite arka planda güncelleme sunucusuna sorar ve yeni sürüm çıkınca sana haber verir.</translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <source>How often</source>
-        <translation>Ne sıklıkta</translation>
+        <location line="-4"/>
+        <source>When Kite starts and once a day. %1 installs updates on this computer; Kite tells you when one is out.</source>
+        <translation>Kite açılınca ve günde bir kez. Bu bilgisayarda güncellemeleri %1 yüklüyor; Kite yenisi çıkınca haber verir.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>0 means only when Kite starts.</source>
-        <translation>0, yalnızca Kite açılırken demektir.</translation>
+        <source>When Kite starts and once a day. Kite asks before it installs anything.</source>
+        <translation>Kite açılınca ve günde bir kez. Kite bir şey yüklemeden önce sorar.</translation>
     </message>
     <message>
-        <location line="+9"/>
-        <source>On launch</source>
-        <translation>Açılışta</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Every %1 h</source>
-        <translation>%1 saatte bir</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Hours between update checks</source>
-        <translation>Güncelleme denetimleri arası saat</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Check now</source>
-        <translation>Şimdi denetle</translation>
+        <location line="+12"/>
+        <source>Channel</source>
+        <translation>Kanal</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Looks for a new version right away.</source>
-        <translation>Hemen yeni sürüm arar.</translation>
+        <source>Finished releases only. Kite has no test builds to offer yet.</source>
+        <translation>Yalnızca tamamlanmış sürümler. Kite henüz deneme sürümü sunmuyor.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Check for updates</source>
-        <translation>Güncellemeleri denetle</translation>
+        <source>Beta</source>
+        <translation>Beta</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Stable</source>
+        <translation>Kararlı</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Last checked</source>
+        <translation>Son denetim</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Check now</source>
+        <translation>Şimdi denetle</translation>
     </message>
 </context>
 <context>
@@ -16147,7 +16355,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>UiRequestDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/UiRequestDialog.qml" line="+68"/>
+        <location filename="../launcher/qml/Components/UiRequestDialog.qml" line="+75"/>
         <source>Continue turns on once every file has been downloaded.</source>
         <translation>Tüm dosyalar indirilince Devam açılır.</translation>
     </message>
@@ -16222,27 +16430,32 @@ inheritsFrom eksik</translation>
         <translation>Yok</translation>
     </message>
     <message>
-        <location line="+80"/>
-        <source>Install update</source>
-        <translation>Güncellemeyi yükle</translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location line="+52"/>
         <source>Skip this version</source>
         <translation>Bu sürümü atla</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+111"/>
         <source>Later</source>
         <translation>Sonra</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="-38"/>
         <source>Creating…</source>
         <translation>Oluşturuluyor…</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-24"/>
+        <source>Restart and update</source>
+        <translation>Yeniden başlat ve güncelle</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Update when I close Kite</source>
+        <translation>Kite&apos;ı kapatınca güncelle</translation>
+    </message>
+    <message>
+        <location line="+17"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
@@ -16253,7 +16466,8 @@ inheritsFrom eksik</translation>
         <translation>İptal</translation>
     </message>
     <message>
-        <location line="-6"/>
+        <location line="-34"/>
+        <location line="+28"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
@@ -16263,7 +16477,7 @@ inheritsFrom eksik</translation>
         <translation>Devam</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+35"/>
         <source>All files (*)</source>
         <translation>Tüm dosyalar (*)</translation>
     </message>

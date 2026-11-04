@@ -41,7 +41,8 @@
  *   blockedMods   -- blockedMods (live), openDownload(index),
  *                    rescanDownloads(), then accept() / reject()
  *   untrustedMods -- untrustedModsFiles, confirmDelayMs, then accept() / reject()
- *   update        -- updateInfo, then answerUpdate("install"|"later"|"skip")
+ *   update        -- updateInfo, then
+ *                    answerUpdate("install"|"installOnExit"|"later"|"skip")
  *   profileSetup  -- profileNameStatus (live), checkProfileName(name),
  *                    submitProfileName(name); accept() fires itself once the
  *                    profile is created, reject() cancels
@@ -83,7 +84,8 @@ class QmlUiRequest : public QObject
 	/* kind == "untrustedMods": milliseconds QML should keep its accept action
 	 * out of reach; nothing here enforces it. Zero for every other kind. */
 	Q_PROPERTY(int confirmDelayMs READ confirmDelayMs CONSTANT)
-	/// kind == "update": currentVersion, availableVersion, releaseNotes
+	/// kind == "update": currentVersion, availableVersion, releaseNotes,
+	/// canInstallNow, managedHint (see UiHost::UpdateOffer)
 	/// (Markdown as published; QML renders it).
 	Q_PROPERTY(QVariantMap updateInfo READ updateInfo CONSTANT)
 	/// kind == "profileSetup": "unset" | "pending" | "available" | "exists" |
@@ -220,8 +222,7 @@ class QmlUiRequest : public QObject
 	void setValue(QString value);
 	void setBlockedMods(const QList<BlockedMod>& mods);
 	void setUntrustedModsFiles(QStringList files);
-	void setUpdateInfo(QString currentVersion, QString availableVersion,
-						QString releaseNotes);
+	void setUpdateInfo(const UiHost::UpdateOffer& offer);
 	void setFilePicker(QString mode, QString defaultPath, QString filter);
 	void setAccountOptions(QVariantList options);
 	/// The document and the starting value of every input node in it.
@@ -292,7 +293,8 @@ class QmlUiRequest : public QObject
 	 * Other events are ignored; @p surfaceId is unused. */
 	Q_INVOKABLE void sendEvent(const QString& surfaceId, const QString& nodeId,
 							   const QString& event, const QVariant& value);
-	/// kind == "update": "install", "later" or "skip"; anything else is "later".
+	/// kind == "update": "install", "installOnExit", "later" or "skip";
+	/// anything else is "later".
 	Q_INVOKABLE void answerUpdate(const QString& choice);
 	/// kind == "blockedMods": opens mod @p index's download page in the system
 	/// browser. No-op for an out-of-range index.
@@ -426,9 +428,7 @@ class QmlUiHost : public QObject, public UiHost
 
 	bool confirmUntrustedMods(const QStringList& suspectPaths) override;
 
-	UpdateChoice offerUpdate(const QString& currentVersion,
-							 const QString& availableVersion,
-							 const QString& releaseNotes) override;
+	UpdateChoice offerUpdate(const UpdateOffer& offer) override;
 
 	bool setupProfile(MinecraftAccountPtr account) override;
 
