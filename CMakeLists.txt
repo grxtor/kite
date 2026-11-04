@@ -159,6 +159,8 @@ set(Kite_QT_COMPONENTS
     QuickControls2
     # The QML icons are SVG files, read by the Qt SVG image plugin.
     Svg
+    # The friends server's realtime socket (launcher/friends/FriendsSocket.cpp).
+    WebSockets
 )
 
 # Debian 12 and Ubuntu 24.04 ship Qt 6.4.

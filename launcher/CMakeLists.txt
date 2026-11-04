@@ -1485,6 +1485,8 @@ target_link_libraries(Kite_core PUBLIC
     cmark::cmark
     LocalPeer::LocalPeer
 )
+# The friends server's realtime socket (friends/FriendsSocket.cpp); nothing else uses it.
+target_link_libraries(Kite_core PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
 
 # QtWidgets is linked here and only here (enforced by Kite_core_link_check).
 target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)
