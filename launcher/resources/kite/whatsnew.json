@@ -1,0 +1,103 @@
+{
+	"formatVersion": 1,
+	"releases": [
+		{
+			"version": "1.3.1",
+			"items": [
+				{
+					"icon": "sliders",
+					"title": {
+						"en": "A top bar of your own",
+						"tr": "Üst bar senin"
+					},
+					"text": {
+						"en": "Drag the servers into your order, hide some or add your own.",
+						"tr": "Sunucuları sürükleyip sırala, gizle ya da kendi sunucunu ekle."
+					}
+				},
+				{
+					"icon": "download",
+					"title": {
+						"en": "Mod updates at a glance",
+						"tr": "Mod güncellemeleri bir bakışta"
+					},
+					"text": {
+						"en": "Home says when your mods have new versions, and installs nothing itself.",
+						"tr": "Modların yeni sürümü çıkınca Ana sayfa söyler, kendiliğinden kurmaz."
+					}
+				}
+			]
+		},
+		{
+			"version": "1.3.0",
+			"items": [
+				{
+					"icon": "message-circle",
+					"title": {
+						"en": "Chat with your friends",
+						"tr": "Arkadaşlarınla sohbet"
+					},
+					"text": {
+						"en": "Message friends, invite them to a server or share an instance as a code.",
+						"tr": "Mesajlaş, sunucuya davet et ya da bir kurulumu KITE koduyla paylaş."
+					}
+				},
+				{
+					"icon": "server",
+					"title": {
+						"en": "Big servers, one click away",
+						"tr": "Büyük sunucular bir tık uzağında"
+					},
+					"text": {
+						"en": "The top bar shows who is playing on each server, and a click joins.",
+						"tr": "Üst bar sunucularda kaç kişinin oynadığını gösterir, bir tıkla katılırsın."
+					}
+				},
+				{
+					"icon": "stethoscope",
+					"title": {
+						"en": "Crash doctor",
+						"tr": "Çökme doktoru"
+					},
+					"text": {
+						"en": "It says why the game crashed and how to fix it, or lets you send it to us.",
+						"tr": "Çökmenin nedenini ve çözümünü söyler, bulamazsa bize gönderebilirsin."
+					}
+				},
+				{
+					"icon": "folder-input",
+					"title": {
+						"en": "Drop it on an instance",
+						"tr": "Kuruluma sürükle bırak"
+					},
+					"text": {
+						"en": "Drop mods, packs, worlds or links on an instance and each lands in place.",
+						"tr": "Mod, paket, dünya ya da bağlantıyı bir kuruluma bırak, doğru yere gider."
+					}
+				},
+				{
+					"icon": "refresh",
+					"title": {
+						"en": "Kite updates itself",
+						"tr": "Kite kendini günceller"
+					},
+					"text": {
+						"en": "It finds its new versions and installs one when you say, never mid-game.",
+						"tr": "Yeni sürümünü kendisi bulur ve sen isteyince kurar, oyun açıkken değil."
+					}
+				},
+				{
+					"icon": "shield-check",
+					"title": {
+						"en": "Safer text and links",
+						"tr": "Daha güvenli yazılar ve bağlantılar"
+					},
+					"text": {
+						"en": "Names show as plain text, and a link says where it leads before it opens.",
+						"tr": "Adlar düz yazı görünür, bağlantılar açılmadan nereye gittiğini söyler."
+					}
+				}
+			]
+		}
+	]
+}

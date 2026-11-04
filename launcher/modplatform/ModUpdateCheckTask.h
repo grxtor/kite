@@ -69,6 +69,16 @@ class ModUpdateCheckTask : public Task
 	{
 		return m_updates;
 	}
+	/* How many mods were asked about, and how many of those asks got no
+	 * answer (offline, the platform down); both final once it has ended. */
+	int lookups() const
+	{
+		return m_total;
+	}
+	int failedLookups() const
+	{
+		return m_failed;
+	}
 
 	/* One lookup per tracked mod, so a large instance takes a while. */
 	bool canAbort() const override
@@ -93,6 +103,7 @@ class ModUpdateCheckTask : public Task
 	int m_pending = 0;
 	int m_total = 0;
 	int m_completed = 0;
+	int m_failed = 0;
 
 	/* Lookups in flight, for abort(). Guarded: a job deletes itself after
 	 * reporting. */

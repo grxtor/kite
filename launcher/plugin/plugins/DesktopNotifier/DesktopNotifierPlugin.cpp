@@ -20,7 +20,8 @@
  *
  *  Friends notices (FRIENDS_NOTICE) have no key here: the launcher's own setting
  *  (Settings > Friends) decides whether they are sent, already worded. The same for
- *  CRASH_FIX_FOUND, once per crash newer crash rules know.
+ *  CRASH_FIX_FOUND, once per crash newer crash rules know, and MOD_UPDATES_FOUND, at most
+ *  once a day while Settings > General > Mod updates asks for it.
  */
 
 #include "plugin/sdk/mmco_cxx_sdk.hpp"
@@ -203,6 +204,19 @@ static int on_crash_fix_found(void* /*mh*/, uint32_t /*hook_id*/, void* payload,
 	return 0;
 }
 
+/* MOD_UPDATES_FOUND: an instance's mods have newer versions; Kite words both lines and keeps it to
+ * one a day. */
+static int on_mod_updates_found(void* /*mh*/, uint32_t /*hook_id*/,
+								void* payload, void* /*ud*/)
+{
+	auto* notice = static_cast<MMCOModUpdatesNotice*>(payload);
+	if (!notice || !notice->title || !notice->body)
+		return 0;
+	notify(QString::fromUtf8(notice->title), QString::fromUtf8(notice->body),
+		   1);
+	return 0;
+}
+
 /* ── lifecycle ────────────────────────────────────────────────────── */
 
 extern "C" {
@@ -248,6 +262,8 @@ MMCO_EXPORT int mmco_init(MMCOContext* ctx)
 					   on_friends_notice, nullptr);
 	ctx->hook_register(ctx->module_handle, MMCO_HOOK_CRASH_FIX_FOUND,
 					   on_crash_fix_found, nullptr);
+	ctx->hook_register(ctx->module_handle, MMCO_HOOK_MOD_UPDATES_FOUND,
+					   on_mod_updates_found, nullptr);
 
 	MMCO_LOG(ctx, "DesktopNotifier initialized.");
 	return 0;

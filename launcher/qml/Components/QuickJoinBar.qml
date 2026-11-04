@@ -7,21 +7,27 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The big servers to join in one click, side by side like a browser's bookmarks (QuickJoinEntry each), pinged when
- * shown and again every minute while shown. What does not fit moves into a ⋯ menu at the end. A click asks to join
- * with the selected instance (`joinRequested`); a right-click offers another instance or the address.
+ * The servers to join in one click, side by side like a browser's bookmarks (QuickJoinEntry each), pinged when shown
+ * and again every minute while shown: the big ones and the player's own, as they arranged them (QuickJoinLayout).
+ * Drag an entry to move it; what does not fit moves into the ⋯ menu at the end, which also adds a server and edits
+ * the bar (QuickJoinMenus). A click asks to join with the selected instance (`joinRequested`); a right-click offers
+ * another instance, the address or taking it off the bar. After an update, a one-time note says so (QuickJoinHint).
  */
 Item {
     id: root
 
-    // FeaturedServers.servers.
-    property var servers: []
+    // QuickJoinLayout, or null.
+    property var layout: null
+    // The entries shown, in order.
+    property var servers: root.layout ? root.layout.shown : []
     // ServerPinger, or null.
     property var pinger: null
     // FriendsController.friends, or [].
     property var friends: []
     // ServerJoinFlow, which names the instance a click starts.
     property var joinFlow: null
+    // Nothing else asks for attention (onboarding, "What's new"): the one-time note may show.
+    property bool hintAllowed: false
 
     signal joinRequested(var server)
     signal joinWithRequested(var server)
@@ -31,11 +37,18 @@ Item {
 
     readonly property int gap: Theme.space.xxs
     readonly property int pingIntervalMs: 60 * 1000
+    readonly property int hintDelayMs: 800
+    readonly property int dropMarkWidth: 2
     // How many entries are shown; the rest wait in the ⋯ menu.
     property int fitCount: root.servers.length
-    // Every entry side by side, shown or not, so a bar sized by it does not shrink as entries move to the menu.
+    // Every entry side by side and ⋯, shown or not, so a bar sized by it does not shrink as entries move to the menu.
     property int fullWidth: 0
     readonly property var hidden: root.servers.slice(root.fitCount)
+
+    // The entry being dragged, and the place among the others it would land in.
+    property string draggingId: ""
+    property int dropIndex: -1
+    property int dragStart: -1
 
     implicitHeight: Theme.control.heightSm
     implicitWidth: root.fullWidth
@@ -52,29 +65,33 @@ Item {
         for (var i = 0; i < root.servers.length; ++i)
             root.pinger.ping(root.servers[i].address)
     }
-    // Join with… / Copy address for @p server, under @p anchor, or at the pointer without one.
-    function openServerMenu(server, anchor) {
-        serverMenu.server = server
-        serverMenu.instanceName = root.joinFlow ? root.joinFlow.instanceName(server) : ""
-        if (anchor)
-            serverMenu.popup(anchor, 0, anchor.height)
-        else
-            serverMenu.popup()
+    function openAdd() { root.dialog(addLoader).start() }
+    function openEdit() { root.dialog(editLoader).edit() }
+    function dialog(loader) {
+        loader.active = true
+        return loader.item
     }
-    // Entries in order while they fit; the ⋯ button takes its room once one does not.
+    // For review snapshots (KITE_QML_ROUTE "quickjoin=…").
+    function debugOpen(what) {
+        if (what === "edit")
+            root.openEdit()
+        else if (what === "add")
+            root.openAdd()
+        else if (what === "hint")
+            hint.open()
+        else if (what === "menu")
+            menus.openMore(more)
+    }
+    // Entries in order while they fit; ⋯ always keeps its room at the end.
     function measure() {
         var widths = []
         var total = 0
         for (var i = 0; i < repeater.count; ++i) {
             var entry = repeater.itemAt(i)
             widths.push(entry ? entry.implicitWidth : 0)
-            total += widths[i] + (i > 0 ? root.gap : 0)
+            total += widths[i] + root.gap
         }
-        root.fullWidth = total
-        if (total <= root.width) {
-            root.fitCount = widths.length
-            return
-        }
+        root.fullWidth = total + more.implicitWidth
         var room = root.width - more.implicitWidth - root.gap
         var used = 0
         var count = 0
@@ -85,12 +102,54 @@ Item {
         root.fitCount = count
     }
 
+    // Drag: the others' order with the dragged one taken out, and where the pointer (bar x) falls among them.
+    function beginDrag(id, index) {
+        root.draggingId = id
+        root.dragStart = index
+        root.dropIndex = index
+    }
+    function dragTo(x) {
+        var to = 0
+        for (var i = 0; i < root.fitCount; ++i) {
+            var entry = repeater.itemAt(i)
+            if (entry && entry.server.id !== root.draggingId && entry.x + entry.width / 2 < x)
+                ++to
+        }
+        root.dropIndex = to
+    }
+    function endDrag() {
+        if (root.layout && root.draggingId.length > 0 && root.dropIndex >= 0 && root.dropIndex !== root.dragStart)
+            root.layout.move(root.draggingId, root.dropIndex)
+        root.draggingId = ""
+        root.dropIndex = -1
+        root.dragStart = -1
+    }
+    // Where the drop mark stands: before the dropIndex-th of the others, or after the last.
+    function dropMarkX() {
+        var seen = 0
+        var lastRight = 0
+        for (var i = 0; i < root.fitCount; ++i) {
+            var entry = repeater.itemAt(i)
+            if (!entry || entry.server.id === root.draggingId)
+                continue
+            if (seen === root.dropIndex)
+                return entry.x - root.gap / 2 - root.dropMarkWidth / 2
+            lastRight = entry.x + entry.width
+            ++seen
+        }
+        return lastRight + root.gap / 2 - root.dropMarkWidth / 2
+    }
+
     onWidthChanged: Qt.callLater(root.measure)
     onServersChanged: {
         Qt.callLater(root.measure)
         root.pingAll()
     }
-    onVisibleChanged: root.pingAll()
+    onVisibleChanged: {
+        root.pingAll()
+        if (!root.visible && hint.opened)
+            hint.close()
+    }
     Component.onCompleted: root.pingAll()
 
     Timer {
@@ -98,6 +157,14 @@ Item {
         repeat: true
         running: root.visible && !!root.pinger
         onTriggered: root.pingAll()
+    }
+
+    // The note waits for the bar to settle, and for nothing else to be asking.
+    Timer {
+        interval: root.hintDelayMs
+        running: root.visible && root.hintAllowed && !!root.layout && !root.layout.hintSeen
+                 && root.servers.length > 0 && !hint.opened
+        onTriggered: hint.open()
     }
 
     Row {
@@ -114,107 +181,76 @@ Item {
                 required property int index
 
                 visible: entry.index < root.fitCount
+                opacity: root.draggingId === entry.modelData.id ? Theme.opacity.disabled : 1
                 server: entry.modelData
                 status: root.statusOf(entry.modelData.address, root.pinger ? root.pinger.revision : 0)
                 friends: root.friendsOn(entry.modelData.address)
                 joinFlow: root.joinFlow
-                menuOpen: serverMenu.visible && serverMenu.server.id === entry.modelData.id
+                menuOpen: root.draggingId.length > 0
+                          || (menus.serverMenuOpen && menus.serverMenuId === entry.modelData.id)
                 onClicked: root.joinRequested(entry.modelData)
-                onMenuRequested: root.openServerMenu(entry.modelData, entry)
+                onMenuRequested: menus.openServer(entry.modelData, entry)
                 onImplicitWidthChanged: Qt.callLater(root.measure)
+
+                // Sideways only; a click that does not travel stays a click.
+                DragHandler {
+                    target: null
+                    enabled: !!root.layout
+                    yAxis.enabled: false
+                    onActiveChanged: active ? root.beginDrag(entry.modelData.id, entry.index) : root.endDrag()
+                    onCentroidChanged: if (active) root.dragTo(entry.mapToItem(row, centroid.position.x, 0).x)
+                }
             }
         }
 
         IconButton {
             id: more
+            objectName: "quickJoinMore"
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.hidden.length > 0
             size: Theme.control.heightSm
             iconName: "more"
-            tip: qsTr("More servers")
-            // Opens leftward, its right edge under the button's, so it stays inside the page's column.
-            onClicked: overflowMenu.popup(more, more.width - overflowMenu.width, more.height)
+            tip: root.hidden.length > 0 ? qsTr("More servers") : qsTr("More")
+            onClicked: menus.openMore(more)
         }
     }
 
-    Menu {
-        id: serverMenu
-        property var server: ({})
-        property string instanceName: ""
+    Rectangle {
+        objectName: "quickJoinDropMark"
+        visible: root.draggingId.length > 0 && root.dropIndex >= 0 && root.dropIndex !== root.dragStart
+        x: row.x + root.dropMarkX()
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.dropMarkWidth
+        height: root.height - Theme.space.sm
+        radius: width / 2
+        color: Theme.palette.accent
+    }
 
-        MenuItem {
-            text: serverMenu.instanceName.length > 0 ? qsTr("Join with %1").arg(serverMenu.instanceName) : qsTr("Join…")
-            icon.source: Icons.url("play")
-            onTriggered: root.joinRequested(serverMenu.server)
-        }
-        MenuItem {
-            text: qsTr("Join with another instance…")
-            icon.source: Icons.url("layers")
-            onTriggered: root.joinWithRequested(serverMenu.server)
-        }
-        MenuEntry {
-            visible: root.canInvite
-            text: qsTr("Invite a friend…")
-            icon.source: Icons.url("user-plus")
-            onTriggered: root.inviteRequested(serverMenu.server)
-        }
-        MenuSeparator {}
-        MenuItem {
-            text: qsTr("Copy address")
-            icon.source: Icons.url("copy")
-            onTriggered: clipboard.copyText(serverMenu.server.address)
+    QuickJoinMenus {
+        id: menus
+        bar: root
+    }
+
+    QuickJoinHint {
+        id: hint
+        objectName: "quickJoinHint"
+        layout: root.layout
+    }
+
+    Loader {
+        id: addLoader
+        active: false
+        sourceComponent: QuickJoinAddDialog {
+            layout: root.layout
+            pinger: root.pinger
         }
     }
 
-    Menu {
-        id: overflowMenu
-
-        // What the list is, so a single row reads as a menu.
-        MenuItem {
-            enabled: false
-            background: null
-            contentItem: Copy {
-                text: qsTr("More servers")
-                role: "caption"
-                tone: "tertiary"
-            }
-        }
-
-        // The same line as an entry; a click joins, a right-click offers the server's own menu.
-        Instantiator {
-            model: root.hidden
-            delegate: MenuItem {
-                id: hiddenRow
-                required property var modelData
-
-                text: hiddenRow.modelData.name
-                contentItem: Item {
-                    implicitWidth: line.implicitWidth
-                    implicitHeight: line.implicitHeight
-
-                    QuickJoinSummary {
-                        id: line
-                        anchors.verticalCenter: parent.verticalCenter
-                        server: hiddenRow.modelData
-                        status: root.statusOf(hiddenRow.modelData.address, root.pinger ? root.pinger.revision : 0)
-                        friends: root.friendsOn(hiddenRow.modelData.address)
-                    }
-                }
-                onTriggered: root.joinRequested(hiddenRow.modelData)
-
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: {
-                        overflowMenu.close()
-                        root.openServerMenu(hiddenRow.modelData, null)
-                    }
-                }
-            }
-            // After the heading.
-            onObjectAdded: (index, object) => overflowMenu.insertItem(index + 1, object)
-            onObjectRemoved: (index, object) => overflowMenu.removeItem(object)
+    Loader {
+        id: editLoader
+        active: false
+        sourceComponent: QuickJoinEditDialog {
+            layout: root.layout
+            pinger: root.pinger
         }
     }
-
-    ClipboardText { id: clipboard }
 }

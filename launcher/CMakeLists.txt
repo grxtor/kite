@@ -99,6 +99,8 @@ set(CORE_SOURCES
     ui/themes/CatPack.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
+    models/ModUpdateReminder.h
+    models/ModUpdateReminder.cpp
     models/AtlOptionalModsModel.h
     models/AtlOptionalModsModel.cpp
     models/InstanceExportController.h
@@ -316,6 +318,8 @@ set(NEWS_SOURCES
     news/NewsChecker.cpp
     news/NewsEntry.h
     news/NewsEntry.cpp
+    news/WhatsNew.h
+    news/WhatsNew.cpp
 )
 
 set(BACKUP_SOURCES
@@ -1003,6 +1007,8 @@ set(SERVERS_SOURCES
     servers/ServerPinger.cpp
     servers/FeaturedServers.h
     servers/FeaturedServers.cpp
+    servers/QuickJoinLayout.h
+    servers/QuickJoinLayout.cpp
 )
 
 add_unit_test(ServerStatus
@@ -1017,6 +1023,11 @@ add_unit_test(ServerPing
 
 add_unit_test(FeaturedServers
     SOURCES servers/FeaturedServers_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(QuickJoinLayout
+    SOURCES servers/QuickJoinLayout_test.cpp
     LIBS Kite_core
     )
 
@@ -1165,11 +1176,12 @@ endif()
 # or ui/. Kite_logic is the plugin host and the application on top of it.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
-# Embedded as :/kite/bundles.json and :/kite/servers.json; in the core so tests find them too.
+# Embedded as :/kite/bundles.json, :/kite/servers.json and :/kite/whatsnew.json (the "What's new"
+# notes); in the core so tests find them too.
 qt6_add_resources(Kite_core kite_bundles
     PREFIX "/kite"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
-    FILES resources/kite/bundles.json resources/kite/servers.json)
+    FILES resources/kite/bundles.json resources/kite/servers.json resources/kite/whatsnew.json)
 # The crash doctor's catalog, embedded as :/kite/crash-rules.json (replaced by
 # meta.kiteclient.com's copy when there is a valid newer one).
 qt6_add_resources(Kite_core kite_crash_rules
@@ -1372,6 +1384,11 @@ add_unit_test(NewsEntry
     LIBS Kite_core
     )
 
+add_unit_test(WhatsNew
+    SOURCES news/WhatsNew_test.cpp
+    LIBS Kite_core
+    )
+
 add_unit_test(SkinsController
     SOURCES models/SkinsController_test.cpp
     LIBS Kite_core
@@ -1511,6 +1528,10 @@ add_unit_test(ModHealthModel
     )
 add_unit_test(ContentUpdateController
     SOURCES models/ContentUpdateController_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(ModUpdateReminder
+    SOURCES models/ModUpdateReminder_test.cpp
     LIBS Kite_core
     )
 add_unit_test(ContentListExport
@@ -1667,6 +1688,13 @@ add_unit_test(FriendChatQml
     LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 qt_import_qml_plugins(FriendChatQml_test)
+
+# The 1.3.1 dialogs: "What's new", the quick-join bar's edit and add dialogs, its one-time note and a drag in it.
+add_unit_test(LauncherUxQml
+    SOURCES qml/LauncherUxQml_test.cpp
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(LauncherUxQml_test)
 
 add_unit_test(FriendChatPanelQml
     SOURCES qml/FriendChatPanelQml_test.cpp qml/FriendChatQmlHarness.h

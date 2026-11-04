@@ -96,6 +96,8 @@ Item {
             versionText: Format.versionLine(root.hero.loader, root.hero.gameVersion)
             hasCrashed: root.hero.hasCrashed
             crashCause: root.hero.crashCause
+            modUpdates: root.hero.modUpdates
+            onUpdatesRequested: root.hero.openUpdates()
             lastLaunch: root.hero.lastLaunch
             playTimeText: root.hero.playTimeText
             launchStatus: root.hero.launchStatus

@@ -38,6 +38,7 @@
 #include "models/ContentFilterModel.h"
 #include "models/ContentInstallReview.h"
 #include "models/InstanceContentController.h"
+#include "models/ModUpdateReminder.h"
 #include "tasks/TaskWatcher.h"
 
 namespace
@@ -445,13 +446,14 @@ QObject* ContentUpdateController::checkForUpdates(const QString& kind,
 	m_updates->clear();
 	m_updatesKind = kind;
 	m_updatesFolder = folder;
+	m_updatesWhole = keys.isEmpty();
 
 	auto* task = new ModUpdateCheckTask(index, mc, loader(), type);
 	m_check = task;
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(tr("Checking for updates"));
 	QPointer<ModUpdateCheckTask> guard(task);
-	connect(watcher, &TaskWatcher::finished, this, [this, guard, keys](bool) {
+	connect(watcher, &TaskWatcher::finished, this, [this, guard, keys, kind](bool ok) {
 		/* Kept after an abort too: what was checked is checked. */
 		if (guard) {
 			auto found = onlyFor(guard->availableUpdates(), keys);
@@ -459,6 +461,12 @@ QObject* ContentUpdateController::checkForUpdates(const QString& kind,
 				fillCurrentVersions(found, *m_updatesFolder);
 			}
 			m_updates->setUpdates(found);
+			/* A whole check of the mods is what Home's "3 updates" says too. */
+			if (ok && m_instance && kind == QStringLiteral("mods") && keys.isEmpty() &&
+				ModUpdateReminder::answered(guard->lookups(), guard->failedLookups())) {
+				ModUpdateReminder::instance()->record(
+					*m_instance, ModUpdateReminder::countUpdates(found));
+			}
 		}
 		m_check = nullptr;
 		emit checkingChanged();
@@ -491,8 +499,17 @@ QObject* ContentUpdateController::applyUpdates()
 	auto* task =
 		new ContentDownloadTask(items, m_updatesFolder->dir().absolutePath());
 	task->setMetadataIndex(m_updatesFolder->metadataIndex());
-	QObject* watcher = watchDownload(
-		task, tr("Updating %n file(s)", "", int(items.size())), m_updatesFolder);
+	auto* watcher = qobject_cast<TaskWatcher*>(watchDownload(
+		task, tr("Updating %n file(s)", "", int(items.size())), m_updatesFolder));
+	/* What was left unticked still has a newer version. */
+	const int left = m_updates->count() - int(items.size());
+	if (watcher && m_instance && m_updatesKind == QStringLiteral("mods") && m_updatesWhole) {
+		connect(watcher, &TaskWatcher::finished, this, [this, left](bool ok) {
+			if (ok && m_instance) {
+				ModUpdateReminder::instance()->record(*m_instance, left);
+			}
+		});
+	}
 	m_updates->clear();
 	return watcher;
 }

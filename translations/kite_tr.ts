@@ -589,7 +589,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1565"/>
+        <location filename="../launcher/Application.cpp" line="+1584"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -1958,7 +1958,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Oyun çalışıyor. %1, oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+77"/>
+        <location line="+88"/>
         <location line="+5"/>
         <source>Kite Performance could not be set up for this instance.</source>
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
@@ -2078,6 +2078,21 @@ Ayrıntılar günlük dosyasında:
         <translation>Göster</translation>
     </message>
     <message>
+        <location line="+11"/>
+        <source>A new version of 1 mod is out.</source>
+        <translation>1 modun yeni sürümü var.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New versions of %1 mods are out.</source>
+        <translation>%1 modun yeni sürümü var.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Update</source>
+        <translation>Güncelle</translation>
+    </message>
+    <message>
         <location line="+79"/>
         <source>No content</source>
         <translation>İçerik yok</translation>
@@ -2135,7 +2150,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Yükleyici seç…</translation>
     </message>
     <message>
-        <location line="+103"/>
+        <location line="+105"/>
         <source>List saved.</source>
         <translation>Liste kaydedildi.</translation>
     </message>
@@ -2148,7 +2163,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentUpdateController</name>
     <message>
-        <location filename="../launcher/models/ContentUpdateController.cpp" line="+405"/>
+        <location filename="../launcher/models/ContentUpdateController.cpp" line="+406"/>
         <source>Already checking for updates.</source>
         <translation>Güncellemeler zaten denetleniyor.</translation>
     </message>
@@ -2159,30 +2174,30 @@ Ayrıntılar günlük dosyasında:
     </message>
     <message>
         <location line="+4"/>
-        <location line="+246"/>
+        <location line="+262"/>
         <source>The game is running. Check again once it has closed.</source>
         <translation>Oyun çalışıyor. Kapandıktan sonra tekrar denetle.</translation>
     </message>
     <message>
-        <location line="-241"/>
-        <location line="+246"/>
+        <location line="-257"/>
+        <location line="+262"/>
         <location line="+32"/>
         <location line="+30"/>
         <source>This instance has no Minecraft version set.</source>
         <translation>Bu kurulumda Minecraft sürümü ayarlanmamış.</translation>
     </message>
     <message>
-        <location line="-290"/>
+        <location line="-306"/>
         <source>None of these were installed from Modrinth or CurseForge, so there is nothing to check. Files added from Add content can be checked.</source>
         <translation>Bunların hiçbiri Modrinth veya CurseForge&apos;dan yüklenmemiş, bu yüzden denetlenecek bir şey yok. İçerik ekle bölümünden eklenen dosyalar denetlenebilir.</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+15"/>
         <source>Checking for updates</source>
         <translation>Güncellemeler denetleniyor</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+36"/>
         <source>Nothing is ticked to update.</source>
         <translation>Güncellenecek bir şey işaretlenmemiş.</translation>
     </message>
@@ -2199,7 +2214,7 @@ Ayrıntılar günlük dosyasında:
         </translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+20"/>
         <source>These cannot be changed to another version here.</source>
         <translation>Bunlar burada başka bir sürüme değiştirilemez.</translation>
     </message>
@@ -6267,7 +6282,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeHeroTitle</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeHeroTitle.qml" line="+39"/>
+        <location filename="../launcher/qml/Components/HomeHeroTitle.qml" line="+43"/>
         <source>Played %1</source>
         <translation>%1 oynandı</translation>
     </message>
@@ -6277,7 +6292,7 @@ Lütfen tekrar dene.</translation>
         <translation>Hiç oynanmadı</translation>
     </message>
     <message>
-        <location line="+149"/>
+        <location line="+167"/>
         <source>%1  •  %2%</source>
         <translation>%1  •  %2%</translation>
     </message>
@@ -8891,7 +8906,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+417"/>
+        <location filename="../launcher/qml/Main.qml" line="+432"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -8951,7 +8966,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+387"/>
+        <location line="+411"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -10124,7 +10139,7 @@ Kurulumun değişmedi.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+881"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+888"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -10585,6 +10600,57 @@ Kurulumun değişmedi.</translation>
         <location line="+5"/>
         <source>Checking %1 mod(s) for updates...</source>
         <translation>%1 mod güncellemeler için denetleniyor...</translation>
+    </message>
+</context>
+<context>
+    <name>ModUpdateReminder</name>
+    <message>
+        <location filename="../launcher/models/ModUpdateReminder.cpp" line="+277"/>
+        <source>New mod versions</source>
+        <translation>Modların yeni sürümü var</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>A mod in %1 has a new version.</source>
+        <translation>%1 kurulumundaki bir modun yeni sürümü var.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 mods in %2 have new versions.</source>
+        <translation>%2 kurulumundaki %1 modun yeni sürümü var.</translation>
+    </message>
+</context>
+<context>
+    <name>ModUpdatesLine</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModUpdatesLine.qml" line="+28"/>
+        <source>1 update</source>
+        <translation>1 güncelleme</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 updates</source>
+        <translation>%1 güncelleme</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 mod has a new version. Open the mods</source>
+        <translation>1 modun yeni sürümü var. Modları aç</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 mods have a new version. Open the mods</source>
+        <translation>%1 modun yeni sürümü var. Modları aç</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>1 mod has a new version</source>
+        <translation>1 modun yeni sürümü var</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 mods have a new version</source>
+        <translation>%1 modun yeni sürümü var</translation>
     </message>
 </context>
 <context>
@@ -13109,7 +13175,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+484"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+497"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -13240,37 +13306,130 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     </message>
 </context>
 <context>
+    <name>QuickJoinAddDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinAddDialog.qml" line="+71"/>
+        <source>Add a server</source>
+        <translation>Sunucu ekle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Add anyway</source>
+        <translation>Yine de ekle</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Address</source>
+        <translation>Adres</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>play.example.com</source>
+        <translation>play.example.com</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Name (optional)</source>
+        <translation>Ad (isteğe bağlı)</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>My server</source>
+        <translation>Sunucum</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>That is not a server address.</source>
+        <translation>Bu bir sunucu adresi değil.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Asking the server…</source>
+        <translation>Sunucuya soruluyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This server is not answering. Check the address, or add it anyway.</source>
+        <translation>Bu sunucu cevap vermiyor. Adresi denetle ya da yine de ekle.</translation>
+    </message>
+</context>
+<context>
     <name>QuickJoinBar</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+134"/>
-        <location line="+43"/>
+        <location filename="../launcher/qml/Components/QuickJoinBar.qml" line="+212"/>
         <source>More servers</source>
         <translation>Diğer sunucular</translation>
     </message>
     <message>
-        <location line="-31"/>
-        <source>Join with %1</source>
-        <translation>%1 ile katıl</translation>
+        <location line="+0"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+</context>
+<context>
+    <name>QuickJoinEditDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinEditDialog.qml" line="+75"/>
+        <source>Edit the bar</source>
+        <translation>Barı düzenle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Save</source>
+        <translation>Kaydet</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Reset to default</source>
+        <translation>Varsayılana dön</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Drag to change the order. Untick a server to hide it from the bar.</source>
+        <translation>Sırayı değiştirmek için sürükle. Bir sunucuyu bardan gizlemek için işaretini kaldır.</translation>
+    </message>
+    <message>
+        <location line="+63"/>
+        <source>Add a server…</source>
+        <translation>Sunucu ekle…</translation>
+    </message>
+</context>
+<context>
+    <name>QuickJoinEditRow</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinEditRow.qml" line="+59"/>
+        <source>Drag to move %1</source>
+        <translation>Taşımak için sürükle: %1</translation>
+    </message>
+    <message>
+        <location line="+43"/>
+        <source>Your server · %1</source>
+        <translation>Senin sunucun · %1</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Remove</source>
+        <translation>Kaldır</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Show %1 in the bar</source>
+        <translation>Barda göster: %1</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Shown in the bar</source>
+        <translation>Barda görünüyor</translation>
     </message>
     <message>
         <location line="+0"/>
-        <source>Join…</source>
-        <translation>Katıl…</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Join with another instance…</source>
-        <translation>Başka bir kurulumla katıl…</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Invite a friend…</source>
-        <translation>Arkadaş davet et…</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Copy address</source>
-        <translation>Adresi kopyala</translation>
+        <source>Hidden from the bar</source>
+        <translation>Bardan gizli</translation>
     </message>
 </context>
 <context>
@@ -13300,6 +13459,67 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <location line="+4"/>
         <source>Not answering right now</source>
         <translation>Şu an yanıt vermiyor</translation>
+    </message>
+</context>
+<context>
+    <name>QuickJoinHint</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinHint.qml" line="+44"/>
+        <source>Drag these servers to reorder them, right-click one to remove it, or add your own server.</source>
+        <translation>Bu sunucuları sürükleyip sıralayabilir, sağ tıklayıp kaldırabilir ya da kendi sunucunu ekleyebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>QuickJoinMenus</name>
+    <message>
+        <location filename="../launcher/qml/Components/QuickJoinMenus.qml" line="+43"/>
+        <source>Join with %1</source>
+        <translation>%1 ile katıl</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Join…</source>
+        <translation>Katıl…</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Join with another instance…</source>
+        <translation>Başka bir kurulumla katıl…</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Invite a friend…</source>
+        <translation>Arkadaş davet et…</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Copy address</source>
+        <translation>Adresi kopyala</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Remove from bar</source>
+        <translation>Bardan kaldır</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>More servers</source>
+        <translation>Diğer sunucular</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Add a server…</source>
+        <translation>Sunucu ekle…</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Edit the bar…</source>
+        <translation>Barı düzenle…</translation>
     </message>
 </context>
 <context>
@@ -13792,7 +14012,7 @@ Currently installed version: %1</source>
         <translation>Oyun çalışıyor. Sunucu listesi oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+28"/>
         <source>Ask</source>
         <translation>Sor</translation>
     </message>
@@ -13818,19 +14038,19 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+8"/>
-        <location line="+187"/>
+        <location line="+202"/>
         <location line="+1"/>
         <source>Add server</source>
         <translation>Sunucu ekle</translation>
     </message>
     <message>
-        <location line="-148"/>
-        <location line="+190"/>
+        <location line="-163"/>
+        <location line="+205"/>
         <source>Minecraft Server</source>
         <translation>Minecraft Sunucusu</translation>
     </message>
     <message>
-        <location line="-187"/>
+        <location line="-202"/>
         <source>No address yet</source>
         <translation>Henüz adres yok</translation>
     </message>
@@ -13875,7 +14095,17 @@ Currently installed version: %1</source>
         <translation>Arkadaş davet et…</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+13"/>
+        <source>Remove from top bar</source>
+        <translation>Üst bardan kaldır</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Pin to top bar</source>
+        <translation>Üst bara sabitle</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>Edit…</source>
         <translation>Düzenle…</translation>
     </message>
@@ -13981,7 +14211,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsAboutSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsAboutSection.qml" line="+38"/>
+        <location filename="../launcher/qml/Components/SettingsAboutSection.qml" line="+41"/>
         <source>About</source>
         <translation>Hakkında</translation>
     </message>
@@ -14001,7 +14231,17 @@ Currently installed version: %1</source>
         <translation>Sürüm</translation>
     </message>
     <message>
+        <location line="+3"/>
+        <source>What&apos;s new</source>
+        <translation>Yenilikler</translation>
+    </message>
+    <message>
         <location line="+1"/>
+        <source>What came with Kite %1.</source>
+        <translation>Kite %1 ile gelenler.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Platform</source>
         <translation>Platform</translation>
     </message>
@@ -14067,7 +14307,8 @@ Currently installed version: %1</source>
         <translation>Gizle</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-74"/>
+        <location line="+74"/>
         <source>Show</source>
         <translation>Göster</translation>
     </message>
@@ -14630,6 +14871,31 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+5"/>
+        <source>Mod updates</source>
+        <translation>Mod güncellemeleri</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Check for mod updates</source>
+        <translation>Mod güncellemelerini denetle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Once a day, Kite looks for newer versions of an instance&apos;s mods and says how many there are. Nothing is installed until you update.</source>
+        <translation>Kite günde bir kez kurulumların modlarının yeni sürümlerine bakar ve kaç tane olduğunu söyler. Sen güncelleyene kadar hiçbir şey yüklenmez.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Notify me on the desktop</source>
+        <translation>Masaüstünde bildir</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>At most once a day, when an instance&apos;s mods have new versions.</source>
+        <translation>Bir kurulumun modlarının yeni sürümü çıkınca, günde en fazla bir kez.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>Folders</source>
         <translation>Klasörler</translation>
     </message>
@@ -14975,7 +15241,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+46"/>
+        <location filename="../launcher/qml/Components/SettingsPage.qml" line="+49"/>
         <source>General</source>
         <translation>Genel</translation>
     </message>
@@ -16971,6 +17237,41 @@ inheritsFrom eksik</translation>
         <location line="+1"/>
         <source>List view</source>
         <translation>Liste görünümü</translation>
+    </message>
+</context>
+<context>
+    <name>WhatsNewDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/WhatsNewDialog.qml" line="+31"/>
+        <source>What&apos;s new since %1</source>
+        <extracomment>%1 is a Kite version such as 1.2.0, the one the player ran before this update.</extracomment>
+        <translation>%1 sürümünden beri neler var</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>What&apos;s new in Kite %1</source>
+        <extracomment>%1 is a Kite version such as 1.3.1.</extracomment>
+        <translation>Kite %1 sürümünde neler var</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>What&apos;s new</source>
+        <translation>Yenilikler</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Great</source>
+        <translation>Harika</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>All notes</source>
+        <translation>Tüm notlar</translation>
+    </message>
+    <message>
+        <location line="+52"/>
+        <source>Kite %1</source>
+        <translation>Kite %1</translation>
     </message>
 </context>
 <context>
