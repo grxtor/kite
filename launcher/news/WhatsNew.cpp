@@ -22,7 +22,10 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QVariantMap>
+
+#include <algorithm>
 
 #include "BuildConfig.h"
 #include "Version.h"
@@ -35,6 +38,8 @@ namespace
 	const QString kBundledNotes = QStringLiteral(":/kite/whatsnew.json");
 	const QString kLanguageSetting = QStringLiteral("Language");
 	const QString kGitHubPrefix = QStringLiteral("https://github.com/");
+	/// The start of a log holds its version line; no need to read the rest.
+	constexpr qint64 kLogHeadBytes = 8 * 1024;
 } // namespace
 
 QList<WhatsNew::Release> WhatsNew::parse(const QByteArray& json, QString* error)
@@ -83,6 +88,26 @@ int WhatsNew::notesFor(const QList<Release>& releases, const QString& current)
 	return best;
 }
 
+QList<int> WhatsNew::notesSince(const QList<Release>& releases, const QString& seen,
+								const QString& current)
+{
+	QList<int> shown;
+	if (current.isEmpty()) {
+		return shown;
+	}
+	const Version running(current);
+	for (int i = 0; i < releases.size(); ++i) {
+		const Version notes(releases.at(i).version);
+		if (notes <= running && (seen.isEmpty() || Version(seen) < notes)) {
+			shown.append(i);
+		}
+	}
+	std::sort(shown.begin(), shown.end(), [&releases](int a, int b) {
+		return Version(releases.at(b).version) < Version(releases.at(a).version);
+	});
+	return shown;
+}
+
 bool WhatsNew::isNew(const QString& notesVersion, const QString& seenVersion,
 					 bool freshInstall)
 {
@@ -97,29 +122,44 @@ bool WhatsNew::isFreshInstall(const QString& seenVersion, const QString& languag
 	return seenVersion.isEmpty() && language.isEmpty();
 }
 
+QString WhatsNew::versionInLog(const QByteArray& log)
+{
+	static const QRegularExpression line(
+		QStringLiteral(R"(\bVersion\s+:\s+(\d+\.\d+\.\d+)\b)"));
+	const QRegularExpressionMatch match = line.match(QString::fromUtf8(log));
+	return match.hasMatch() ? match.captured(1) : QString();
+}
+
 WhatsNew::WhatsNew(QObject* parent) : QObject(parent)
 {
 	m_current = BuildConfig.VERSION_STR;
 	m_settings = LAUNCHER ? LAUNCHER->settings() : nullptr;
 	QFile bundled(kBundledNotes);
-	setUp(bundled.open(QIODevice::ReadOnly) ? bundled.readAll() : QByteArray());
+	/* The log rotated at this start: -1 is the previous run's, in the data folder. */
+	QFile previous(BuildConfig.KITE_NAME + QStringLiteral("-1.log"));
+	setUp(bundled.open(QIODevice::ReadOnly) ? bundled.readAll() : QByteArray(),
+		  previous.open(QIODevice::ReadOnly) ? previous.read(kLogHeadBytes) : QByteArray());
 }
 
 WhatsNew::WhatsNew(const QByteArray& json, const QString& current,
-				   SettingsObjectPtr settings, QObject* parent)
+				   SettingsObjectPtr settings, const QByteArray& previousLog,
+				   QObject* parent)
 	: QObject(parent), m_current(current), m_settings(std::move(settings))
 {
-	setUp(json);
+	setUp(json, previousLog);
 }
 
-void WhatsNew::setUp(const QByteArray& json)
+void WhatsNew::setUp(const QByteArray& json, const QByteArray& previousLog)
 {
 	m_releases = parse(json);
-	m_shown = notesFor(m_releases, m_current);
+	const int latest = notesFor(m_releases, m_current);
+	if (latest >= 0) {
+		m_shown = {latest};
+	}
 	if (!m_settings) {
 		return;
 	}
-	const QString seen = m_settings->get(kSeenSetting).toString();
+	QString seen = m_settings->get(kSeenSetting).toString();
 	m_freshInstall =
 		isFreshInstall(seen, m_settings->get(kLanguageSetting).toString());
 	if (m_freshInstall) {
@@ -127,24 +167,29 @@ void WhatsNew::setUp(const QByteArray& json)
 		m_settings->set(kSeenSetting, m_current);
 		return;
 	}
-	m_pending = m_shown >= 0 &&
-				isNew(m_releases.at(m_shown).version, seen, m_freshInstall);
-}
-
-QString WhatsNew::version() const
-{
-	return m_shown >= 0 ? m_releases.at(m_shown).version : QString();
-}
-
-QVariantList WhatsNew::items() const
-{
-	QVariantList result;
-	if (m_shown < 0) {
-		return result;
+	if (seen.isEmpty()) {
+		/* A Kite from before the notes: the version it ran last, kept at once
+		 * so a start that ends before the notes are read still knows it. */
+		const QString before = versionInLog(previousLog);
+		if (!before.isEmpty() && Version(before) < Version(m_current)) {
+			seen = before;
+			m_settings->set(kSeenSetting, seen);
+		}
 	}
+	const QList<int> since = notesSince(m_releases, seen, m_current);
+	m_pending = !since.isEmpty();
+	if (m_pending) {
+		m_shown = since;
+		m_since = seen;
+	}
+}
+
+QVariantList WhatsNew::itemsOf(const Release& release) const
+{
 	const QString language =
 		m_language.isNull() ? MetaCatalog::selectedLanguage() : m_language;
-	for (const QJsonValue& value : m_releases.at(m_shown).items) {
+	QVariantList result;
+	for (const QJsonValue& value : release.items) {
 		const QJsonObject item = value.toObject();
 		result.append(QVariantMap{
 			{"icon", item.value("icon").toString()},
@@ -155,10 +200,39 @@ QVariantList WhatsNew::items() const
 	return result;
 }
 
+QString WhatsNew::version() const
+{
+	return m_shown.isEmpty() ? QString() : m_releases.at(m_shown.first()).version;
+}
+
+QString WhatsNew::sinceVersion() const
+{
+	return m_shown.size() > 1 ? m_since : QString();
+}
+
+QVariantList WhatsNew::releases() const
+{
+	QVariantList result;
+	for (int index : m_shown) {
+		const Release& release = m_releases.at(index);
+		result.append(QVariantMap{{"version", release.version}, {"items", itemsOf(release)}});
+	}
+	return result;
+}
+
+QVariantList WhatsNew::items() const
+{
+	QVariantList result;
+	for (int index : m_shown) {
+		result.append(itemsOf(m_releases.at(index)));
+	}
+	return result;
+}
+
 QString WhatsNew::releaseUrl() const
 {
 	const QString repo = BuildConfig.KITE_GIT;
-	if (m_shown < 0 || !repo.startsWith(kGitHubPrefix)) {
+	if (m_shown.isEmpty() || !repo.startsWith(kGitHubPrefix)) {
 		return QString();
 	}
 	return repo + QStringLiteral("/releases/tag/v") + version();
@@ -181,15 +255,25 @@ void WhatsNew::markSeen()
 	}
 }
 
-void WhatsNew::debugShowNewest()
+void WhatsNew::showLatest()
 {
-	int newest = -1;
-	for (int i = 0; i < m_releases.size(); ++i) {
-		if (newest < 0 ||
-			Version(m_releases.at(newest).version) < Version(m_releases.at(i).version)) {
-			newest = i;
+	const int latest = notesFor(m_releases, m_current);
+	m_shown = latest >= 0 ? QList<int>{latest} : QList<int>();
+	emit changed();
+}
+
+void WhatsNew::debugShowSince(const QString& seen)
+{
+	QString newest;
+	for (const Release& release : m_releases) {
+		if (newest.isEmpty() || Version(newest) < Version(release.version)) {
+			newest = release.version;
 		}
 	}
-	m_shown = newest;
+	m_shown = notesSince(m_releases, seen, newest);
+	if (seen.isEmpty() && !m_shown.isEmpty()) {
+		m_shown = {m_shown.first()};
+	}
+	m_since = seen;
 	emit changed();
 }
