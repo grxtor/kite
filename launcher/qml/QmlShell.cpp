@@ -83,6 +83,7 @@
 #include "servers/FeaturedServers.h"
 #include "servers/ServerPinger.h"
 #include "news/WhatsNew.h"
+#include "models/ModUpdateReminder.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -1489,6 +1490,11 @@ QObject* QmlShell::featuredServers() const
 QObject* QmlShell::whatsNew() const
 {
 	return expose(m_whatsNew.get());
+}
+
+QObject* QmlShell::modUpdates() const
+{
+	return expose(ModUpdateReminder::instance());
 }
 
 QObject* QmlShell::exportController(const QString& id)

@@ -209,6 +209,13 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 	m_settings->registerSetting("KitePerformanceMissing", "");
 	m_settings->registerSetting("KitePerformanceUnmatched", "");
 
+	/* What the last background check for newer mod versions found
+	 * (models/ModUpdateReminder): when (ms since the epoch, 0 for never), how
+	 * many files, and for which version and loader ("1.21.1 fabric"). */
+	m_settings->registerSetting("ModUpdatesCheckedAt", QVariant(qlonglong(0)));
+	m_settings->registerSetting("ModUpdatesFound", 0);
+	m_settings->registerSetting("ModUpdatesFor", "");
+
 	// Kite's mod is injected with -Dfabric.addMods; Fabric instances only.
 	m_settings->registerSetting("KiteMod", true);
 

@@ -144,6 +144,10 @@ enum MMCOHookId {
 	 * happened; once per crash. The return value is ignored. */
 	MMCO_HOOK_CRASH_FIX_FOUND = 0x0A00, /* payload: MMCOCrashFixNotice* */
 
+	/* Mod updates: a background check found newer versions of an instance's mods; at most once a
+	 * day, while the launcher's ModUpdateNotifications setting is on. The return value is ignored. */
+	MMCO_HOOK_MOD_UPDATES_FOUND = 0x0B00, /* payload: MMCOModUpdatesNotice* */
+
 	/* Forces a 32-bit underlying type across C and C++ compilers; never a real hook id. */
 	MMCO_HOOK_FORCE_UINT32 = 0x7FFFFFFF
 };
@@ -292,6 +296,21 @@ typedef struct MMCOCrashFixNotice {
 	const char* title;
 	const char* body;
 } MMCOCrashFixNotice;
+
+/* Payload for MMCO_HOOK_MOD_UPDATES_FOUND. Strings are UTF-8, host-owned and valid only during the
+ * callback; title and body are worded in the launcher's language, ready to show.
+ *   instance_id    the instance whose mods have newer versions
+ *   instance_name  its name as the library shows it
+ *   count          how many of its mods
+ *   title          "New mod versions"
+ *   body           "3 mods in Survival have new versions."; never empty */
+typedef struct MMCOModUpdatesNotice {
+	const char* instance_id;
+	const char* instance_name;
+	int count;
+	const char* title;
+	const char* body;
+} MMCOModUpdatesNotice;
 
 typedef int (*MMCOHookCallback)(void* module_handle, uint32_t hook_id,
 								void* payload, void* user_data);

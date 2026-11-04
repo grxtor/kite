@@ -891,6 +891,14 @@ void Application::initSettings()
 	 * empty before the first start. */
 	m_settings->registerSetting("WhatsNewSeenVersion", QString());
 
+	/* Background checks for newer versions of each instance's mods
+	 * (models/ModUpdateReminder), at most once a day per instance, and the
+	 * desktop notification they may send, at most once a day; off unless the
+	 * player turns it on. */
+	m_settings->registerSetting("ModUpdateChecks", true);
+	m_settings->registerSetting("ModUpdateNotifications", false);
+	m_settings->registerSetting("ModUpdateNotifiedAt", QVariant(qlonglong(0)));
+
 	/* Whether a web link that came from the network or from files (a mod's
 	 * homepage, a changelog) names its host and asks before the browser opens
 	 * it (qml/Components/ExternalLinks.qml). */

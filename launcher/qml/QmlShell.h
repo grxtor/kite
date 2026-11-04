@@ -151,6 +151,9 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* featuredServers READ featuredServers CONSTANT)
 	/// What is new in this version (WhatsNew), shown once after an update.
 	Q_PROPERTY(QObject* whatsNew READ whatsNew CONSTANT)
+	/// Newer versions of the instances' mods, found in the background
+	/// (ModUpdateReminder).
+	Q_PROPERTY(QObject* modUpdates READ modUpdates CONSTANT)
 	/// Distinct groups in use, derived like the library's section headers.
 	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
 	/// Icon grid model; roles `key`, `name`, `isBuiltin`.
@@ -291,6 +294,7 @@ class QmlShell : public QObject
 	QObject* serverPinger() const;
 	QObject* featuredServers() const;
 	QObject* whatsNew() const;
+	QObject* modUpdates() const;
 
 	/* The actions below emit the matching *Requested() signal; Application
 	 * connects the real work, which Kite_qml cannot see. */

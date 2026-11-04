@@ -99,6 +99,8 @@ set(CORE_SOURCES
     ui/themes/CatPack.cpp
     models/ContentUpdateController.h
     models/ContentUpdateController.cpp
+    models/ModUpdateReminder.h
+    models/ModUpdateReminder.cpp
     models/AtlOptionalModsModel.h
     models/AtlOptionalModsModel.cpp
     models/InstanceExportController.h
@@ -1519,6 +1521,10 @@ add_unit_test(ModHealthModel
     )
 add_unit_test(ContentUpdateController
     SOURCES models/ContentUpdateController_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(ModUpdateReminder
+    SOURCES models/ModUpdateReminder_test.cpp
     LIBS Kite_core
     )
 add_unit_test(ContentListExport
