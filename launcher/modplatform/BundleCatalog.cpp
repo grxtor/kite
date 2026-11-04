@@ -23,31 +23,25 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QSet>
-#include <QUrl>
 #include <algorithm>
 
-#include "BuildConfig.h"
 #include "InstanceList.h"
 #include "Logging.h"
 #include "Sys.h"
 #include "core/LauncherContext.h"
+#include "meta/MetaCatalog.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
 #include "minecraft/PresetDefaults.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "models/ContentInstallReview.h"
-#include "net/Download.h"
-#include "net/HttpMetaCache.h"
 #include "settings/SettingsObject.h"
-#include "translations/TranslationsModel.h"
 
 namespace
 {
 	constexpr int kFormatVersion = 1;
 	const QString kEmbeddedCatalog = QStringLiteral(":/kite/bundles.json");
 	const QString kCatalogPath = QStringLiteral("kite/bundles.json");
-	const QString kTurkish = QStringLiteral("tr");
-	const QString kEnglish = QStringLiteral("en");
 	const QString kPerformanceBundle = QStringLiteral("performance");
 
 	bool hasText(const QJsonObject& object, const QString& key)
@@ -147,30 +141,12 @@ void BundleCatalog::setLanguage(const QString& language)
 
 QString BundleCatalog::language() const
 {
-	if (!m_language.isNull()) {
-		return m_language;
-	}
-	auto* context = LAUNCHER;
-	auto translations = context ? context->translations() : nullptr;
-	return translations ? translations->selectedLanguage() : QString();
+	return m_language.isNull() ? MetaCatalog::selectedLanguage() : m_language;
 }
 
 QString BundleCatalog::localized(const QJsonValue& value) const
 {
-	const QJsonObject strings = value.toObject();
-	const QString wanted =
-		language().startsWith(kTurkish, Qt::CaseInsensitive) ? kTurkish : kEnglish;
-	for (const QString& key : {wanted, kEnglish}) {
-		if (hasText(strings, key)) {
-			return strings.value(key).toString();
-		}
-	}
-	for (const QJsonValue& any : strings) {
-		if (!any.toString().isEmpty()) {
-			return any.toString();
-		}
-	}
-	return QString();
+	return MetaCatalog::localized(value, language());
 }
 
 QJsonObject BundleCatalog::presetById(const QString& presetId) const
@@ -304,15 +280,12 @@ bool BundleCatalog::applyPresetDefaults(const QString& instanceId,
 
 bool BundleCatalog::loadCached()
 {
-	auto* context = LAUNCHER;
-	auto entry =
-		context ? context->metacache()->getEntry("general", kCatalogPath) : nullptr;
-	QFile file(entry ? entry->getFullPath() : QString());
+	const QByteArray json = MetaCatalog::cached(kCatalogPath);
 	QString error;
-	if (!entry || !file.open(QIODevice::ReadOnly)) {
+	if (json.isEmpty()) {
 		return false;
 	}
-	if (!loadFromJson(file.readAll(), &error)) {
+	if (!loadFromJson(json, &error)) {
 		qCWarning(metaLog) << "Ignoring the cached bundle catalog:" << error;
 		return false;
 	}
@@ -321,31 +294,15 @@ bool BundleCatalog::loadCached()
 
 void BundleCatalog::refresh()
 {
-	auto* context = LAUNCHER;
-	if (m_refreshed || !context) {
+	if (m_refreshed || !LAUNCHER) {
 		return;
 	}
 	m_refreshed = true;
-
-	auto entry = context->metacache()->resolveEntry("general", kCatalogPath);
-	entry->setStale(true);
-	m_refreshJob.reset(new NetJob(tr("Recommended mods"), context->network()));
-	m_refreshJob->addNetAction(Net::Download::makeCached(
-		QUrl(BuildConfig.META_URL + kCatalogPath), entry));
-	connect(m_refreshJob.get(), &NetJob::succeeded, this,
-			[this, entry] { onRefreshed(entry->getFullPath()); });
-	connect(m_refreshJob.get(), &NetJob::failed, this, [](QString reason) {
-		qCDebug(metaLog) << "No newer bundle catalog:" << reason;
-	});
-	m_refreshJob->start();
-}
-
-void BundleCatalog::onRefreshed(const QString& path)
-{
-	QFile file(path);
-	QString error;
-	if (!file.open(QIODevice::ReadOnly) ||
-		!loadFromJson(file.readAll(), &error)) {
-		qCWarning(metaLog) << "Ignoring the downloaded bundle catalog:" << error;
-	}
+	m_refreshJob = MetaCatalog::refresh(
+		kCatalogPath, tr("Recommended mods"), this, [this](const QByteArray& json) {
+			QString error;
+			if (!loadFromJson(json, &error)) {
+				qCWarning(metaLog) << "Ignoring the downloaded bundle catalog:" << error;
+			}
+		});
 }

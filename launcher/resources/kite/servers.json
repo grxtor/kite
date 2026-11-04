@@ -1,0 +1,48 @@
+{
+	"formatVersion": 1,
+	"servers": [
+		{
+			"id": "hypixel",
+			"name": "Hypixel",
+			"address": "mc.hypixel.net",
+			"note": { "en": "Mini games and SkyBlock", "tr": "Mini oyunlar ve SkyBlock" },
+			"minVersion": "1.8",
+			"versions": ["1.8", "1.21", "26"]
+		},
+		{
+			"id": "cubecraft",
+			"name": "CubeCraft",
+			"address": "play.cubecraft.net",
+			"note": { "en": "Mini games like EggWars and SkyWars", "tr": "EggWars, SkyWars gibi mini oyunlar" },
+			"minVersion": "1.21.8"
+		},
+		{
+			"id": "wynncraft",
+			"name": "Wynncraft",
+			"address": "play.wynncraft.com",
+			"note": { "en": "The Minecraft MMORPG, no mods needed", "tr": "Mod gerektirmeyen Minecraft MMORPG'si" },
+			"minVersion": "1.21.4"
+		},
+		{
+			"id": "manacube",
+			"name": "ManaCube",
+			"address": "play.manacube.com",
+			"note": { "en": "Parkour, Skyblock and Survival", "tr": "Parkur, Skyblock ve Survival" },
+			"minVersion": "1.8"
+		},
+		{
+			"id": "gommehd",
+			"name": "GommeHD",
+			"address": "gommehd.net",
+			"note": { "en": "German mini games like BedWars and SkyWars", "tr": "BedWars, SkyWars gibi Almanca mini oyunlar" },
+			"minVersion": "1.7.2"
+		},
+		{
+			"id": "mineberry",
+			"name": "MineBerry",
+			"address": "mc.mineberry.org",
+			"note": { "en": "Survival, Anarchy, BedWars and SkyWars", "tr": "Survival, Anarşi, BedWars ve SkyWars" },
+			"minVersion": "1.8"
+		}
+	]
+}

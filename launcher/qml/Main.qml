@@ -218,6 +218,9 @@ ApplicationWindow {
             // toast=<text>: a toast with an action, to see how a long message wraps.
             else if (key === "toast")
                 Qt.callLater(() => toast.show(value, "success", "Open", () => {}))
+            // serverjoin=<featured id>: the instance picker of quick join.
+            else if (key === "serverjoin")
+                Qt.callLater(() => serverJoin.joinWithAnother(root.featuredList.find((one) => one.id === value)))
             else if (key === "crashed")
                 root.call("debugMarkInstanceCrashed", value)
             // click=x,y[,right[,delayMs]]: a real click at a window point.
@@ -462,6 +465,10 @@ ApplicationWindow {
     readonly property var instancePageModel: root.shellValue("instancePageModel")
     readonly property var accountsController: root.shellValue("accountsController")
     readonly property var uiHost: root.shellValue("uiHost")
+    // Quick join: the big servers (FeaturedServers) and their live status (ServerPinger).
+    readonly property var featuredServers: root.shellValue("featuredServers")
+    readonly property var serverPinger: root.shellValue("serverPinger")
+    readonly property var featuredList: root.featuredServers ? root.featuredServers.servers : []
 
     // Ctrl+F searches the library on Home; from another page it goes Home
     // first and focuses the field after the page swap (pageTransition). The
@@ -718,6 +725,21 @@ ApplicationWindow {
         }
         // The title keeps to the page's column; the toggle stands over the panel.
         rightReserve: friendsPanel.width
+        // Home only: the big servers to join in one click, against the right of the page's column.
+        middle: [
+            QuickJoinBar {
+                visible: root.page === "home" && root.featuredList.length > 0
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, parent.width - Theme.space.xl)
+                servers: root.featuredList
+                pinger: root.serverPinger
+                friends: root.friendsController ? root.friendsController.friends : []
+                joinFlow: serverJoin
+                onJoinRequested: (server) => serverJoin.join(server)
+                onJoinWithRequested: (server) => serverJoin.joinWithAnother(server)
+            }
+        ]
         trailing: [
             FriendsPanelToggle {
                 visible: !!root.friendsController
@@ -1109,6 +1131,14 @@ ApplicationWindow {
         selectedId: root.selectedId
         toast: toast
         onCreateInstanceRequested: (version) => root.createInstanceOn(version)
+    }
+
+    ServerJoinFlow {
+        id: serverJoin
+        shell: root.shell
+        selectedId: root.dockInstanceId
+        toast: toast
+        onCreateInstanceRequested: (version) => version.length > 0 ? root.createInstanceOn(version) : root.openNewInstance()
     }
 
     Loader {

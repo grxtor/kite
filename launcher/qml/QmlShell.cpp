@@ -77,6 +77,8 @@
 #include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
+#include "servers/FeaturedServers.h"
+#include "servers/ServerPinger.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -645,6 +647,33 @@ QVariantList QmlShell::otherInstances(const QString& mcVersion) const
 	return joinCandidates(picked(all, joinOthers(choicesOf(all), mcVersion)));
 }
 
+QVariantList QmlShell::instancesForServer(const QString& minVersion,
+										  const QString& maxVersion,
+										  const QStringList& lines) const
+{
+	const auto all = minecraftInstances();
+	const QList<JoinChoice> choices = choicesOf(all);
+	QList<bool> fits;
+	QList<int> order;
+	for (int i = 0; i < choices.size(); ++i) {
+		fits.append(FeaturedServers::versionFits(choices.at(i).version,
+												 minVersion, maxVersion, lines));
+		order.append(i);
+	}
+	std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+		return fits.at(a) != fits.at(b)
+				   ? fits.at(a)
+				   : playedBefore(choices.at(a), choices.at(b));
+	});
+	QVariantList list = joinCandidates(picked(all, order));
+	for (int i = 0; i < list.size(); ++i) {
+		QVariantMap one = list.at(i).toMap();
+		one.insert(QStringLiteral("fits"), fits.at(order.at(i)));
+		list[i] = one;
+	}
+	return list;
+}
+
 void QmlShell::openPath(const QString& path)
 {
 	DesktopServices::openDirectory(QDir(path).absolutePath(), true);
@@ -779,6 +808,9 @@ void QmlShell::debugClick(const QString& spec)
 		}
 	});
 	at(delay, QEvent::MouseMove, point, Qt::NoButton, Qt::NoButton);
+	if (parts.size() > 2 && parts.at(2) == QLatin1String("hover")) {
+		return;
+	}
 	at(delay + hoverMs, QEvent::MouseButtonPress, point, button, button);
 	for (int i = 1; i <= steps; ++i) {
 		at(delay + hoverMs + stepMs * i, QEvent::MouseMove, point + offset * (qreal(i) / steps),
@@ -1303,6 +1335,28 @@ QObject* QmlShell::friends() const
 		}
 	}
 	return expose(m_friends.get());
+}
+
+QObject* QmlShell::serverPinger() const
+{
+	if (!m_serverPinger) {
+		m_serverPinger = std::make_unique<ServerPinger>();
+	}
+	return expose(m_serverPinger.get());
+}
+
+QObject* QmlShell::featuredServers() const
+{
+	if (!m_featuredServers) {
+		m_featuredServers = std::make_unique<FeaturedServers>();
+		// Notes resolve on each read; only the bindings need telling.
+		connect(LAUNCHER->settings()->getSetting("Language").get(),
+				&Setting::SettingChanged, m_featuredServers.get(),
+				&FeaturedServers::changed);
+		m_featuredServers->loadCached();
+		m_featuredServers->refresh();
+	}
+	return expose(m_featuredServers.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)
