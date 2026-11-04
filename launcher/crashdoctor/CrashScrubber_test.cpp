@@ -83,6 +83,18 @@ class CrashScrubberTest : public QObject
 		QCOMPARE(scrubMessage(emoji, Personal()).size(), kMaxReportLineLength - 1);
 	}
 
+	void instanceAndWorldNamesOnlyInMessagesAndAsWritten()
+	{
+		const Personal mine({}, {}, {QStringLiteral("Create"), QStringLiteral("New World")});
+		QCOMPARE(scrubMessage(QStringLiteral("Saving level 'ServerLevel[New World]' of Create failed"), mine),
+				 QStringLiteral("Saving level 'ServerLevel[<name>]' of <name> failed"));
+		// The package "create" is not the instance "Create", and frames keep their classes.
+		QCOMPARE(scrubMessage(QStringLiteral("Cannot invoke \"com.simibubi.create.Foo.bar()\""), mine),
+				 QStringLiteral("Cannot invoke \"com.simibubi.create.Foo.bar()\""));
+		QCOMPARE(scrubFrame(QStringLiteral("at com.Create.Foo.bar(Foo.java:1)"), mine),
+				 QStringLiteral("at com.Create.Foo.bar(Foo.java)"));
+	}
+
 	void shortNamesAreLeftAlone()
 	{
 		const Personal ab({}, {QStringLiteral("ab"), QStringLiteral("mod")});

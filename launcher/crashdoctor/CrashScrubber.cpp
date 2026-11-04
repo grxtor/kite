@@ -181,27 +181,39 @@ namespace CrashDoctor
 		}
 	} // namespace
 
-	Personal::Personal(const QStringList& homes, const QStringList& names) : m_homes(homes)
+	namespace
 	{
-		QStringList words;
-		for (const QString& name : names) {
-			const QString word = name.trimmed();
-			if (word.size() >= kMinPersonalLength && !words.contains(word, Qt::CaseInsensitive)) {
-				words << QRegularExpression::escape(word);
+		/// Whole words or phrases of @p names (kMinPersonalLength or longer),
+		/// the longest first so a name inside another does not cut it in two.
+		QRegularExpression wholeWords(const QStringList& names, QRegularExpression::PatternOptions options)
+		{
+			QStringList words;
+			for (const QString& name : names) {
+				const QString word = name.trimmed();
+				if (word.size() >= kMinPersonalLength && !words.contains(QRegularExpression::escape(word))) {
+					words << QRegularExpression::escape(word);
+				}
 			}
+			std::sort(words.begin(), words.end(), [](const QString& a, const QString& b) { return a.size() > b.size(); });
+			return words.isEmpty() ? QRegularExpression()
+								   : QRegularExpression(QStringLiteral(R"((?<![\w])(?:%1)(?![\w]))").arg(words.join(QLatin1Char('|'))),
+														options);
 		}
-		// Longest first, so a name inside another does not cut it in two.
-		std::sort(words.begin(), words.end(),
-				  [](const QString& a, const QString& b) { return a.size() > b.size(); });
-		if (!words.isEmpty()) {
-			m_names = QRegularExpression(QStringLiteral(R"((?<![\w])(?:%1)(?![\w]))").arg(words.join(QLatin1Char('|'))),
-										 QRegularExpression::CaseInsensitiveOption);
-		}
+	} // namespace
+
+	Personal::Personal(const QStringList& homes, const QStringList& names, const QStringList& places)
+		: m_homes(homes), m_names(wholeWords(names, QRegularExpression::CaseInsensitiveOption)),
+		  m_places(wholeWords(places, QRegularExpression::NoPatternOption))
+	{
 	}
 
 	QString scrubMessage(const QString& line, const Personal& personal)
 	{
-		return tidy(applied(scrubbed(line, personal), messageOnly()));
+		QString out = scrubbed(line, personal);
+		if (!personal.places().pattern().isEmpty()) {
+			out.replace(personal.places(), QStringLiteral("<name>"));
+		}
+		return tidy(applied(out, messageOnly()));
 	}
 
 	QString scrubFrame(const QString& frame, const Personal& personal, QString* module)

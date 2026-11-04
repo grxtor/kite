@@ -51,6 +51,7 @@ namespace CrashDoctor
 	{
 		const QString kVanilla = QStringLiteral("vanilla");
 		const QString kLatestLog = QStringLiteral("logs/latest.log");
+		const QString kSavesFolder = QStringLiteral("saves");
 		const QHash<QString, QString> kLoaderComponents{
 			{QStringLiteral("fabric"), QStringLiteral("net.fabricmc.fabric-loader")},
 			{QStringLiteral("quilt"), QStringLiteral("org.quiltmc.quilt-loader")},
@@ -133,15 +134,17 @@ namespace CrashDoctor
 			}
 		}
 		/// The user's home folder and names: the system user's and every
-		/// Minecraft account's.
-		Personal personalNow()
+		/// Minecraft account's; and the names of @p instance and its worlds.
+		Personal personalOf(const MinecraftInstance& instance)
 		{
 			QStringList names{qEnvironmentVariable("USER"), qEnvironmentVariable("USERNAME"),
 							  QDir::home().dirName()};
 			if (auto* context = LAUNCHER; context && context->accounts()) {
 				names << context->accounts()->profileNames();
 			}
-			return Personal({QDir::homePath()}, names);
+			const QStringList worlds = QDir(QDir(instance.gameRoot()).filePath(kSavesFolder))
+										   .entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+			return Personal({QDir::homePath()}, names, QStringList{instance.name()} + worlds);
 		}
 	} // namespace
 
@@ -191,7 +194,7 @@ namespace CrashDoctor
 		if (profile && kLoaderComponents.contains(facts.loader)) {
 			out.loaderVersion = profile->getComponentVersion(kLoaderComponents.value(facts.loader));
 		}
-		out.personal = personalNow();
+		out.personal = personalOf(instance);
 		const QJsonObject lastFix =
 			QJsonDocument::fromJson(settings->get("CrashDoctorLastFix").toString().toUtf8()).object();
 		out.lastFixRule = lastFix.value("rule").toString();

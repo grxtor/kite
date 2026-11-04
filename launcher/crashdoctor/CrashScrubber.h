@@ -33,13 +33,15 @@
  */
 namespace CrashDoctor
 {
-	/// What only this computer knows: the home folder and the names of the
-	/// system user and the Minecraft accounts.
+	/// What only this computer knows: the home folder, the names of the
+	/// system user and the Minecraft accounts, and the names the player gave
+	/// (the instance, its worlds).
 	class Personal
 	{
 	  public:
 		Personal() = default;
-		Personal(const QStringList& homes, const QStringList& names);
+		Personal(const QStringList& homes, const QStringList& names,
+				 const QStringList& places = {});
 
 		const QStringList& homes() const
 		{
@@ -50,14 +52,22 @@ namespace CrashDoctor
 		{
 			return m_names;
 		}
+		/// Whole phrases, this case only, so an instance called "Create"
+		/// leaves the package "create" alone; looked for in messages only.
+		const QRegularExpression& places() const
+		{
+			return m_places;
+		}
 
 	  private:
 		QStringList m_homes;
 		QRegularExpression m_names;
+		QRegularExpression m_places;
 	};
 
 	/// An exception message, a log line or an hs_err line, scrubbed: numbers
-	/// become "<n>", host names "<host>", and the rest as scrubFrame().
+	/// become "<n>", host names "<host>", instance and world names "<name>",
+	/// and the rest as scrubFrame().
 	QString scrubMessage(const QString& line, const Personal& personal);
 	/// A stack frame ("\tat TRANSFORMER/create@6.0/a.B.c(B.java:12) ~[x.jar:?]")
 	/// as "at a.B.c(B.java)": no module prefix, line number or jar, and

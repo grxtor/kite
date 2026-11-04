@@ -226,9 +226,10 @@ two computers must give the same lines; nothing personal may survive them (`Cras
    more, whole words, any case) -> `<user>`; UUIDs -> `<uuid>`; `eyJ...` tokens -> `<token>`; IPv4
    (with port) -> `<ip>`; dates and times -> `<time>`; IPv6 -> `<ip>`; `0x...` -> `<hex>`,
    `@1a2b...` -> `@<hex>`, hex runs of 12 or more with a digit and a letter -> `<hex>`.
-6. Lines that are not frames also: `host:port` and host names ending in a common top-level domain
-   -> `<host>`; every other stand-alone number (not part of a word, a version or a placeholder) ->
-   `<n>`.
+6. Lines that are not frames also: the instance's name and its worlds' folder names, whole
+   phrases as written (so an instance called "Create" leaves the package `create` alone) ->
+   `<name>`; `host:port` and host names ending in a common top-level domain -> `<host>`; every
+   other stand-alone number (not part of a word, a version or a placeholder) -> `<n>`.
 7. Control and bidi characters are removed, runs of white space become one space, the line is
    trimmed and cut to 300 UTF-16 code units (never half a surrogate pair).
 8. **Signature** = SHA-256 of the lines joined with `\n` (no trailing newline), UTF-8, lowercase
