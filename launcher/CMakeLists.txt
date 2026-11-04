@@ -316,6 +316,8 @@ set(NEWS_SOURCES
     news/NewsChecker.cpp
     news/NewsEntry.h
     news/NewsEntry.cpp
+    news/WhatsNew.h
+    news/WhatsNew.cpp
 )
 
 set(BACKUP_SOURCES
@@ -1165,11 +1167,12 @@ endif()
 # or ui/. Kite_logic is the plugin host and the application on top of it.
 add_library(Kite_core STATIC ${LOGIC_SOURCES})
 
-# Embedded as :/kite/bundles.json and :/kite/servers.json; in the core so tests find them too.
+# Embedded as :/kite/bundles.json, :/kite/servers.json and :/kite/whatsnew.json (the "What's new"
+# notes); in the core so tests find them too.
 qt6_add_resources(Kite_core kite_bundles
     PREFIX "/kite"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
-    FILES resources/kite/bundles.json resources/kite/servers.json)
+    FILES resources/kite/bundles.json resources/kite/servers.json resources/kite/whatsnew.json)
 # The crash doctor's catalog, embedded as :/kite/crash-rules.json (replaced by
 # meta.kiteclient.com's copy when there is a valid newer one).
 qt6_add_resources(Kite_core kite_crash_rules
@@ -1369,6 +1372,11 @@ add_unit_test(NewsModel
 
 add_unit_test(NewsEntry
     SOURCES news/NewsEntry_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(WhatsNew
+    SOURCES news/WhatsNew_test.cpp
     LIBS Kite_core
     )
 

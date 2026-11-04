@@ -55,6 +55,7 @@ class LibraryController;
 class LauncherLogs;
 class BundleCatalog;
 class FeaturedServers;
+class WhatsNew;
 class FriendsController;
 class ShareCodesController;
 class ServerPinger;
@@ -148,6 +149,8 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* serverPinger READ serverPinger CONSTANT)
 	/// The big servers offered for one-click joining (FeaturedServers).
 	Q_PROPERTY(QObject* featuredServers READ featuredServers CONSTANT)
+	/// What is new in this version (WhatsNew), shown once after an update.
+	Q_PROPERTY(QObject* whatsNew READ whatsNew CONSTANT)
 	/// Distinct groups in use, derived like the library's section headers.
 	Q_PROPERTY(QStringList groups READ groups NOTIFY groupsChanged)
 	/// Icon grid model; roles `key`, `name`, `isBuiltin`.
@@ -287,6 +290,7 @@ class QmlShell : public QObject
 	QObject* shareCodes() const;
 	QObject* serverPinger() const;
 	QObject* featuredServers() const;
+	QObject* whatsNew() const;
 
 	/* The actions below emit the matching *Requested() signal; Application
 	 * connects the real work, which Kite_qml cannot see. */
@@ -571,6 +575,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<ShareCodesController> m_shareCodes;
 	mutable std::unique_ptr<ServerPinger> m_serverPinger;
 	mutable std::unique_ptr<FeaturedServers> m_featuredServers;
+	std::unique_ptr<WhatsNew> m_whatsNew;
 	/* Keyed by (anchor, anchorContext). Declared with the other cached models
 	 * so they are destroyed before the engine. */
 	std::map<std::pair<int, QString>, std::unique_ptr<QObject>>

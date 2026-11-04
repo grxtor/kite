@@ -887,6 +887,10 @@ void Application::initSettings()
 
 	m_settings->registerSetting("ShownNotifications", QString());
 
+	/* The version whose "What's new" notes were last shown (news/WhatsNew);
+	 * empty before the first start. */
+	m_settings->registerSetting("WhatsNewSeenVersion", QString());
+
 	/* Whether a web link that came from the network or from files (a mod's
 	 * homepage, a changelog) names its host and asks before the browser opens
 	 * it (qml/Components/ExternalLinks.qml). */

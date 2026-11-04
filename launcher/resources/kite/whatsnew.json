@@ -1,0 +1,66 @@
+{
+	"formatVersion": 1,
+	"releases": [
+		{
+			"version": "1.3.0",
+			"items": [
+				{
+					"icon": "message-circle",
+					"title": { "en": "Chat with your friends", "tr": "Arkadaşlarınla sohbet" },
+					"text": {
+						"en": "Message friends from the friends panel, invite them to a server or share an instance as a KITE code.",
+						"tr": "Arkadaş panelinden mesaj at, onları bir sunucuya davet et ya da bir kurulumu KITE koduyla paylaş."
+					}
+				},
+				{
+					"icon": "server",
+					"title": { "en": "Big servers, one click away", "tr": "Büyük sunucular bir tık uzağında" },
+					"text": {
+						"en": "The top bar shows who is playing on each server. Drag them into your own order or add your server.",
+						"tr": "Üst bar her sunucuda kaç kişinin oynadığını gösterir. Sürükleyip sırala ya da kendi sunucunu ekle."
+					}
+				},
+				{
+					"icon": "stethoscope",
+					"title": { "en": "Crash doctor", "tr": "Çökme doktoru" },
+					"text": {
+						"en": "When the game crashes, Kite says why and offers a fix. A crash it can't explain can be sent to us.",
+						"tr": "Oyun çökünce Kite nedenini söyler ve bir çözüm önerir. Çözemediği bir çökmeyi bize gönderebilirsin."
+					}
+				},
+				{
+					"icon": "folder-input",
+					"title": { "en": "Drop it on an instance", "tr": "Kuruluma sürükle bırak" },
+					"text": {
+						"en": "Drop mods, packs, worlds or links on an instance and each one goes where it belongs.",
+						"tr": "Modları, paketleri, dünyaları ya da bağlantıları bir kuruluma bırak, her biri doğru yere gider."
+					}
+				},
+				{
+					"icon": "users",
+					"title": { "en": "A new friends panel", "tr": "Yeni arkadaş paneli" },
+					"text": {
+						"en": "Invites and requests come first, and every friend shows where they play.",
+						"tr": "Davetler ve istekler en üstte. Her arkadaşının nerede oynadığını görürsün."
+					}
+				},
+				{
+					"icon": "download",
+					"title": { "en": "Updates on its own", "tr": "Güncellemeler kendiliğinden" },
+					"text": {
+						"en": "Kite updates itself, and tells you when your mods have new versions.",
+						"tr": "Kite kendini günceller, modlarının yeni sürümü çıkınca da haber verir."
+					}
+				},
+				{
+					"icon": "shield-check",
+					"title": { "en": "Safer text and links", "tr": "Daha güvenli yazılar ve bağlantılar" },
+					"text": {
+						"en": "Names from players and mod sites show as plain text, and a link says where it leads first.",
+						"tr": "Oyunculardan ve mod sitelerinden gelen adlar düz yazı olarak görünür, bağlantılar nereye gittiğini önce söyler."
+					}
+				}
+			]
+		}
+	]
+}

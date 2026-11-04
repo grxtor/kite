@@ -82,6 +82,7 @@
 #include "friends/ShareCodesController.h"
 #include "servers/FeaturedServers.h"
 #include "servers/ServerPinger.h"
+#include "news/WhatsNew.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -163,6 +164,13 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 				emit crashAnalysed(id, CrashDoctorService::instance()->topCause(id), fresh);
 			});
 	CrashDoctorService::instance()->startFollowUp();
+
+	/* Now, before onboarding picks a language: a new install is told apart by
+	 * having none. It needs no notes. */
+	m_whatsNew = std::make_unique<WhatsNew>();
+	// The notes resolve their language on each read; only the bindings need telling.
+	connect(LAUNCHER->settings()->getSetting("Language").get(), &Setting::SettingChanged,
+			m_whatsNew.get(), &WhatsNew::changed);
 
 	recomputeSetupSteps();
 }
@@ -1476,6 +1484,11 @@ QObject* QmlShell::featuredServers() const
 		m_featuredServers->refresh();
 	}
 	return expose(m_featuredServers.get());
+}
+
+QObject* QmlShell::whatsNew() const
+{
+	return expose(m_whatsNew.get());
 }
 
 QObject* QmlShell::exportController(const QString& id)
