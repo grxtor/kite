@@ -8,9 +8,10 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * "What's new in Kite 1.3.0": this version's bundled notes (WhatsNew), one short line each beside its icon. Main.qml
- * shows it once after an update, and Settings → About on request. "Great" closes it; a quiet "All notes" opens the
- * release on GitHub. Closing it any way counts as seen.
+ * "What's new in Kite 1.3.1": the bundled notes (WhatsNew), one short line each beside its icon. Main.qml shows it once
+ * after an update, with every release since the one the player last ran ("What's new since 1.2.0", each release under
+ * its number); Settings → About shows this version's alone. "Great" closes it; a quiet "All notes" opens the release
+ * on GitHub. Closing it any way counts as seen.
  */
 AppDialog {
     id: root
@@ -19,12 +20,17 @@ AppDialog {
     property var notes: null
 
     readonly property string version: root.notes ? root.notes.version : ""
+    readonly property string since: root.notes ? root.notes.sinceVersion : ""
+    readonly property var releases: root.notes ? root.notes.releases : []
+    readonly property bool grouped: root.releases.length > 1
     readonly property string releaseUrl: root.notes ? root.notes.releaseUrl : ""
 
-    size: "md"
+    size: root.grouped ? "lg" : "md"
     closeOnOutsidePress: true
-    //: %1 is a Kite release such as 1.3.0; notes are only written for releases ending in .0.
-    title: root.version.length > 0 ? qsTr("What's new in Kite %1").arg(root.version) : qsTr("What's new")
+    //: %1 is a Kite version such as 1.2.0, the one the player ran before this update.
+    title: root.since.length > 0 ? qsTr("What's new since %1").arg(root.since)
+           //: %1 is a Kite version such as 1.3.1.
+         : root.version.length > 0 ? qsTr("What's new in Kite %1").arg(root.version) : qsTr("What's new")
     showCancel: false
     primaryText: qsTr("Great")
     onClosed: if (root.notes) root.notes.markSeen()
@@ -76,16 +82,34 @@ AppDialog {
         ColumnLayout {
             id: list
             width: parent.width
-            spacing: Theme.space.lg
+            spacing: Theme.space.xl
 
+            // One group per release, newest first; its number only when there are several.
             Repeater {
-                model: root.notes ? root.notes.items : []
-                delegate: WhatsNewItem {
+                model: root.releases
+                delegate: ColumnLayout {
+                    id: release
                     required property var modelData
                     Layout.fillWidth: true
-                    iconName: modelData.icon
-                    title: modelData.title
-                    text: modelData.text
+                    spacing: Theme.space.md
+
+                    Copy {
+                        visible: root.grouped
+                        text: qsTr("Kite %1").arg(release.modelData.version)
+                        role: "caption"
+                        tone: "tertiary"
+                        font.weight: Font.DemiBold
+                    }
+                    Repeater {
+                        model: release.modelData.items
+                        delegate: WhatsNewItem {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            iconName: modelData.icon
+                            title: modelData.title
+                            text: modelData.text
+                        }
+                    }
                 }
             }
         }

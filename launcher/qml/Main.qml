@@ -179,9 +179,9 @@ ApplicationWindow {
                 root.dialog(newInstanceLoader).openModPicker()
             else if (key === "nav")
                 root.navigate(value)
-            // The newest "What's new" notes, whatever this build's version.
+            // whatsnew[=<version>]: the notes after that version (the newest alone without one), whatever this build's.
             else if (key === "whatsnew") {
-                root.whatsNew.debugShowNewest()
+                root.whatsNew.debugShowSince(value)
                 root.dialog(whatsNewLoader).open()
             }
             // modupdates=<id>,<count>: as if the background check had found that many.
@@ -1090,7 +1090,10 @@ ApplicationWindow {
                                                     ? root.shellValue("accountName", "") : ""
                                 whatsNew: root.whatsNew
                                 onOpenPathRequested: (path) => root.call("openPath", path)
-                                onWhatsNewRequested: root.dialog(whatsNewLoader).open()
+                                onWhatsNewRequested: {
+                                    root.whatsNew.showLatest()
+                                    root.dialog(whatsNewLoader).open()
+                                }
                         }
                     }
 
