@@ -876,6 +876,18 @@ set(FRIENDS_SOURCES
     friends/FriendsNotices.cpp
     friends/FriendsInvites.h
     friends/FriendsInvites.cpp
+    friends/ShareCodes.h
+    friends/ShareCodes.cpp
+    friends/ShareCodesReplies.cpp
+    friends/ShareManifest.h
+    friends/ShareManifest.cpp
+    friends/ShareContent.h
+    friends/ShareContent.cpp
+    friends/ShareCodeInstanceTask.h
+    friends/ShareCodeInstanceTask.cpp
+    friends/ShareCodesController.h
+    friends/ShareCodesController.cpp
+    friends/ShareCodesCreate.cpp
     friends/FriendsSessionStore.h
     friends/FriendsSessionStore.cpp
     friends/FriendsHttp.h
@@ -971,6 +983,11 @@ add_unit_test(FriendsChatE2E
 
 add_unit_test(FriendsInvites
     SOURCES friends/FriendsInvites_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(ShareCodes
+    SOURCES friends/ShareCodes_test.cpp
     LIBS Kite_core
     )
 

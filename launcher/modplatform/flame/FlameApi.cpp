@@ -224,6 +224,11 @@ QUrl FlameApi::matchFingerprintsUrl()
 	return QUrl(QString("%1/fingerprints").arg(apiBase()));
 }
 
+QUrl FlameApi::filesUrl()
+{
+	return QUrl(QString("%1/mods/files").arg(apiBase()));
+}
+
 QUrl FlameApi::projectsUrl()
 {
 	return QUrl(QString("%1/mods").arg(apiBase()));

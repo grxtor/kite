@@ -42,6 +42,11 @@ class InstanceCreationTask : public InstanceTask
 
   protected:
 	virtual void executeTask() override;
+	/* The last step, once the instance is built and its pack saved: by
+	 * default, fetch the game's files and finish (downloadFiles()). A subclass
+	 * that adds content to the staged instance does it here, and ends with
+	 * downloadFiles() itself. */
+	virtual void instanceBuilt(std::shared_ptr<MinecraftInstance> instance);
 
   private:
 	BaseVersionPtr m_version;

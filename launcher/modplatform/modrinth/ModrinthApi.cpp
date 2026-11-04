@@ -297,6 +297,26 @@ QUrl ModrinthApi::versionUrl(const QString& versionId)
 	return QUrl(QString("%1/version/%2").arg(apiBase(), versionId));
 }
 
+namespace
+{
+	/* ["a","b"], percent-encoded for a query. */
+	QString idList(const QStringList& ids)
+	{
+		return QString::fromUtf8(QUrl::toPercentEncoding(
+			QStringLiteral("[\"%1\"]").arg(ids.join(QStringLiteral("\",\"")))));
+	}
+} // namespace
+
+QUrl ModrinthApi::versionsUrl(const QStringList& versionIds)
+{
+	return QUrl(QString("%1/versions?ids=%2").arg(apiBase(), idList(versionIds)));
+}
+
+QUrl ModrinthApi::projectsUrl(const QStringList& projectIds)
+{
+	return QUrl(QString("%1/projects?ids=%2").arg(apiBase(), idList(projectIds)));
+}
+
 bool ModrinthApi::isVersionId(const QString& candidate)
 {
 	/* Eight base62 characters; checked by shape to avoid a request that

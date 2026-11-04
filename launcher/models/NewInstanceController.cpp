@@ -471,17 +471,22 @@ QObject* NewInstanceController::create(const QString& name,
 	creationTask->setName(name);
 	creationTask->setGroup(group);
 	creationTask->setIcon(iconKey);
-	creationTask->setTargetDir(LAUNCHER->instances()->primaryDir());
 	creationTask->setDownloadGameFiles(gameFiles);
+	return startInstanceCreation(creationTask, this);
+}
 
+TaskWatcher* startInstanceCreation(InstanceTask* creationTask, QObject* parent)
+{
+	creationTask->setTargetDir(LAUNCHER->instances()->primaryDir());
+	const QString name = creationTask->name();
 	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(creationTask);
-	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
+	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), parent);
 	watcher->setTitle(name);
 	/* The final id is settled when InstanceList commits the staged instance, just
 	 * before the wrapped task reports success, so the watcher has it by
 	 * finished(true). */
-	QPointer<InstanceCreationTask> guard(creationTask);
-	const auto selected = connect(
+	QPointer<InstanceTask> guard(creationTask);
+	const auto selected = QObject::connect(
 		LAUNCHER->instances().get(), &InstanceList::instanceSelectRequest,
 		watcher, [watcher, guard](const QString& id) {
 			/* Any commit announces itself here (imports, pack updates); only
@@ -491,8 +496,8 @@ QObject* NewInstanceController::create(const QString& name,
 				watcher->setInstanceId(id);
 			}
 		});
-	connect(watcher, &TaskWatcher::finished, watcher,
-			[selected](bool) { QObject::disconnect(selected); });
+	QObject::connect(watcher, &TaskWatcher::finished, watcher,
+					 [selected](bool) { QObject::disconnect(selected); });
 	wrapped->start();
 	return watcher;
 }

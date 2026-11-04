@@ -173,6 +173,14 @@ QString composeSuggestedInstanceName(const QString& minecraftVersion,
  * rewritten. Empty if there is none. */
 QString suggestedImportName(const QString& source);
 
+class InstanceTask;
+class TaskWatcher;
+
+/* Lands @p task in the primary instance folder through the instance list,
+ * starts it, and returns a watcher parented to @p parent that learns the new
+ * instance's id before it reports success. Takes ownership of @p task. */
+TaskWatcher* startInstanceCreation(InstanceTask* task, QObject* parent);
+
 /* True if @p source is a remote http(s)/ftp URL or an existing local file with
  * a modpack-archive extension. Empty or unparsable input is never valid. */
 bool importSourceLooksValid(const QString& source);

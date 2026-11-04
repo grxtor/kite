@@ -78,11 +78,17 @@ void InstanceCreationTask::executeTask()
 	if (resolving && !resolving->isFinished()) {
 		connect(resolving.get(), &Task::finished, this, [this, instance] {
 			instance->getPackProfile()->saveNow();
-			downloadFiles(instance);
+			instanceBuilt(instance);
 		});
 		return;
 	}
 	components->saveNow();
 
-	downloadFiles(instance);
+	instanceBuilt(instance);
+}
+
+void InstanceCreationTask::instanceBuilt(
+	std::shared_ptr<MinecraftInstance> instance)
+{
+	downloadFiles(std::move(instance));
 }
