@@ -91,7 +91,7 @@ BoxSurface {
             flat: true
             text: root.linkText
             icon.source: Icons.url("external-link")
-            onClicked: Qt.openUrlExternally(root.linkUrl)
+            onClicked: ExternalLinks.open(root, root.linkUrl)
         }
     }
 }

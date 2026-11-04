@@ -517,7 +517,7 @@ Item {
                     width: parent.width
                     source: root.request && root.request.updateInfo ? root.request.updateInfo.releaseNotes || "" : ""
                     pixelSize: Theme.type.label.pixelSize
-                    onLinkActivated: (link) => Qt.openUrlExternally(link)
+                    onLinkActivated: (link) => ExternalLinks.open(notes, link)
                 }
             }
         }

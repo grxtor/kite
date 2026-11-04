@@ -30,7 +30,7 @@ QtObject {
             root.clipboardItem.copyText(url)
             root.toastItem.show(count > 1 && root.manyText.length > 0 ? root.manyText
                                                                    : qsTr("Link copied to your clipboard."),
-                            "success", qsTr("Open"), () => Qt.openUrlExternally(url))
+                            "success", qsTr("Open"), () => ExternalLinks.open(root.toastItem, url))
         }
         function onFailed(message) {
             if (!root.pending)

@@ -552,7 +552,7 @@ Item {
                             source: root.detail ? (root.detail.bodyHtml || "") : ""
                             format: "html"
                             article: true
-                            onLinkActivated: (link) => Qt.openUrlExternally(link)
+                            onLinkActivated: (link) => ExternalLinks.open(root, link)
                         }
                     }
                 }

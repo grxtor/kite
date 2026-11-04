@@ -52,7 +52,7 @@ MenuBar {
             delegate: MenuItem {
                 required property var modelData
                 text: modelData.label
-                onTriggered: Qt.openUrlExternally(modelData.url)
+                onTriggered: ExternalLinks.open(null, modelData.url, true)
             }
             onObjectAdded: (index, object) => helpMenu.insertItem(index, object)
             onObjectRemoved: (index, object) => helpMenu.removeItem(object)

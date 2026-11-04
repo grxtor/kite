@@ -101,7 +101,7 @@ Column {
             hoverEnabled: true
             padding: Theme.space.md
             Accessible.name: post.modelData.title
-            onClicked: if (post.modelData.link) Qt.openUrlExternally(post.modelData.link)
+            onClicked: if (post.modelData.link) ExternalLinks.open(post, post.modelData.link)
 
             background: StateFill {
                 id: cardFill

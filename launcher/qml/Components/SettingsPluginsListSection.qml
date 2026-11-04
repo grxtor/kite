@@ -68,7 +68,7 @@ SettingsScroll {
                         visible: pluginRow.model.sourceUrl.length > 0
                         iconName: "external-link"
                         tip: qsTr("Source code")
-                        onClicked: Qt.openUrlExternally(pluginRow.model.sourceUrl)
+                        onClicked: ExternalLinks.open(pluginRow, pluginRow.model.sourceUrl)
                     }
                     Switch {
                         anchors.verticalCenter: parent.verticalCenter
