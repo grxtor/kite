@@ -232,8 +232,7 @@ AppDialog {
     readonly property int maxHeight: 760
     height: Math.min(root.maxHeight, parent ? parent.height - Theme.space.xxl * 2 : root.maxHeight)
     closePolicy: root.creating ? Popup.NoAutoClose : Popup.CloseOnEscape
-    title: root.mode === "import" ? qsTr("Import instance")
-         : root.mode === "launchers" ? qsTr("Import instances") : qsTr("New instance")
+    title: root.mode === "import" ? qsTr("Import instance") : qsTr("New instance")
 
     // root.mode is left alone: a pick made right after open() must not be reset.
     onAboutToShow: {

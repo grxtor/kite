@@ -123,20 +123,33 @@ ColumnLayout {
             spacing: Theme.space.xxs
             ScrollBar.vertical: ScrollBar {}
 
-            section.property: "launcherName"
+            // The launcher once per group: its name, and its logo where Kite carries it.
+            section.property: "launcher"
             section.delegate: Item {
+                id: heading
                 required property string section
                 width: list.width
                 height: Theme.control.heightSm + Theme.space.xs
-                Copy {
+                Row {
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.space.sm
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Theme.space.xxs
-                    text: parent.section
-                    role: "label"
-                    tone: "secondary"
-                    font.weight: Font.DemiBold
+                    spacing: Theme.space.sm
+                    LauncherMark {
+                        id: mark
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: mark.source.toString().length > 0
+                        launcher: heading.section
+                        size: Theme.icon.sm
+                    }
+                    Copy {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.controller ? root.controller.launcherName(heading.section) : heading.section
+                        role: "label"
+                        tone: "secondary"
+                        font.weight: Font.DemiBold
+                    }
                 }
             }
 

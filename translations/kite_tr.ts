@@ -8472,7 +8472,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="+159"/>
+        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="+181"/>
         <source>Its details file is missing.</source>
         <translation>Bilgi dosyası yok.</translation>
     </message>
@@ -8493,7 +8493,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
     </message>
     <message>
         <location line="+13"/>
-        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="+25"/>
+        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="+26"/>
         <source>Its game folder is a link to another place.</source>
         <translation>Oyun klasörü başka bir yere giden bir bağlantı.</translation>
     </message>
@@ -8508,7 +8508,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Kite hangi yükleyici sürümünü kullandığını anlayamadı.</translation>
     </message>
     <message>
-        <location filename="../launcher/launcherimport/ScanCurseForge.cpp" line="+144"/>
+        <location filename="../launcher/launcherimport/ScanCurseForge.cpp" line="+143"/>
         <location filename="../launcher/launcherimport/ScanModrinth.cpp" line="+71"/>
         <source>It uses a mod loader Kite doesn&apos;t support.</source>
         <translation>Kite&apos;ın desteklemediği bir mod yükleyici kullanıyor.</translation>
@@ -8519,12 +8519,12 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Kite, Modrinth App&apos;in kurulum listesini okuyamadı.</translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+30"/>
         <source>It is still being installed in the Modrinth App.</source>
         <translation>Modrinth App&apos;te hâlâ kuruluyor.</translation>
     </message>
     <message>
-        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="-48"/>
+        <location filename="../launcher/launcherimport/ScanMultiMc.cpp" line="-68"/>
         <source>custom components</source>
         <translation>özel bileşenler</translation>
     </message>
@@ -8534,7 +8534,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>jar modları</translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+49"/>
         <source>It is in an old format Kite can&apos;t read.</source>
         <translation>Kite&apos;ın okuyamadığı eski bir biçimde.</translation>
     </message>
@@ -8552,8 +8552,8 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
 <context>
     <name>LauncherImportController</name>
     <message>
-        <location filename="../launcher/models/LauncherImportController.cpp" line="+92"/>
-        <location line="+271"/>
+        <location filename="../launcher/models/LauncherImportController.cpp" line="+108"/>
+        <location line="+312"/>
         <source>%1: %2</source>
         <translation>%1: %2</translation>
     </message>
@@ -8641,7 +8641,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>Yeniden ara</translation>
     </message>
     <message>
-        <location line="+77"/>
+        <location line="+90"/>
         <source>No other launchers found</source>
         <translation>Başka launcher bulunamadı</translation>
     </message>
@@ -8679,12 +8679,12 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
 <context>
     <name>LauncherImportRow</name>
     <message>
-        <location filename="../launcher/qml/Components/LauncherImportRow.qml" line="+111"/>
+        <location filename="../launcher/qml/Components/LauncherImportRow.qml" line="+126"/>
         <source>Not brought over: %1</source>
         <translation>Aktarılmayacak: %1</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+6"/>
         <source>In Kite</source>
         <translation>Kite&apos;ta var</translation>
     </message>
@@ -11285,14 +11285,9 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Kurulumu içe aktar</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+0"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Import instances</source>
-        <translation>Kurulumları içe aktar</translation>
     </message>
     <message>
         <location line="+73"/>
@@ -11389,7 +11384,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-403"/>
+        <location line="-402"/>
         <source>Pick a Minecraft version.</source>
         <translation>Bir Minecraft sürümü seç.</translation>
     </message>
@@ -11411,7 +11406,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
-        <location line="+399"/>
+        <location line="+398"/>
         <source>None for this version</source>
         <translation>Bu sürüm için yok</translation>
     </message>

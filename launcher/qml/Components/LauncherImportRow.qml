@@ -8,10 +8,12 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One instance another launcher has: a checkbox, the launcher's icon, its name
- * and a line of facts (game version, loader, size, last played), and a ⋯ menu
- * for how it comes over: copied (the default) or linked. One Kite cannot bring
- * over says why instead of the facts, and takes no tick.
+ * One instance another launcher has: a checkbox, the instance's own icon
+ * (Kite's default when it has none), its name and a line of facts (game
+ * version, loader, size, last played), and a ⋯ menu for how it comes over:
+ * copied (the default) or linked. One Kite cannot bring over says why instead
+ * of the facts, and takes no tick; a note like that, or what a copy leaves
+ * behind, is a muted line with a small warning mark.
  */
 AbstractButton {
     id: root
@@ -25,6 +27,8 @@ AbstractButton {
 
     readonly property bool importable: (root.row.problem || "").length === 0
     readonly property bool ticked: root.row.checked === true
+    readonly property int iconSize: 32
+    readonly property real noteMarkEmphasis: 0.7
 
     function loaderName(loader) {
         switch (loader) {
@@ -37,8 +41,6 @@ AbstractButton {
     }
 
     function facts() {
-        if (!root.importable)
-            return root.row.problem
         var parts = [root.row.minecraftVersion]
         var loader = root.loaderName(root.row.loader)
         if (loader.length > 0)
@@ -81,9 +83,16 @@ AbstractButton {
             }
         }
 
-        LauncherMark {
-            launcher: root.row.launcher || ""
-            size: Theme.icon.md
+        Image {
+            Layout.preferredWidth: root.iconSize
+            Layout.preferredHeight: root.iconSize
+            source: (root.row.iconFile || "").length > 0 ? root.row.iconFile
+                                                        : Icons.instanceIcon(root.row.iconKey || "default")
+            sourceSize: Qt.size(root.iconSize * 2, root.iconSize * 2)
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            smooth: true
+            mipmap: true
             opacity: root.importable ? 1 : Theme.opacity.disabled
         }
 
@@ -100,18 +109,21 @@ AbstractButton {
             }
             Copy {
                 width: parent.width
+                visible: root.importable
                 text: root.facts()
                 role: "caption"
                 tone: "tertiary"
                 elide: Text.ElideRight
             }
-            Copy {
+            NoteLine {
+                width: parent.width
+                visible: !root.importable
+                text: root.row.problem || ""
+            }
+            NoteLine {
                 width: parent.width
                 visible: root.importable && (root.row.leftBehind || "").length > 0
                 text: qsTr("Not brought over: %1").arg(root.row.leftBehind || "")
-                role: "caption"
-                tone: "warning"
-                elide: Text.ElideRight
             }
         }
 
@@ -164,6 +176,27 @@ AbstractButton {
                     onTriggered: root.controller.openFolder(root.row.key)
                 }
             }
+        }
+    }
+
+    // A note in the muted text colour behind a small mark in the warning colour, held back.
+    component NoteLine: Row {
+        id: note
+        property string text: ""
+        spacing: Theme.space.xs
+        MeshIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            iconName: "alert-triangle"
+            size: Theme.icon.xxs
+            color: Theme.palette.warning
+            opacity: root.noteMarkEmphasis
+        }
+        Copy {
+            width: note.width - Theme.icon.xxs - note.spacing
+            text: note.text
+            role: "caption"
+            tone: "tertiary"
+            elide: Text.ElideRight
         }
     }
 }

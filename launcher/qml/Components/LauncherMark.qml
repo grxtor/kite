@@ -6,19 +6,19 @@ import QtQuick
 import Kite.Theme
 
 /*
- * Another launcher's own icon, where Kite already carries it (Modrinth,
- * CurseForge, the Minecraft Launcher's grass block, ATLauncher, Technic, FTB);
- * a neutral glyph for the rest (Prism Launcher, MultiMC, PolyMC, MeshMC), whose
- * name always stands beside it.
+ * Another launcher's own logo, where Kite already carries it (Modrinth,
+ * CurseForge, the Minecraft Launcher's grass block, ATLauncher, Technic, FTB).
+ * `source` is empty for the rest (Prism Launcher, MultiMC, PolyMC, MeshMC),
+ * whose name then stands alone.
  */
-Item {
+Image {
     id: root
 
     // LauncherImport::sourceKey(): "prism", "modrinth", "curseforge", ...
     property string launcher: ""
     property int size: Theme.icon.md
 
-    readonly property string source: {
+    source: {
         switch (root.launcher) {
         case "modrinth": return "qrc:/icons/multimc/scalable/instances/modrinth.svg"
         case "curseforge": return "qrc:/icons/multimc/scalable/instances/flame.svg"
@@ -29,24 +29,10 @@ Item {
         default: return ""
         }
     }
-
-    implicitWidth: root.size
-    implicitHeight: root.size
-
-    Image {
-        anchors.fill: parent
-        visible: root.source.length > 0
-        source: root.source
-        sourceSize: Qt.size(root.size * 2, root.size * 2)
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-        mipmap: true
-    }
-    MeshIcon {
-        anchors.centerIn: parent
-        visible: root.source.length === 0
-        iconName: "folder-input"
-        size: root.size
-        color: Theme.palette.textSecondary
-    }
+    width: root.size
+    height: root.size
+    sourceSize: Qt.size(root.size * 2, root.size * 2)
+    fillMode: Image.PreserveAspectFit
+    smooth: true
+    mipmap: true
 }
