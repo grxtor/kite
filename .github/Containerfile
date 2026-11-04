@@ -50,7 +50,7 @@ RUN pip3 install --break-system-packages aqtinstall
 RUN aqt install-qt \
   ${QT_HOST} ${QT_TARGET} ${QT_VERSION} ${QT_ARCH} \
   --outputdir /opt/qt \
-  --modules qtimageformats qtnetworkauth
+  --modules qtimageformats qtnetworkauth qtwebsockets
 
 ENV PATH=/opt/qt/${QT_VERSION}/${QT_ABI}/bin:$PATH
 ENV QT_PLUGIN_PATH=/opt/qt/${QT_VERSION}/${QT_ABI}/plugins/

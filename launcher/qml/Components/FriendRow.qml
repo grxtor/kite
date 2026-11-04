@@ -103,48 +103,13 @@ Item {
                 tone: root.presence === "offline" ? "secondary" : "primary"
             }
 
-            Row {
-                id: detailRow
+            FriendPlaceLine {
                 width: parent.width
-                spacing: Theme.space.xs
-                visible: root.detail.length > 0
-
-                // The room the line has after the favicon; the version goes before the text is shortened.
-                readonly property real textRoom: detailRow.width
-                                                 - (favicon.visible ? favicon.width + detailRow.spacing : 0)
-                readonly property bool suffixFits: root.detailSuffix.length > 0
-                                                   && detailMetrics.advanceWidth + detailRow.spacing
-                                                      + suffix.implicitWidth <= detailRow.textRoom
-
-                // The elided text is worked out here: an elided Text keeps its full box and leaves a gap before the
-                // version.
-                TextMetrics {
-                    id: detailMetrics
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.type.label.pixelSize
-                    text: root.detail
-                    elide: Text.ElideMiddle
-                    elideWidth: Math.max(0, detailRow.textRoom
-                                            - (suffix.visible ? suffix.implicitWidth + detailRow.spacing : 0))
-                }
-                ServerFavicon {
-                    id: favicon
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.detailServer
-                    source: root.detailIcon
-                }
-                Copy {
-                    text: detailMetrics.elidedText
-                    role: "label"
-                    tone: root.detailTone === "faint" ? "tertiary" : root.detailTone
-                }
-                Copy {
-                    id: suffix
-                    visible: detailRow.suffixFits
-                    text: "· " + root.detailSuffix
-                    role: "label"
-                    tone: "secondary"
-                }
+                text: root.detail
+                suffix: root.detailSuffix
+                tone: root.detailTone
+                server: root.detailServer
+                icon: root.detailIcon
             }
         }
 

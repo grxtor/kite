@@ -110,6 +110,12 @@ SettingsScroll {
             label: qsTr("Desktop notifications")
             description: qsTr("Tells you when a friend comes online or sends you a friend request.")
         }
+        SettingSwitch {
+            enabled: root.on
+            key: "FriendsMessageNotifications"
+            label: qsTr("Message notifications")
+            description: qsTr("Tells you when a friend sends you a message while their chat is not on screen.")
+        }
     }
 
     SettingsGroup {

@@ -62,6 +62,7 @@ runs:
           qt${{ inputs.qt-major }}-svg:p
           qt${{ inputs.qt-major }}-imageformats:p
           qt${{ inputs.qt-major }}-networkauth:p
+          qt${{ inputs.qt-major }}-websockets:p
           qt${{ inputs.qt-major }}-tools:p
           gpgme:p
           gpgmepp:p

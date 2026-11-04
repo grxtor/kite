@@ -168,7 +168,9 @@ runs:
         # listed alongside it because Quick3D bakes its shader variants
         # through it at runtime, not only at build time, so it has to be
         # present even though nothing here compiles a shader directly.
-        modules: qtimageformats qtnetworkauth qtquick3d qtshadertools
+        # qtwebsockets carries the friends server's realtime socket
+        # (launcher/friends/FriendsSocket.cpp).
+        modules: qtimageformats qtnetworkauth qtquick3d qtshadertools qtwebsockets
         cache: ${{ inputs.build-type == 'Debug' }}
 
     - name: Setup bundled OpenSSL

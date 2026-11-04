@@ -8,6 +8,8 @@ import Kite.Theme
  * Your friends, fixed on the window's right edge: a strip of heads (FriendsPanelStrip) or opened
  * out to a list (FriendsPanelFull), with a draggable left edge (PanelEdgeHandle). Main.qml keeps
  * the mode and width as settings; this only asks, via expandedRequested and widthCommitted.
+ * openChat() opens a conversation in it, opening it out first; the conversation counts as read
+ * only while it is on screen in the active window.
  */
 Item {
     id: root
@@ -24,6 +26,8 @@ Item {
     property int expandedWidth: 320
     // The width the page area and this panel share; the panel never leaves the page under minPageWidth.
     property int roomWidth: 0
+    // The launcher account's head, for its own messages.
+    property string myFace
 
     // tab: "friends", "requests", "blocked" or "add".
     signal friendsRequested(string tab)
@@ -64,6 +68,23 @@ Item {
         root.controller.refresh()
     }
     onOpenChanged: if (root.open) root.load()
+
+    readonly property var chat: root.controller ? root.controller.chat : null
+    // The conversation with @p uuid, in the opened-out panel.
+    function openChat(uuid) {
+        if (!root.chat)
+            return
+        root.chat.open(uuid)
+        if (!root.expanded)
+            root.expandedRequested(true)
+    }
+    Binding {
+        when: !!root.chat
+        target: root.chat
+        property: "viewing"
+        value: root.open && root.showsFull && Qt.application.state === Qt.ApplicationActive
+        restoreMode: Binding.RestoreNone
+    }
     Component.onCompleted: {
         if (root.open)
             root.load()
@@ -171,6 +192,7 @@ Item {
         onAddRequested: root.friendsRequested("add")
         onRequestsRequested: root.friendsRequested("requests")
         onJoinRequested: (friend) => root.joinRequested(friend)
+        onMessageRequested: (uuid) => root.openChat(uuid)
     }
 
     FriendsPanelFull {
@@ -188,6 +210,7 @@ Item {
         places: root.places
         joinFlow: root.joinFlow
         menu: personMenu
+        myFace: root.myFace
         onFriendsRequested: (tab) => root.friendsRequested(tab)
         onNavigateRequested: (target) => root.navigateRequested(target)
         onJoinRequested: (friend) => root.joinRequested(friend)
@@ -212,6 +235,7 @@ Item {
     // under the pointer.
     FriendPersonMenu {
         id: personMenu
+        onMessageRequested: (uuid) => root.openChat(uuid)
         onRemoveRequested: (uuid, name) => confirm.ask("remove", uuid, name)
         onBlockRequested: (uuid, name, friend) => confirm.ask(friend ? "block" : "blockRequest", uuid, name)
     }

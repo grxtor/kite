@@ -6,9 +6,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "Message jeb_" at the foot of a friend's card, where a chat with them will open, with their unread messages
- * counted at its end. The launcher has no chat yet, so it looks disabled and its tip says "Coming soon"; it stays
- * enabled only so the tip can show.
+ * "Message jeb_" at the foot of a friend's card, like Discord's: it looks like the field you will write in, a click
+ * opens the conversation in the friends panel. Their unread messages are counted at its end.
  */
 AbstractButton {
     id: root
@@ -16,24 +15,21 @@ AbstractButton {
     property string name
     property int unread: 0
 
-    readonly property int tipDelayMs: 500
-
     // As tall as Join above it.
     implicitHeight: Theme.control.heightSm
     hoverEnabled: true
     focusPolicy: Qt.TabFocus
     Accessible.name: qsTr("Message %1").arg(root.name)
-    Accessible.description: [qsTr("Coming soon"), Format.unreadMessages(root.unread)]
-                            .filter((part) => part.length > 0).join(", ")
-
-    ToolTip.visible: root.hovered || root.visualFocus
-    ToolTip.delay: root.tipDelayMs
-    ToolTip.text: qsTr("Coming soon")
+    Accessible.description: Format.unreadMessages(root.unread)
 
     background: Rectangle {
         radius: Theme.radius.sm
         color: Theme.palette.surfaceSunken
-        border.color: Theme.palette.border
+        border.color: root.hovered ? Theme.neutral.borderHover : Theme.palette.border
+
+        Behavior on border.color {
+            ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        }
 
         FocusFrame { around: 0; cornerRadius: Theme.radius.sm; visible: root.visualFocus }
     }
@@ -43,7 +39,6 @@ AbstractButton {
             anchors.leftMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.space.sm
-            opacity: Theme.opacity.disabled
 
             MeshIcon {
                 anchors.verticalCenter: parent.verticalCenter

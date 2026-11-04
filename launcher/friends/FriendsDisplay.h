@@ -44,7 +44,7 @@ namespace FriendsDisplay
 	/// lastSeenAt (ISO or ""), instance, version, worldType ("server" |
 	/// "singleplayer" | ""), host, port, joinable, joinOff (a visible
 	/// server whose player does not let friends join: the server said so,
-	/// silence is not that), statusText.
+	/// silence is not that), statusText, unread (chat messages not read yet).
 	QVariantMap friendMap(const FriendsApi::Friend& one, const QDateTime& now);
 	QVariantList friendList(const QList<FriendsApi::Friend>& friends,
 							const QDateTime& now);

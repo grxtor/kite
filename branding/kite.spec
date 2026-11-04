@@ -97,6 +97,7 @@ BuildRequires:    cmake(Qt%{qt_version}Quick) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}QuickControls2) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Svg) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Test) >= %{min_qt_version}
+BuildRequires:    cmake(Qt%{qt_version}WebSockets) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Widgets) >= %{min_qt_version}
 BuildRequires:    cmake(Qt%{qt_version}Xml) >= %{min_qt_version}
 

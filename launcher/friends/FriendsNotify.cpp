@@ -57,3 +57,25 @@ void FriendsController::notifyChanges(
 		LAUNCHER->dispatchPluginHook(MMCO_HOOK_FRIENDS_NOTICE, &payload);
 	}
 }
+
+void FriendsController::notifyMessage(const FriendsChatApi::Message& message)
+{
+	if (message.deleted || message.text.isEmpty() || !LAUNCHER ||
+		!LAUNCHER->settings()->get(kMessageNotifySetting).toBool()) {
+		return;
+	}
+	/* A notification shows a line or two; the rest waits in the chat. */
+	constexpr int kBodyChars = 140;
+	QString text = message.text;
+	if (text.size() > kBodyChars) {
+		text = text.left(kBodyChars - 1) + QChar(0x2026);
+	}
+	const QByteArray kind = "message";
+	const QByteArray uuid = message.from.toUtf8();
+	const QByteArray name = nameOf(message.from).toUtf8();
+	const QByteArray title = name;
+	const QByteArray body = text.toUtf8();
+	MMCOFriendsNotice payload{kind.constData(), uuid.constData(), name.constData(),
+							  title.constData(), body.constData()};
+	LAUNCHER->dispatchPluginHook(MMCO_HOOK_FRIENDS_NOTICE, &payload);
+}

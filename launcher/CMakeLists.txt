@@ -887,6 +887,20 @@ set(FRIENDS_SOURCES
     friends/FriendsActions.cpp
     friends/FriendsBridge.cpp
     friends/FriendsNotify.cpp
+    friends/FriendsChatApi.h
+    friends/FriendsChatApi.cpp
+    friends/FriendsChatModel.h
+    friends/FriendsChatModel.cpp
+    friends/FriendsChat.h
+    friends/FriendsChat.cpp
+    friends/FriendsChatHistory.cpp
+    friends/FriendsChatSend.cpp
+    friends/FriendsEvents.h
+    friends/FriendsEvents.cpp
+    friends/FriendsSocket.h
+    friends/FriendsSocket.cpp
+    friends/FriendsRealtime.cpp
+    friends/FriendsInviteStub.cpp
     modbridge/ModBridgeProtocol.h
     modbridge/ModBridgeProtocol.cpp
     modbridge/ModBridgeAnswers.cpp
@@ -923,6 +937,34 @@ add_unit_test(FriendsGameWatcher
 add_unit_test(FriendsFaces
     SOURCES friends/FriendsFaces_test.cpp
     LIBS Kite_core
+    )
+
+add_unit_test(FriendsChat
+    SOURCES friends/FriendsChat_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(FriendsChatApi
+    SOURCES friends/FriendsChatApi_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(FriendsEvents
+    SOURCES friends/FriendsEvents_test.cpp
+    LIBS Kite_core
+    )
+
+# Talks to a QWebSocketServer of its own.
+add_unit_test(FriendsSocket
+    SOURCES friends/FriendsSocket_test.cpp
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::WebSockets
+    )
+
+# Two players chatting through a real friends server; skipped unless
+# KITE_FRIENDS_E2E_URL names one (see the test's header).
+add_unit_test(FriendsChatE2E
+    SOURCES friends/FriendsChatE2E_test.cpp
+    LIBS Kite_core Qt${QT_VERSION_MAJOR}::WebSockets
     )
 
 set(SERVERS_SOURCES
@@ -1485,6 +1527,8 @@ target_link_libraries(Kite_core PUBLIC
     cmark::cmark
     LocalPeer::LocalPeer
 )
+# The friends server's realtime socket (friends/FriendsSocket.cpp); nothing else uses it.
+target_link_libraries(Kite_core PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
 
 # QtWidgets is linked here and only here (enforced by Kite_core_link_check).
 target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)
@@ -1554,6 +1598,19 @@ add_unit_test(QmlModule
 # the test fails at runtime with 'plugin "Kite_qmlplugin" not found'. Kite_qmlplugin is linked above
 # because nothing imports "Kite".
 qt_import_qml_plugins(QmlModule_test)
+
+# The friends panel's conversation over a real FriendsChat; KITE_CHAT_SHOTS=<dir> also saves each state as a PNG.
+add_unit_test(FriendChatQml
+    SOURCES qml/FriendChatQml_test.cpp qml/FriendChatQmlHarness.h
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(FriendChatQml_test)
+
+add_unit_test(FriendChatPanelQml
+    SOURCES qml/FriendChatPanelQml_test.cpp qml/FriendChatQmlHarness.h
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(FriendChatPanelQml_test)
 
 # Kite_logic, not the core: the built-in icons are compiled into Kite_logic.
 add_unit_test(InstanceIconProvider

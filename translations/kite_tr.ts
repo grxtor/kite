@@ -589,7 +589,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1547"/>
+        <location filename="../launcher/Application.cpp" line="+1549"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -3868,7 +3868,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>Format</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/Format.qml" line="+20"/>
+        <location filename="../launcher/qml/Components/Format.qml" line="+20"/>
         <source>Never played</source>
         <translation>Hiç oynanmadı</translation>
     </message>
@@ -4030,6 +4030,163 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendChatComposer</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatComposer.qml" line="+85"/>
+        <source>You are sending messages too fast. Wait %1 s.</source>
+        <translation>Çok hızlı mesaj gönderiyorsun. %1 sn bekle.</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <location line="+1"/>
+        <source>Message %1</source>
+        <translation>%1 ile mesajlaş</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>No characters left</source>
+        <translation>Karakter sınırına ulaştın</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 character left</source>
+        <translation>1 karakter kaldı</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 characters left</source>
+        <translation>%1 karakter kaldı</translation>
+    </message>
+</context>
+<context>
+    <name>FriendChatDaySeparator</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatDaySeparator.qml" line="+25"/>
+        <source>Today</source>
+        <translation>Bugün</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Yesterday</source>
+        <translation>Dün</translation>
+    </message>
+</context>
+<context>
+    <name>FriendChatHeader</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatHeader.qml" line="+49"/>
+        <source>Back to friends</source>
+        <translation>Arkadaşlara dön</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>%1&apos;s card</source>
+        <translation>Profil kartı: %1</translation>
+    </message>
+    <message>
+        <location line="+42"/>
+        <source>Not your friend any more</source>
+        <translation>Artık arkadaşın değil</translation>
+    </message>
+</context>
+<context>
+    <name>FriendChatList</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatList.qml" line="+59"/>
+        <source>This is the start of your messages with %1.</source>
+        <translation>%1 ile mesajlaşmanın başlangıcı burası.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Messages are kept for 30 days.</source>
+        <translation>Mesajlar 30 gün saklanır.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Loading older messages…</source>
+        <translation>Eski mesajlar yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+55"/>
+        <source>Loading messages…</source>
+        <translation>Mesajlar yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No messages yet. Say hi to %1.</source>
+        <translation>Henüz mesaj yok. %1 ile sohbeti sen başlat.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Only you two see these messages. They are kept for 30 days.</source>
+        <translation>Bu mesajları sadece ikiniz görürsünüz. 30 gün saklanırlar.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+</context>
+<context>
+    <name>FriendChatMessage</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatMessage.qml" line="+115"/>
+        <source>Message deleted</source>
+        <translation>Mesaj silindi</translation>
+    </message>
+    <message>
+        <location line="+37"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>More options for this message</source>
+        <translation>Bu mesaj için daha fazla seçenek</translation>
+    </message>
+</context>
+<context>
+    <name>FriendChatMessageMenu</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatMessageMenu.qml" line="+49"/>
+        <source>Copy text</source>
+        <translation>Metni kopyala</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Delete</source>
+        <translation>Sil</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Report…</source>
+        <translation>Bildir…</translation>
+    </message>
+</context>
+<context>
+    <name>FriendChatView</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendChatView.qml" line="+102"/>
+        <source>%1 is not on your friends list any more, so you can&apos;t message them.</source>
+        <translation>%1 artık arkadaş listende değil, bu yüzden mesaj gönderemezsin.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Messages can&apos;t be sent until Kite&apos;s friends server answers.</source>
+        <translation>Kite&apos;ın arkadaşlık sunucusu yanıt verene kadar mesaj gönderilemez.</translation>
+    </message>
+</context>
+<context>
     <name>FriendConfirmDialog</name>
     <message>
         <location filename="../launcher/qml/Components/FriendConfirmDialog.qml" line="+31"/>
@@ -4070,7 +4227,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendInviteCard</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendInviteCard.qml" line="+37"/>
+        <location filename="../launcher/qml/Components/FriendInviteCard.qml" line="+37"/>
         <source>%1 invited you to %2</source>
         <translation>%1 seni %2 sunucusuna davet etti</translation>
     </message>
@@ -4197,22 +4354,16 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendMessageField</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendMessageField.qml" line="+24"/>
-        <location line="+31"/>
+        <location filename="../launcher/qml/Components/FriendMessageField.qml" line="+22"/>
+        <location line="+29"/>
         <source>Message %1</source>
         <translation>%1 ile mesajlaş</translation>
-    </message>
-    <message>
-        <location line="-30"/>
-        <location line="+5"/>
-        <source>Coming soon</source>
-        <translation>Yakında</translation>
     </message>
 </context>
 <context>
     <name>FriendMoreButton</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendMoreButton.qml" line="+24"/>
+        <location filename="../launcher/qml/Components/FriendMoreButton.qml" line="+26"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -4225,7 +4376,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendPersonMenu</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+36"/>
+        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+48"/>
+        <source>Message</source>
+        <translation>Mesaj gönder</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Remove friend…</source>
         <translation>Arkadaşlıktan çıkar…</translation>
     </message>
@@ -4238,7 +4394,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendPlaceBlock</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendPlaceBlock.qml" line="+28"/>
+        <location filename="../launcher/qml/Components/FriendPlaceBlock.qml" line="+28"/>
         <source>Singleplayer</source>
         <translation>Tek oyunculu</translation>
     </message>
@@ -4258,7 +4414,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 çevrimiçi</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+51"/>
         <source>Invited you · %1</source>
         <translation>Seni davet etti · %1</translation>
     </message>
@@ -4269,9 +4425,52 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendReportDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendReportDialog.qml" line="+38"/>
+        <source>Report this message?</source>
+        <translation>Bu mesaj bildirilsin mi?</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Report</source>
+        <translation>Bildir</translation>
+    </message>
+    <message>
+        <location line="+38"/>
+        <source>What is wrong with it?</source>
+        <translation>Sorun ne?</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Spam</source>
+        <translation>Spam</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Harassment or bullying</source>
+        <translation>Taciz veya zorbalık</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Something else</source>
+        <translation>Başka bir şey</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Also block %1</source>
+        <translation>Ayrıca engelle: %1</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>%1 is not told. Kite keeps a copy of this message and the ones before it so that a moderator can look at it.</source>
+        <translation>%1 bundan haberdar edilmez. Bir moderatör bakabilsin diye Kite bu mesajın ve öncekilerin bir kopyasını saklar.</translation>
+    </message>
+</context>
+<context>
     <name>FriendRequestRow</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendRequestRow.qml" line="+24"/>
+        <location filename="../launcher/qml/Components/FriendRequestRow.qml" line="+24"/>
         <source>Wants to be your friend</source>
         <translation>Seninle arkadaş olmak istiyor</translation>
     </message>
@@ -4299,7 +4498,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendRow</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendRow.qml" line="+43"/>
+        <location filename="../launcher/qml/Components/FriendRow.qml" line="+46"/>
         <source>%1, %2</source>
         <translation>%1, %2</translation>
     </message>
@@ -4307,12 +4506,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendStatusRow</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendStatusRow.qml" line="+21"/>
+        <location filename="../launcher/qml/Components/FriendStatusRow.qml" line="+24"/>
         <source>%1 doesn&apos;t let friends join</source>
         <translation>%1 arkadaşlarının katılmasına izin vermiyor</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+28"/>
         <source>Joining off</source>
         <translation>Katılım kapalı</translation>
     </message>
@@ -4341,9 +4540,79 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>FriendsChat</name>
+    <message>
+        <location filename="../launcher/friends/FriendsChatHistory.cpp" line="+273"/>
+        <source>Kite&apos;s friends server can&apos;t be reached.</source>
+        <translation>Kite&apos;ın arkadaşlık sunucusuna ulaşılamıyor.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Too many requests; try again in a minute.</source>
+        <translation>Çok fazla istek; bir dakika sonra tekrar dene.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>These messages could not be loaded.</source>
+        <translation>Bu mesajlar yüklenemedi.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/friends/FriendsChatSend.cpp" line="+200"/>
+        <location line="+36"/>
+        <source>Not sent. Check your connection.</source>
+        <translation>Gönderilemedi. Bağlantını kontrol et.</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Not sent: you are sending messages too fast.</source>
+        <translation>Gönderilemedi: çok hızlı mesaj gönderiyorsun.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Not sent: you can only message your friends.</source>
+        <translation>Gönderilemedi: sadece arkadaşlarına mesaj gönderebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Not sent: the message is empty or too long.</source>
+        <translation>Gönderilemedi: mesaj boş ya da çok uzun.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Not sent. Try again.</source>
+        <translation>Gönderilemedi. Tekrar dene.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>This message can&apos;t be reported.</source>
+        <translation>Bu mesaj bildirilemez.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Reported. Kite keeps a copy of this message for its moderators.</source>
+        <translation>Bildirildi. Kite bu mesajın bir kopyasını moderatörleri için saklar.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This message can no longer be reported.</source>
+        <translation>Bu mesaj artık bildirilemez.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>You have reported too many messages today.</source>
+        <translation>Bugün çok fazla mesaj bildirdin.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>The report could not be sent; try again.</source>
+        <translation>Bildirilemedi; tekrar dene.</translation>
+    </message>
+</context>
+<context>
     <name>FriendsController</name>
     <message>
         <location filename="../launcher/friends/FriendsActions.cpp" line="+64"/>
+        <location filename="../launcher/friends/FriendsRealtime.cpp" line="+63"/>
         <source>Friends is turned off</source>
         <translation>Arkadaşlık kapalı</translation>
     </message>
@@ -4436,7 +4705,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 arkadaşın değil</translation>
     </message>
     <message>
-        <location line="+48"/>
+        <location line="+50"/>
         <source>%1 is blocked</source>
         <translation>%1 engellendi</translation>
     </message>
@@ -4557,7 +4826,7 @@ Lütfen tekrar dene.</translation>
         <translation>Minecraft girişi doğrulamadı; biraz sonra tekrar dene.</translation>
     </message>
     <message>
-        <location filename="../launcher/friends/FriendsController.cpp" line="+276"/>
+        <location filename="../launcher/friends/FriendsController.cpp" line="+277"/>
         <source>Friends was turned on before the delete finished; delete again if you still want it</source>
         <translation>Silme bitmeden Arkadaşlık açıldı; hâlâ istiyorsan yeniden sil</translation>
     </message>
@@ -4661,7 +4930,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsFriendsTab</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendsFriendsTab.qml" line="+48"/>
+        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+48"/>
         <source>IN GAME — %1</source>
         <translation>OYUNDA — %1</translation>
     </message>
@@ -4734,7 +5003,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPage.qml" line="+102"/>
+        <location filename="../launcher/qml/Components/FriendsPage.qml" line="+107"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
@@ -4805,7 +5074,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsPanelFull</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendsPanelFull.qml" line="+101"/>
+        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+108"/>
         <source>IN GAME — %1</source>
         <translation>OYUNDA — %1</translation>
     </message>
@@ -4866,7 +5135,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsPanelStrip</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPanelStrip.qml" line="+28"/>
+        <location filename="../launcher/qml/Components/FriendsPanelStrip.qml" line="+32"/>
         <source>Friends is off</source>
         <translation>Arkadaşlık kapalı</translation>
     </message>
@@ -4886,7 +5155,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bağlanılamadı</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+37"/>
         <source>Expand friends</source>
         <translation>Arkadaşları genişlet</translation>
     </message>
@@ -4970,12 +5239,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsSelfCard</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsSelfCard.qml" line="+34"/>
+        <location filename="../launcher/qml/Components/FriendsSelfCard.qml" line="+43"/>
         <source>Invisible</source>
         <translation>Görünmez</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>Playing on %1 · friends can join</source>
         <translation>%1 sunucusunda oynuyorsun · arkadaşların katılabilir</translation>
     </message>
@@ -4990,12 +5259,12 @@ Lütfen tekrar dene.</translation>
         <translation>Oynuyorsun · sunucu gizli</translation>
     </message>
     <message>
-        <location line="-4"/>
+        <location line="-5"/>
         <source>Not connected · friends see your last status</source>
         <translation>Bağlı değil · arkadaşların son durumunu görüyor</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Playing · singleplayer</source>
         <translation>Oynuyorsun · tek oyunculu</translation>
     </message>
@@ -5015,7 +5284,7 @@ Lütfen tekrar dene.</translation>
         <translation>Çevrimiçi · arkadaşların seni görebilir</translation>
     </message>
     <message>
-        <location line="+72"/>
+        <location line="+85"/>
         <source>Add a friend by name</source>
         <translation>Adıyla arkadaş ekle</translation>
     </message>
@@ -5061,7 +5330,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsStripHead</name>
     <message>
-        <location filename="../../../../../../../../../Volumes/KINGSTON/Desktop/Projeler/kite-cleanup/launcher/qml/Components/FriendsStripHead.qml" line="+38"/>
+        <location filename="../launcher/qml/Components/FriendsStripHead.qml" line="+38"/>
         <source>%1, %2</source>
         <translation>%1, %2</translation>
     </message>
@@ -5488,7 +5757,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeFriends</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeFriends.qml" line="+53"/>
+        <location filename="../launcher/qml/Components/HomeFriends.qml" line="+55"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
@@ -5519,12 +5788,12 @@ Lütfen tekrar dene.</translation>
         <translation>Tekrar dene</translation>
     </message>
     <message>
-        <location line="+86"/>
+        <location line="+95"/>
         <source>Add friends who use Kite to see where they play.</source>
         <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
     </message>
     <message>
-        <location line="-144"/>
+        <location line="-153"/>
         <source>%1 online</source>
         <translation>%1 çevrimiçi</translation>
     </message>
@@ -5540,7 +5809,7 @@ Lütfen tekrar dene.</translation>
         <translation>Arkadaşlar şu an güncellenemiyor.</translation>
     </message>
     <message>
-        <location line="+68"/>
+        <location line="+77"/>
         <source>+%1 more</source>
         <translation>+%1 kişi daha</translation>
     </message>
@@ -5699,7 +5968,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+211"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+213"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -5745,7 +6014,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeSidePanel</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+122"/>
+        <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+125"/>
         <source>Recent worlds</source>
         <translation>Son dünyalar</translation>
     </message>
@@ -8160,7 +8429,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+332"/>
+        <location filename="../launcher/qml/Main.qml" line="+345"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -8220,7 +8489,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+376"/>
+        <location line="+381"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -13484,12 +13753,12 @@ Currently installed version: %1</source>
     <name>SettingsFriendsSection</name>
     <message>
         <location filename="../launcher/qml/Components/SettingsFriendsSection.qml" line="+33"/>
-        <location line="+94"/>
+        <location line="+100"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
     <message>
-        <location line="-93"/>
+        <location line="-99"/>
         <source>See which server your friends are on, and join them when they let you. While Friends is off, Kite sends nothing.</source>
         <translation>Arkadaşlarının hangi sunucuda olduğunu gör, izin verirlerse yanlarına katıl. Arkadaşlık kapalıyken Kite hiçbir şey göndermez.</translation>
     </message>
@@ -13504,7 +13773,7 @@ Currently installed version: %1</source>
         <translation>Giriş yapılmadı</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+22"/>
         <source>Privacy</source>
         <translation>Gizlilik</translation>
     </message>
@@ -13535,7 +13804,7 @@ Currently installed version: %1</source>
         <translation>Oynadığını arkadaşların görür ama nerede oynadığını görmez.</translation>
     </message>
     <message>
-        <location line="-56"/>
+        <location line="-62"/>
         <location line="+4"/>
         <source>Use Friends</source>
         <translation>Arkadaşlık özelliğini kullan</translation>
@@ -13554,6 +13823,16 @@ Currently installed version: %1</source>
         <location line="+1"/>
         <source>Tells you when a friend comes online or sends you a friend request.</source>
         <translation>Bir arkadaşın çevrimiçi olduğunda ya da sana arkadaşlık isteği gönderdiğinde haber verir.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Message notifications</source>
+        <translation>Mesaj bildirimleri</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Tells you when a friend sends you a message while their chat is not on screen.</source>
+        <translation>Sohbeti ekranda açık değilken bir arkadaşın mesaj gönderince haber verir.</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -13606,12 +13885,12 @@ Currently installed version: %1</source>
         <translation>Bu, %1 hesabının verisi. Diğer Minecraft hesaplarının verisi kalır.</translation>
     </message>
     <message>
-        <location line="-87"/>
+        <location line="-93"/>
         <source>Friends add you by this Minecraft name.</source>
         <translation>Arkadaşlar seni bu Minecraft adıyla ekler.</translation>
     </message>
     <message>
-        <location line="+59"/>
+        <location line="+65"/>
         <source>Let friends join the server I am on</source>
         <translation>Arkadaşlarımın bulunduğum sunucuya katılmasına izin ver</translation>
     </message>
