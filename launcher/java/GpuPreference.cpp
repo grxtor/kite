@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <vector>
 #include <windows.h>
+#include <dxgi.h>
 
 #include "settings/SettingsObject.h"
 #endif
@@ -67,6 +68,52 @@ QString GpuPreference::encodeWritten(const QStringList& names)
 QStringList GpuPreference::decodeWritten(const QString& stored)
 {
 	return stored.split(kWrittenSeparator, Qt::SkipEmptyParts);
+}
+
+bool GpuPreference::isGraphicsCard(quint32 vendorId, bool software)
+{
+	// Microsoft's vendor id: the Basic Render Driver and the remote display.
+	constexpr quint32 kMicrosoftVendorId = 0x1414;
+	return !software && vendorId != kMicrosoftVendorId;
+}
+
+#ifdef Q_OS_WIN
+namespace
+{
+	int graphicsCards()
+	{
+		IDXGIFactory1* factory = nullptr;
+		if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1),
+									  reinterpret_cast<void**>(&factory)))) {
+			return 0;
+		}
+		int cards = 0;
+		IDXGIAdapter1* adapter = nullptr;
+		for (UINT index = 0;
+			 factory->EnumAdapters1(index, &adapter) != DXGI_ERROR_NOT_FOUND;
+			 ++index) {
+			DXGI_ADAPTER_DESC1 desc{};
+			if (SUCCEEDED(adapter->GetDesc1(&desc)) &&
+				GpuPreference::isGraphicsCard(
+					desc.VendorId, (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0)) {
+				++cards;
+			}
+			adapter->Release();
+		}
+		factory->Release();
+		return cards;
+	}
+} // namespace
+#endif
+
+bool GpuPreference::hasSeveralGraphicsCards()
+{
+#ifdef Q_OS_WIN
+	static const bool several = graphicsCards() >= 2;
+	return several;
+#else
+	return false;
+#endif
 }
 
 #ifdef Q_OS_WIN

@@ -1587,6 +1587,10 @@ target_link_libraries(Kite_core PUBLIC
 )
 # The friends server's realtime socket (friends/FriendsSocket.cpp); nothing else uses it.
 target_link_libraries(Kite_core PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
+# GpuPreference counts the graphics cards through DXGI.
+if(WIN32)
+    target_link_libraries(Kite_core PUBLIC dxgi)
+endif()
 
 # QtWidgets is linked here and only here (enforced by Kite_core_link_check).
 target_link_libraries(Kite_logic Qt${QT_VERSION_MAJOR}::Widgets)
