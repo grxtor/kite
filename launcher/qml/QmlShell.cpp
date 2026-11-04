@@ -79,6 +79,7 @@
 #include "minecraft/mod/ModFolderModel.h"
 #include "modplatform/BundleCatalog.h"
 #include "friends/FriendsController.h"
+#include "friends/ShareCodesController.h"
 #include "servers/FeaturedServers.h"
 #include "servers/ServerPinger.h"
 #include "modbridge/ModBridge.h"
@@ -1366,6 +1367,17 @@ QObject* QmlShell::friends() const
 		}
 	}
 	return expose(m_friends.get());
+}
+
+QObject* QmlShell::shareCodes() const
+{
+	if (!friends()) {
+		return nullptr;
+	}
+	if (!m_shareCodes) {
+		m_shareCodes = std::make_unique<ShareCodesController>(m_friends.get());
+	}
+	return expose(m_shareCodes.get());
 }
 
 QObject* QmlShell::serverPinger() const

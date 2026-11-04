@@ -23,11 +23,15 @@ Item {
     // ServerPinger, or null; FriendsController.friends, or [].
     property var pinger: null
     property var friends: []
+    // Friends is connected: a row's ⋯ offers "Invite a friend…".
+    property bool canInvite: false
     readonly property bool unlocked: !!root.model && !root.model.locked
     readonly property int count: list.count
     readonly property string lockedReason: qsTr("The game is running. The server list can be changed once it has closed.")
     signal openFolderRequested(string path)
     signal joinRequested(string address)
+    // "Invite a friend…" on a row: Main.qml's FriendInvitePicker.
+    signal inviteRequested(string name, string address)
     // Every row asks its server again (the Refresh button).
     signal refreshRequested()
 
@@ -212,6 +216,16 @@ Item {
 
                 Menu {
                     id: rowMenu
+                    MenuEntry {
+                        visible: root.canInvite
+                        enabled: row.address.trim().length > 0
+                        text: qsTr("Invite a friend…")
+                        icon.source: Icons.url("user-plus")
+                        onTriggered: root.inviteRequested(row.name.length > 0 ? row.name : row.address, row.address)
+                    }
+                    MenuDivider {
+                        visible: root.canInvite
+                    }
                     MenuItem {
                         enabled: root.unlocked
                         text: qsTr("Edit…")

@@ -21,6 +21,7 @@
 
 #include <QDateTime>
 #include <QElapsedTimer>
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QTimer>
@@ -80,7 +81,7 @@ class FriendsController : public QObject
 	Q_PROPERTY(QVariantList outgoing READ outgoing NOTIFY changed)
 	Q_PROPERTY(QVariantList blocked READ blocked NOTIFY changed)
 	/// visibility ("friends" | "everyone" | "invisible"), hideServer,
-	/// shareIpServers, allowJoin
+	/// shareIpServers, allowJoin, allowInvites
 	Q_PROPERTY(QVariantMap settings READ settings NOTIFY changed)
 	/// What friends can see of you: playing, worldType, host, serverHidden,
 	/// joinable. The server's last answer while it matches the game, else our
@@ -93,6 +94,15 @@ class FriendsController : public QObject
 	Q_PROPERTY(bool live READ live NOTIFY changed)
 	/// One-to-one chats with friends.
 	Q_PROPERTY(FriendsChat* chat READ chat CONSTANT)
+	/// Invites to a server you were sent and that have not run out, newest
+	/// first: uuid, name, face, host, port, createdAt, expiresAt, expiresAtMs,
+	/// addressKind ("domain" | "ip" | "local"; FriendsInvites::toMap()).
+	Q_PROPERTY(QVariantList invites READ invites NOTIFY changed)
+	/// The invites you sent, the same way (uuid and name are the friend's).
+	Q_PROPERTY(QVariantList outgoingInvites READ outgoingInvites NOTIFY changed)
+	/// The server the game is on, to invite friends to: host and port, or
+	/// empty while not on one. Even one friends cannot see.
+	Q_PROPERTY(QVariantMap inviteTarget READ inviteTarget NOTIFY changed)
 
   public:
 	/// @p dataDir is where friends.json lives.
@@ -123,6 +133,9 @@ class FriendsController : public QObject
 	int incomingCount() const;
 	bool live() const;
 	FriendsChat* chat() const;
+	QVariantList invites() const;
+	QVariantList outgoingInvites() const;
+	QVariantMap inviteTarget() const;
 
 	Q_INVOKABLE void refresh();
 	Q_INVOKABLE void sendRequest(const QString& name);
@@ -136,6 +149,18 @@ class FriendsController : public QObject
 	Q_INVOKABLE void setSettings(const QVariantMap& partial);
 	/// Also works with Friends off: signs in for this one request and leaves Friends off.
 	Q_INVOKABLE void deleteAccount();
+	/// Invites the friend @p uuid to @p address ("host" or "host:port"); a
+	/// second invite to the same friend replaces the first.
+	Q_INVOKABLE void sendInvite(const QString& uuid, const QString& address);
+	/// Drops the invite @p uuid sent you; they are not told.
+	Q_INVOKABLE void dismissInvite(const QString& uuid);
+	/// Takes back your invite to @p uuid.
+	Q_INVOKABLE void cancelInvite(const QString& uuid);
+
+	/// Authenticated request for another controller of the same server (share
+	/// codes): signs in first if needed; @p done gets the raw answer.
+	void send(const QByteArray& verb, const QString& path,
+			  const QByteArray& body, FriendsHttp::Done done);
 
 	// What the Kite mod's bridge needs (FriendsBridge.cpp, modbridge/)
 	/// Its rev changes whenever anything the mod is told does.
@@ -148,9 +173,10 @@ class FriendsController : public QObject
 	void reportWorld(BaseInstance* instance, const FriendsApi::World& world);
 
   public slots:
-	/// The socket's invite, invite.cancelled and friend.removed frames, for the invites
-	/// (FriendsInviteStub.cpp until they land; the second of the two changes to merge drops the stub).
-	void applyInviteEvent(const QJsonObject& frame);
+	/// The socket's `invite`, `invite.cancelled` and `friend.removed` events
+	/// (README "Events"), as the JSON object of the frame: the invites change
+	/// at once, without waiting for the next poll. Others are ignored.
+	void applyInviteEvent(const QJsonObject& event);
 
   signals:
 	void changed();
@@ -159,6 +185,9 @@ class FriendsController : public QObject
 	void actionFinished(QString action, bool ok, QString message);
 
   private:
+	/// Reaches applyInviteEvent()'s state without a launcher behind it.
+	friend class FriendsInvitesTest;
+
 	static constexpr const char* kEnabledSetting = "FriendsEnabled";
 	static constexpr const char* kServerUrlSetting = "FriendsServerUrl";
 	static constexpr const char* kMojangUrlSetting = "FriendsMojangSessionUrl";
@@ -266,12 +295,26 @@ class FriendsController : public QObject
 	void applyFriendEvent(const QJsonObject& frame);
 
 	// Desktop notifications (FriendsNotify.cpp)
+	/// The notices for invites pushed by the socket that were not seen yet.
+	void notifyInvites(const QList<FriendsApi::Invite>& incoming);
 	/// Tells the plugins (DesktopNotifier) who came online and which requests
 	/// arrived since the last snapshot, while kNotifySetting is on.
 	void notifyChanges(const FriendsApi::FriendsSnapshot& snapshot,
 					   const QDateTime& now);
 	/// A message from a friend whose conversation is not on screen, while kMessageNotifySetting is on.
 	void notifyMessage(const FriendsChatApi::Message& message);
+	void dispatchNotices(const QList<FriendsNotices::Notice>& notices,
+						 const QDateTime& now);
+
+	// Invites (FriendsInviteActions.cpp)
+	/// Both return whether what QML reads changed; neither emits changed().
+	bool setInvites(const FriendsApi::InviteLists& lists);
+	/// Rebuilds the lists QML reads from m_inviteData without the invites that
+	/// ran out, and arms the timer for the next to run out.
+	bool publishInvites();
+	void onInviteExpiry();
+	QString inviteErrorText(const FriendsApi::Reply& reply,
+							const QString& name) const;
 
 	// Actions (FriendsActions.cpp)
 	/// Words the outcome with @p interpret (sets *ok, returns the message); a success re-reads the lists.
@@ -351,6 +394,10 @@ class FriendsController : public QObject
 	QVariantList m_outgoing;
 	QVariantList m_blocked;
 	QVariantMap m_settings;
+	FriendsApi::InviteLists m_inviteData;
+	QVariantList m_invites;
+	QVariantList m_outgoingInvites;
+	QTimer m_inviteExpiryTimer;
 	QDateTime m_updatedAt;
 	/// What the next snapshot's notices are worked out against; reset with the data.
 	FriendsNotices::Memory m_noticeMemory;

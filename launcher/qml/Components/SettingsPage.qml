@@ -33,6 +33,8 @@ Item {
     // QmlShell.friends (FriendsController) for "Friends"; null hides that
     // section.
     property var friends: null
+    // QmlShell.shareCodes, for the Friends section's share codes.
+    property var shareCodes: null
     // The default account's name if it is a Microsoft one ("" if not): the
     // account whose Friends data Delete in "Friends" removes.
     property string friendsAccountName: ""
@@ -168,6 +170,7 @@ Item {
             SettingsMinecraftSection {}
             SettingsFriendsSection {
                 controller: root.friends
+                shareCodes: root.shareCodes
                 accountName: root.friendsAccountName
             }
             SettingsConsoleSection {}

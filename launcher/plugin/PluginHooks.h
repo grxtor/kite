@@ -92,8 +92,8 @@ enum MMCOHookId : uint32_t {
 	/* Friends */
 
 	/* MMCO_HOOK_FRIENDS_NOTICE: something about a friend worth a desktop notification, once per
-	 * event (a friend came online, a friend request arrived, while the launcher's
-	 * FriendsNotifications setting is on; a chat message that is not on screen, while
+	 * event (a friend came online, a friend request or an invite to a server arrived, while the
+	 * launcher's FriendsNotifications setting is on; a chat message that is not on screen, while
 	 * FriendsMessageNotifications is). Payload: MMCOFriendsNotice*. The return value is
 	 * ignored. */
 	MMCO_HOOK_FRIENDS_NOTICE = 0x0900,
@@ -251,7 +251,8 @@ struct MMCOSessionFillEvent {
 struct MMCOFriendsNotice {
 	const char* kind;  /* "online" (came online or started playing) | "request" (sent a request) |
 						* "message" (sent a chat message that is not on screen; the
-						* FriendsMessageNotifications setting) */
+						* FriendsMessageNotifications setting) |
+						* "invite" (invited you to a server) */
 	const char* uuid;  /* the friend's Minecraft UUID */
 	const char* name;  /* the friend's Minecraft name */
 	const char* title; /* "Alex is online"; the sender's name for a message */

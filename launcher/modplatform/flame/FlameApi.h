@@ -61,6 +61,9 @@ class FlameApi final : public ModPlatform::ContentApi
 	QUrl projectPageUrl(const QString& projectId) const override;
 
 	static QUrl fileUrl(const QString& projectId, const QString& fileId);
+	/* Several files by id: a POST of {"fileIds": [...]}, answered with `data`
+	 * as an array. */
+	static QUrl filesUrl();
 
 	/* The versions owning a set of file fingerprints. A POST (the question
 	 * is a list, see Net::JsonPost): CurseForge indexes files only by

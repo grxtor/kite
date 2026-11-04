@@ -18,14 +18,18 @@ QtObject {
     property var featured: []
     // FriendsController.friends, or [].
     property var friends: []
+    // FriendsController.invites, or []: the servers friends invite you to are pinged too.
+    property var invites: []
     // A view that shows places is on screen; only then are servers pinged.
     property bool active: false
 
-    // The addresses friends play on, each once.
+    // The addresses friends play on or invite you to, each once.
     readonly property var addresses: {
         var seen = []
-        for (var i = 0; i < root.friends.length; ++i) {
-            var address = root.addressOf(root.friends[i])
+        var invited = root.invites.map((one) => ({ state: "playing", worldType: "server", host: one.host, port: one.port }))
+        var places = root.friends.concat(invited)
+        for (var i = 0; i < places.length; ++i) {
+            var address = root.addressOf(places[i])
             if (address.length > 0 && seen.indexOf(address) < 0)
                 seen.push(address)
         }

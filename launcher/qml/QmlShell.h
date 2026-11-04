@@ -56,6 +56,7 @@ class LauncherLogs;
 class BundleCatalog;
 class FeaturedServers;
 class FriendsController;
+class ShareCodesController;
 class ServerPinger;
 class CatPackList;
 class RecentWorldsModel;
@@ -141,6 +142,8 @@ class QmlShell : public QObject
 	/// Null in a build without a friends server; contacts nothing while
 	/// FriendsEnabled is off.
 	Q_PROPERTY(QObject* friends READ friends CONSTANT)
+	/// Share codes of instances (ShareCodesController); null without friends.
+	Q_PROPERTY(QObject* shareCodes READ shareCodes CONSTANT)
 	/// Live status of Minecraft servers (ServerPinger), shared by every view.
 	Q_PROPERTY(QObject* serverPinger READ serverPinger CONSTANT)
 	/// The big servers offered for one-click joining (FeaturedServers).
@@ -281,6 +284,7 @@ class QmlShell : public QObject
 	QObject* catPacks() const;
 	QObject* bundles() const;
 	QObject* friends() const;
+	QObject* shareCodes() const;
 	QObject* serverPinger() const;
 	QObject* featuredServers() const;
 
@@ -550,6 +554,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<CatPackList> m_catPacks;
 	mutable std::unique_ptr<BundleCatalog> m_bundles;
 	mutable std::unique_ptr<FriendsController> m_friends;
+	mutable std::unique_ptr<ShareCodesController> m_shareCodes;
 	mutable std::unique_ptr<ServerPinger> m_serverPinger;
 	mutable std::unique_ptr<FeaturedServers> m_featuredServers;
 	/* Keyed by (anchor, anchorContext). Declared with the other cached models

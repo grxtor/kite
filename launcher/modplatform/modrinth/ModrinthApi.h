@@ -76,6 +76,11 @@ class ModrinthApi final : public ModPlatform::ContentApi
 	/* A version by its own id; ids are globally unique, so no project id. */
 	static QUrl versionUrl(const QString& versionId);
 
+	/* Several versions, or several projects, by id in one GET; the answer is
+	 * an array in no particular order, without the ids it does not know. */
+	static QUrl versionsUrl(const QStringList& versionIds);
+	static QUrl projectsUrl(const QStringList& projectIds);
+
 	/* Whether @p candidate can be a Modrinth version or project id: base62,
 	 * eight characters. A version *number* ("1.1.1+1.17", which a CDN URL
 	 * spells out) is not, and asking the version endpoint for one gets a 404

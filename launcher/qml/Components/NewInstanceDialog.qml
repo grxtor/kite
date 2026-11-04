@@ -8,7 +8,8 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import Kite.Theme
 
-/* A new instance: "create" (version and optional loader) or "import" (a local .zip/.mrpack or a URL). */
+/* A new instance: "create" (version and optional loader), "import" (a local .zip/.mrpack or a URL) or "code" (a
+ * friend's share code, ShareCodeImportPane). */
 AppDialog {
     id: root
 
@@ -21,8 +22,10 @@ AppDialog {
     property var iconsModel: null
     property string selectedIcon: "default"
 
-    // "create" or "import"; set before open().
+    // "create", "import" or "code"; set before open().
     property string mode: "create"
+    // QmlShell.shareCodes (ShareCodesController); null hides the "Share code" tab.
+    property var shareCodes: null
     // The QML shell: Kite Performance version support, its bundle catalog and speedUp().
     property var shell: null
     // Kite Performance is the picked type (Fabric plus the performance mods); another type turns it
@@ -48,6 +51,8 @@ AppDialog {
     // Why Create or Import is off, in a line; "" when it is on (or the drop zone already says why).
     readonly property string createBlocker: !root.controller ? ""
         : root.controller.selectedMinecraftVersion.length === 0 ? qsTr("Pick a Minecraft version.")
+        : nameField.text.trim().length === 0 ? qsTr("Give the instance a name.") : ""
+    readonly property string codeBlocker: !codePane.preview ? qsTr("Enter a share code.")
         : nameField.text.trim().length === 0 ? qsTr("Give the instance a name.") : ""
     readonly property string importBlocker: !root.controller ? ""
         : root.importSource.trim().length === 0 ? qsTr("Choose a modpack file or paste a link.")
@@ -89,7 +94,7 @@ AppDialog {
     // The controller names vanilla by its bare version ("26.3"), which reads as a number; it gets
     // the game's name in front.
     function refreshSuggestedName() {
-        if (root.nameEdited || !root.controller || root.mode === "import")
+        if (root.nameEdited || !root.controller || root.mode !== "create")
             return
         var suggested = root.controller.suggestedName()
         if (root.performanceMode)
@@ -111,8 +116,40 @@ AppDialog {
     onModeChanged: {
         if (root.mode === "import")
             refreshImportName()
+        else if (root.mode === "code")
+            refreshCodeName()
         else
             refreshSuggestedName()
+    }
+
+    // A code names its instance after what its sharer called it, until a name is typed.
+    function refreshCodeName() {
+        if (!root.nameEdited)
+            nameField.text = codePane.preview ? codePane.preview.name : ""
+    }
+
+    function createFromCode() {
+        root.watcher = root.shareCodes.createInstance(nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
+    }
+
+    // A share code typed into the "Share code" tab (KITE_QML_ROUTE "sharecode="); one handed in before the dialog
+    // shows waits for it, as opening clears the tab.
+    property string presetCode: ""
+    function enterShareCode(code) {
+        root.mode = "code"
+        if (root.opened)
+            codePane.enter(code)
+        else
+            root.presetCode = code
+    }
+    // KITE_QML_ROUTE "sharelist": the code's contents listed once they are named.
+    function showShareContents() {
+        codePane.contentsShown = true
+    }
+    onOpened: {
+        if (root.presetCode.length > 0)
+            codePane.enter(root.presetCode)
+        root.presetCode = ""
     }
 
     function setImportSource(source) {
@@ -205,6 +242,7 @@ AppDialog {
         groupField.text = ""
         root.importSource = root.presetSource
         sourceField.text = root.presetSource
+        codePane.reset()
         selectDefaultVersion()
         if (root.mode === "import")
             refreshImportName()
@@ -267,7 +305,7 @@ AppDialog {
             tabs: [
                 { id: "create", label: qsTr("Create") },
                 { id: "import", label: qsTr("Import") }
-            ]
+            ].concat(root.shareCodes ? [{ id: "code", label: qsTr("Share code") }] : [])
             current: root.mode
             onActivated: (id) => root.mode = id
         }
@@ -368,7 +406,7 @@ AppDialog {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: root.mode === "import" ? 1 : 0
+            currentIndex: root.mode === "code" ? 2 : root.mode === "import" ? 1 : 0
 
         RowLayout {
             spacing: Theme.space.xl
@@ -709,6 +747,13 @@ AppDialog {
                 tone: "tertiary"
             }
         } // import pane
+
+        ShareCodeImportPane {
+            id: codePane
+            controller: root.shareCodes
+            locked: root.creating
+            onPreviewChanged: root.refreshCodeName()
+        }
         } // StackLayout
 
         FileDialog {
@@ -751,7 +796,7 @@ AppDialog {
             Layout.leftMargin: Theme.space.xl
             Layout.bottomMargin: Theme.space.xl
             visible: !root.creating && !(root.watcher && root.watcher.failed)
-            text: root.mode === "import" ? root.importBlocker : root.createBlocker
+            text: root.mode === "import" ? root.importBlocker : root.mode === "code" ? root.codeBlocker : root.createBlocker
             role: "label"
             tone: "tertiary"
             elide: Text.ElideRight
@@ -767,7 +812,7 @@ AppDialog {
             Layout.rightMargin: Theme.space.xl
             Layout.bottomMargin: Theme.space.xl
             highlighted: true
-            visible: root.mode !== "import"
+            visible: root.mode === "create"
             text: root.creating ? qsTr("Creating…") : qsTr("Create")
             icon.source: Icons.url("plus")
             enabled: !root.creating && !!root.controller
@@ -791,6 +836,16 @@ AppDialog {
             onClicked: {
                 root.watcher = root.controller.importFrom(root.importSource.trim(), nameField.text.trim(), groupField.text.trim(), root.selectedIcon)
             }
+        }
+        Button {
+            Layout.rightMargin: Theme.space.xl
+            Layout.bottomMargin: Theme.space.xl
+            highlighted: true
+            visible: root.mode === "code"
+            text: root.creating ? qsTr("Creating…") : qsTr("Create")
+            icon.source: Icons.url("plus")
+            enabled: !root.creating && !!root.shareCodes && !!codePane.preview && nameField.text.trim().length > 0
+            onClicked: root.createFromCode()
         }
     }
 }

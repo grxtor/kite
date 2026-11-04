@@ -238,7 +238,8 @@ namespace FriendsDisplay
 		return {{"visibility", settings.visibility},
 				{"hideServer", settings.hideServer},
 				{"shareIpServers", settings.shareIpServers},
-				{"allowJoin", settings.allowJoin}};
+				{"allowJoin", settings.allowJoin},
+				{"allowInvites", settings.allowInvites}};
 	}
 
 	bool settingsSaved(const QByteArray& body, const QVariantMap& saved)

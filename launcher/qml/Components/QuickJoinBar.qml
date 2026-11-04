@@ -25,6 +25,9 @@ Item {
 
     signal joinRequested(var server)
     signal joinWithRequested(var server)
+    // "Invite a friend…" in a server's menu, shown while `canInvite` (Friends is connected).
+    signal inviteRequested(var server)
+    property bool canInvite: false
 
     readonly property int gap: Theme.space.xxs
     readonly property int pingIntervalMs: 60 * 1000
@@ -148,6 +151,12 @@ Item {
             text: qsTr("Join with another instance…")
             icon.source: Icons.url("layers")
             onTriggered: root.joinWithRequested(serverMenu.server)
+        }
+        MenuEntry {
+            visible: root.canInvite
+            text: qsTr("Invite a friend…")
+            icon.source: Icons.url("user-plus")
+            onTriggered: root.inviteRequested(serverMenu.server)
         }
         MenuSeparator {}
         MenuItem {

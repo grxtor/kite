@@ -7,8 +7,8 @@ import Kite.Theme
 
 /*
  * The "Friends" section of SettingsPage.qml: the Friends switch, desktop
- * notifications, who may see you and where you play, and deleting what Kite's
- * server holds about you. The privacy rows are dimmed while it is off and out
+ * notifications, who may see you, where you play and who may invite you,
+ * your share codes, and deleting what Kite's server holds about you. The privacy rows are dimmed while it is off and out
  * of reach until the server has sent the account's settings; deleting stays
  * available, since turning Friends on only to delete is what someone who
  * turned it off does not want.
@@ -18,6 +18,8 @@ SettingsScroll {
 
     // QmlShell.friends (FriendsController), or null.
     property var controller: null
+    // QmlShell.shareCodes (ShareCodesController), or null.
+    property var shareCodes: null
     // The default Minecraft account if it is a Microsoft one, "" otherwise:
     // Friends keeps a separate account for each, and Delete removes this one.
     property string accountName: ""
@@ -108,7 +110,7 @@ SettingsScroll {
             enabled: root.on
             key: "FriendsNotifications"
             label: qsTr("Desktop notifications")
-            description: qsTr("Tells you when a friend comes online or sends you a friend request.")
+            description: qsTr("Tells you when a friend comes online, sends you a friend request or invites you to a server.")
         }
         SettingSwitch {
             enabled: root.on
@@ -165,6 +167,17 @@ SettingsScroll {
                        : root.serverHidden ? qsTr("Not while you hide which server you are on.")
                        : qsTr("A friend gets a Join button next to your name when your server is shown.")
         }
+        SettingSwitch {
+            source: privacy
+            key: "allowInvites"
+            label: qsTr("Let friends invite me to servers")
+            description: qsTr("A friend's invite shows in Friends with a Join button for ten minutes. Turning this off also drops the invites you have.")
+        }
+    }
+
+    ShareCodesGroup {
+        width: parent.width
+        controller: root.shareCodes
     }
 
     SettingsGroup {
@@ -172,7 +185,7 @@ SettingsScroll {
         title: qsTr("Your data")
         SettingRow {
             label: qsTr("Delete my Friends data")
-            description: qsTr("Removes your friends, requests, blocks and settings from Kite's server.")
+            description: qsTr("Removes your friends, requests, invites, share codes, blocks and settings from Kite's server.")
             Button {
                 text: qsTr("Delete…")
                 icon.source: Icons.url("trash")

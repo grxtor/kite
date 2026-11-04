@@ -180,7 +180,10 @@ void FriendsController::onChatRead(const QString& uuid)
 
 void FriendsController::applyLive(const FriendsApi::FriendsSnapshot& snapshot)
 {
-	applySnapshot(snapshot);
+	/* The invites the socket pushed since the last poll are not in the snapshot; keep them. */
+	FriendsApi::FriendsSnapshot next = snapshot;
+	next.invites = m_inviteData;
+	applySnapshot(next);
 }
 
 FriendsApi::FriendsSnapshot FriendsController::chatSeen(

@@ -100,7 +100,6 @@ Item {
                     places: root.places
                     joinFlow: root.joinFlow
                     withRequests: true
-                    onJoinRequested: (friend) => root.joinRequested(friend)
                 }
 
                 FriendsPanelGroup {

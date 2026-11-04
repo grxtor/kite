@@ -199,8 +199,9 @@ QtObject {
 
     // How long an invite still lasts, compactly: "8 min left" (its expiresAt is an ISO time; never under a minute).
     readonly property int minuteMs: 60 * 1000
-    function inviteTimeLeft(invite) {
-        var minutes = Math.max(1, Math.ceil((Date.parse(invite.expiresAt) - Date.now()) / root.minuteMs))
+    // @p now (ms since the epoch) is optional: a binding that passes a ticking clock counts down.
+    function inviteTimeLeft(invite, now) {
+        var minutes = Math.max(1, Math.ceil((Date.parse(invite.expiresAt) - (now || Date.now())) / root.minuteMs))
         return qsTr("%1 min left").arg(minutes)
     }
 

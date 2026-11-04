@@ -7,11 +7,11 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "Export…", "Create shortcut…" and "Duplicate…" for any instance, behind the
- * library's and the instance page's ⋯ menus: the dialogs and the toasts that
- * follow them, in one place so both pages offer the same thing. Until Main.qml
- * sets the controllers, `canExport`, `canCreateShortcut` and `canDuplicate` stay
- * false.
+ * "Export…", "Create shortcut…", "Duplicate…" and "Share as code…" for any
+ * instance, behind the library's and the instance page's ⋯ menus: the dialogs
+ * and the toasts that follow them, in one place so both pages offer the same
+ * thing. Until Main.qml sets the controllers, `canExport`, `canCreateShortcut`,
+ * `canDuplicate` and `canShare` stay false.
  */
 Item {
     id: root
@@ -24,6 +24,9 @@ Item {
     readonly property bool canCreateShortcut: typeof root.shortcutControllerFor === "function"
     property var library: null
     readonly property bool canDuplicate: !!root.library
+    // QmlShell.shareCodes (ShareCodesController), or null in a build without friends.
+    property var shareCodes: null
+    readonly property bool canShare: !!root.shareCodes
 
     // @p format ("zip", "modrinth", "curseforge") is optional: the dialog
     // opens on the zip export otherwise.
@@ -53,6 +56,16 @@ Item {
         duplicateDialog.sourceName = name || ""
         duplicateDialog.iconKey = iconKey || ""
         duplicateDialog.open()
+    }
+
+    function shareAsCode(id, name) {
+        if (root.canShare)
+            shareDialog.openFor(id, name)
+    }
+
+    ShareCodeDialog {
+        id: shareDialog
+        controller: root.shareCodes
     }
 
     DuplicateInstanceDialog {

@@ -19,6 +19,20 @@
 
 #include "FriendsNotices.h"
 
+namespace
+{
+	FriendsNotices::Notice inviteNotice(const FriendsApi::Invite& invite)
+	{
+		FriendsNotices::Notice notice;
+		notice.kind = FriendsNotices::Notice::Kind::Invite;
+		notice.uuid = invite.uuid;
+		notice.name = invite.name;
+		notice.host = invite.host;
+		notice.port = invite.port;
+		return notice;
+	}
+} // namespace
+
 FriendsNotices::Diff FriendsNotices::diff(
 	const Memory& previous, const FriendsApi::FriendsSnapshot& snapshot,
 	const QDateTime& now)
@@ -58,5 +72,32 @@ FriendsNotices::Diff FriendsNotices::diff(
 		}
 		out.memory.requests.insert(person.uuid);
 	}
+
+	/* Invites run out within minutes; only the live ones are remembered. */
+	for (const FriendsApi::Invite& one : snapshot.invites.incoming) {
+		const QString key = inviteKey(one);
+		if (previous.primed && !previous.invites.contains(key)) {
+			out.notices.append(inviteNotice(one));
+		}
+		out.memory.invites.insert(key);
+	}
 	return out;
+}
+
+QString FriendsNotices::inviteKey(const FriendsApi::Invite& invite)
+{
+	return invite.uuid + QLatin1Char('|') +
+		   invite.createdAt.toUTC().toString(Qt::ISODateWithMs);
+}
+
+std::optional<FriendsNotices::Notice> FriendsNotices::invite(
+	Memory& memory, const FriendsApi::Invite& one)
+{
+	const QString key = inviteKey(one);
+	const bool seen = memory.invites.contains(key);
+	memory.invites.insert(key);
+	if (!memory.primed || seen) {
+		return std::nullopt;
+	}
+	return inviteNotice(one);
 }

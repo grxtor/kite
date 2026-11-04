@@ -132,7 +132,6 @@ Column {
         friendsState: root.friendsState
         places: root.places
         joinFlow: root.joinFlow
-        onJoinRequested: (friend) => root.joinRequested(friend)
     }
 
     HomeFriendsRequestsLink {

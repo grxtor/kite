@@ -24,6 +24,22 @@
 #include "plugin/PluginHooks.h"
 #include "settings/SettingsObject.h"
 
+namespace
+{
+	QByteArray kindName(FriendsNotices::Notice::Kind kind)
+	{
+		switch (kind) {
+			case FriendsNotices::Notice::Kind::Online:
+				return "online";
+			case FriendsNotices::Notice::Kind::Request:
+				return "request";
+			case FriendsNotices::Notice::Kind::Invite:
+				break;
+		}
+		return "invite";
+	}
+} // namespace
+
 void FriendsController::notifyChanges(
 	const FriendsApi::FriendsSnapshot& snapshot, const QDateTime& now)
 {
@@ -32,28 +48,55 @@ void FriendsController::notifyChanges(
 	FriendsNotices::Diff diff =
 		FriendsNotices::diff(m_noticeMemory, snapshot, now);
 	m_noticeMemory = std::move(diff.memory);
-	if (diff.notices.isEmpty() || !LAUNCHER ||
+	dispatchNotices(diff.notices, now);
+}
+
+void FriendsController::notifyInvites(const QList<FriendsApi::Invite>& incoming)
+{
+	QList<FriendsNotices::Notice> notices;
+	for (const FriendsApi::Invite& invite : incoming) {
+		if (auto notice = FriendsNotices::invite(m_noticeMemory, invite)) {
+			notices.append(*notice);
+		}
+	}
+	dispatchNotices(notices, QDateTime::currentDateTimeUtc());
+}
+
+void FriendsController::dispatchNotices(
+	const QList<FriendsNotices::Notice>& notices, const QDateTime& now)
+{
+	if (notices.isEmpty() || !LAUNCHER ||
 		!LAUNCHER->settings()->get(kNotifySetting).toBool()) {
 		return;
 	}
-	for (const FriendsNotices::Notice& notice : diff.notices) {
-		const bool online =
-			notice.kind == FriendsNotices::Notice::Kind::Online;
-		const QByteArray kind = online ? "online" : "request";
+	using Kind = FriendsNotices::Notice::Kind;
+	for (const FriendsNotices::Notice& notice : notices) {
+		const QByteArray kind = kindName(notice.kind);
 		const QByteArray uuid = notice.uuid.toUtf8();
 		const QByteArray name = notice.name.toUtf8();
-		const QByteArray title =
-			(online ? tr("%1 is online") : tr("%1 sent you a friend request"))
-				.arg(notice.name)
-				.toUtf8();
+		QString title;
+		QString body;
+		switch (notice.kind) {
+			case Kind::Online:
+				title = tr("%1 is online").arg(notice.name);
+				body = FriendsDisplay::statusText(notice.status, now);
+				break;
+			case Kind::Request:
+				title = tr("%1 sent you a friend request").arg(notice.name);
+				body = tr("Accept or decline it in Friends.");
+				break;
+			case Kind::Invite:
+				title = tr("%1 invited you to %2")
+							.arg(notice.name, notice.host);
+				body = tr("Join from Friends within 10 minutes.");
+				break;
+		}
 		/* Never empty, so a desktop always has a message to show. */
-		const QByteArray body =
-			(online ? FriendsDisplay::statusText(notice.status, now)
-					: tr("Accept or decline it in Friends."))
-				.toUtf8();
+		const QByteArray titleBytes = title.toUtf8();
+		const QByteArray bodyBytes = body.toUtf8();
 		MMCOFriendsNotice payload{kind.constData(), uuid.constData(),
-								  name.constData(), title.constData(),
-								  body.constData()};
+								  name.constData(), titleBytes.constData(),
+								  bodyBytes.constData()};
 		LAUNCHER->dispatchPluginHook(MMCO_HOOK_FRIENDS_NOTICE, &payload);
 	}
 }

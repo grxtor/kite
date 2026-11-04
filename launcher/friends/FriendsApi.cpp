@@ -26,6 +26,8 @@
 
 #include <algorithm>
 
+#include "FriendsInvites.h"
+
 namespace FriendsApi
 {
 	namespace Code
@@ -38,6 +40,8 @@ namespace FriendsApi
 		const QString BlockedByYou = QStringLiteral("blocked_by_you");
 		const QString LimitReached = QStringLiteral("limit_reached");
 		const QString RateLimited = QStringLiteral("rate_limited");
+		const QString AddressNotShared = QStringLiteral("address_not_shared");
+		const QString InvitesOff = QStringLiteral("invites_off");
 	} // namespace Code
 
 	namespace MojangError
@@ -184,6 +188,7 @@ namespace FriendsApi
 			settings.shareIpServers = object.value("shareIpServers").toBool();
 			/* An older server lacks the field; joining defaults to on, as there. */
 			settings.allowJoin = object.value("allowJoin").toBool(true);
+			settings.allowInvites = object.value("allowInvites").toBool(true);
 			return settings;
 		}
 
@@ -277,6 +282,18 @@ namespace FriendsApi
 		QString block(const QString& uuid)
 		{
 			return blocks() + "/" + uuid;
+		}
+		QString invites()
+		{
+			return QStringLiteral("/v1/invites");
+		}
+		QString invite(const QString& uuid)
+		{
+			return invites() + "/" + uuid;
+		}
+		QString dismissInvite(const QString& uuid)
+		{
+			return invite(uuid) + "/dismiss";
 		}
 	} // namespace Path
 
@@ -442,10 +459,20 @@ namespace FriendsApi
 		if (kVisibilities.contains(visibility)) {
 			body.insert("visibility", visibility);
 		}
-		for (const char* key : {"hideServer", "shareIpServers", "allowJoin"}) {
+		for (const char* key :
+			 {"hideServer", "shareIpServers", "allowJoin", "allowInvites"}) {
 			if (partial.value(key).typeId() == QMetaType::Bool) {
 				body.insert(key, partial.value(key).toBool());
 			}
+		}
+		return compact(body);
+	}
+
+	QByteArray inviteBody(const QString& host, int port)
+	{
+		QJsonObject body{{"host", normalizeHost(host)}};
+		if (port >= 1 && port <= kMaxPort) {
+			body.insert("port", port);
 		}
 		return compact(body);
 	}
@@ -559,6 +586,11 @@ namespace FriendsApi
 		snapshot.outgoing = parsePeople(requests.value("outgoing"), &peopleOk);
 		if (!peopleOk) {
 			return std::nullopt;
+		}
+		/* A server without invites leaves the field out; that is no invites. */
+		if (const auto invites =
+				FriendsInvites::parseLists(object.value("invites").toObject())) {
+			snapshot.invites = *invites;
 		}
 		return snapshot;
 	}

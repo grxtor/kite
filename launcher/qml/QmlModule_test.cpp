@@ -632,10 +632,56 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("|1 unread message|3 unread messages|8 min left|1 min left|In game|success|tertiary"));
 	}
 
-	/* Join on an invite goes to the invite's server with the inviter's game
-	 * version; while they are not in a game there is no version to pick an
-	 * instance by, so no Join. */
-	void inviteJoinUsesTheInvitersVersion()
+	/* Join on an invite goes to the invite's server through ServerJoinFlow,
+	 * whatever the inviter plays now; a big server Kite knows lends its name
+	 * and versions; a home-network address is confirmed first. */
+	void inviteJoinGoesToTheInvitedServer()
+	{
+		QQmlEngine engine;
+		FakeShell shell;
+		shell.serverInstances = {QVariantMap{{"id", "new"},		 {"name", "NEW"},
+											 {"iconKey", ""},	 {"version", "1.21.4"},
+											 {"loader", ""},	 {"lastLaunch", 0},
+											 {"running", false}, {"canLaunch", true},
+											 {"fits", true}}};
+		auto root = createRoot(engine, &shell);
+		QVERIFY(root);
+		root->setProperty("selectedId", QStringLiteral("new"));
+		evaluate(root.get(), QStringLiteral(
+			"friendJoin.featured = [{ id: 'hypixel', name: 'Hypixel', address: 'mc.hypixel.net', "
+			"minVersion: '1.8', maxVersion: '', versions: [] }]"));
+		QCOMPARE(evaluate(root.get(), QStringLiteral(
+			"friendJoin.inviteServer({ host: 'mc.hypixel.net', port: 25565 }).name")).toString(),
+				 QStringLiteral("Hypixel"));
+		QCOMPARE(evaluate(root.get(), QStringLiteral(
+			"friendJoin.inviteServer({ host: 'play.other.net', port: 25570 }).address")).toString(),
+				 QStringLiteral("play.other.net:25570"));
+		QCOMPARE(evaluate(root.get(), QStringLiteral(
+			"friendJoin.inviteTip({ host: 'mc.hypixel.net', port: 25565 })")).toString(),
+				 QStringLiteral("Start NEW and join Hypixel"));
+
+		evaluate(root.get(), QStringLiteral(
+			"friendJoin.joinInvite({ name: 'Ann', host: 'mc.hypixel.net', port: 25565, addressKind: 'domain' })"));
+		QCOMPARE(shell.lastJoin, QStringLiteral("new:mc.hypixel.net"));
+
+		shell.lastJoin.clear();
+		evaluate(root.get(), QStringLiteral(
+			"friendJoin.joinInvite({ name: 'Ann', host: '192.168.1.20', port: 25565, addressKind: 'local' })"));
+		QVERIFY(shell.lastJoin.isEmpty());
+		// The flow's first child is the Loader of the address question.
+		auto* confirm = qvariant_cast<QObject*>(
+			evaluate(root.get(), QStringLiteral("friendJoin.children[0].item")));
+		QVERIFY(confirm);
+		QVERIFY(confirm->property("visible").toBool());
+		QCOMPARE(confirm->property("server").toMap().value("address").toString(),
+				 QStringLiteral("192.168.1.20"));
+		QVERIFY(QMetaObject::invokeMethod(confirm, "confirmed"));
+		QCOMPARE(shell.lastJoin, QStringLiteral("new:192.168.1.20"));
+	}
+
+	/* The invite picker marks who is already invited to this server, and
+	 * sends one invite at a time. */
+	void invitePickerKnowsWhoIsInvited()
 	{
 		QQmlEngine engine;
 		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
@@ -643,28 +689,62 @@ class QmlModuleTest : public QObject
 		component.setData(QStringLiteral(R"(
 			import QtQuick
 			import Kite.Components
-			FriendsWaiting {
-				friendsState: FriendsState { controller: %1 }
-				function targets() {
-					return invites.map((one) => {
-						var target = joinTarget(one)
-						return target.host + ":" + target.version + ":" + Format.friendJoinable(target)
-					}).join(",")
+			FriendInvitePicker {
+				controller: QtObject {
+					property bool enabled: true
+					property string state: "ready"
+					property bool loaded: true
+					property var friends: [{ uuid: "a", name: "Ann", state: "online" }, { uuid: "b", name: "Bea", state: "offline" }]
+					property var outgoingInvites: [{ uuid: "a", name: "Ann", host: "mc.example.net", port: 25565 }]
+					property var invites: []
+					property var incoming: []
+					property int onlineCount: 1
+					property int incomingCount: 0
+					property string sent: ""
+					function sendInvite(uuid, address) { sent = uuid + "@" + address }
+					signal changed()
+					signal actionFinished(string action, bool ok, string message)
 				}
-			})")
-							  .arg(fakeFriends(QStringLiteral(R"([
-				{ uuid: "a", name: "Ann", state: "playing", worldType: "server", host: "mc.example.net", port: 25565,
-				  version: "1.21.4", instance: "PvP" },
-				{ uuid: "b", name: "Bea", state: "online", statusText: "In Kite" }])"),
-											   QStringLiteral(R"([
-				{ uuid: "a", name: "Ann", host: "play.other.net", port: 25565, expiresAt: "" },
-				{ uuid: "b", name: "Bea", host: "mc.example.net", port: 25565, expiresAt: "" }])")))
-							  .toUtf8(),
+				server: ({ name: "Example", address: "MC.Example.net:25565" })
+				function words() {
+					return [invitedHere("a"), invitedHere("b"), everyone.length].join(",")
+				}
+			})").toUtf8(),
 						  QUrl());
-		std::unique_ptr<QObject> waiting(component.create());
-		QVERIFY2(waiting, qPrintable(component.errorString()));
-		QCOMPARE(callString(waiting.get(), "targets"),
-				 QStringLiteral("play.other.net:1.21.4:true,mc.example.net::false"));
+		std::unique_ptr<QObject> picker(component.create());
+		QVERIFY2(picker, qPrintable(component.errorString()));
+		QCOMPARE(callString(picker.get(), "words"), QStringLiteral("true,false,2"));
+		QVERIFY(QMetaObject::invokeMethod(picker.get(), "invite", Q_ARG(QVariant, QStringLiteral("b"))));
+		QCOMPARE(picker->property("sendingUuid").toString(), QStringLiteral("b"));
+		auto* controller = qvariant_cast<QObject*>(picker->property("controller"));
+		QCOMPARE(controller->property("sent").toString(), QStringLiteral("b@MC.Example.net:25565"));
+		QMetaObject::invokeMethod(controller, "actionFinished", Q_ARG(QString, QStringLiteral("sendInvite")),
+								  Q_ARG(bool, true), Q_ARG(QString, QString()));
+		QVERIFY(picker->property("sendingUuid").toString().isEmpty());
+	}
+
+	/* A share code's contents in words: singular and plural by count. */
+	void shareCodeSummaryWords()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			ShareCodeSummary {
+				function words() {
+					return [contentText({ mods: 1, resourcePacks: 2, shaderPacks: 1 }), contentText({}),
+							versionText({ minecraftVersion: "1.21.4", loader: "fabric", loaderVersion: "0.16.10" }),
+							versionText({ minecraftVersion: "1.21.4", loader: "vanilla" })].join("|")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> summary(component.create());
+		QVERIFY2(summary, qPrintable(component.errorString()));
+		QCOMPARE(callString(summary.get(), "words"),
+				 QStringLiteral("1 mod · 2 resource packs · 1 shader pack|No mods or packs|"
+								"Minecraft 1.21.4 · Fabric 0.16.10|Minecraft 1.21.4"));
 	}
 
 	/* A quick-join entry's tooltip says what a click does and what is
