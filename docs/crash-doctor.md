@@ -29,7 +29,10 @@ unless the player sends the crash to Kite ([Crash reports](#crash-reports)).
 
 What it reads: the live log (it has the JVM's start errors and Kite's own lines that
 `logs/latest.log` never has), the newest `crash-reports/crash-*.txt` and `hs_err_pid*.log` of the
-run, and the metadata of the enabled jars in `mods/`.
+run, and the metadata of the enabled jars in `mods/`. The hs_err file is the one of the JVM the log
+names (the crash header's `pid=`, else "Minecraft process ID"), in the game root or the temporary
+folder the JVM falls back to; without one, the newest in the game root that is not older than the
+launch.
 
 ## On screen
 
@@ -41,12 +44,20 @@ run, and the metadata of the enabled jars in `mods/`.
 - Home says "Crashed: <cause>" where it said "Crashed last time" (`InstanceList`'s `crashCause`).
 - When nothing fits it says Kite couldn't find the cause and offers to send the crash to Kite (and
   to share the log, after asking).
+- Under "couldn't tell" and under the first cause of a native crash, the exit code in words: "Exit
+  code 0xC0000005 (memory access violation)" for the Windows statuses in `CrashExitCodes`
+  (0xC0000005, 0xC0000409, 0xC000001D, 0xC00000FD, 0xC0000374, 0x80000003, in either their signed or
+  unsigned form), the plain number for any other code.
+- When the instance crashed like that at least twice in a row and a later launch then worked, in
+  the last 30 days, the first cause says so: it points at a driver or an overlay, not at a mod. The
+  count is the instance's `CrashDoctorNativeCrashes` (`CrashStreak`).
 - When rules that came later know a crash Kite could not explain, the strip says "Fix found:
   <cause>" with its fix, and a desktop notification says so once.
 
 Review snapshots: dev routes `crashwindow=<id>` (as if the crash just happened) and
-`crashdoctor=<id>` (as if read again later), plus `review=crashdetails` on the Log tab. For the
-crash reports: `crashsend=<id>` sends that crash as Send would, `crashrules=<file>` uses that
+`crashdoctor=<id>` (as if read again later), plus `review=crashdetails` on the Log tab;
+`crashos=windows` before them reads the crash as if the game ran on Windows. For the crash
+reports: `crashsend=<id>` sends that crash as Send would, `crashrules=<file>` uses that
 `crash-rules.json` as if the meta server sent it.
 
 ## A rule
@@ -55,6 +66,7 @@ crash reports: `crashsend=<id>` sends that crash as Send would, `crashrules=<fil
 {
   "id": "mods.missing-dependency",       // ^[a-z0-9]+(\.[a-z0-9-]+)+$, stable
   "priority": 82,                        // 0..100
+  "fallback": false,                     // true: says what was seen, not why
   "key": "mod",                          // captures that tell findings apart (string or list)
   "when": { "loaders": ["fabric"], "minecraft": { "min": "1.17" }, "os": ["macos"] },
   "match": { "any": [pattern], "all": [pattern], "none": [pattern], "each": true },
@@ -80,8 +92,13 @@ X requires Y") can use the whole log; a generic exception should not, or a harml
 in the run gets the blame.
 
 **`when`** (all must hold): `loaders`, `minecraft` `{min, max}`, `os`, `arch`, `java`
-(`aboveRecommended` / `belowRecommended`), `customJvmArgs`, `memoryRoom`, `exitCode`, `exitStatus`,
-and per finding `inSet` (`performanceMods`, `installed`) and `installed`.
+(`aboveRecommended` / `belowRecommended`), `customJvmArgs`, `memoryRoom`, `exitCode` (a Windows
+status matches in its signed and unsigned form), `exitStatus`, `mods` (one of these mod ids is
+installed), and per finding `inSet` (`performanceMods`, `installed`) and `installed`.
+
+A **fallback** rule names what Kite saw without knowing why (a native frame no rule knows, an exit
+code alone). Its card shows only while no other cause explains the crash, and the crash still counts
+as one Kite could not explain: it can be sent to Kite and is read again when newer rules come.
 
 **Capture types**: `modId`, `modName`, `text`, `version`, `className` (`/` becomes `.`, needs a
 dot), `classFileVersion` (65 becomes 21), `javaMajor` (8..40), `jarFile` (a file name, folders
@@ -109,6 +126,21 @@ avoid a suffix right after a placeholder ("Java {javaMajor} ile aç", not "{java
 7. A rule with several findings is one card; its fix acts on all of them at once.
 8. Nothing found: Kite says it could not tell, and offers the log upload.
 
+## Native crashes
+
+When the JVM dies in native code it leaves an hs_err file and prints its header to the log; the
+problematic frame (`# C  [atio6axx.dll+0x1a1a20]`) says where. On Windows a crash outside the JVM's
+reach (an overlay's thread, `__fastfail`) leaves only the exit code.
+
+| Seen | Rule | Says |
+|---|---|---|
+| A graphics driver as the problematic frame (AMD `atio6axx`, Intel `ig*icd*`/`igc64`, NVIDIA `nvoglv*`/`nvgpucomp*`, Mesa, Apple) | `gpu.driver-native-crash`, `gpu.driver-crash-sodium` with Sodium, Embeddium, Rubidium, Iris or Oculus | Update the driver from the card's maker; shaders off |
+| An overlay's DLL on the crashing thread (`RTSSHooks64`, `GameOverlayRenderer64`, `DiscordHook64`, `graphics-hook64`, `nvspcap64`) | `overlay.rivatuner`, `.steam`, `.discord`, `.obs`, `.nvidia` | Turn that overlay off for Minecraft |
+| An antivirus hook on the crashing thread (`aswhook`, `atcuf64`, `hmpalert`, `sysfer`, `mbae64`, …) | `native.antivirus-hook` | Add Java and Kite as exceptions |
+| `V  [jvm.dll+…]` | `native.jvm-crash` (fallback) | Java itself; the Java Kite picks |
+| Any other `C` frame | `native.unknown-library` (fallback) | Names the file; send it to Kite |
+| Only a Windows status as the exit code | `exit.windows-access-violation`, `exit.windows-native-crash` (fallbacks) | Driver or overlay, most often |
+
 ## What a fix can do
 
 Rules can name these actions and nothing else; a fix with any other action or parameter is left out
@@ -128,7 +160,7 @@ when the file loads.
 | `turnOffKiteMod` | | Turns Kite's own mod off for this instance | |
 | `resetConfigFile` | `file` | Moves `config/<file>` aside | yes |
 | `resetOptions` | | Moves `options.txt` aside | yes |
-| `turnOffShaders` | | `enableShaders=false` in Iris / Oculus settings | |
+| `turnOffShaders` | | `enableShaders=false` in Iris / Oculus settings; offered only while one of them has a shader pack on | |
 | `setGraphicsBackend` | `backend` | 26.2+ Graphics API (`opengl`, `default`) | |
 | `useDedicatedGpu` | | Windows: the faster graphics card for Java | |
 | `repairGameFiles` | | Next launch downloads every library again | |
@@ -161,8 +193,9 @@ The rules come from the network and the log comes from mods, servers and chat; n
 
 ## Crash reports
 
-A crash no rule knew, or one whose fix did not help (the instance's `CrashDoctorLastFix` names the
-rule of the last fix tried, and the game crashed with that rule again after it), can be sent to
+A crash no rule knew (fallbacks do not count), or one whose fix did not help (the instance's
+`CrashDoctorLastFix` names the rule of the last fix tried, and the game crashed with that rule
+again after it), can be sent to
 Kite's server, so that someone writes the rule and the next `crash-rules.json` fixes it for
 everyone. The server side, its storage and the rule-writing workflow are in the friends server's
 README (`server/friends`, "Crash reports").
@@ -173,8 +206,8 @@ README (`server/friends`, "Crash reports").
   pressed; it is off by default and Settings > Log upload turns it off. Only a fresh crash is sent
   without asking.
 - **Payload** (`CrashPayload`, `formatVersion` 1): `signature`, `kite`, `os`, `arch`, `java`
-  (major or `null`), `minecraft`, `loader` (`type`, `version`), `rules` (matched rule ids, empty
-  unless a fix did not help), `culprit` (optional mod id), `mods` (`{id, version}`, at most 500, each
+  (major or `null`), `minecraft`, `loader` (`type`, `version`), `rules` (matched rule ids: the
+  fallbacks that matched, or the rule whose fix did not help), `culprit` (optional mod id), `mods` (`{id, version}`, at most 500, each
   id once, none for vanilla) and `lines`. No account, name, instance, world or path. Sent without a
   token to `FriendsServerUrl` + `/v1/crash-reports`.
 - **Outbox** (`CrashOutbox`, `<data>/crash-reports/outbox.json`): a report that cannot go (no

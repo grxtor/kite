@@ -2536,7 +2536,12 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorModel</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+131"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+134"/>
+        <source>Lately it crashed like this %1 times and then started on a later try, which points at the graphics driver or an overlay rather than a mod.</source>
+        <translation>Son zamanlarda %1 kez böyle çöktü, sonra bir sonraki denemede açıldı; bu bir moddan çok ekran kartı sürücüsünü ya da bir kaplamayı gösterir.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>%1 (needed by %2)</source>
         <translation>%1 (%2 istiyor)</translation>
     </message>
@@ -2566,7 +2571,12 @@ Ayrıntılar günlük dosyasında:
         <translation>Bu kurulumun özel Java ayarları kapatılsın mı? Geri al onları geri getirir.</translation>
     </message>
     <message>
-        <location line="+69"/>
+        <location line="+50"/>
+        <source>Exit code %1</source>
+        <translation>Çıkış kodu %1</translation>
+    </message>
+    <message>
+        <location line="+28"/>
         <location line="+4"/>
         <source>This crash is no longer known.</source>
         <translation>Bu çökmenin kaydı artık yok.</translation>
@@ -2639,15 +2649,48 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorService</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+108"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+131"/>
         <source>Crash rules</source>
         <translation>Çökme kuralları</translation>
     </message>
 </context>
 <context>
+    <name>CrashExitCodes</name>
+    <message>
+        <location filename="../launcher/crashdoctor/CrashExitCodes.cpp" line="+38"/>
+        <source>memory access violation</source>
+        <translation>bellek erişim hatası</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>stack buffer overrun</source>
+        <translation>yığın arabelleği taşması</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>illegal instruction</source>
+        <translation>geçersiz işlemci komutu</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>stack overflow</source>
+        <translation>yığın taşması</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>heap corruption</source>
+        <translation>bellek bozulması</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>breakpoint</source>
+        <translation>kesme noktası</translation>
+    </message>
+</context>
+<context>
     <name>CrashFollowUp</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashFollowUp.cpp" line="+206"/>
+        <location filename="../launcher/crashdoctor/CrashFollowUp.cpp" line="+211"/>
         <source>A fix was found</source>
         <translation>Çözüm bulundu</translation>
     </message>
@@ -4152,12 +4195,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bu çökme Kite&apos;ın tanıdığı bir şeye benzemiyor. Günlüğü paylaş, yardım edebilecek birine göster; hesap bilgilerin ve kullanıcı klasörün gizlenir.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Exit code %1</source>
-        <translation>Çıkış kodu %1</translation>
-    </message>
-    <message>
-        <location line="-3"/>
+        <location line="-1"/>
         <source>Kite couldn&apos;t find the cause</source>
         <translation>Kite nedenini bulamadı</translation>
     </message>
@@ -4167,7 +4205,7 @@ Lütfen tekrar dene.</translation>
         <translation>Minecraft</translation>
     </message>
     <message>
-        <location line="+69"/>
+        <location line="+74"/>
         <source>Singleplayer</source>
         <translation>Tek oyunculu</translation>
     </message>
@@ -8683,7 +8721,7 @@ Neden:
 <context>
     <name>LoggedProcess</name>
     <message>
-        <location filename="../launcher/LoggedProcess.cpp" line="+105"/>
+        <location filename="../launcher/LoggedProcess.cpp" line="+91"/>
         <source>Process exited with code %1.</source>
         <translation>İşlem %1 koduyla çıktı.</translation>
     </message>
@@ -8802,7 +8840,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+411"/>
+        <location filename="../launcher/qml/Main.qml" line="+414"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -9908,7 +9946,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+875"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+881"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -12903,7 +12941,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+393"/>
+        <location line="+398"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>

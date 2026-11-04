@@ -178,7 +178,11 @@ void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh)
 	const QString id = snapshot.instanceId;
 	m_busy.insert(id);
 	emit busyChanged(id);
-	analyseAsync(snapshot, [this, id, fresh](const CrashDoctor::Report& report) {
+	CrashDoctor::Snapshot read = snapshot;
+	if (!m_debugOs.isEmpty()) {
+		read.facts.os = m_debugOs;
+	}
+	analyseAsync(read, [this, id, fresh](const CrashDoctor::Report& report) {
 		m_reports.insert(id, report);
 		m_busy.remove(id);
 		emit busyChanged(id);
@@ -251,6 +255,11 @@ bool CrashDoctorService::debugUseCatalog(const QString& path)
 	QFile file(path);
 	followUp();
 	return file.open(QIODevice::ReadOnly) && useCatalog(file.readAll(), QStringLiteral("dev"));
+}
+
+void CrashDoctorService::debugUseOs(const QString& os)
+{
+	m_debugOs = os;
 }
 
 std::optional<CrashDoctor::Report> CrashDoctorService::report(const QString& instanceId) const

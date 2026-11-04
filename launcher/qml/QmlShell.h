@@ -443,6 +443,9 @@ class QmlShell : public QObject
 	 * sent it, which reads kept crashes again. */
 	Q_INVOKABLE void debugSendCrash(const QString& id);
 	Q_INVOKABLE void debugUseCrashRules(const QString& path);
+	/* Dev only: "crashos=windows" reads crashes as if the game ran on that
+	 * system, for snapshots of Windows-only causes and fixes. */
+	Q_INVOKABLE void debugUseCrashOs(const QString& os);
 	/* Dev only: a real mouse click at window point "x,y" for review snapshots
 	 * ("click=x,y[,right[,delayMs]]"). The pointer moves there first so
 	 * hover-only controls show; delayMs defaults to 1000.
