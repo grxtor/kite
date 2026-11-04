@@ -149,10 +149,15 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 
 	mainLayout->addWidget(qrGroupBox);
 
+	/* The link is paste.ee's reply: escaped, so it stays text and one href,
+	 * and only a web link is offered as a link to open. */
+	const QUrl pasteUrl(pasteLink);
+	const bool webLink = pasteUrl.scheme() == QLatin1String("https") ||
+						 pasteUrl.scheme() == QLatin1String("http");
 	m_pasteLinkLabel = new QLabel(this);
-	m_pasteLinkLabel->setText(
-		tr("Paste.ee link: <a href=\"%1\">%1</a>").arg(pasteLink));
-	m_pasteLinkLabel->setOpenExternalLinks(true);
+	m_pasteLinkLabel->setText(tr("Paste.ee link: <a href=\"%1\">%1</a>")
+								  .arg(pasteLink.toHtmlEscaped()));
+	m_pasteLinkLabel->setOpenExternalLinks(webLink);
 	m_pasteLinkLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
 	m_pasteLinkLabel->setAlignment(Qt::AlignCenter);
 	m_pasteLinkLabel->setWordWrap(true);
@@ -166,8 +171,9 @@ CrashReportDialog::CrashReportDialog(const QString& pasteLink,
 	buttonLayout->addWidget(copyLinkBtn);
 
 	auto* openBtn = new QPushButton(tr("Open in Browser"), this);
+	openBtn->setEnabled(webLink);
 	connect(openBtn, &QPushButton::clicked, this,
-			[pasteLink]() { QDesktopServices::openUrl(QUrl(pasteLink)); });
+			[pasteUrl]() { QDesktopServices::openUrl(pasteUrl); });
 	buttonLayout->addWidget(openBtn);
 
 	auto* closeBtn = new QPushButton(tr("Close"), this);

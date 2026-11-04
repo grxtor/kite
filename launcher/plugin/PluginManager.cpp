@@ -2652,6 +2652,23 @@ namespace
 				return QSystemTrayIcon::NoIcon;
 		}
 	}
+
+	/* The body of a tray notification. Notification servers on Linux and the
+	 * BSDs may read the body as markup (the title is plain text there), and it
+	 * often carries someone else's words (a friend's status, a chat line), so
+	 * & < > are escaped. macOS and Windows show it as it is. */
+	QString mmco_message_body(const QString& message)
+	{
+#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
+		QString escaped = message;
+		escaped.replace(QLatin1Char('&'), QLatin1String("&amp;"));
+		escaped.replace(QLatin1Char('<'), QLatin1String("&lt;"));
+		escaped.replace(QLatin1Char('>'), QLatin1String("&gt;"));
+		return escaped;
+#else
+		return message;
+#endif
+	}
 } // namespace
 
 QWindow* PluginManager::resolveShellWindow()
@@ -2983,7 +3000,7 @@ int PluginManager::api_tray_show_message(void* mh, void* tray_handle,
 	if (msecs <= 0)
 		msecs = 10000;
 	const QString qtitle = QString::fromUtf8(title ? title : "");
-	const QString qmsg = QString::fromUtf8(message ? message : "");
+	const QString qmsg = mmco_message_body(QString::fromUtf8(message ? message : ""));
 	const auto micon = mmco_message_icon(icon_type);
 
 	if (tray_handle) {
