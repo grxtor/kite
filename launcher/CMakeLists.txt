@@ -1079,6 +1079,12 @@ set(CRASHDOCTOR_SOURCES
     crashdoctor/CrashFixer.cpp
     crashdoctor/CrashRules.h
     crashdoctor/CrashRules.cpp
+    crashdoctor/CrashScrubber.h
+    crashdoctor/CrashScrubber.cpp
+    crashdoctor/CrashSignature.h
+    crashdoctor/CrashSignature.cpp
+    crashdoctor/CrashTrace.h
+    crashdoctor/CrashTrace.cpp
 )
 
 set(LOGIC_SOURCES
@@ -1251,6 +1257,14 @@ add_unit_test(CrashEngine
     )
 add_unit_test(CrashFixer
     SOURCES crashdoctor/CrashFixer_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(CrashSignature
+    SOURCES crashdoctor/CrashSignature_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(CrashScrubber
+    SOURCES crashdoctor/CrashScrubber_test.cpp
     LIBS Kite_core
     )
 add_unit_test(CoreSupersededPlugins
