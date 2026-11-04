@@ -238,6 +238,40 @@ class FriendsInvitesTest : public QObject
 		QVERIFY(controller.invites().isEmpty());
 		controller.m_enabled = false;
 	}
+
+	/* A socket-pushed invite is in no snapshot: a live status event that
+	 * re-applies the friends list keeps it (FriendsController::applyLive()). */
+	void aLiveStatusEventKeepsAPushedInvite()
+	{
+		QTemporaryDir dir;
+		FriendsController controller(dir.path());
+		FriendsApi::Friend jeb;
+		jeb.uuid = kJeb;
+		jeb.name = QStringLiteral("jeb_");
+		jeb.status.state = FriendsApi::Status::State::Online;
+		FriendsApi::FriendsSnapshot base;
+		base.friends = {jeb};
+		/* Off while the lists are applied: fetching faces needs a launcher this test has not. */
+		controller.applySnapshot(base);
+
+		const QDateTime now = QDateTime::currentDateTimeUtc();
+		constexpr int kTenMinutes = 10 * 60;
+		QJsonObject invite = inviteJson(kJeb, "jeb_", 0);
+		invite["createdAt"] = now.toString(Qt::ISODateWithMs);
+		invite["expiresAt"] = now.addSecs(kTenMinutes).toString(Qt::ISODateWithMs);
+		controller.m_enabled = true;
+		controller.onSocketFrame({{"type", "invite"}, {"invite", invite}});
+		QCOMPARE(controller.invites().size(), 1);
+
+		controller.m_enabled = false;
+		controller.onSocketFrame(json(R"({ "type": "friend.status", "uuid": "853c80ef-3c37-49fd-aa49-938b674adae6",
+			"status": { "state": "playing", "instance": "Hypixel", "version": "1.21.4",
+						"world": { "type": "server", "host": "mc.hypixel.net", "port": 25565 },
+						"joinable": true } })"));
+		QCOMPARE(controller.friends().first().toMap().value("state").toString(), QStringLiteral("playing"));
+		QCOMPARE(controller.invites().size(), 1);
+		QCOMPARE(controller.invites().first().toMap().value("name").toString(), QStringLiteral("jeb_"));
+	}
 };
 
 QTEST_GUILESS_MAIN(FriendsInvitesTest)
