@@ -311,7 +311,7 @@ set(Kite_BUILD_TIMESTAMP "${TODAY}")
 
 ######## Version numbers ########
 set(Kite_VERSION_MAJOR    1)
-set(Kite_VERSION_MINOR    2)
+set(Kite_VERSION_MINOR    3)
 set(Kite_VERSION_HOTFIX   0)
 
 set(Kite_RELEASE_VERSION_NAME "${Kite_VERSION_MAJOR}.${Kite_VERSION_MINOR}.${Kite_VERSION_HOTFIX}")
