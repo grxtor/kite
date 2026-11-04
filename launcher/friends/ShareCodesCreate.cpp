@@ -86,13 +86,10 @@ QObject* ShareCodesController::createInstance(const QString& name,
 		const QString named = missing.mid(0, kNamedMissing).join(QStringLiteral(", "));
 		const int more = int(missing.size()) - kNamedMissing;
 		finishAction("createInstance", true,
-					 more > 0 ? tr("%1 is ready without %2 and %3 more: they are gone "
-								   "from Modrinth or CurseForge")
+					 more > 0 ? tr("%1 is ready, but %2 and %3 more couldn't be downloaded")
 									.arg(name, named)
 									.arg(more)
-							  : tr("%1 is ready without %2: gone from Modrinth or "
-								   "CurseForge")
-									.arg(name, named));
+							  : tr("%1 is ready, but %2 couldn't be downloaded").arg(name, named));
 	});
 	return watcher;
 }

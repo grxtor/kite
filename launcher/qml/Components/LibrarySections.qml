@@ -26,6 +26,8 @@ Item {
     property var launchOptionsFor: null
     // id -> export / shortcut controller; the ⋯ menu offers "Export…" and "Create shortcut…" once set.
     property var exportControllerFor: null
+    // QmlShell.shareCodes, for "Share as code…".
+    property var shareCodes: null
     property var shortcutControllerFor: null
     // LibraryController: group management, persistent folds, group drops, folders and Duplicate
     // with options. Without it folds are session-only and Duplicate goes out as duplicateRequested.
@@ -95,6 +97,9 @@ Item {
     }
     function createShortcut(id) {
         flows.createShortcut(id)
+    }
+    function shareInstance(id, name) {
+        flows.shareAsCode(id, name)
     }
     function duplicateInstance(id) {
         var info = root.library ? root.library.describe(id) : ({})
@@ -209,6 +214,7 @@ Item {
     InstanceExportFlows {
         id: flows
         exportControllerFor: root.exportControllerFor
+        shareCodes: root.shareCodes
         shortcutControllerFor: root.shortcutControllerFor
         library: root.library
     }

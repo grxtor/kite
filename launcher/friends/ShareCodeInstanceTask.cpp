@@ -93,7 +93,7 @@ void ShareCodeInstanceTask::get(const QUrl& url, Answer done)
 void ShareCodeInstanceTask::post(const QUrl& url, const QByteArray& body,
 								 Answer done)
 {
-	m_post = std::make_unique<Net::JsonPost>(tr("Share code content"), url, body);
+	m_post.reset(new Net::JsonPost(tr("Share code content"), url, body));
 	Net::JsonPost* request = m_post.get();
 	connect(request, &Task::succeeded, this,
 			[request, done]() { done(request->response()); });

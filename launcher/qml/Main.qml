@@ -103,6 +103,40 @@ ApplicationWindow {
     // or "instance=<id>;tab=mods". "nav=<path>" goes through navigate().
     // "accounts-demo" is read by AccountsController, not here.
     property string devRoute: ""
+    property string devJoinInvite: ""
+    property string devInviteSend: ""
+    property var devShareSteps: []
+    Connections {
+        target: root.devInviteSend.length > 0 ? root.friendsController : null
+        function onChanged() {
+            var friend = root.friendsController.friends.find((one) => one.name === root.devInviteSend)
+            if (friend) {
+                root.devInviteSend = ""
+                invitePicker.invite(friend.uuid)
+            }
+        }
+    }
+    Connections {
+        target: root.devShareSteps.length > 0 ? root.shareCodes : null
+        function onPrepared(id) {
+            if (root.devShareSteps.indexOf("make") >= 0)
+                root.shareCodes.share(id)
+        }
+        function onLookedUp() {
+            if (root.devShareSteps.indexOf("create") >= 0)
+                Qt.callLater(() => root.dialog(newInstanceLoader).createFromCode())
+        }
+    }
+    Connections {
+        target: root.devJoinInvite.length > 0 ? root.friendsController : null
+        function onChanged() {
+            var invite = root.friendsController.invites.find((one) => one.name === root.devJoinInvite)
+            if (invite) {
+                root.devJoinInvite = ""
+                friendJoin.joinInvite(invite)
+            }
+        }
+    }
     function applyDevRoute() {
         // Routes reach into pages the route may not show; build them all.
         for (var slot of [settingsLoader, discoverLoader, instanceLoader, accountsLoader, friendsLoader])
@@ -185,6 +219,26 @@ ApplicationWindow {
                 Qt.callLater(homePage.openGroupMenu, value)
             else if (key === "duplicate")
                 Qt.callLater(homePage.duplicateInstance, value)
+            // share=<id>: "Share as code" for that instance.
+            else if (key === "share")
+                Qt.callLater(homePage.shareInstance, value, value)
+            // After share=<id>: sharemake makes the code once the instance is read.
+            else if (key === "sharemake")
+                root.devShareSteps = root.devShareSteps.concat(["make"])
+            // After newinstance=code: sharecode=<code> types and looks up a code; sharecreate then creates it.
+            else if (key === "sharecode")
+                Qt.callLater((code) => root.dialog(newInstanceLoader).enterShareCode(code), value)
+            else if (key === "sharecreate")
+                root.devShareSteps = root.devShareSteps.concat(["create"])
+            // invite=<address>: the friend picker for that server.
+            else if (key === "invite")
+                Qt.callLater(invitePicker.openFor, { name: value, address: value })
+            // After invite=: invitesend=<name> presses that friend's Invite once the list is read.
+            else if (key === "invitesend")
+                root.devInviteSend = value
+            // joininvite=<name>: Join on that friend's invite, once it has arrived.
+            else if (key === "joininvite")
+                root.devJoinInvite = value
             // The next keys act on the instance page, after instance=<id>.
             else if (key === "instancemenu")
                 Qt.callLater(instancePage.openHeaderMenu)
@@ -270,6 +324,7 @@ ApplicationWindow {
 
     // Null where this build has no friends.
     readonly property var friendsController: root.shellValue("friends")
+    readonly property var shareCodes: root.shellValue("shareCodes")
     // A window narrower than friendsPanelMinWindow starts without the panel and
     // leaves the FriendsPanelOpen setting alone; the toggle still opens it.
     // FriendsPanelOpen/Expanded/Width are read at start-up and written on change.
@@ -283,6 +338,7 @@ ApplicationWindow {
         pinger: root.serverPinger
         featured: root.featuredList
         friends: root.friendsController ? root.friendsController.friends : []
+        invites: root.friendsController ? root.friendsController.invites : []
         active: Format.friendsPhase(root.friendsController) === "ready"
                 && (root.friendsPanelShown || root.page === "friends" || root.page === "home")
     }
@@ -323,13 +379,13 @@ ApplicationWindow {
     }
     readonly property QtObject newInstanceDialog: newInstanceLoader.item
 
-    // mode is "create" (default) or "import"; source pre-fills the import field.
+    // mode is "create" (default), "import" or "code"; source pre-fills the import field.
     function openNewInstance(mode, source) {
         if (!root.shell || !root.shell.newInstance)
             return
         var instanceDialog = root.dialog(newInstanceLoader)
         instanceDialog.controller = root.shell.newInstance
-        instanceDialog.mode = mode === "import" ? "import" : "create"
+        instanceDialog.mode = mode === "import" || mode === "code" ? mode : "create"
         instanceDialog.presetSource = source || ""
         instanceDialog.open()
     }
@@ -819,8 +875,10 @@ ApplicationWindow {
                 pinger: root.serverPinger
                 friends: root.friendsController ? root.friendsController.friends : []
                 joinFlow: serverJoin
+                canInvite: Format.friendsPhase(root.friendsController) === "ready"
                 onJoinRequested: (server) => serverJoin.join(server)
                 onJoinWithRequested: (server) => serverJoin.joinWithAnother(server)
+                onInviteRequested: (server) => invitePicker.openFor(server)
             }
         ]
         trailing: [
@@ -953,6 +1011,7 @@ ApplicationWindow {
                         launchOptionsFor: root.launchOptions
                         exportControllerFor: root.exportController
                         shortcutControllerFor: root.shortcutController
+                        shareCodes: root.shareCodes
                         msaSignedIn: root.shellValue("accountKind") === "Microsoft"
                         friends: root.friendsController
                         friendPlaces: root.friendPlaces
@@ -992,6 +1051,7 @@ ApplicationWindow {
                                 pluginList: root.shellResult("pluginList")
                                 launcherLogs: root.shellValue("launcherLogs")
                                 friends: root.friendsController
+                                shareCodes: root.shareCodes
                                 friendsAccountName: root.shellValue("accountKind") === "Microsoft"
                                                     ? root.shellValue("accountName", "") : ""
                                 onOpenPathRequested: (path) => root.call("openPath", path)
@@ -1047,6 +1107,7 @@ ApplicationWindow {
                                 onDeleteRequested: (id, name) => root.askDelete(id, name)
                                 // root.call() forwards one argument only.
                                 onJoinServerRequested: (id, address) => { if (root.shell) root.shell.joinServer(id, address) }
+                                onInviteRequested: (name, address) => invitePicker.openFor({ name: name, address: address })
                                 pluginSurfacesFor: root.pluginSurfaces
                                 onOpenPathRequested: (path) => root.call("openPath", path)
                                 exportControllerFor: root.exportController
@@ -1131,6 +1192,7 @@ ApplicationWindow {
         sourceComponent: NewInstanceDialog {
             iconsModel: root.shellValue("iconsModel")
             shell: root.shell
+            shareCodes: root.shareCodes
             onCreated: root.page = "home"
             onOpenInstanceRequested: (id) => root.navigate("instance/" + id + "/content")
         }
@@ -1249,7 +1311,25 @@ ApplicationWindow {
         shell: root.shell
         selectedId: root.selectedId
         toast: toast
+        serverFlow: serverJoin
+        featured: root.featuredList
+        pinger: root.serverPinger
         onCreateInstanceRequested: (version) => root.createInstanceOn(version)
+    }
+
+    FriendInvitePicker {
+        id: invitePicker
+        controller: root.friendsController
+        places: root.friendPlaces
+    }
+
+    Connections {
+        target: root.shareCodes
+        function onActionFinished(action, ok, message) {
+            // The dialogs show their own; a finished instance's left-out content has no dialog left to say it.
+            if ((action === "createInstance" || action === "deleteCode") && message.length > 0)
+                toast.show(message, ok ? "success" : "danger")
+        }
     }
 
     ServerJoinFlow {

@@ -44,6 +44,8 @@ Item {
     signal openPathRequested(string path)
     // From the Servers tab's "Join" button.
     signal joinServerRequested(string id, string address)
+    // "Invite a friend…" on a server of the Servers tab.
+    signal inviteRequested(string name, string address)
 
     // The library's instance actions; set `manageable` once Main.qml answers them, until then the
     // header menu offers only what this page can do.
@@ -438,6 +440,8 @@ Item {
                 serversDir: root.details ? root.details.serversDir : ""
                 pinger: root.shell ? root.shell.serverPinger : null
                 friends: root.shell && root.shell.friends ? root.shell.friends.friends : []
+                canInvite: Format.friendsPhase(root.shell ? root.shell.friends : null) === "ready"
+                onInviteRequested: (name, address) => root.inviteRequested(name, address)
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onJoinRequested: (address) => root.joinServerRequested(root.instanceId, address)
             }
@@ -587,6 +591,12 @@ Item {
             onTriggered: exportFlows.exportInstance(root.instanceId)
         }
         MenuEntry {
+            visible: exportFlows.canShare
+            text: qsTr("Share as code…")
+            icon.source: Icons.url("share")
+            onTriggered: exportFlows.shareAsCode(root.instanceId, instanceMenu.name)
+        }
+        MenuEntry {
             visible: exportFlows.canCreateShortcut
             text: qsTr("Create shortcut…")
             icon.source: Icons.url("external-link")
@@ -610,5 +620,6 @@ Item {
         exportControllerFor: root.exportControllerFor
         shortcutControllerFor: root.shortcutControllerFor
         library: root.library
+        shareCodes: root.shell ? root.shell.shareCodes : null
     }
 }

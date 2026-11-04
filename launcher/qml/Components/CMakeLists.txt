@@ -245,6 +245,13 @@ qt_add_qml_module(Kite_qml_components
         FriendsStaleBar.qml
         CountPill.qml
         FriendJoinFlow.qml
+        FriendInvitePicker.qml
+        InviteAddressDialog.qml
+        ShareCodeSummary.qml
+        ShareCodeBox.qml
+        ShareCodeDialog.qml
+        ShareCodeImportPane.qml
+        ShareCodesGroup.qml
         FriendsPending.qml
         FriendJoinDialog.qml
         FriendsPage.qml
@@ -354,15 +361,19 @@ qt_add_qml_module(Kite_qml_components
         icons/puzzle.svg
         icons/refresh.svg
         icons/search.svg
+        icons/send.svg
         icons/server.svg
         icons/settings.svg
+        icons/share.svg
         icons/sliders.svg
         icons/sort.svg
         icons/stop.svg
         icons/sun.svg
         icons/terminal.svg
         icons/trash.svg
+        icons/undo.svg
         icons/user.svg
+        icons/user-plus.svg
         icons/users.svg
         icons/x.svg
         icons/zap.svg

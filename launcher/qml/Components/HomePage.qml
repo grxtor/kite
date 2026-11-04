@@ -36,6 +36,7 @@ Item {
     property var library: null
     property var launchOptionsFor: null
     property var exportControllerFor: null
+    property var shareCodes: null
     property var shortcutControllerFor: null
 
     signal launchRequested(string id)
@@ -69,6 +70,7 @@ Item {
     function openInstanceMenu(id) { sections.openInstanceMenu(id, false, null, "", "") }
     function openGroupMenu(group) { sections.openGroupMenu(group) }
     function duplicateInstance(id) { sections.duplicateInstance(id) }
+    function shareInstance(id, name) { sections.shareInstance(id, name) }
     function focusSearch() { toolbar.focusSearch() }
 
     // What the hero shows with nothing picked: the last played instance, else the first.
@@ -239,6 +241,7 @@ Item {
                     viewMode: root.viewMode
                     launchOptionsFor: root.launchOptionsFor
                     exportControllerFor: root.exportControllerFor
+                    shareCodes: root.shareCodes
                     shortcutControllerFor: root.shortcutControllerFor
                     library: root.library
 

@@ -30,6 +30,7 @@
 #include <optional>
 
 #include "FriendsApi.h"
+#include "QObjectPtr.h"
 #include "ShareCodes.h"
 #include "ShareManifest.h"
 
@@ -100,7 +101,7 @@ class ShareCodesController : public QObject
 
 	FriendsController* m_friends;
 	QHash<QString, ShareManifest::Built> m_prepared;
-	std::unique_ptr<Net::JsonPost> m_hashLookup;
+	unique_qobject_ptr<Net::JsonPost> m_hashLookup;
 	std::optional<ShareCodes::Code> m_lookedUp;
 	QVariantList m_codes;
 	bool m_codesLoaded = false;

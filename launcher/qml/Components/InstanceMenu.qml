@@ -141,6 +141,12 @@ Menu {
         onTriggered: root.exportFlows.exportInstance(root.targetId)
     }
     MenuEntry {
+        visible: !!root.exportFlows && root.exportFlows.canShare
+        text: qsTr("Share as code…")
+        icon.source: Icons.url("share")
+        onTriggered: root.exportFlows.shareAsCode(root.targetId, root.targetName)
+    }
+    MenuEntry {
         visible: !!root.exportFlows && root.exportFlows.canCreateShortcut
         text: qsTr("Create shortcut…")
         icon.source: Icons.url("external-link")

@@ -128,9 +128,9 @@ void ShareCodesController::prepare(const QString& instanceId)
 								  Qt::QueuedConnection);
 		return;
 	}
-	m_hashLookup = std::make_unique<Net::JsonPost>(
-		tr("Identifying content"), ModrinthApi::versionsByHashesUrl(),
-		PerformanceSetup::hashLookupBody(hashes));
+	m_hashLookup.reset(new Net::JsonPost(tr("Identifying content"),
+										 ModrinthApi::versionsByHashesUrl(),
+										 PerformanceSetup::hashLookupBody(hashes)));
 	Net::JsonPost* lookup = m_hashLookup.get();
 	connect(lookup, &Task::finished, this, [this, lookup, instanceId]() {
 		/* A failed lookup only leaves those files out. */

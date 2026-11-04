@@ -153,6 +153,8 @@ Item {
     FriendPersonMenu {
         id: personMenu
         onMessageRequested: (uuid) => root.messageRequested(uuid)
+        controller: root.controller
+        places: root.places
         onRemoveRequested: (uuid, name) => root.confirmAction("remove", uuid, name)
         onBlockRequested: (uuid, name, friend) => root.confirmAction(friend ? "block" : "blockRequest", uuid, name)
     }

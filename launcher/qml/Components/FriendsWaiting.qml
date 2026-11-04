@@ -6,8 +6,8 @@ import Kite.Theme
 
 /*
  * What waits on you, above a friends list: invites to a server (FriendInviteCard) and, with `withRequests`, friend
- * requests to accept or decline (FriendRequestRow). Shows nothing while there is none or while not connected.
- * Invites come with the friends server's invites (PR #14): until FriendsController has them the list is empty.
+ * requests to accept or decline (FriendRequestRow). Shows nothing while there is none or while not connected. An
+ * invite's Join goes through `joinFlow` (FriendJoinFlow.joinInvite()), × dismisses it.
  */
 Column {
     id: root
@@ -18,8 +18,6 @@ Column {
     property var joinFlow: null
     property bool withRequests: false
 
-    signal joinRequested(var friend)
-
     readonly property var controller: root.friendsState.controller
     readonly property var invites: root.friendsState.connected ? root.friendsState.invites : []
     readonly property var requests: root.withRequests && root.friendsState.connected && root.controller
@@ -28,21 +26,9 @@ Column {
     function inviterOf(invite) {
         return (root.controller ? root.controller.friends : []).find((one) => one.uuid === invite.uuid) || ({})
     }
-    // What Join on @p invite joins, as a friend map for FriendJoinFlow: the invite's server, with the inviter's game
-    // version to pick the instance. Not joinable while that version is unknown (they are not in a game).
-    function joinTarget(invite) {
-        var inviter = root.inviterOf(invite)
-        return {
-            uuid: invite.uuid,
-            name: invite.name,
-            state: "playing",
-            worldType: "server",
-            host: invite.host,
-            port: invite.port,
-            version: inviter.version || "",
-            instance: inviter.instance || "",
-            joinable: !!inviter.version
-        }
+    // Where @p invite goes, as FriendPlaces reads a friend: a server with the invite's host and port.
+    function placeOf(invite) {
+        return root.places.of({ state: "playing", worldType: "server", host: invite.host, port: invite.port })
     }
 
     visible: root.invites.length + root.requests.length > 0
@@ -51,7 +37,7 @@ Column {
     FriendsPending {
         id: pending
         controller: root.controller
-        actions: ["accept", "decline"]
+        actions: ["accept", "decline", "dismissInvite"]
     }
 
     Repeater {
@@ -62,16 +48,12 @@ Column {
 
             width: root.width
             invite: modelData
-            target: root.joinTarget(modelData)
-            place: root.places.of(card.target)
+            place: root.placeOf(modelData)
             presence: root.inviterOf(modelData).state || ""
             joinFlow: root.joinFlow
-            onJoinRequested: root.joinRequested(card.target)
-            // FriendsController gains dismissInvite() with the invites themselves.
-            onDismissRequested: {
-                if (root.controller && typeof root.controller.dismissInvite === "function")
-                    root.controller.dismissInvite(card.modelData.uuid)
-            }
+            busy: pending.has(modelData.uuid)
+            onJoinRequested: if (root.joinFlow) root.joinFlow.joinInvite(card.modelData)
+            onDismissRequested: pending.send(card.modelData.uuid, () => root.controller.dismissInvite(card.modelData.uuid))
         }
     }
 

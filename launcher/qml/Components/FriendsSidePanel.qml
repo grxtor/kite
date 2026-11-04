@@ -236,6 +236,8 @@ Item {
     FriendPersonMenu {
         id: personMenu
         onMessageRequested: (uuid) => root.openChat(uuid)
+        controller: root.controller
+        places: root.places
         onRemoveRequested: (uuid, name) => confirm.ask("remove", uuid, name)
         onBlockRequested: (uuid, name, friend) => confirm.ask(friend ? "block" : "blockRequest", uuid, name)
     }

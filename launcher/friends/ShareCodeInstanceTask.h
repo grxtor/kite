@@ -28,6 +28,7 @@
 #include <memory>
 
 #include "InstanceCreationTask.h"
+#include "QObjectPtr.h"
 #include "ShareCodes.h"
 #include "ShareContent.h"
 #include "net/NetJob.h"
@@ -78,6 +79,7 @@ class ShareCodeInstanceTask : public InstanceCreationTask
 
 	QByteArray m_buffer;
 	NetJob::Ptr m_job;
-	std::unique_ptr<Net::JsonPost> m_post;
+	/* Replaced from inside the previous request's own answer, so it goes with deleteLater(). */
+	unique_qobject_ptr<Net::JsonPost> m_post;
 	Task::Ptr m_download;
 };
