@@ -4,6 +4,7 @@ import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
 import { uuidParams } from '../schemas.ts';
 import { findUserByUuid, lockPair } from '../users.ts';
+import { deleteInvitesBetween } from './invites.ts';
 
 const maxBlocks = 1000;
 
@@ -44,6 +45,7 @@ export function registerBlockRoutes(app: FastifyInstance, ctx: Context) {
          where (from_uuid = $1 and to_uuid = $2) or (from_uuid = $2 and to_uuid = $1)`,
         [me, target],
       );
+      await deleteInvitesBetween(client, me, target);
     });
     return reply.status(204).send();
   });

@@ -7,6 +7,8 @@ export type ErrorCode =
   | 'already_friends'
   | 'blocked_by_you'
   | 'limit_reached'
+  | 'address_not_shared'
+  | 'invites_off'
   | 'rate_limited'
   | 'mojang_unavailable'
   | 'internal';

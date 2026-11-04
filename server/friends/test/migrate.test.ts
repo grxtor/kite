@@ -24,7 +24,7 @@ describe('migrations', () => {
     const { rows } = await pool.query<{ name: string }>('select name from schema_migrations order by name');
     assert.deepEqual(
       rows.map((row) => row.name),
-      ['001_init.sql', '002_allow_join.sql'],
+      ['001_init.sql', '002_allow_join.sql', '003_invites_share_codes.sql'],
     );
   });
 
@@ -39,5 +39,18 @@ describe('migrations', () => {
     await migrate(pool);
     const { rows } = await pool.query<{ allow_join: boolean }>('select allow_join from users');
     assert.deepEqual(rows, [{ allow_join: true }]);
+  });
+
+  test('003 lets players who existed before it be invited', async () => {
+    await pool.query('drop table invites, share_codes');
+    await pool.query('alter table users drop column allow_invites');
+    await pool.query(`delete from schema_migrations where name = '003_invites_share_codes.sql'`);
+    await pool.query(
+      `insert into users (uuid, name, name_lower, created_at, name_seen_at)
+       values ('853c80ef-3c37-49fd-aa49-938b674adae6', 'jeb_', 'jeb_', now(), now())`,
+    );
+    await migrate(pool);
+    const { rows } = await pool.query<{ allow_invites: boolean }>('select allow_invites from users');
+    assert.deepEqual(rows, [{ allow_invites: true }, { allow_invites: true }]);
   });
 });

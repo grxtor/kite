@@ -172,7 +172,11 @@ describe('blocks', () => {
     const b = await s.newPlayer();
     await block(a, b);
     const theirs = await s.friendsOf(b);
-    assert.deepEqual(theirs, { friends: [], requests: { incoming: [], outgoing: [] } });
+    assert.deepEqual(theirs, {
+      friends: [],
+      requests: { incoming: [], outgoing: [] },
+      invites: { incoming: [], outgoing: [] },
+    });
   });
 
   test('blocking needs a token', async () => {
