@@ -26,13 +26,16 @@
 #include <QFutureWatcher>
 #include <QtConcurrent>
 
+#include "CrashExitCodes.h"
 #include "CrashFollowUp.h"
 #include "CrashOutbox.h"
+#include "CrashStreak.h"
 #include "Logging.h"
 #include "core/LauncherContext.h"
 #include "launch/LaunchTask.h"
 #include "meta/MetaCatalog.h"
 #include "minecraft/MinecraftInstance.h"
+#include "settings/SettingsObject.h"
 
 namespace
 {
@@ -41,6 +44,26 @@ namespace
 	const QString kFollowUpDir = QStringLiteral("crash-reports");
 	// After the window is up and the first requests of the start are done.
 	constexpr int kFollowUpDelayMs = 20 * 1000;
+
+	/// Keeps @p instance's native crashes in a row (NativeCrashStreak) after a
+	/// run that crashed (with @p log, the run's live log) or, without, worked.
+	void keepStreak(MinecraftInstance& instance, bool crashed, const QString& log = QString())
+	{
+		auto settings = instance.settings();
+		const QString before = settings->get(CrashDoctor::kNativeCrashesSetting).toString();
+		const auto streak = CrashDoctor::NativeCrashStreak::fromJson(before);
+		CrashDoctor::NativeCrashStreak after;
+		if (crashed) {
+			const auto exit = CrashDoctor::exitFromLog(log);
+			after = streak.afterCrash(exit && CrashDoctor::ExitCodes::windowsStatus(exit->first));
+		} else {
+			after = streak.afterCleanRun(QDateTime::currentDateTimeUtc());
+		}
+		const QString json = after.toJson();
+		if (json != before) {
+			settings->set(CrashDoctor::kNativeCrashesSetting, json);
+		}
+	}
 } // namespace
 
 CrashDoctorService* CrashDoctorService::instance()
@@ -131,10 +154,14 @@ void CrashDoctorService::onFinished(LaunchTask* task, const QString& instanceId)
 		return;
 	}
 	if (!instance->hasCrashed()) {
+		keepStreak(*instance, false);
 		followUp()->ranClean(instanceId);
 		return;
 	}
-	run(CrashDoctor::snapshot(*instance, task), true);
+	// The snapshot reads the streak before this crash joins it.
+	const CrashDoctor::Snapshot snapshot = CrashDoctor::snapshot(*instance, task);
+	keepStreak(*instance, true, snapshot.liveLog);
+	run(snapshot, true);
 }
 
 void CrashDoctorService::analyseFiles(MinecraftInstance& instance, bool fresh)

@@ -1094,6 +1094,8 @@ set(CRASHDOCTOR_SOURCES
     crashdoctor/CrashScrubber.cpp
     crashdoctor/CrashSignature.h
     crashdoctor/CrashSignature.cpp
+    crashdoctor/CrashStreak.h
+    crashdoctor/CrashStreak.cpp
     crashdoctor/CrashTrace.h
     crashdoctor/CrashTrace.cpp
     crashdoctor/CrashWatchList.h

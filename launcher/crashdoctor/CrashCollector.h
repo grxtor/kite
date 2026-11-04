@@ -85,6 +85,8 @@ namespace CrashDoctor
 		/// The rule of the last fix tried on this instance, and when.
 		QString lastFixRule;
 		QDateTime lastFixAt;
+		/// NativeCrashStreak::retried() of the instance before this run.
+		int retriedNativeCrashes = 0;
 	};
 
 	/// The outcome of one analysis, kept until the next launch.
@@ -120,6 +122,9 @@ namespace CrashDoctor
 		/// Found by rules that came after the crash (CrashFollowUp): the time
 		/// of the crash, invalid otherwise.
 		QDateTime solvedLaterFor;
+		/// This crash is a native one and the instance crashed like this this
+		/// many times lately before a later try started (0: not so).
+		int retriedNativeCrashes = 0;
 	};
 
 	/// Reads @p instance's settings and @p task's log (null: none).

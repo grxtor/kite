@@ -31,6 +31,7 @@
 
 #include "CrashExitCodes.h"
 #include "CrashFiles.h"
+#include "CrashStreak.h"
 #include "Sys.h"
 #include "core/LauncherContext.h"
 #include "java/JavaVersion.h"
@@ -266,6 +267,9 @@ namespace CrashDoctor
 			QJsonDocument::fromJson(settings->get("CrashDoctorLastFix").toString().toUtf8()).object();
 		out.lastFixRule = lastFix.value("rule").toString();
 		out.lastFixAt = QDateTime::fromString(lastFix.value("at").toString(), Qt::ISODate);
+		out.retriedNativeCrashes =
+			NativeCrashStreak::fromJson(settings->get(kNativeCrashesSetting).toString())
+				.retried(QDateTime::currentDateTimeUtc());
 		facts.os = osName();
 		facts.arch = archName();
 		facts.javaNow = JavaVersion(settings->get("JavaVersion").toString()).major();
@@ -340,6 +344,9 @@ namespace CrashDoctor
 		}
 		scanMods(snapshot.modsDir, snapshot.performanceFiles, report, facts);
 		facts.shadersOn = shaderPackOn(snapshot.gameRoot, facts.installed);
+		if (facts.exitCode && ExitCodes::windowsStatus(*facts.exitCode)) {
+			report.retriedNativeCrashes = snapshot.retriedNativeCrashes;
+		}
 
 		report.causes = CrashDoctor::analyse(catalog, evidence, facts, language);
 		report.facts = facts;

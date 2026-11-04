@@ -31,6 +31,7 @@
 #include "crashdoctor/CrashEngine.h"
 #include "crashdoctor/CrashExitCodes.h"
 #include "crashdoctor/CrashRules.h"
+#include "crashdoctor/CrashStreak.h"
 
 using namespace CrashDoctor;
 
@@ -536,6 +537,29 @@ class CrashEngineTest : public QObject
 			"[12:00:00] [main/INFO]: hs_err_pid77.log\n");
 		QCOMPARE(jvmPidsFromLog(log), QList<qint64>({8124, 77, 4100}));
 		QVERIFY(jvmPidsFromLog(QStringLiteral("no crash here")).isEmpty());
+	}
+
+	// Native crashes in a row, ended by a launch that worked: the next crash
+	// window can say it starts on a later try.
+	void nativeCrashesBeforeAStart()
+	{
+		const QDateTime now = QDateTime::currentDateTimeUtc();
+		NativeCrashStreak streak;
+		streak = streak.afterCrash(true).afterCrash(true).afterCrash(true);
+		QCOMPARE(streak.crashes, 3);
+		QCOMPARE(streak.retried(now), 0);
+		streak = streak.afterCleanRun(now);
+		QCOMPARE(streak.crashes, 0);
+		QCOMPARE(streak.retried(now), 3);
+		// Kept across a restart; another clean run changes nothing.
+		streak = NativeCrashStreak::fromJson(streak.toJson()).afterCleanRun(now.addDays(1));
+		QCOMPARE(streak.retried(now.addDays(1)), 3);
+		QCOMPARE(streak.retried(now.addDays(kRetriedCrashesDays + 1)), 0);
+		// One crash and a start is bad luck; a crash of another kind breaks the row.
+		QCOMPARE(NativeCrashStreak().afterCrash(true).afterCleanRun(now).retried(now), 0);
+		QCOMPARE(NativeCrashStreak().afterCrash(true).afterCrash(false).afterCrash(true).afterCleanRun(now).retried(now),
+				 0);
+		QCOMPARE(NativeCrashStreak::fromJson(QStringLiteral("not json")).crashes, 0);
 	}
 
 	void normalizeStripsFormatting()

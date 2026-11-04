@@ -127,6 +127,14 @@ QVariantList CrashDoctorModel::causes() const
 	const bool native = report->exitCode && CrashDoctor::ExitCodes::windowsStatus(*report->exitCode);
 	for (const CrashDoctor::Cause& cause : report->causes) {
 		const bool top = out.isEmpty();
+		QString explanation = cause.explanation;
+		if (top && report->retriedNativeCrashes > 0) {
+			// Never fewer than CrashDoctor::kMinRetriedCrashes: always the plural.
+			explanation += QLatin1Char(' ') +
+						   tr("Lately it crashed like this %1 times and then started on a later try, which "
+							  "points at the graphics driver or an overlay rather than a mod.")
+							   .arg(report->retriedNativeCrashes);
+		}
 		QVariantList rows;
 		for (const CrashDoctor::Finding& finding : cause.findings) {
 			const auto [what, by] = rowParts(finding, report->modNames);
@@ -165,7 +173,7 @@ QVariantList CrashDoctorModel::causes() const
 		const CrashDoctor::Finding& first = cause.findings.first();
 		out.append(QVariantMap{{"ruleId", cause.ruleId},
 							   {"title", cause.title},
-							   {"explanation", cause.explanation},
+							   {"explanation", explanation},
 							   {"detail", top && native ? exitDetail() : QString()},
 							   {"line", first.line},
 							   {"count", int(cause.findings.size())},
