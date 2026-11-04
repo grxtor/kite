@@ -1358,7 +1358,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>Shaders</source>
-        <translation>Gölgelendiriciler</translation>
+        <translation>Shader&apos;lar</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -1885,22 +1885,22 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>Shader packs</source>
-        <translation>Gölgelendirici paketleri</translation>
+        <translation>Shader paketleri</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>shader packs</source>
-        <translation>gölgelendirici paketi</translation>
+        <translation>shader paketi</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>No shader packs</source>
-        <translation>Gölgelendirici paketi yok</translation>
+        <translation>Shader paketi yok</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Needs a shader-capable renderer, such as Iris or OptiFine, to have any effect.</source>
-        <translation>Etkili olması için Iris veya OptiFine gibi gölgelendirici destekli bir oluşturucu gerekir.</translation>
+        <translation>Etkili olması için Iris veya OptiFine gibi shader destekli bir oluşturucu gerekir.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2075,7 +2075,7 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+1"/>
         <source>This instance cannot have mods, resource packs or shader packs.</source>
-        <translation>Bu kurulumda mod, kaynak paketi veya gölgelendirici paketi kullanılamaz.</translation>
+        <translation>Bu kurulumda mod, kaynak paketi veya shader paketi kullanılamaz.</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -3295,12 +3295,12 @@ Ayrıntılar günlük dosyasında:
     <message>
         <location line="+4"/>
         <source>1 shader pack</source>
-        <translation>1 gölgelendirici paketi</translation>
+        <translation>1 shader paketi</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>%1 shader packs</source>
-        <translation>%1 gölgelendirici paketi</translation>
+        <translation>%1 shader paketi</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -15108,22 +15108,22 @@ Currently installed version: %1</source>
     <message>
         <location filename="../launcher/minecraft/mod/ShaderPackFolderModel.cpp" line="+38"/>
         <source>Is the shader pack enabled?</source>
-        <translation>Gölgelendirici paketi açık mı?</translation>
+        <translation>Shader paketi açık mı?</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>The name of the shader pack.</source>
-        <translation>Gölgelendirici paketinin adı.</translation>
+        <translation>Shader paketinin adı.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>The version of the shader pack.</source>
-        <translation>Gölgelendirici paketinin sürümü.</translation>
+        <translation>Shader paketinin sürümü.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>The date and time this shader pack was last changed (or added).</source>
-        <translation>Gölgelendirici paketinin en son değiştirildiği (veya eklendiği) tarih ve saat.</translation>
+        <translation>Shader paketinin en son değiştirildiği (veya eklendiği) tarih ve saat.</translation>
     </message>
 </context>
 <context>
@@ -15217,7 +15217,7 @@ Currently installed version: %1</source>
     <message>
         <location line="+1"/>
         <source>Shader pack</source>
-        <translation>Gölgelendirici paketi</translation>
+        <translation>Shader paketi</translation>
     </message>
     <message>
         <location line="+0"/>
@@ -15309,12 +15309,12 @@ Currently installed version: %1</source>
     <message>
         <location line="+2"/>
         <source>1 shader pack</source>
-        <translation>1 gölgelendirici paketi</translation>
+        <translation>1 shader paketi</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>%1 shader packs</source>
-        <translation>%1 gölgelendirici paketi</translation>
+        <translation>%1 shader paketi</translation>
     </message>
     <message>
         <location line="+2"/>

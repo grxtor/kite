@@ -2088,7 +2088,7 @@
 			},
 			"explanation": {
 				"en": "Both rewrite how the game draws, so they can't run together. Turn OptiFine off: Sodium does the speed and Iris does the shaders.",
-				"tr": "İkisi de oyunun çizimini baştan yazıyor, aynı anda olmaz. OptiFine'ı kapat: hızı Sodium, gölgelendiricileri Iris yapar."
+				"tr": "İkisi de oyunun çizimini baştan yazıyor, aynı anda olmaz. OptiFine'ı kapat: hızı Sodium, shader'ları Iris yapar."
 			},
 			"fixes": [
 				{
