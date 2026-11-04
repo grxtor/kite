@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": true,
+ "docs": {
+  "log": "[Render thread/ERROR]: Failed to load options\njava.lang.NumberFormatException: For input string: \"\u0000\u0000\"\n\tat net.minecraft.client.Options.load(Options.java:1010)\n"
+ }
+}

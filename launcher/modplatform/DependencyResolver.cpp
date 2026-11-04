@@ -124,6 +124,22 @@ namespace
 			 QStringLiteral("cardinal-components-api")},
 			{QStringLiteral("fzzy_config"), QStringLiteral("fzzy-config")},
 			{QStringLiteral("lambdynlights"), QStringLiteral("lambdynamiclights")},
+			// Libraries the crash doctor names by mod id (CrashEngine class
+			// hints); slugs checked against api.modrinth.com.
+			{QStringLiteral("mcwbridges"), QStringLiteral("macaws-bridges")},
+			{QStringLiteral("mcwroofs"), QStringLiteral("macaws-roofs")},
+			{QStringLiteral("mcwfences"), QStringLiteral("macaws-fences-and-walls")},
+			{QStringLiteral("mcwdoors"), QStringLiteral("macaws-doors")},
+			{QStringLiteral("mcwwindows"), QStringLiteral("macaws-windows")},
+			{QStringLiteral("mcwlights"), QStringLiteral("macaws-lights-and-lamps")},
+			{QStringLiteral("mcwfurnitures"), QStringLiteral("macaws-furniture")},
+			{QStringLiteral("mcwpaths"), QStringLiteral("macaws-paths-and-pavings")},
+			{QStringLiteral("mcwtrpdoors"), QStringLiteral("macaws-trapdoors")},
+			{QStringLiteral("lionfishapi"), QStringLiteral("lionfish-api")},
+			{QStringLiteral("player_animation_library"),
+			 QStringLiteral("player-animation-library")},
+			{QStringLiteral("entity_texture_features"),
+			 QStringLiteral("entitytexturefeatures")},
 		};
 		return slugs.value(modId.toLower(), modId);
 	}

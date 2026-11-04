@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[12:01:22] [Render thread/INFO]: Reloading ResourceManager: vanilla\nProcess crashed with exitcode -1073741819.\n"
+ }
+}

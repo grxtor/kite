@@ -30,6 +30,7 @@ Item {
     required property string coverImage
     property string packArt: ""
     required property bool hasCrashed
+    property string crashCause: ""
 
     property bool selected: false
 
@@ -192,7 +193,7 @@ Item {
                     Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.hasCrashed
-                        text: qsTr("Crashed last time")
+                        text: Format.crashLine(root.crashCause)
                         role: "label"
                         tone: "warning"
                     }

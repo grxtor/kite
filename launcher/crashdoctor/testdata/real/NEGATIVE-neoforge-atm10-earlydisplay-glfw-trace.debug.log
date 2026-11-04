@@ -1,0 +1,12 @@
+# source: <kite-data>/instances/ATM10-Aeronautics-0.5.1/minecraft/logs/debug.log
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[12Sep2026 19:38:52.915] [main/TRACE] [EARLYDISPLAY/]: Trying 4.6: GLFW error: [0x10007]Requested OpenGL version 4.6, got version 4.1
+[12Sep2026 19:38:52.915] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.5
+[12Sep2026 19:38:52.921] [main/TRACE] [EARLYDISPLAY/]: Trying 4.5: GLFW error: [0x10007]Requested OpenGL version 4.5, got version 4.1
+[12Sep2026 19:38:52.921] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.4
+[12Sep2026 19:38:52.928] [main/TRACE] [EARLYDISPLAY/]: Trying 4.4: GLFW error: [0x10007]Requested OpenGL version 4.4, got version 4.1
+[12Sep2026 19:38:52.928] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.3
+[12Sep2026 19:38:52.933] [main/TRACE] [EARLYDISPLAY/]: Trying 4.3: GLFW error: [0x10007]Requested OpenGL version 4.3, got version 4.1
+[12Sep2026 19:38:52.933] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.2
+[12Sep2026 19:38:52.937] [main/TRACE] [EARLYDISPLAY/]: Trying 4.2: GLFW error: [0x10007]Requested OpenGL version 4.2, got version 4.1
+[12Sep2026 19:38:52.938] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.1

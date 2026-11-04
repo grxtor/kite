@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[Server thread/ERROR]: Failed to save chunk\njava.io.IOException: No space left on device\n\tat java.base/sun.nio.ch.FileDispatcherImpl.write0(Native Method)\n"
+ }
+}

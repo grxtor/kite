@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "org.lwjgl.LWJGLException: Pixel format not accelerated\n\tat org.lwjgl.opengl.WindowsPeerInfo.nChoosePixelFormat(Native Method)\n"
+ }
+}

@@ -65,6 +65,9 @@ class PrepareKiteMod : public LaunchStep
 	void manifestFetched();
 	void download(const KiteModBuild& build);
 	void downloaded(const KiteModBuild& build);
+	/// The build's jar is on disk: says it is ready, or that it is left out
+	/// when its own metadata rules this Minecraft out.
+	void ready(const KiteModBuild& build);
 	void downloadFailed(const QString& reason);
 	void finish(const QString& line);
 

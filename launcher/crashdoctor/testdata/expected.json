@@ -1,0 +1,1999 @@
+[
+ {
+  "name": "kite.performance-wrong-version",
+  "kind": "synthetic",
+  "file": "synthetic/kite.performance-wrong-version.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.4",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium",
+    "lithium"
+   ],
+   "performanceMods": [
+    "sodium",
+    "lithium"
+   ],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "kite.performance-wrong-version",
+   "count": 2,
+   "captures": {
+    "mod": "sodium"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "kite.performance-not-performance-mod",
+  "kind": "synthetic",
+  "file": "synthetic/kite.performance-not-performance-mod.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.4",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.wrong-minecraft",
+   "captures": {
+    "mod": "sodium",
+    "found": "26.4"
+   }
+  },
+  "verify": false,
+  "note": "same log, mods not from Kite Performance -> generic rule"
+ },
+ {
+  "name": "kite.kite-mod-wrong-version",
+  "kind": "real",
+  "file": "real/fabric-26.2-kite-mod-wrong-minecraft.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.2",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "kite.kite-mod-wrong-version",
+   "captures": {
+    "mod": "kite",
+    "found": "26.2"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "java.needs-newer.class-version",
+  "kind": "synthetic",
+  "file": "synthetic/java.needs-newer.class-version.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 17,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "java.needs-newer",
+   "captures": {
+    "javaMajor": 21,
+    "javaRuntime": 17
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "java.needs-newer.fabric-mod",
+  "kind": "synthetic",
+  "file": "synthetic/java.needs-newer.fabric-mod.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 17,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "distanthorizons"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "java.needs-newer",
+   "captures": {
+    "javaMajor": 21,
+    "mod": "distanthorizons"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "java.too-new-for-version",
+  "kind": "synthetic",
+  "file": "synthetic/java.too-new-for-version.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.16.5",
+   "javaNow": 21,
+   "javaRecommended": 8,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "java.too-new-for-version"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "java.not-installed",
+  "kind": "synthetic",
+  "file": "synthetic/java.not-installed.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 0,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "java.not-installed",
+   "captures": {
+    "javaMajor": 21
+   }
+  },
+  "verify": false,
+  "note": "Kite's own VerifyJavaInstall line"
+ },
+ {
+  "name": "java.override-broken",
+  "kind": "synthetic",
+  "file": "synthetic/java.override-broken.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.20.1",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "java.override-broken"
+  },
+  "verify": false,
+  "note": "Kite's own CheckJava line"
+ },
+ {
+  "name": "java.wrong-architecture",
+  "kind": "synthetic",
+  "file": "synthetic/java.wrong-architecture.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "vanilla",
+   "mc": "1.8.9",
+   "javaNow": 8,
+   "javaRecommended": 8,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "java.wrong-architecture",
+   "captures": {
+    "have": "x86_64",
+    "need": "arm64"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "jvm.bad-custom-args",
+  "kind": "synthetic",
+  "file": "synthetic/jvm.bad-custom-args.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": true,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "jvm.bad-custom-args",
+   "captures": {
+    "opt": "UseConcMarkSweepGC"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "memory.heap-full",
+  "kind": "synthetic",
+  "file": "synthetic/memory.heap-full.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 2048,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "memory.heap-full",
+   "facts": {
+    "suggestedMemoryMb": 4096
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "memory.heap-full-no-room",
+  "kind": "synthetic",
+  "file": "synthetic/memory.heap-full-no-room.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 12288,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "memory.heap-full-no-room"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "memory.cannot-reserve",
+  "kind": "synthetic",
+  "file": "synthetic/memory.cannot-reserve.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 8192,
+   "systemMemoryMb": 8192,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "memory.cannot-reserve",
+   "facts": {
+    "lowerMemoryMb": 3072
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "memory.system-out.hs-err",
+  "kind": "synthetic",
+  "file": "synthetic/memory.system-out.hs-err.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 6144,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 134,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "memory.system-out"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "memory.system-out.macos-sigkill",
+  "kind": "synthetic",
+  "file": "synthetic/memory.system-out.macos-sigkill.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 10240,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 9,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "memory.system-out"
+  },
+  "verify": true,
+  "note": "jetsam / OOM killer: signal 9, no Java output at all"
+ },
+ {
+  "name": "fabric.missing-fabric-api",
+  "kind": "synthetic",
+  "file": "synthetic/fabric.missing-fabric-api.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium-extra",
+    "reeses-sodium-options"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "fabric.missing-fabric-api",
+   "captures": {
+    "mod": "fabric-api",
+    "byName": "Sodium Extra"
+   },
+   "absent": [
+    "mods.missing-dependency"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.missing-dependency.fabric",
+  "kind": "real",
+  "file": "real/fabric-26.1.2-missing-deps.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.1.2",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "emotecraft",
+    "entity_model_features",
+    "showmeyourskin"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.missing-dependency",
+   "count": 3,
+   "captures": {
+    "mod": "player_animation_library",
+    "by": "emotecraft"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.missing-dependency.neoforge",
+  "kind": "synthetic",
+  "file": "synthetic/mods.missing-dependency.neoforge.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "accessories",
+    "rei"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.missing-dependency",
+   "count": 2,
+   "captures": {
+    "mod": "owo",
+    "by": "accessories"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.missing-dependency.forge-1.19",
+  "kind": "synthetic",
+  "file": "synthetic/mods.missing-dependency.forge-1.19.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.19.2",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "rei"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.missing-dependency",
+   "captures": {
+    "mod": "architectury",
+    "by": "rei"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.missing-library-class",
+  "kind": "real",
+  "file": "real/forge-1.20.1-noclassdef-missing-library.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "cataclysm",
+    "macawsbridgesbop",
+    "macawsroofsbop",
+    "supplementaries",
+    "create"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.missing-library-class",
+   "count": 3,
+   "captures": {
+    "clsMod": "curios"
+   },
+   "also": [
+    "mods.library-version-mismatch"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.library-version-mismatch",
+  "kind": "real",
+  "file": "real/forge-1.20.1-abstractmethod-lib-mismatch.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "cataclysm",
+    "lionfishapi",
+    "advancementplaques"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.library-version-mismatch",
+   "captures": {
+    "clsMod": "lionfishapi",
+    "byClsMod": "cataclysm"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.wrong-minecraft.neoforge",
+  "kind": "synthetic",
+  "file": "synthetic/mods.wrong-minecraft.neoforge.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.4",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "worldedit"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.wrong-minecraft",
+   "captures": {
+    "mod": "worldedit",
+    "found": "1.21.4"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.wrong-minecraft.fabric-apostrophe",
+  "kind": "synthetic",
+  "file": "synthetic/mods.wrong-minecraft.fabric-apostrophe.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.5",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "xaerominimap"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.wrong-minecraft",
+   "captures": {
+    "mod": "xaerominimap",
+    "modName": "Xaero's Minimap"
+   }
+  },
+  "verify": false,
+  "note": "mod names with an apostrophe"
+ },
+ {
+  "name": "mods.entrypoint-wrong-version",
+  "kind": "real",
+  "file": "real/fabric-26.3-entrypoint-nosuchfield.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "server_waypoint"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.entrypoint-wrong-version",
+   "captures": {
+    "mod": "server_waypoint"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.dependency-wrong-version.fabric",
+  "kind": "real",
+  "file": "real/fabric-26.3-dep-wrong-version.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "emotecraft",
+    "player_animation_library"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.dependency-wrong-version",
+   "captures": {
+    "mod": "player_animation_library",
+    "found": "1.2.6+mc.26.1"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.dependency-wrong-version.forge-create",
+  "kind": "real",
+  "file": "real/forge-1.20.1-requires-create-version.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "create",
+    "createcasing",
+    "valkyrienskies",
+    "interiors",
+    "supplementaries",
+    "create_radar",
+    "vsch"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.dependency-wrong-version",
+   "count": 5,
+   "captures": {
+    "mod": "create"
+   },
+   "also": [
+    "forge.dependency-needs-older"
+   ],
+   "absent": [
+    "mods.crashed"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.dependency-wrong-version.forge-live-log",
+  "kind": "real",
+  "file": "real/forge-1.20.1-requires-create-version.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "create",
+    "createcasing"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.dependency-wrong-version",
+   "captures": {
+    "mod": "create",
+    "by": "createcasing",
+    "found": "0.5.1.f"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "forge.dependency-needs-older",
+  "kind": "synthetic",
+  "file": "synthetic/forge.dependency-needs-older.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "vsch",
+    "valkyrienskies"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "forge.dependency-needs-older",
+   "captures": {
+    "by": "vsch",
+    "mod": "valkyrienskies"
+   },
+   "absent": [
+    "mods.dependency-wrong-version"
+   ]
+  },
+  "verify": false,
+  "note": "the vsch line of the real report, alone"
+ },
+ {
+  "name": "loader.too-old.fabric",
+  "kind": "synthetic",
+  "file": "synthetic/loader.too-old.fabric.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "loader.too-old",
+   "captures": {
+    "found": "0.15.11"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "loader.too-old.forge-language-provider",
+  "kind": "synthetic",
+  "file": "synthetic/loader.too-old.forge-language-provider.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "jei"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "loader.too-old",
+   "captures": {
+    "jar": "jei-1.20.1-forge-15.3.0.4.jar"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.incompatible-pair",
+  "kind": "synthetic",
+  "file": "synthetic/mods.incompatible-pair.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "entityculling",
+    "imm_ptl_core"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.incompatible-pair",
+   "captures": {
+    "a": "entityculling",
+    "b": "imm_ptl_core"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.duplicate.forge",
+  "kind": "synthetic",
+  "file": "synthetic/mods.duplicate.forge.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "jei"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.duplicate",
+   "captures": {
+    "mod": "jei"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.duplicate.neoforge",
+  "kind": "synthetic",
+  "file": "synthetic/mods.duplicate.neoforge.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.duplicate",
+   "captures": {
+    "mod": "sodium"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.wrong-loader",
+  "kind": "synthetic",
+  "file": "synthetic/mods.wrong-loader.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.wrong-loader",
+   "captures": {
+    "jar": "sodium-fabric-0.6.5+mc1.21.1.jar",
+    "other": "Fabric"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mixin.apply-failed.crash-report",
+  "kind": "real",
+  "file": "real/fabric-26.3-mixin-apply-betterf3.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "betterf3"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mixin.apply-failed",
+   "captures": {
+    "mod": "betterf3"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mixin.apply-failed.live-log",
+  "kind": "real",
+  "file": "real/fabric-26.3-mixin-apply-betterf3.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "betterf3"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mixin.apply-failed",
+   "captures": {
+    "mod": "betterf3"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mixin.apply-failed.forge-config-name",
+  "kind": "synthetic",
+  "file": "synthetic/mixin.apply-failed.forge-config-name.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "cobblemon"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mixin.apply-failed",
+   "captures": {
+    "mod": "cobblemon"
+   }
+  },
+  "verify": false,
+  "note": "Forge mixin errors name the config, not the mod"
+ },
+ {
+  "name": "mods.crashed.mixin-handler",
+  "kind": "real",
+  "file": "real/fabric-26.3-macos-glfwnativecocoa.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "macos_input_fixes"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.crashed",
+   "captures": {
+    "mod": "macos_input_fixes"
+   },
+   "absent": [
+    "mods.missing-library-class"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.crashed.forge-failure-message",
+  "kind": "real",
+  "file": "real/forge-1.20.1-mcreator-nosuchmethod-init.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "floating_cargo"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.crashed",
+   "captures": {
+    "mod": "floating_cargo"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.crashed.entrypoint",
+  "kind": "synthetic",
+  "file": "synthetic/mods.crashed.entrypoint.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "travelersbackpack"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.crashed",
+   "captures": {
+    "mod": "travelersbackpack"
+   },
+   "absent": [
+    "mods.entrypoint-wrong-version"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "mods.crashed.suspected",
+  "kind": "synthetic",
+  "file": "synthetic/mods.crashed.suspected.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "artifacts"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "mods.crashed",
+   "captures": {
+    "mod": "artifacts",
+    "modName": "Artifacts"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "render.optifine-conflict.fabric",
+  "kind": "synthetic",
+  "file": "synthetic/render.optifine-conflict.fabric.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium",
+    "optifabric"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "render.optifine-conflict",
+   "absent": [
+    "mods.incompatible-pair"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "render.optifine-conflict.neoforge",
+  "kind": "synthetic",
+  "file": "synthetic/render.optifine-conflict.neoforge.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "render.optifine-conflict",
+   "captures": {
+    "jar": "OptiFine_1.21.1_HD_U_J1.jar"
+   }
+  },
+  "verify": true,
+  "note": ""
+ },
+ {
+  "name": "render.iris-sodium-mismatch",
+  "kind": "synthetic",
+  "file": "synthetic/render.iris-sodium-mismatch.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "iris",
+    "sodium"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "render.iris-sodium-mismatch",
+   "absent": [
+    "mods.dependency-wrong-version"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "render.shader-pack-crash",
+  "kind": "synthetic",
+  "file": "synthetic/render.shader-pack-crash.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "iris",
+    "sodium"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "render.shader-pack-crash"
+  },
+  "verify": true,
+  "note": ""
+ },
+ {
+  "name": "gpu.no-opengl.windows",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.no-opengl.windows.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "vanilla",
+   "mc": "1.21.4",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.no-opengl"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "gpu.no-opengl.lwjgl2",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.no-opengl.lwjgl2.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "forge",
+   "mc": "1.8.9",
+   "javaNow": 8,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.no-opengl"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "gpu.driver-native-crash",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.driver-native-crash.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.driver-native-crash",
+   "captures": {
+    "lib": "atio6axx.dll"
+   },
+   "also": [
+    "exit.windows-access-violation"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "gpu.vulkan-failed",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.vulkan-failed.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "vanilla",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.vulkan-failed"
+  },
+  "verify": true,
+  "note": "26.2+ Vulkan renderer; wording unconfirmed"
+ },
+ {
+  "name": "natives.missing.libglfw",
+  "kind": "real",
+  "file": "real/fabric-26.1.2-macos-libglfw-missing.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.1.2",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "natives.missing",
+   "captures": {
+    "lib": "libglfw.dylib"
+   },
+   "absent": [
+    "mods.missing-library-class"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "macos.first-thread",
+  "kind": "synthetic",
+  "file": "synthetic/macos.first-thread.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "vanilla",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "macos.first-thread"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "config.corrupt.forge-toml",
+  "kind": "synthetic",
+  "file": "synthetic/config.corrupt.forge-toml.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "create"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "config.corrupt",
+   "captures": {
+    "file": "create-client.toml",
+    "mod": "create"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "config.corrupt.json",
+  "kind": "synthetic",
+  "file": "synthetic/config.corrupt.json.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "xaerominimap"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "config.corrupt",
+   "captures": {
+    "file": "xaero/minimap.json"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "options.corrupt",
+  "kind": "synthetic",
+  "file": "synthetic/options.corrupt.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "vanilla",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "options.corrupt"
+  },
+  "verify": true,
+  "note": ""
+ },
+ {
+  "name": "world.corrupt",
+  "kind": "synthetic",
+  "file": "synthetic/world.corrupt.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "vanilla",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "world.corrupt",
+   "captures": {
+    "world": "Yeni Dunya"
+   }
+  },
+  "verify": true,
+  "note": ""
+ },
+ {
+  "name": "world.ticking-entity",
+  "kind": "synthetic",
+  "file": "synthetic/world.ticking-entity.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "alexsmobs"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "world.ticking-entity",
+   "captures": {
+    "ns": "alexsmobs",
+    "thing": "crocodile"
+   },
+   "absent": [
+    "mods.crashed"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "disk.full",
+  "kind": "synthetic",
+  "file": "synthetic/disk.full.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "disk.full"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "world.threading-detector",
+  "kind": "real",
+  "file": "real/forge-1.20.1-threading-detector.crash.txt",
+  "source": "crashReport",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "forge",
+   "mc": "1.20.1",
+   "javaNow": 17,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": "world.threading-detector",
+   "captures": {
+    "what": "LegacyRandomSource"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "exit.windows-access-violation",
+  "kind": "synthetic",
+  "file": "synthetic/exit.windows-access-violation.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "vanilla",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "exit.windows-access-violation"
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "NEGATIVE.nonfatal-mixin-warn",
+  "kind": "real",
+  "file": "real/NEGATIVE-fabric-26.1.2-nonfatal-mixin-warn.latest.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "26.1.2",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "fancymenu"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": null
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "NEGATIVE.earlydisplay-glfw-trace",
+  "kind": "real",
+  "file": "real/NEGATIVE-neoforge-atm10-earlydisplay-glfw-trace.debug.log",
+  "source": "log",
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "neoforge",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": null
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "NEGATIVE.macos-cocoa-service-port",
+  "kind": "synthetic",
+  "file": "synthetic/NEGATIVE.macos-cocoa-service-port.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "vanilla",
+   "mc": "1.16.5",
+   "javaNow": 8,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": null
+  },
+  "verify": false,
+  "note": "harmless macOS GLFW warning"
+ },
+ {
+  "name": "NEGATIVE.sodium-mentioned",
+  "kind": "synthetic",
+  "file": "synthetic/NEGATIVE.sodium-mentioned.json",
+  "source": null,
+  "facts": {
+   "os": "macos",
+   "arch": "arm64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium",
+    "iris"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 1,
+   "exitStatus": "normal",
+   "modded": true
+  },
+  "expect": {
+   "top": null
+  },
+  "verify": false,
+  "note": "OptiFine/Sodium names in a normal mod list"
+ }
+]

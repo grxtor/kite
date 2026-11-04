@@ -1,0 +1,7 @@
+{
+ "note": "OptiFine/Sodium names in a normal mod list",
+ "verify": false,
+ "docs": {
+  "log": "[main/INFO]: Loading 3 mods:\n\t- sodium 0.6.5+mc1.21.1\n\t- iris 1.8.1+mc1.21.1\n\t- fabricloader 0.16.9\n[Render thread/INFO]: [Iris] OptiFine shader packs are supported with Sodium\nProcess exited with code 255.\n"
+ }
+}

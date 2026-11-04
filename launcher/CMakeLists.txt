@@ -995,7 +995,27 @@ add_unit_test(Index
 
 # zlib, libarchive, cmark and toml++ come from the top-level CMakeLists.txt; nbt++ is built here.
 
+set(CRASHDOCTOR_SOURCES
+    crashdoctor/CrashActions.h
+    crashdoctor/CrashActions.cpp
+    crashdoctor/CrashCollector.h
+    crashdoctor/CrashCollector.cpp
+    crashdoctor/CrashDoctorModel.h
+    crashdoctor/CrashDoctorModel.cpp
+    crashdoctor/CrashDoctorService.h
+    crashdoctor/CrashDoctorService.cpp
+    crashdoctor/CrashEngine.h
+    crashdoctor/CrashEngine.cpp
+    crashdoctor/CrashFiles.h
+    crashdoctor/CrashFiles.cpp
+    crashdoctor/CrashFixer.h
+    crashdoctor/CrashFixer.cpp
+    crashdoctor/CrashRules.h
+    crashdoctor/CrashRules.cpp
+)
+
 set(LOGIC_SOURCES
+    ${CRASHDOCTOR_SOURCES}
     ${CORE_SOURCES}
     ${PATHMATCHER_SOURCES}
     ${NET_SOURCES}
@@ -1062,6 +1082,12 @@ qt6_add_resources(Kite_core kite_bundles
     PREFIX "/kite"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
     FILES resources/kite/bundles.json resources/kite/servers.json)
+# The crash doctor's catalog, embedded as :/kite/crash-rules.json (replaced by
+# meta.kiteclient.com's copy when there is a valid newer one).
+qt6_add_resources(Kite_core kite_crash_rules
+    PREFIX "/kite"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/kite"
+    FILES resources/kite/crash-rules.json)
 
 # kite_<lang>.ts -> :/i18n/kite_<lang>.qm, plus :/i18n/stats.txt ("<lang> <translated> <total>",
 # counted from the .ts: a .qm cannot tell). No LinguistTools or no .ts: English only.
@@ -1146,6 +1172,22 @@ add_unit_test(LaunchProgressTracker
 
 add_unit_test(LaunchTask
     SOURCES launch/LaunchTask_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(LoggedProcess
+    SOURCES LoggedProcess_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(CrashEngine
+    SOURCES crashdoctor/CrashEngine_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(CrashFixer
+    SOURCES crashdoctor/CrashFixer_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(CoreSupersededPlugins
+    SOURCES plugin/CoreSupersededPlugins_test.cpp
     LIBS Kite_core
     )
 

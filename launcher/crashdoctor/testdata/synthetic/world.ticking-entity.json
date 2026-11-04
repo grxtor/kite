@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\nDescription: Ticking entity\n\njava.lang.NullPointerException: Cannot invoke \"net.minecraft.world.entity.LivingEntity.getY()\" because \"target\" is null\n\tat com.github.alexthe666.alexsmobs.entity.EntityCrocodile.tick(EntityCrocodile.java:212)\n\n-- Entity being ticked --\nDetails:\n\tEntity Type: alexsmobs:crocodile (com.github.alexthe666.alexsmobs.entity.EntityCrocodile)\n\tEntity ID: 1882\nSuspected Mods: \n\tAlex's Mobs (alexsmobs), Version: 1.22.9\n"
+ }
+}

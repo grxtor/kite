@@ -98,6 +98,7 @@ Item {
                     name: root.hero.name
                     versionText: Format.versionLine(root.hero.loader, root.hero.gameVersion)
                     hasCrashed: root.hero.hasCrashed
+                    crashCause: root.hero.crashCause
                     lastLaunch: root.hero.lastLaunch
                     playTimeText: root.hero.playTimeText
                     showsWhen: !root.showsFacts

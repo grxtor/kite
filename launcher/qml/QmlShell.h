@@ -427,6 +427,12 @@ class QmlShell : public QObject
 	 * written to instance.cfg, for KITE_QML_ROUTE snapshots ("crashed=<id>").
 	 * No-op for an unknown id. */
 	Q_INVOKABLE void debugMarkInstanceCrashed(const QString& id);
+	/* Dev only: marks @p id crashed and has the crash doctor read its last
+	 * run's files, for KITE_QML_ROUTE snapshots: "crashdoctor=<id>" as a crash
+	 * read again later, "crashwindow=<id>" as one that just happened (which
+	 * opens the "why" window). */
+	Q_INVOKABLE void debugAnalyseCrash(const QString& id);
+	Q_INVOKABLE void debugCrashNow(const QString& id);
 	/* Dev only: a real mouse click at window point "x,y" for review snapshots
 	 * ("click=x,y[,right[,delayMs]]"). The pointer moves there first so
 	 * hover-only controls show; delayMs defaults to 1000.
@@ -482,6 +488,10 @@ class QmlShell : public QObject
 	/// @p names (performanceUnmatched()) for its new Minecraft version or
 	/// loader. Only for an instance this shell has launched or sped up.
 	void performanceUnmatchedFound(const QString& id, const QStringList& names);
+	/// The crash doctor read instance @p id's crash; @p cause is its first
+	/// cause's title, "" when it found none. @p fresh: the crash of a launch
+	/// that just ended (not one read again later).
+	void crashAnalysed(const QString& id, const QString& cause, bool fresh);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
 

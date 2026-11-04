@@ -1,0 +1,7 @@
+{
+ "note": "jetsam / OOM killer: signal 9, no Java output at all",
+ "verify": true,
+ "docs": {
+  "log": "[21:40:02] [Render thread/INFO]: Loaded 1290 recipes\nProcess crashed with exitcode 9.\n"
+ }
+}

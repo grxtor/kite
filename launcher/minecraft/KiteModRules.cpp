@@ -31,7 +31,9 @@
 #include <algorithm>
 
 #include "Json.h"
+#include "MMCZip.h"
 #include "Version.h"
+#include "minecraft/mod/ModMetadataReader.h"
 
 namespace
 {
@@ -217,5 +219,72 @@ namespace KiteMod
 			}
 		}
 		return outdated;
+	}
+
+	namespace
+	{
+		const QString kFabricMetadata = QStringLiteral("fabric.mod.json");
+		const QString kMinecraftId = QStringLiteral("minecraft");
+
+		// The jar's required dependencies on Minecraft, from its Fabric
+		// metadata.
+		QList<ModDependency> minecraftDependencies(const QByteArray& json)
+		{
+			const auto details = ModMetadata::readDetails(
+				{{kFabricMetadata, json}},
+				[](const QStringList&) { return ModMetadata::ZipEntries(); });
+			QList<ModDependency> found;
+			if (!details) {
+				return found;
+			}
+			for (const ModDependency& dependency : details->dependencies) {
+				if (dependency.id == kMinecraftId &&
+					dependency.kind == ModDependency::Kind::Required) {
+					found.append(dependency);
+				}
+			}
+			return found;
+		}
+	} // namespace
+
+	VersionRange::Match jarAcceptsMinecraft(const QByteArray& fabricModJson,
+											const QString& mcVersion)
+	{
+		const QList<ModDependency> needs = minecraftDependencies(fabricModJson);
+		if (needs.isEmpty() || mcVersion.isEmpty()) {
+			return VersionRange::Match::Unknown;
+		}
+		VersionRange::Match result = VersionRange::Match::Yes;
+		for (const ModDependency& dependency : needs) {
+			const auto match = VersionRange::matches(mcVersion, dependency);
+			if (match == VersionRange::Match::No) {
+				return VersionRange::Match::No;
+			}
+			if (match == VersionRange::Match::Unknown) {
+				result = VersionRange::Match::Unknown;
+			}
+		}
+		return result;
+	}
+
+	QString jarMinecraftRange(const QByteArray& fabricModJson)
+	{
+		QStringList ranges;
+		for (const ModDependency& dependency :
+			 minecraftDependencies(fabricModJson)) {
+			const QString text = VersionRange::describe(dependency);
+			if (!text.isEmpty() && !ranges.contains(text)) {
+				ranges.append(text);
+			}
+		}
+		return ranges.join(QStringLiteral(", "));
+	}
+
+	VersionRange::Match jarFileAcceptsMinecraft(const QString& jarPath,
+												const QString& mcVersion)
+	{
+		const QByteArray json = MMCZip::readFileFromZip(jarPath, kFabricMetadata);
+		return json.isEmpty() ? VersionRange::Match::Unknown
+							  : jarAcceptsMinecraft(json, mcVersion);
 	}
 } // namespace KiteMod

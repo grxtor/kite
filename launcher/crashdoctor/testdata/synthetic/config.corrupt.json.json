@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\nDescription: Initializing game\n\ncom.google.gson.JsonSyntaxException: com.google.gson.stream.MalformedJsonException: Unterminated object at line 12 column 3 path $.hud\n\tat com.google.gson.Gson.fromJson(Gson.java:1238)\n\tat xaero.common.config.ConfigLoader.load(ConfigLoader.java:57) reading /Users/<user>/Library/Application Support/Kite/Kite/instances/x/.minecraft/config/xaero/minimap.json\n"
+ }
+}

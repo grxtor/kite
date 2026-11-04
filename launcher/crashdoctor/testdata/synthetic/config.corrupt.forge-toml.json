@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[modloading-worker-0/ERROR] [ne.mi.fm.co.ConfigTracker/CONFIG]: Failed loading config file create-client.toml of type CLIENT for modid create\ncom.electronwill.nightconfig.core.io.ParsingException: Not enough data available\n"
+ }
+}

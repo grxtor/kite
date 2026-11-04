@@ -1,0 +1,8 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "hsErr": "#\n# A fatal error has been detected by the Java Runtime Environment:\n#\n#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffd2b3c1a20, pid=12345, tid=6789\n#\n# JRE version: OpenJDK Runtime Environment Microsoft-8035246 (21.0.3+9) (build 21.0.3+9-LTS)\n# Problematic frame:\n# C  [atio6axx.dll+0x1a1a20]\n#\n",
+  "log": "Process crashed with exitcode -1073741819.\n"
+ }
+}

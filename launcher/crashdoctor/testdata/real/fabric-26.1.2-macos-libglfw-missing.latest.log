@@ -1,0 +1,17 @@
+# source: <kite-data>/instances/26.1.2/.minecraft/logs/2026-09-24-1.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[20:16:55] [Render thread/INFO]: Setting user: <player>
+[20:16:55] [Render thread/INFO]: Backend library: LWJGL version 3.4.1+2
+[20:16:56] [Render thread/INFO]: [STDERR]: java.lang.NoClassDefFoundError: Could not initialize class org.lwjgl.glfw.GLFW
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at com.mojang.blaze3d.platform.Window.getPlatform(Window.java:156)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at net.minecraft.SystemReport.setDetail(SystemReport.java:91)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at net.minecraft.client.Minecraft.fillSystemReport(Minecraft.java:2577)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at net.minecraft.client.Minecraft.fillReport(Minecraft.java:2549)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at net.minecraft.client.main.Main.main(Main.java:241)
+[20:16:56] [Render thread/INFO]: [STDERR]: Caused by: java.lang.ExceptionInInitializerError: Exception java.lang.UnsatisfiedLinkError: Failed to locate library: libglfw.dylib [in thread "Render thread"]
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at org.lwjgl.system.Library.loadNative(Library.java:349)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at org.lwjgl.system.Library.loadNative(Library.java:239)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at org.lwjgl.glfw.GLFW.<clinit>(GLFW.java:24)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at com.mojang.blaze3d.platform.Window.checkGlfwError(Window.java:181)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at com.mojang.blaze3d.platform.GLX._initGlfw(GLX.java:42)
+[20:16:56] [Render thread/INFO]: [STDERR]: 	at com.mojang.blaze3d.systems.RenderSystem.initBackendSystem(RenderSystem.java:179)

@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\nDescription: Initializing game\n\njava.lang.RuntimeException: Could not execute entrypoint stage 'main' due to errors, provided by 'travelersbackpack' at 'com.tiviacz.travelersbackpack.fabric.TravelersBackpackFabric'!\n\tat net.fabricmc.loader.impl.FabricLoaderImpl.lambda$invokeEntrypoints$2(FabricLoaderImpl.java:388)\nCaused by: java.lang.NullPointerException: Cannot invoke \"java.util.List.size()\" because \"list\" is null\n"
+ }
+}

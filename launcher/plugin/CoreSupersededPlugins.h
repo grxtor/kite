@@ -54,6 +54,9 @@ findCoreSupersededPlugin(const QString& name)
 		 QLatin1String("The pack updater is now part of Kite itself")},
 		{QLatin1String("SkinManager"),
 		 QLatin1String("The skin manager is now part of Kite itself")},
+		{QLatin1String("ErrorOracle"),
+		 QLatin1String("Crash analysis is now part of Kite itself (the "
+					   "instance's Log tab)")},
 	};
 
 	if (name.isEmpty())

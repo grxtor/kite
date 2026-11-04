@@ -82,6 +82,23 @@ QtObject {
     }
 
     // "Fabric 1.21.4", or "1.21.4" for vanilla (loader is empty then).
+    // The warning line after a crash: the crash doctor's first cause when it found one
+    // (InstanceList's crashCause), else the plain words.
+    function crashLine(cause) {
+        return cause && cause.length > 0 ? qsTr("Crashed: %1").arg(cause) : qsTr("Crashed last time")
+    }
+
+    // The crash doctor's "couldn't tell" as a cause (CrashCauseView), with the exit code when known.
+    function unknownCrashCause(doctor) {
+        const text = qsTr("This crash doesn't look like one Kite knows. Share the log to show it to someone who can help; your account details and your user folder are hidden.")
+        return {
+            title: qsTr("Kite couldn't find the cause"),
+            explanation: doctor && doctor.hasExitCode
+                         ? text + " " + qsTr("The game stopped with code %1.").arg(doctor.exitCode) : text,
+            line: "", count: 1, rows: [], fixes: []
+        }
+    }
+
     function versionLine(loader, gameVersion) {
         var parts = []
         if (loader && loader.length > 0)

@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 Project Tick
  * SPDX-FileCopyrightText: 2026 grxtor
  * SPDX-FileContributor: Project Tick
+ * SPDX-FileContributor: grxtor
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (C) 2026 Project Tick
@@ -46,6 +47,7 @@
 #include "models/LegacyUpgrade.h"
 #include "models/LogFind.h"
 #include "models/LogUploader.h"
+#include "crashdoctor/CrashDoctorModel.h"
 #include "models/LoaderInstaller.h"
 #include "models/ManagedPackController.h"
 #include "models/ModFolderWatch.h"
@@ -147,6 +149,9 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	}
 
 	m_logUploader = new LogUploader(this);
+	if (auto minecraft = std::dynamic_pointer_cast<MinecraftInstance>(m_instance)) {
+		m_crashDoctor = new CrashDoctorModel(minecraft, this);
+	}
 	m_screenshotUploader = new ScreenshotUploader(this);
 }
 
@@ -419,6 +424,11 @@ QObject* InstanceDetails::drop() const
 QObject* InstanceDetails::logUploader() const
 {
 	return m_logUploader;
+}
+
+QObject* InstanceDetails::crashDoctor() const
+{
+	return m_crashDoctor;
 }
 
 QObject* InstanceDetails::screenshotUploader() const

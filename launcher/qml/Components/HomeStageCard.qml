@@ -106,7 +106,7 @@ HomeRowBase {
             Note {
                 id: note
                 visible: root.row.hasCrashed
-                text: qsTr("Crashed last time")
+                text: Format.crashLine(root.row.crashCause)
                 iconName: "alert-triangle"
                 ink: Theme.palette.warning
             }

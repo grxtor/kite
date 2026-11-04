@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "Unrecognized VM option 'UseConcMarkSweepGC'\nError: Could not create the Java Virtual Machine.\nError: A fatal exception has occurred. Program will exit.\nProcess exited with code 1.\n"
+ }
+}

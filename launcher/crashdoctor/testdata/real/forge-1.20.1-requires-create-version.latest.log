@@ -1,0 +1,21 @@
+# source: <kite-data>/instances/CreateSkiesSeas-1.20.1/minecraft/logs/2026-09-07-7.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[07Sep2026 10:24:34.559] [Render thread/WARN] [oshi.util.platform.mac.SysctlUtil/]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[07Sep2026 10:24:34.619] [Render thread/FATAL] [net.minecraftforge.fml.ModLoader/CORE]: Error during pre-loading phase
+net.minecraftforge.fml.ModLoadingException: Mod §ecreatecasing§r requires §6create§r §o0.5.1.h or above§r
+§7Currently, §6create§r§7 is §o0.5.1.f
+	at net.minecraftforge.fml.ModLoadingException.lambda$fromEarlyException$0(ModLoadingException.java:50) ~[fmlcore-1.20.1-47.3.0.jar%23327!/:?]
+	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197) ~[?:?]
+	at java.util.AbstractList$RandomAccessSpliterator.forEachRemaining(AbstractList.java:720) ~[?:?]
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509) ~[?:?]
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[?:?]
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150) ~[?:?]
+...
+net.minecraftforge.fml.ModLoadingException: Mod §ecreatecasing§r requires §6create§r §o0.5.1.h or above§r
+§7Currently, §6create§r§7 is §o0.5.1.f
+	at net.minecraftforge.fml.ModLoadingException.lambda$fromEarlyException$0(ModLoadingException.java:50) ~[fmlcore-1.20.1-47.3.0.jar%23327!/:?]
+	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197) ~[?:?]
+	at java.util.AbstractList$RandomAccessSpliterator.forEachRemaining(AbstractList.java:720) ~[?:?]
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509) ~[?:?]
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[?:?]
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150) ~[?:?]

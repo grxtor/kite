@@ -1,0 +1,20 @@
+# source: <kite-data>/instances/26.1.2/.minecraft/logs/2026-09-30-1.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[23:21:59] [main/INFO]: Reason: [HARD_DEP emotecraft 3.3.0-b.build.164 {depends player_animation_library @ [>=1.2.6+mc.26.1]}, HARD_DEP entity_model_features 3.3.8 {depends entity_texture_features @ [>=7.2]}, HARD_DEP showmeyourskin 2.0.3+26.1.2 {depends cicada @ [>=0.14.3 <1.0.0]}]
+[23:21:59] [main/INFO]: Fix: add [add:player_animation_library 1.2.6+mc.26.1 ([[1.2.6+mc.26.1,∞)]), add:entity_texture_features 7.2 ([[7.2,∞)]), add:cicada 0.14.3 ([[0.14.3,1.0.0)])], remove [], replace []
+[23:21:59] [main/ERROR]: Incompatible mods found!
+net.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!
+A potential solution has been determined, this may resolve your problem:
+	 - Install player_animation_library, version 1.2.6+mc.26.1 or later.
+	 - Install entity_texture_features, version 7.2 or later.
+	 - Install cicada, any version between 0.14.3 (inclusive) and 1.0.0 (exclusive).
+More details:
+	 - Mod 'Emotecraft' (emotecraft) 3.3.0-b.build.164 requires version 1.2.6+mc.26.1 or later of player_animation_library, which is missing!
+	 - Mod 'Entity Model Features' (entity_model_features) 3.3.8 requires version 7.2 or later of entity_texture_features, which is missing!
+	 - Mod 'Show Me Your Skin!' (showmeyourskin) 2.0.3+26.1.2 requires any version between 0.14.3 (inclusive) and 1.0.0 (exclusive) of cicada, which is missing!
+	at net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202)
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:66)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+

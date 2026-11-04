@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[18:02:11] [main/ERROR]: Incompatible mods found!\nnet.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!\nA potential solution has been determined, this may resolve your problem:\nMore details:\n\t - Mod 'Distant Horizons' (distanthorizons) 2.3.0-b-1.20.1 requires version 21 or later of 'OpenJDK 64-Bit Server VM' (java), but only the wrong version is present: 17.0.15!\n\tat net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51)\n\tat net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202)\n\tat net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142)\nProcess exited with code 1.\n"
+ }
+}

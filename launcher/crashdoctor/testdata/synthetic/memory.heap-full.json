@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "crashReport": "---- Minecraft Crash Report ----\n// Don't be sad, have a hug! <3\n\nTime: 2026-10-02 21:14:08\nDescription: Unexpected error\n\njava.lang.OutOfMemoryError: Java heap space\n\tat java.base/java.util.Arrays.copyOf(Arrays.java:3537)\n\tat net.minecraft.client.renderer.chunk.SectionRenderDispatcher.<init>(SectionRenderDispatcher.java:88)\n"
+ }
+}

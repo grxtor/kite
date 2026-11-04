@@ -1,0 +1,7 @@
+{
+ "note": "Kite's own VerifyJavaInstall line",
+ "verify": false,
+ "docs": {
+  "log": "Java 21 is required but not installed. Automatic Java download is disabled.\n"
+ }
+}

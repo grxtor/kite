@@ -53,7 +53,11 @@ bool GameProcessStep::handleProcessEnd(LoggedProcess::State state,
 			emitFailed(couldNotLaunch);
 			return true;
 		}
-		case LoggedProcess::Aborted:
+		case LoggedProcess::Aborted: {
+			m_parent->setPid(-1);
+			emitFailed(tr("The game was stopped."));
+			return true;
+		}
 		case LoggedProcess::Crashed: {
 			m_parent->setPid(-1);
 			emitFailed(crashed);

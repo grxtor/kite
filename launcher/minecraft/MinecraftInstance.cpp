@@ -19,6 +19,7 @@
  */
 
 #include "MinecraftInstance.h"
+#include "crashdoctor/CrashDoctorService.h"
 #include "minecraft/launch/CreateGameFolders.h"
 #include "minecraft/launch/ExtractNatives.h"
 #include "minecraft/launch/PrintInstanceInfo.h"
@@ -209,6 +210,19 @@ MinecraftInstance::MinecraftInstance(SettingsObjectPtr globalSettings,
 
 	// Kite's mod is injected with -Dfabric.addMods; Fabric instances only.
 	m_settings->registerSetting("KiteMod", true);
+
+	/* Set by the crash doctor's fixes (crashdoctor/CrashFixer), read at the
+	 * next launch. JavaMajorAtLeast raises the Java major this instance needs
+	 * (a mod built for a newer Java than its Minecraft); JavaRepick makes
+	 * VerifyJavaInstall choose the Java again once, as if none were set;
+	 * RepairGameFiles makes LibrariesTask download every library again once;
+	 * MacStartOnFirstThread adds -XstartOnFirstThread even when the version
+	 * does not ask for it. CrashDoctorUndo holds what undoes the last fix. */
+	m_settings->registerSetting("JavaMajorAtLeast", 0);
+	m_settings->registerSetting("JavaRepick", false);
+	m_settings->registerSetting("RepairGameFiles", false);
+	m_settings->registerSetting("MacStartOnFirstThread", false);
+	m_settings->registerSetting("CrashDoctorUndo", "");
 	// The mod bridge session ends with the game.
 	connect(this, &BaseInstance::runningStatusChanged, this,
 			[this](bool running) {
@@ -508,22 +522,27 @@ KiteMod::Support MinecraftInstance::kiteModSupport() const
 // does); KITE_MOD_JAR overrides it for mod development.
 QString MinecraftInstance::kiteModJar() const
 {
+	QString jar;
 	const QFileInfo devJar(qEnvironmentVariable("KITE_MOD_JAR"));
 	if (devJar.isFile()) {
-		return devJar.absoluteFilePath();
+		jar = devJar.absoluteFilePath();
+	} else if (auto* context = LAUNCHER) {
+		const QString cacheRoot = context->metacache()->getBasePath("general");
+		const auto build = KiteMod::cachedBuild(cacheRoot, minecraftVersion(),
+												kiteModLoaderVersion());
+		if (build && KiteMod::isDownloaded(cacheRoot, *build)) {
+			jar = KiteMod::jarPath(cacheRoot, *build);
+		}
 	}
-
-	auto* context = LAUNCHER;
-	if (!context) {
+	// The jar has the last word: one whose own metadata rules this Minecraft
+	// out stops Fabric from starting the game, so it is left out
+	// (PrepareKiteMod logs why).
+	if (!jar.isEmpty() &&
+		KiteMod::jarFileAcceptsMinecraft(jar, minecraftVersion()) ==
+			VersionRange::Match::No) {
 		return QString();
 	}
-	const QString cacheRoot = context->metacache()->getBasePath("general");
-	const auto build = KiteMod::cachedBuild(cacheRoot, minecraftVersion(),
-											kiteModLoaderVersion());
-	if (!build || !KiteMod::isDownloaded(cacheRoot, *build)) {
-		return QString();
-	}
-	return KiteMod::jarPath(cacheRoot, *build);
+	return jar;
 }
 
 QStringList MinecraftInstance::kiteModArguments() const
@@ -572,7 +591,8 @@ QStringList MinecraftInstance::javaArguments() const
 	// NOTE: Oracle Java option. if there are alternate jvm implementations,
 	// this would be the place to customize this for them
 #ifdef Q_OS_MAC
-	if (traits_.contains("FirstThreadOnMacOS")) {
+	if (traits_.contains("FirstThreadOnMacOS") ||
+		m_settings->get("MacStartOnFirstThread").toBool()) {
 		args << QString("-XstartOnFirstThread");
 	}
 #endif
@@ -1218,6 +1238,8 @@ MinecraftInstance::createLaunchTask(AuthSessionPtr session,
 		}
 	}
 	m_launchProcess = process;
+	// Says why, if this run ends in a crash.
+	CrashDoctorService::instance()->watch(m_launchProcess);
 	emit launchTaskChanged(m_launchProcess);
 	return m_launchProcess;
 }

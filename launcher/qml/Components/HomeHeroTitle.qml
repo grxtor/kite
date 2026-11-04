@@ -16,6 +16,7 @@ ColumnLayout {
     property string name: ""
     property string versionText: ""
     property bool hasCrashed: false
+    property string crashCause: ""
     property var lastLaunch: 0
     property string playTimeText: ""
     property bool showsWhen: true
@@ -99,7 +100,7 @@ ColumnLayout {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: qsTr("Crashed last time")
+                text: Format.crashLine(root.crashCause)
                 color: Theme.palette.warning
                 font.family: Theme.font.family
                 font.pixelSize: root.metaSize
@@ -143,7 +144,7 @@ ColumnLayout {
             Copy {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.hasCrashed
-                text: qsTr("Crashed last time")
+                text: Format.crashLine(root.crashCause)
                 tone: "warning"
             }
         }

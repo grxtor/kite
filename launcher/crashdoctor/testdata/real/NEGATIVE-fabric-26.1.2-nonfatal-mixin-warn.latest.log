@@ -1,0 +1,5 @@
+# source: <kite-data>/instances/26.1.2/.minecraft/logs/2026-09-28-1.log.gz
+# kind: real (user's own instance), scrubbed: user, player, uuids, ips, tokens
+[18:05:01] [Render thread/WARN]: Mixin apply for mod fancymenu failed fancymenu.mixins.json:client.MixinOnlineServerEntry from mod fancymenu -> net.minecraft.client.gui.screens.multiplayer.ServerSelectionList$OnlineServerEntry: org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException Critical injection failure: @Inject annotation on onDrawIconFancyMenu could not find any targets 
+org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException: Critical injection failure: @Inject annotation on onDrawIconFancyMenu could not find any targets matching 'drawIcon' in net/minecraft/client/gui/screens/multiplayer/ServerSelectionList$OnlineServerEntry. No refMap loaded. [handler$bpa000$fancymenu$onDrawIconFancyMenu(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IILnet/mi
+	at org.spongepowered.asm.mixin.injection.selectors.TargetSelectors.validate(TargetSelectors.java:326)

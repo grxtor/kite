@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[main/ERROR] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Error during transformation\njava.lang.IllegalArgumentException: Unsupported class file major version 65\n\tat org.objectweb.asm.ClassReader.<init>(ClassReader.java:199)\nProcess exited with code 1.\n"
+ }
+}

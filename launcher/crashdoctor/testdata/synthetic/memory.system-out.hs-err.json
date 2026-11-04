@@ -1,0 +1,8 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "hsErr": "#\n# There is insufficient memory for the Java Runtime Environment to continue.\n# Native memory allocation (mmap) failed to map 268435456 bytes for G1 virtual space\n# Possible reasons:\n#   The system is out of physical RAM or swap space\n",
+  "log": "Process crashed with exitcode 134.\n"
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[18:02:11] [main/ERROR]: Incompatible mods found!\nnet.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!\nA potential solution has been determined, this may resolve your problem:\n\t - Install fabric-api, any version.\nMore details:\n\t - Mod 'Sodium Extra' (sodium-extra) 0.6.0+mc1.21.1 requires any version of fabric-api, which is missing!\n\t - Mod 'Reese's Sodium Options' (reeses-sodium-options) 1.8.0+mc1.21 requires any version of fabric-api, which is missing!\n\tat net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51)\n\tat net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202)\n\tat net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142)\nProcess exited with code 1.\n"
+ }
+}

@@ -41,6 +41,7 @@ Item {
     property string coverKind: ""
     property string packArt: ""
     property bool hasCrashed: false
+    property string crashCause: ""
     property string launchStatus: ""
     property real launchProgress: -1
 
@@ -94,6 +95,7 @@ Item {
             required property string coverKind
             required property var packArt
             required property bool hasCrashed
+            required property string crashCause
             required property string launchStatus
             required property real launchProgress
             visible: false
@@ -114,12 +116,13 @@ Item {
                 root.coverKind = probe.coverKind
                 root.packArt = probe.packArt || ""
                 root.hasCrashed = probe.hasCrashed
+                root.crashCause = probe.crashCause
                 root.launchStatus = probe.launchStatus
                 root.launchProgress = probe.launchProgress
             }
             readonly property string signature: [index, instanceId, name, iconKey, isRunning, canLaunch,
                                                  lastLaunch, totalTimePlayed, gameVersion, loader, coverImage,
-                                                 coverKind, packArt, hasCrashed, launchStatus,
+                                                 coverKind, packArt, hasCrashed, crashCause, launchStatus,
                                                  launchProgress].join("\n")
             onSignatureChanged: sync()
             Component.onCompleted: sync()

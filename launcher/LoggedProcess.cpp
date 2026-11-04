@@ -96,7 +96,7 @@ void LoggedProcess::on_exit(int exit_code, QProcess::ExitStatus status)
 		m_err_leftover.clear();
 	}
 	if (!m_out_leftover.isEmpty()) {
-		emit log({m_err_leftover}, MessageLevel::StdOut);
+		emit log({m_out_leftover}, MessageLevel::StdOut);
 		m_out_leftover.clear();
 	}
 

@@ -1,0 +1,7 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "log": "[18:02:11] [main/ERROR]: Incompatible mods found!\nnet.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!\nA potential solution has been determined, this may resolve your problem:\nMore details:\n\t - Mod 'Sodium' (sodium) 0.5.11+mc1.20.1 is incompatible with any version of mod 'OptiFabric' (optifabric), yet a conflicting version is present: 1.14.3!\n\tat net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51)\n\tat net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202)\n\tat net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142)\nProcess exited with code 1.\n"
+ }
+}

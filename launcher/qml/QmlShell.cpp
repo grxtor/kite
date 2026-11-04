@@ -46,6 +46,7 @@
 #endif
 
 #include "BaseInstance.h"
+#include "crashdoctor/CrashDoctorService.h"
 #include "minecraft/GraphicsBackend.h"
 #include "minecraft/MinecraftInstance.h"
 #include "FileSystem.h"
@@ -155,6 +156,11 @@ QmlShell::QmlShell(QObject* parent) : QObject(parent)
 	connect(accounts.get(), &AccountList::defaultAccountChanged, this, bump);
 	// An account without a skin shows the default skin once it has downloaded.
 	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, bump);
+
+	connect(CrashDoctorService::instance(), &CrashDoctorService::analysed, this,
+			[this](const QString& id, bool fresh) {
+				emit crashAnalysed(id, CrashDoctorService::instance()->topCause(id), fresh);
+			});
 
 	recomputeSetupSteps();
 }
@@ -764,6 +770,30 @@ void QmlShell::debugMarkInstanceCrashed(const QString& id)
 		return;
 	}
 	instance->setCrashed(true);
+}
+
+namespace
+{
+	void debugCrash(const QString& id, bool fresh)
+	{
+		auto instance = std::dynamic_pointer_cast<MinecraftInstance>(
+			LAUNCHER->instances()->getInstanceById(id));
+		if (!instance) {
+			return;
+		}
+		instance->setCrashed(true);
+		CrashDoctorService::instance()->analyseFiles(*instance, fresh);
+	}
+} // namespace
+
+void QmlShell::debugAnalyseCrash(const QString& id)
+{
+	debugCrash(id, false);
+}
+
+void QmlShell::debugCrashNow(const QString& id)
+{
+	debugCrash(id, true);
 }
 
 void QmlShell::debugClick(const QString& spec)
