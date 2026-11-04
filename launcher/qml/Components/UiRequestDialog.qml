@@ -105,19 +105,17 @@ Item {
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
-        Text {
+        // Plain, with no links: the core's text often names an instance, a pack or a version from someone else.
+        // Line breaks are newlines.
+        Copy {
+            objectName: "requestText"
             Layout.fillWidth: true
             // A plugin modal brings its own text in its document.
             visible: text.length > 0
             text: root.request ? root.request.text : ""
-            textFormat: Text.AutoText
+            tone: "secondary"
             wrapMode: Text.Wrap
-            color: Theme.palette.textSecondary
-            linkColor: Theme.palette.accentText
-            font.family: Theme.font.family
-            font.pixelSize: Theme.type.body.pixelSize
             lineHeight: 1.3
-            onLinkActivated: (link) => Qt.openUrlExternally(link)
         }
 
         TextField {
@@ -229,6 +227,7 @@ Item {
                         anchors.rightMargin: Theme.space.sm
                         anchors.verticalCenter: parent.verticalCenter
                         text: fileRow.modelData
+                        textFormat: Text.PlainText
                         elide: Text.ElideMiddle
                         color: Theme.palette.textSecondary
                         font.family: Theme.font.mono

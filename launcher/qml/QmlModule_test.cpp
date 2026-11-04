@@ -1485,6 +1485,57 @@ class QmlModuleTest : public QObject
 		}
 	}
 
+	/* The core's message is plain text: its lines are newlines, a tag in it is
+	 * shown as written, and nothing in it is a link. */
+	void uiRequestDialogShowsLinesAsPlainText()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			Window {
+				width: 900; height: 700; visible: true
+				QtObject {
+					id: host
+					property var current: null
+				}
+				QtObject {
+					id: message
+					property string kind: "message"
+					property string title: "Check your instance folder"
+					property string text: "The folder is a problem.\n\nYou have two options:\n - one\n - <b>two</b>"
+					property string severity: "warning"
+					property string acceptLabel: ""
+					property string rejectLabel: ""
+					property string filePickerMode: ""
+					property string filePickerFilter: ""
+					property string profileNameStatus: ""
+					property string profileNameError: ""
+					property int confirmDelayMs: 0
+					function accept() {}
+					function reject() {}
+				}
+				UiRequestDialog { host: host }
+				function show() { host.current = message }
+			})",
+						  QUrl(QStringLiteral("qrc:/test/Request.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY2(window, qPrintable(component.errorString()));
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+		QVERIFY(QMetaObject::invokeMethod(window, "show"));
+
+		QQuickItem* text = nullptr;
+		QTRY_VERIFY((text = window->findChild<QQuickItem*>(QStringLiteral("requestText"))) &&
+					text->isVisible() && text->width() > 0);
+		QCOMPARE(text->property("textFormat").toInt(), int(Qt::PlainText));
+		QVERIFY(text->property("text").toString().endsWith(QStringLiteral("<b>two</b>")));
+		const int lines = 5;
+		QTRY_COMPARE(text->property("lineCount").toInt(), lines);
+	}
 };
 
 int main(int argc, char* argv[])
