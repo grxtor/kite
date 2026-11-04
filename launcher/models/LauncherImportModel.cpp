@@ -137,7 +137,9 @@ bool LauncherImportModel::setChecked(int row, bool checked)
 	if (row < 0 || row >= m_rows.size() || m_rows.at(row).checked == checked) {
 		return false;
 	}
-	if (checked && !m_rows.at(row).instance.importable()) {
+	/* One already brought over takes no tick: a second would be a copy of
+	 * the copy. Looking again after it is deleted from Kite offers it anew. */
+	if (checked && (!m_rows.at(row).instance.importable() || m_rows.at(row).imported)) {
 		return false;
 	}
 	m_rows[row].checked = checked;

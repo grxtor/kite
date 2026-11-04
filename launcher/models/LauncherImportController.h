@@ -49,6 +49,9 @@ class LauncherImportController : public QObject
 	Q_PROPERTY(bool scanned READ scanned NOTIFY scanningChanged)
 	/* Rows that can be imported and are not already. */
 	Q_PROPERTY(int availableCount READ availableCount NOTIFY listChanged)
+	/* Rows that can be imported, brought over already or not: a count that
+	 * stays put while instances are imported. */
+	Q_PROPERTY(int foundCount READ foundCount NOTIFY listChanged)
 	/* Launchers found that Kite cannot read yet, by name. */
 	Q_PROPERTY(QStringList unsupported READ unsupported NOTIFY listChanged)
 	/* Launchers whose list could not be read: "name: why". */
@@ -57,6 +60,8 @@ class LauncherImportController : public QObject
 	Q_PROPERTY(int selectedCount READ selectedCount NOTIFY selectionChanged)
 	Q_PROPERTY(bool allSelected READ allSelected NOTIFY selectionChanged)
 	Q_PROPERTY(bool anyLinked READ anyLinked NOTIFY selectionChanged)
+	/* Ticked rows set to Link. */
+	Q_PROPERTY(int linkedCount READ linkedCount NOTIFY selectionChanged)
 	/* What the ticked copies take, and what the disk has free. */
 	Q_PROPERTY(QString selectedSizeText READ selectedSizeText NOTIFY selectionChanged)
 	Q_PROPERTY(QString freeSpaceText READ freeSpaceText NOTIFY selectionChanged)
@@ -92,6 +97,7 @@ class LauncherImportController : public QObject
 		return m_scanned;
 	}
 	int availableCount() const;
+	int foundCount() const;
 	QStringList unsupported() const
 	{
 		return m_unsupported;
@@ -103,6 +109,7 @@ class LauncherImportController : public QObject
 	int selectedCount() const;
 	bool allSelected() const;
 	bool anyLinked() const;
+	int linkedCount() const;
 	QString selectedSizeText() const;
 	QString freeSpaceText() const;
 	QString space() const;

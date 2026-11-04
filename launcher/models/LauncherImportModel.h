@@ -81,7 +81,8 @@ class LauncherImportModel : public QAbstractListModel
 	/* -1 when no row has @p key. */
 	int indexOf(const QString& key) const;
 
-	/* Only importable rows take a tick, and only linkable ones a link. */
+	/* Only importable rows not yet brought over take a tick, and only
+	 * linkable ones a link. */
 	bool setChecked(int row, bool checked);
 	bool setMode(int row, LauncherImport::Mode mode);
 	void setImported(int row);

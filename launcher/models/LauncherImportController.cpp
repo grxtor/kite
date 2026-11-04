@@ -126,6 +126,24 @@ int LauncherImportController::availableCount() const
 	return count;
 }
 
+int LauncherImportController::foundCount() const
+{
+	int count = 0;
+	for (const auto& row : m_model.rows()) {
+		count += row.instance.importable() ? 1 : 0;
+	}
+	return count;
+}
+
+int LauncherImportController::linkedCount() const
+{
+	int count = 0;
+	for (const auto& row : m_model.rows()) {
+		count += row.checked && row.mode == Mode::Link ? 1 : 0;
+	}
+	return count;
+}
+
 int LauncherImportController::selectedCount() const
 {
 	int count = 0;
@@ -151,12 +169,7 @@ bool LauncherImportController::allSelected() const
 
 bool LauncherImportController::anyLinked() const
 {
-	for (const auto& row : m_model.rows()) {
-		if (row.checked && row.mode == Mode::Link) {
-			return true;
-		}
-	}
-	return false;
+	return linkedCount() > 0;
 }
 
 qint64 LauncherImportController::selectedBytes() const
