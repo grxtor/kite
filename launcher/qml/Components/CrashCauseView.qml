@@ -18,7 +18,8 @@ import Kite.Theme
 ColumnLayout {
     id: root
 
-    // {ruleId, title, explanation, line, count, rows, fixes: [{action, label, params, runner, confirm}]}.
+    // {ruleId, title, explanation, line, count, rows, fixes: [{action, label, params, runner, confirm}]},
+    // and for "couldn't tell" a muted detail ("Exit code 1").
     property var cause: null
     // The first cause gets the accent button; the others a plain one.
     property bool main: true
@@ -78,6 +79,15 @@ ColumnLayout {
                 text: root.cause ? root.cause.explanation : ""
                 tone: "secondary"
                 wrapMode: Text.Wrap
+                textFormat: Text.PlainText
+            }
+
+            Copy {
+                Layout.fillWidth: true
+                visible: !!root.cause && (root.cause.detail || "").length > 0
+                text: root.cause ? root.cause.detail || "" : ""
+                role: "caption"
+                tone: "tertiary"
                 textFormat: Text.PlainText
             }
 

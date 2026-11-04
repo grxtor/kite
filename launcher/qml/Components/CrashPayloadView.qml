@@ -3,13 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Kite.Theme
 
 /*
  * "What is sent": a crash report exactly as it goes to Kite (CrashDoctorModel.payload, from
  * CrashPayload::readable()), in words: the versions, the error lines, the mods, the rule that
- * matched, and what never goes. No surface of its own; CrashSendBlock folds it open.
+ * matched, and what never goes. The error lines are code: one line each in a sunken monospace
+ * block that scrolls sideways (and down past a few lines), never broken inside a name. CrashSendBlock
+ * folds it open.
  */
 ColumnLayout {
     id: root
@@ -18,6 +21,8 @@ ColumnLayout {
     property var payload: ({})
     readonly property var lines: root.payload.lines || []
     readonly property int modCount: root.payload.modCount || 0
+    // About eight lines of code; more scroll.
+    readonly property int maxCodeHeight: 160
 
     spacing: Theme.space.sm
 
@@ -25,23 +30,21 @@ ColumnLayout {
         id: field
         property alias label: name.text
         property alias value: body.text
-        property bool mono: false
         Layout.fillWidth: true
         spacing: Theme.space.xxs
         Copy {
             id: name
             role: "caption"
             tone: "tertiary"
+            textFormat: Text.PlainText
         }
         Copy {
             id: body
             Layout.fillWidth: true
-            role: field.mono ? "caption" : "label"
+            role: "label"
             tone: "secondary"
-            // A frame is one long word: code breaks anywhere, so "at" stays on its line.
-            wrapMode: field.mono ? Text.WrapAnywhere : Text.WrapAtWordBoundaryOrAnywhere
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
             textFormat: Text.PlainText
-            font.family: field.mono ? Theme.font.mono : Theme.font.family
         }
     }
 
@@ -49,10 +52,49 @@ ColumnLayout {
         label: qsTr("Versions")
         value: root.payload.versions + "\n" + root.payload.game
     }
-    Field {
-        label: qsTr("Error")
-        value: root.lines.join("\n")
-        mono: true
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: Theme.space.xxs
+        Copy {
+            text: qsTr("Error")
+            role: "caption"
+            tone: "tertiary"
+            textFormat: Text.PlainText
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            // Room under the last line for the side scroll bar.
+            implicitHeight: Math.min(root.maxCodeHeight, code.implicitHeight + Theme.space.sm * 2 + Theme.space.md)
+            radius: Theme.radius.sm
+            color: Theme.palette.surfaceSunken
+            border.width: 1
+            border.color: Theme.palette.border
+
+            Flickable {
+                id: codeView
+                anchors.fill: parent
+                anchors.margins: Theme.space.sm
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                contentWidth: code.implicitWidth
+                contentHeight: code.implicitHeight
+                // Shown while there is more to the side, so a cut line reads as one that scrolls.
+                ScrollBar.horizontal: ScrollBar {
+                    policy: codeView.contentWidth > codeView.width ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                }
+                ScrollBar.vertical: ScrollBar {}
+
+                Copy {
+                    id: code
+                    text: root.lines.join("\n")
+                    role: "caption"
+                    tone: "secondary"
+                    wrapMode: Text.NoWrap
+                    textFormat: Text.PlainText
+                    font.family: Theme.font.mono
+                }
+            }
+        }
     }
     Field {
         visible: root.modCount > 0
@@ -75,5 +117,6 @@ ColumnLayout {
         role: "caption"
         tone: "tertiary"
         wrapMode: Text.Wrap
+        textFormat: Text.PlainText
     }
 }

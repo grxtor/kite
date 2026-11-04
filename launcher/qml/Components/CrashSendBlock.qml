@@ -42,12 +42,14 @@ ColumnLayout {
                 text: qsTr("Send this crash to Kite so we can find the fix")
                 role: "bodyStrong"
                 wrapMode: Text.Wrap
+                textFormat: Text.PlainText
             }
             Copy {
                 Layout.fillWidth: true
                 text: root.statusText()
                 tone: root.sendState === "failed" ? "danger" : "secondary"
                 wrapMode: Text.Wrap
+                textFormat: Text.PlainText
             }
         }
 
@@ -94,6 +96,7 @@ ColumnLayout {
                 text: root.asking ? qsTr("What is sent") : qsTr("What was sent")
                 role: "label"
                 color: toggle.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                textFormat: Text.PlainText
             }
         }
     }

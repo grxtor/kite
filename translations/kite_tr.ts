@@ -2396,7 +2396,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashCauseView</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+97"/>
+        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+107"/>
         <source>and %1 more</source>
         <translation>ve %1 tane daha</translation>
     </message>
@@ -2616,7 +2616,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Oyun çöktü, Kite nedenini bulamadı</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>Send to Kite</source>
         <translation>Kite&apos;a gönder</translation>
     </message>
@@ -2675,17 +2675,17 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashPayloadView</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashPayloadView.qml" line="+49"/>
+        <location filename="../launcher/qml/Components/CrashPayloadView.qml" line="+52"/>
         <source>Versions</source>
         <translation>Sürümler</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+7"/>
         <source>Error</source>
         <translation>Hata</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+38"/>
         <source>1 mod</source>
         <translation>1 mod</translation>
     </message>
@@ -2779,13 +2779,13 @@ Ayrıntılar günlük dosyasında:
         <translation>Bu çökmeyi Kite&apos;a gönder, çözümünü bulalım</translation>
     </message>
     <message>
-        <location line="+17"/>
-        <location line="+60"/>
+        <location line="+19"/>
+        <location line="+61"/>
         <source>Sending…</source>
         <translation>Gönderiliyor…</translation>
     </message>
     <message>
-        <location line="-60"/>
+        <location line="-61"/>
         <source>Send</source>
         <translation>Gönder</translation>
     </message>
@@ -2805,7 +2805,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Gönderilenler</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+17"/>
         <source>Ask me before sending</source>
         <translation>Göndermeden önce bana sor</translation>
     </message>
@@ -4147,22 +4147,22 @@ Lütfen tekrar dene.</translation>
         <translation>Geçen sefer çöktü</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+7"/>
         <source>This crash doesn&apos;t look like one Kite knows. Share the log to show it to someone who can help; your account details and your user folder are hidden.</source>
         <translation>Bu çökme Kite&apos;ın tanıdığı bir şeye benzemiyor. Günlüğü paylaş, yardım edebilecek birine göster; hesap bilgilerin ve kullanıcı klasörün gizlenir.</translation>
     </message>
     <message>
         <location line="+2"/>
+        <source>Exit code %1</source>
+        <translation>Çıkış kodu %1</translation>
+    </message>
+    <message>
+        <location line="-3"/>
         <source>Kite couldn&apos;t find the cause</source>
         <translation>Kite nedenini bulamadı</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>The game stopped with code %1.</source>
-        <translation>Oyun %1 koduyla kapandı.</translation>
-    </message>
-    <message>
-        <location line="+12"/>
+        <location line="+15"/>
         <source>Minecraft</source>
         <translation>Minecraft</translation>
     </message>
