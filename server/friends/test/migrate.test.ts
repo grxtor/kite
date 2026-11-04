@@ -24,7 +24,14 @@ describe('migrations', () => {
     const { rows } = await pool.query<{ name: string }>('select name from schema_migrations order by name');
     assert.deepEqual(
       rows.map((row) => row.name),
-      ['001_init.sql', '002_allow_join.sql', '003_invites_share_codes.sql', '004_chat.sql', '005_crash_reports.sql'],
+      [
+        '001_init.sql',
+        '002_allow_join.sql',
+        '003_invites_share_codes.sql',
+        '004_chat.sql',
+        '005_crash_reports.sql',
+        '006_moderation.sql',
+      ],
     );
   });
 
@@ -52,5 +59,23 @@ describe('migrations', () => {
     await migrate(pool);
     const { rows } = await pool.query<{ allow_invites: boolean }>('select allow_invites from users');
     assert.deepEqual(rows, [{ allow_invites: true }, { allow_invites: true }]);
+  });
+
+  test('006 leaves the reports filed before it open', async () => {
+    await pool.query('drop table sanctions, moderation_log');
+    await pool.query('drop index chat_reports_reported_idx');
+    await pool.query('alter table chat_reports drop column status, drop column closed_at, drop column resolution_note');
+    await pool.query(`delete from schema_migrations where name = '006_moderation.sql'`);
+    await pool.query(
+      `insert into chat_reports (reporter_uuid, reported_uuid, message_id, reason, snapshot, created_at)
+       values (null, '853c80ef-3c37-49fd-aa49-938b674adae6', 1, 'spam', '{}', now())`,
+    );
+    await migrate(pool);
+    const { rows } = await pool.query('select status, closed_at, resolution_note from chat_reports');
+    assert.deepEqual(rows, [{ status: 'open', closed_at: null, resolution_note: null }]);
+    const { rows: tables } = await pool.query<{ name: string }>(
+      `select table_name as name from information_schema.tables where table_name in ('sanctions', 'moderation_log') order by 1`,
+    );
+    assert.deepEqual(tables.map((table) => table.name), ['moderation_log', 'sanctions']);
   });
 });

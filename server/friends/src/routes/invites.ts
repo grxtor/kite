@@ -4,6 +4,7 @@ import { publishEvent } from '../bus.ts';
 import { currentUser, hour, type Context } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
+import { assertNotBanned } from '../moderation.ts';
 import { inviteBody, uuidParams } from '../schemas.ts';
 import { classifyHost, normalizeHost } from '../serverAddress.ts';
 import { defaultMinecraftPort } from '../status.ts';
@@ -99,6 +100,7 @@ export function registerInviteRoutes(app: FastifyInstance, ctx: Context) {
       const to = request.params.uuid.toLowerCase();
       const limits = ctx.config.rateLimits;
       ctx.limit(`invites:${me}`, limits.invitesPerHour, hour);
+      await assertNotBanned(ctx.pool, me, ctx.now());
       if (to === me) throw badRequest('That is you');
       const host = normalizeHost(request.body.host);
       if (!host) throw badRequest('host is not a valid server address');

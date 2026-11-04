@@ -32,6 +32,7 @@ environment:
 | `STATUS_TTL_SECONDS` | `180` | How long a reported status stays live |
 | `SESSION_TTL_DAYS` | `30` | Lifetime of a session token |
 | `LOG_LEVEL` | `info` | Pino log level. Requests are not logged, only errors |
+| `MOD_WEBHOOK_URL` | (none) | Discord webhook told about each new chat report (see [Moderation](#moderation)). A secret: it is never logged. Without it nothing is sent |
 
 Tests need a Postgres the test user may create databases on:
 
@@ -64,12 +65,21 @@ Failures return a status code and a body like this:
 { "error": "not_found", "message": "No such player" }
 ```
 
+`muted` and `banned` carry one more field:
+
+```json
+{ "error": "muted", "message": "You can send messages again at 2026-11-05T18:00:00.000Z", "until": "2026-11-05T18:00:00.000Z" }
+{ "error": "banned", "message": "This account may not chat, invite or send friend requests", "reason": "spam" }
+```
+
 | Status | `error` | When |
 |---|---|---|
 | 400 | `bad_request` | The body or a parameter is invalid |
 | 400 | `challenge_invalid` | Login with an unknown, used or expired challenge |
 | 401 | `unauthorized` | Missing, unknown or expired token. Log in again |
 | 401 | `not_joined` | Mojang did not confirm the `join` for this challenge |
+| 403 | `muted` | Sending a chat message while a moderator muted you. `until` (ISO time) says when you can again |
+| 403 | `banned` | Sending a chat message, an invite or a friend request while banned. `reason` is the moderator's reason, or `null` |
 | 404 | `not_found` | The player, request, friend, invite, message or share code does not exist, or you may not see it |
 | 409 | `already_friends` | Friend request to someone who already is a friend |
 | 409 | `blocked_by_you` | Friend request to someone you blocked. Unblock first |
@@ -171,9 +181,15 @@ GET /v1/me
     "shareIpServers": false,
     "allowJoin": true,
     "allowInvites": true
-  }
+  },
+  "moderation": { "mutedUntil": null, "banned": null }
 }
 ```
+
+`moderation` says what a moderator put on the account, so the launcher can
+show why something is refused: `mutedUntil` is when a mute runs out (`null`
+when there is none), and `banned` is `{ "at": "...", "reason": "..." }` (the
+reason may be `null`) or `null`. See [Moderation](#moderation).
 
 - `visibility`
   - `"friends"` (default): friends see your status.
@@ -215,7 +231,8 @@ are told with a [`chat.deleted`](#events) event. Messages you received are
 hidden from you for good. Blocks other players placed on you stay, because
 they belong to them, and so do reports others filed about your messages (see
 [Reports](#reports)). Your open sockets close with `4401`. Signing in again
-later creates a new, empty account with no chat history.
+later creates a new, empty account with no chat history. A mute or ban
+stays: it belongs to the Minecraft UUID, not to the account.
 
 ### Reporting your status
 
@@ -355,6 +372,7 @@ POST /v1/friends/requests
 | `404 not_found` | No Kite user has that name, or they blocked you (the two are not told apart) |
 | `400 bad_request` | The name is yours |
 | `409 already_friends`, `409 blocked_by_you`, `409 limit_reached` | See [Errors](#errors) |
+| `403 banned` | You are banned (see [Moderation](#moderation)) |
 | `429 rate_limited` | More than 30 requests an hour, or 3 a day to the same player |
 
 ```http
@@ -420,6 +438,7 @@ same friend again replaces the old one and starts a new 10 minutes.
 | `404 not_found` | Not friends with this player (a block either way, an unknown player and a pending request look the same) |
 | `409 address_not_shared` | The host is a raw IP or local address and your `shareIpServers` is off. Such an address is never stored |
 | `409 invites_off` | The friend's `allowInvites` is off |
+| `403 banned` | You are banned (see [Moderation](#moderation)) |
 | `429 rate_limited` | More than 30 invites an hour, or 5 an hour to the same friend |
 
 ```http
@@ -615,7 +634,10 @@ Every frame either way is a JSON object in a text frame, with a `type`.
   one `rate_limited` error, and frames are dropped until the minute is over.
 - `4401` means the session ended: logged out, dropped by an eleventh
   sign-in, expired, or the account was deleted. Nothing sent after it is
-  handled. Sign in again before reconnecting. For any other close, reconnect with a growing delay (1 s,
+  handled. Sign in again before reconnecting.
+- `4403` means the player is banned (see [Moderation](#moderation)). A
+  banned player's socket closes with it at once; an open one within 30
+  seconds of the ban. Do not reconnect; `GET /v1/me` says why. For any other close, reconnect with a growing delay (1 s,
   2 s, 4 s, up to a minute); Cloudflare also drops sockets when it updates
   its servers.
 
@@ -662,7 +684,7 @@ of `A-Z a-z 0-9 _ -`, and comes back in the answer:
 ```
 
 `error` uses the codes in [Errors](#errors); `rate_limited` comes with
-`retryAfter` in seconds. A frame that is not JSON, has an unknown `type` or
+`retryAfter` in seconds, `muted` with `until` and `banned` with `reason`. A frame that is not JSON, has an unknown `type` or
 a field that does not belong is a `bad_request` error, and the socket stays
 open. Frames from one socket are handled in order.
 
@@ -704,6 +726,8 @@ while it has one.
 | `201` | Sent. It also reaches the friend's sockets and your other ones |
 | `400 bad_request` | The text is empty after cleaning or too long, or the uuid is yours |
 | `404 not_found` | Not friends with this player (a block either way, an unknown player and a pending request look the same) |
+| `403 muted` | A moderator muted you; `until` says until when. Reading and receiving still work |
+| `403 banned` | You are banned (see [Moderation](#moderation)) |
 | `429 rate_limited` | More than 30 messages a minute or 2000 a day |
 
 ```http
@@ -761,11 +785,8 @@ deletes their account, the report stays, so the evidence against the
 reported player is not lost; its `reporter_uuid` becomes `null`, and nothing
 left in it points at the deleted account.
 
-There is no moderation screen yet. Reports are read in the database:
-
-```sql
-select created_at, reason, reported_uuid, snapshot from chat_reports order by created_at desc;
-```
+Each new report is posted to the moderators' Discord channel, and they
+handle it with `pnpm mod` (see [Moderation](#moderation)).
 
 ### Crash reports
 
@@ -864,8 +885,9 @@ GET /healthz
 ## Privacy
 
 What the server stores, all of it deleted by `DELETE /v1/me` (except blocks
-other players placed on you, reports they filed about your messages, and
-reports you filed, which are kept without your UUID):
+other players placed on you, reports they filed about your messages,
+reports you filed, which are kept without your UUID, and a mute or ban on
+you with the moderation log about it):
 
 - Minecraft UUID and name, and when they were last seen
 - Settings
@@ -890,7 +912,18 @@ reports you filed, which are kept without your UUID):
   without the reporter's UUID. Kept 180 days so a moderator can act on
   them, even after the messages age out or either player deletes their
   account. When the reporter deletes theirs, the report keeps the copy and
-  loses the reporter's UUID, so it no longer leads back to them.
+  loses the reporter's UUID, so it no longer leads back to them. A report
+  also keeps what a moderator decided (open, resolved or dismissed, when, and
+  their note).
+- Mutes and bans: the Minecraft UUID, until when a mute runs, and when and
+  why a ban was made. They are kept by UUID even after the player deletes
+  their account, so that deleting it cannot lift them; a mute goes when it
+  runs out, a ban when it is lifted. The ban's reason is shown to the
+  banned player.
+- The moderation log: each moderator action (mute, ban, unmute, unban,
+  resolve, dismiss), its time, the player's UUID or the report's id, and the
+  note. Kept 180 days, longer while the player it names is still muted or
+  banned.
 - Session tokens, stored only as SHA-256 hashes
 
 Raw IP and local server addresses are not stored unless `shareIpServers` is
@@ -916,7 +949,75 @@ says whose it is.
 
 Chat is meant to be safe for younger players: only friends, who both
 accepted each other, can write to each other; a block stops messages both
-ways and hides the history; any message can be reported.
+ways and hides the history; any message can be reported, and a moderator
+hears about it at once and can mute or ban the sender.
+
+A report notice in Discord says only the report's number, its reason, the
+reported player's name and how many reports they got in the last 24 hours.
+What was written never leaves the server; `pnpm mod show` reads it.
+
+## Moderation
+
+There is no admin screen. Chat reports reach the moderators two ways:
+
+- **Discord.** With `MOD_WEBHOOK_URL` set, each new report posts one line to
+  the webhook:
+
+  ```
+  [Kite] Yeni şikâyet #12: taciz, şikâyet edilen Griefer, son 24 saatte bu kişiye 3 şikâyet
+  ```
+
+  The first report goes out at once; the ones after it at most once a
+  minute, in one message (up to 10 lines, then a count). Sending never makes
+  a report wait or fail: it times out after 5 seconds, and a failure is only
+  logged (never with the URL). No message text, no reporter and no UUID is
+  sent. Reporting the same message again sends nothing.
+- **`pnpm mod`** (`scripts/mod.ts`), which reads `DATABASE_URL`:
+
+  ```sh
+  pnpm mod list [--open] [--limit 50]     # newest first: id, time, reason, reporter, reported, status
+  pnpm mod show 12                        # the report and its copy of the conversation
+  pnpm mod mute <uuid> 12h                # 30m, 12h, 7d, 2w (at most 365d); replaces a running mute
+  pnpm mod unmute <uuid>
+  pnpm mod ban <uuid> --reason "spam"     # the player sees the reason
+  pnpm mod unban <uuid>
+  pnpm mod resolve 12 --note "muted 12h"
+  pnpm mod dismiss 12 --note "not abuse"
+  ```
+
+  On the server, where the database is internal, run it in the API
+  container (it has no pnpm):
+
+  ```sh
+  docker exec $(docker ps -q -f name=kite-friends-api) node scripts/mod.ts list --open
+  docker exec $(docker ps -q -f name=kite-friends-api) node scripts/mod.ts show 12
+  ```
+
+  `list` shows a reporter who deleted their account as "silinmiş hesap".
+  `show` marks each message as the reporter's or the reported player's and
+  the reported message with `>>`. A refused action (an unknown report, one
+  already closed, unmuting someone who is not muted) prints why and exits
+  with 1. Every change is written to `moderation_log` with actor `cli`.
+
+What a mute and a ban do:
+
+| | Mute | Ban |
+|---|---|---|
+| Send chat messages (HTTP and socket) | `403 muted` until it runs out | `403 banned` |
+| Send invites and friend requests | yes | `403 banned` |
+| Open sockets | stay open | closed with `4403` within 30 seconds; new ones close at once |
+| Sign in, read, receive, friends list, accept requests, delete the account | yes | yes |
+
+A banned player can still sign in, so the launcher can show why
+(`GET /v1/me` has `moderation`) and the player can delete their data. Both
+are kept by Minecraft UUID, so deleting the account and signing in again
+lifts neither; a ban works on a UUID that never signed in, too. The ban
+reason is shown to the player: never name the reporter or a report number
+in it.
+
+1. A notice arrives; `pnpm mod show <id>`.
+2. Mute or ban the reported UUID (`show` prints it), or neither.
+3. `pnpm mod resolve <id> --note …`, or `dismiss` it if it was not abuse.
 
 ## Crash reports workflow
 
@@ -973,6 +1074,7 @@ Kite project, next to a Dokploy Postgres database:
    ```
    DATABASE_URL=postgres://<user>:<password>@<db internal host>:5432/<db>
    CLIENT_IP_HEADER=cf-connecting-ip
+   MOD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token>
    ```
 
 4. Domain `api.kiteclient.com` → port 8080, HTTPS with Let's Encrypt, and a

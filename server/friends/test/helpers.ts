@@ -41,6 +41,7 @@ export interface Settings {
 
 export interface MeBody extends UserRef {
   settings: Settings;
+  moderation: { mutedUntil: string | null; banned: { at: string; reason: string | null } | null };
 }
 
 export interface WorldBody {
@@ -119,6 +120,7 @@ export interface TestConfigOverrides extends Partial<Omit<Config, 'rateLimits'>>
 
 export interface TestServer {
   baseUrl: string;
+  databaseUrl: string;
   clock: TestClock;
   mojang: MockMojang;
   api: <T = unknown>(method: string, path: string, options?: ApiOptions) => Promise<ApiResponse<T>>;
@@ -180,6 +182,7 @@ export async function startServer(overrides: TestConfigOverrides = {}): Promise<
     sessionTtlDays: 30,
     challengeTtlSeconds: 120,
     heartbeatMs: 30_000,
+    modWebhookUrl: null,
     ...rest,
     rateLimits: { ...relaxedRateLimits, ...rateLimits },
   };
@@ -242,6 +245,7 @@ export async function startServer(overrides: TestConfigOverrides = {}): Promise<
 
   return {
     baseUrl,
+    databaseUrl: db.url,
     clock,
     mojang,
     api,

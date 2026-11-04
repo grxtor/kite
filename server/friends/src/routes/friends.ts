@@ -5,6 +5,7 @@ import { unreadCounts } from '../chat.ts';
 import { currentUser, day, hour, type Context, userJson } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest, HttpError, notFound } from '../errors.ts';
+import { assertNotBanned } from '../moderation.ts';
 import { pushFriendRemoved } from '../notify.ts';
 import { nameBody, uuidParams } from '../schemas.ts';
 import { presenceColumns, statusView, type PresenceRow } from '../status.ts';
@@ -103,6 +104,7 @@ export function registerFriendRoutes(app: FastifyInstance, ctx: Context) {
     const limits = ctx.config.rateLimits;
     // Counted before the lookup, so the endpoint cannot be used to probe names quickly.
     ctx.limit(`friend-requests:${me}`, limits.friendRequestsPerHour, hour);
+    await assertNotBanned(ctx.pool, me, ctx.now());
 
     const target = await findUserByName(ctx.pool, request.body.name);
     if (!target) throw noSuchPlayer();

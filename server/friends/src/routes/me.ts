@@ -5,6 +5,7 @@ import { forgetMessages } from '../chat.ts';
 import { currentUser, type Context } from '../context.ts';
 import { withTransaction } from '../db.ts';
 import { badRequest } from '../errors.ts';
+import { moderationJson, sanctionOf } from '../moderation.ts';
 import { settingsBody, statusBody } from '../schemas.ts';
 import { friendUuids, pushStatus } from '../notify.ts';
 import { normalizeHost } from '../serverAddress.ts';
@@ -82,7 +83,8 @@ export function registerMeRoutes(app: FastifyInstance, ctx: Context) {
     const { rows } = await ctx.pool.query<SettingsRow>(`select ${settingsColumns} from users where uuid = $1`, [
       user.uuid,
     ]);
-    return { uuid: user.uuid, name: user.name, settings: settingsJson(rows[0]!) };
+    const moderation = moderationJson(await sanctionOf(ctx.pool, user.uuid, ctx.now()));
+    return { uuid: user.uuid, name: user.name, settings: settingsJson(rows[0]!), moderation };
   });
 
   app.patch<{ Body: SettingsPatch }>('/v1/me/settings', { schema: { body: settingsBody } }, async (request) => {

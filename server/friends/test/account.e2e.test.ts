@@ -76,6 +76,7 @@ describe('deleting an account', () => {
       uuid: leaverUuid,
       name: leaverName,
       settings: { visibility: 'friends', hideServer: false, shareIpServers: false, allowJoin: true, allowInvites: true },
+      moderation: { mutedUntil: null, banned: null },
     });
     const again: Player = { uuid: leaverUuid, name: leaverName, token };
     assert.deepEqual(await s.friendsOf(again), {

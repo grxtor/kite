@@ -4,6 +4,7 @@ import type { EventBus } from './bus.ts';
 import type { Config } from './config.ts';
 import { HttpError, rateLimited } from './errors.ts';
 import type { RateLimiter } from './rateLimit.ts';
+import type { ReportNotices } from './reportNotices.ts';
 
 export interface AuthUser {
   uuid: string;
@@ -24,6 +25,7 @@ export interface Context {
   limiter: RateLimiter;
   bus: EventBus;
   log: FastifyBaseLogger;
+  reportNotices: ReportNotices;
   now(): Date;
   /** Counts one hit against `key` and throws 429 once `limit` is used up for the window. */
   limit(key: string, limit: number, windowMs: number): void;
@@ -40,15 +42,17 @@ export interface ContextDeps {
   limiter: RateLimiter;
   bus: EventBus;
   log: FastifyBaseLogger;
+  reportNotices: ReportNotices;
 }
 
-export function createContext({ config, pool, clock, limiter, bus, log }: ContextDeps): Context {
+export function createContext({ config, pool, clock, limiter, bus, log, reportNotices }: ContextDeps): Context {
   return {
     config,
     pool,
     limiter,
     bus,
     log,
+    reportNotices,
     now: () => new Date(clock()),
     limit(key, limit, windowMs) {
       const result = limiter.hit(key, limit, windowMs);

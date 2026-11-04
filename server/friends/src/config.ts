@@ -28,6 +28,8 @@ export interface Config {
   challengeTtlSeconds: number;
   /** How often the server pings each WebSocket; one missed pong closes it. */
   heartbeatMs: number;
+  /** Discord webhook told about each new chat report; null sends nothing. A secret. */
+  modWebhookUrl: string | null;
   rateLimits: RateLimits;
 }
 
@@ -57,6 +59,21 @@ function positiveInt(env: Record<string, string | undefined>, key: string, fallb
   return value;
 }
 
+function webhookUrl(raw: string | undefined): string | null {
+  if (raw === undefined || raw === '') return null;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    // Not the value itself: it is a secret.
+    throw new Error('MOD_WEBHOOK_URL is not a URL');
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('MOD_WEBHOOK_URL must be http(s)');
+  // fetch would refuse it with an error that repeats the whole URL.
+  if (url.username || url.password) throw new Error('MOD_WEBHOOK_URL must not contain credentials');
+  return url.toString();
+}
+
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const databaseUrl = env.DATABASE_URL;
   if (!databaseUrl) throw new Error('DATABASE_URL is required');
@@ -71,6 +88,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     sessionTtlDays: positiveInt(env, 'SESSION_TTL_DAYS', 30),
     challengeTtlSeconds: 120,
     heartbeatMs: 30_000,
+    modWebhookUrl: webhookUrl(env.MOD_WEBHOOK_URL),
     rateLimits: { ...defaultRateLimits },
   };
 }
