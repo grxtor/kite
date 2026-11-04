@@ -150,6 +150,7 @@ const relaxedRateLimits: RateLimits = {
   chatMessagesPerDay: RELAXED_LIMIT,
   chatReportsPerDay: RELAXED_LIMIT,
   socketFramesPerMinute: RELAXED_LIMIT,
+  crashReportsPerHour: RELAXED_LIMIT,
 };
 
 export async function startServer(overrides: TestConfigOverrides = {}): Promise<TestServer> {
