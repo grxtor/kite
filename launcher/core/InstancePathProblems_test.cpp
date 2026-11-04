@@ -52,6 +52,19 @@ class InstancePathProblemsTest : public QObject
 		QVERIFY(problems.at(0).text.contains(QStringLiteral("/tmp")));
 	}
 
+	// The advice is shown as plain text: its list is on lines of its own, with no tags.
+	void theAdviceBreaksLinesWithNewlines()
+	{
+		const auto problems = instancePathProblems(
+			{ QStringLiteral("/home/steve/a!b"), QStringLiteral("/tmp/x") },
+			QStringLiteral("/tmp"));
+		QCOMPARE(problems.size(), 2);
+		for (const auto& problem : problems) {
+			QVERIFY2(!problem.advice.contains(QLatin1Char('<')), qPrintable(problem.advice));
+			QVERIFY2(problem.advice.contains(QStringLiteral("\n- ")), qPrintable(problem.advice));
+		}
+	}
+
 	void anUnextractedArchiveIsAProblem()
 	{
 		const auto problems = instancePathProblems(

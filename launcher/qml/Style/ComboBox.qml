@@ -39,6 +39,8 @@ T.ComboBox {
 
         contentItem: Text {
             text: row.text
+            // Plain: entries are often names (worlds, instances), and AutoText would read their tags as markup.
+            textFormat: Text.PlainText
             font: row.font
             color: row.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
             elide: Text.ElideRight

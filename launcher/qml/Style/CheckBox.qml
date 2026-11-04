@@ -73,6 +73,8 @@ T.CheckBox {
         rightPadding: control.indicator && control.mirrored ? control.indicator.width + control.spacing : 0
 
         text: control.text
+        // Plain: the text is often a name from someone else, and AutoText would read its tags as markup.
+        textFormat: Text.PlainText
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize
         font.weight: Theme.type.body.weight

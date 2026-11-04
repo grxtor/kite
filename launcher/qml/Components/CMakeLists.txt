@@ -9,7 +9,7 @@ qt_add_library(Kite_qml_components STATIC)
 # Must run before qt_add_qml_module, or these register as ordinary types and
 # every "import Kite.Components" gets its own private instance (see
 # Theme/CMakeLists.txt).
-set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml ExternalLinks.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(Kite_qml_components
     URI Kite.Components
@@ -28,6 +28,8 @@ qt_add_qml_module(Kite_qml_components
         InstanceListRow.qml
         InstanceSection.qml
         LinkButton.qml
+        ExternalLinks.qml
+        ExternalLinkDialog.qml
         CornerMatte.qml
         PlayButton.qml
         LaunchOptionsMenu.qml

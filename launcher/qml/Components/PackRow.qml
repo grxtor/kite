@@ -314,7 +314,7 @@ Item {
                 visible: row.homepage.length > 0
                 text: qsTr("Homepage")
                 icon.source: Icons.url("external-link")
-                onClicked: Qt.openUrlExternally(row.homepage)
+                onClicked: ExternalLinks.open(row, row.homepage)
             }
             Button {
                 id: configsButton
@@ -348,7 +348,7 @@ Item {
             enabled: row.homepage.length > 0
             text: qsTr("View homepage")
             icon.source: Icons.url("external-link")
-            onTriggered: Qt.openUrlExternally(row.homepage)
+            onTriggered: ExternalLinks.open(row, row.homepage)
         }
         MenuEntry {
             visible: owner.kind === "mods" || owner.kind === "coremods"

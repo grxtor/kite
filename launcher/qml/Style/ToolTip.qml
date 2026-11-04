@@ -36,6 +36,8 @@ T.ToolTip {
 
     contentItem: Text {
         text: control.text
+        // Plain: tips often name an instance or a world, and AutoText would read its tags as markup.
+        textFormat: Text.PlainText
         font.family: Theme.font.family
         font.pixelSize: Theme.type.label.pixelSize
         font.weight: Theme.type.body.weight

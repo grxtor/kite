@@ -63,7 +63,7 @@ SettingsScroll {
                 iconName: "external-link"
                 tip: qsTr("Open in browser")
                 flat: false
-                onClicked: Qt.openUrlExternally(root.about.sourceUrl)
+                onClicked: ExternalLinks.open(root, root.about.sourceUrl, true)
             }
         }
     }
@@ -83,7 +83,7 @@ SettingsScroll {
                     iconName: "external-link"
                     tip: qsTr("Open in browser")
                     flat: false
-                    onClicked: Qt.openUrlExternally(modelData.url)
+                    onClicked: ExternalLinks.open(root, modelData.url, true)
                 }
             }
         }
@@ -107,7 +107,7 @@ SettingsScroll {
             linkColor: Theme.palette.accentText
             font.family: Theme.font.family
             font.pixelSize: Theme.type.label.pixelSize
-            onLinkActivated: (link) => Qt.openUrlExternally(link)
+            onLinkActivated: (link) => ExternalLinks.open(root, link, true)
         }
     }
 
@@ -137,7 +137,7 @@ SettingsScroll {
                 linkColor: Theme.palette.accentText
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.label.pixelSize
-                onLinkActivated: (link) => Qt.openUrlExternally(link)
+                onLinkActivated: (link) => ExternalLinks.open(root, link, true)
             }
         }
     }

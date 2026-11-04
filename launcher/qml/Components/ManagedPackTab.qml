@@ -50,54 +50,6 @@ Item {
             root.controller.fetchVersions()
     }
 
-    function schemeOf(s) {
-        var m = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(String(s))
-        return m ? m[1].toLowerCase() : null
-    }
-
-    /*
-     * A changelog is remote, untrusted text: only http(s) links are passed on. A
-     * schemeless link is CurseForge's outbound redirect, the relative
-     * "linkout?remoteUrl=<percent-encoded>"; its real destination is in the
-     * query, decoded and scheme-checked the same way.
-     */
-    function openChangelogLink(link) {
-        var url = String(link)
-        var scheme = root.schemeOf(url)
-        if (scheme !== null) {
-            if (scheme === "http" || scheme === "https")
-                Qt.openUrlExternally(url)
-            else
-                console.warn("ManagedPackTab: refusing to open changelog link with scheme:", scheme)
-            return
-        }
-
-        var queryIndex = url.indexOf("?")
-        var remote = ""
-        if (queryIndex >= 0) {
-            var parts = url.substring(queryIndex + 1).split("&")
-            for (var i = 0; i < parts.length; ++i) {
-                var eq = parts[i].indexOf("=")
-                var key = eq >= 0 ? parts[i].substring(0, eq) : parts[i]
-                if (key === "remoteUrl") {
-                    var value = eq >= 0 ? parts[i].substring(eq + 1) : ""
-                    try {
-                        remote = decodeURIComponent(decodeURIComponent(value))
-                    } catch (e) {
-                        remote = ""
-                    }
-                    break
-                }
-            }
-        }
-
-        var remoteScheme = root.schemeOf(remote)
-        if (remoteScheme === "http" || remoteScheme === "https")
-            Qt.openUrlExternally(remote)
-        else if (remote.length > 0)
-            console.warn("ManagedPackTab: refusing to open changelog redirect with scheme:", remoteScheme)
-    }
-
     Connections {
         target: root.watcher
         ignoreUnknownSignals: true
@@ -131,7 +83,7 @@ Item {
                 text: qsTr("Website")
                 icon.source: Icons.url("external-link")
                 visible: root.controller && root.controller.packUrl.length > 0
-                onClicked: Qt.openUrlExternally(root.controller.packUrl)
+                onClicked: ExternalLinks.open(root, root.controller.packUrl)
             }
             HoverReason {
                 reason: root.controller && root.controller.running
@@ -242,14 +194,17 @@ Item {
                 clip: true
                 ScrollBar.vertical: ScrollBar {}
 
+                // RichBody's article (ManagedPackController): its links are http(s) or mail only.
                 RemoteRichText {
                     id: changelog
                     width: parent.width
+                    format: "html"
+                    article: true
                     source: !root.picked ? ""
                             : root.picked.changelog.length > 0
                             ? root.picked.changelog
                             : qsTr("No changelog available for this version.")
-                    onLinkActivated: (link) => root.openChangelogLink(link)
+                    onLinkActivated: (link) => ExternalLinks.open(changelog, link)
                 }
             }
         }

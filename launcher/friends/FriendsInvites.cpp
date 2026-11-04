@@ -120,7 +120,7 @@ namespace FriendsInvites
 		invite.port = object.value("port").toInt(kDefaultPort);
 		invite.createdAt = parseTime(object.value("createdAt"));
 		invite.expiresAt = parseTime(object.value("expiresAt"));
-		if (!FriendsApi::isUuid(invite.uuid) || invite.name.isEmpty() ||
+		if (!FriendsApi::isUuid(invite.uuid) || !FriendsApi::isMinecraftName(invite.name) ||
 			FriendsApi::normalizeHost(invite.host).isEmpty() ||
 			!invite.expiresAt.isValid()) {
 			return std::nullopt;

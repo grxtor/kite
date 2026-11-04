@@ -888,6 +888,11 @@ void Application::initSettings()
 
 	m_settings->registerSetting("ShownNotifications", QString());
 
+	/* Whether a web link that came from the network or from files (a mod's
+	 * homepage, a changelog) names its host and asks before the browser opens
+	 * it (qml/Components/ExternalLinks.qml). */
+	m_settings->registerSetting("ConfirmWebLinks", true);
+
 	m_settings->registerSetting("ConsoleMaxLines", 100000);
 	m_settings->registerSetting("ConsoleOverflowStop", true);
 
@@ -2153,7 +2158,7 @@ void Application::reportInstancePathProblems()
 		instancePathProblems(instances()->instanceDirs(), QDir::tempPath());
 	for (const auto& problem : problems) {
 		uiHost()->message(tr("Check your instance folder"),
-						  problem.text + QStringLiteral("<br/><br/>") +
+						  problem.text + QStringLiteral("\n\n") +
 							  problem.advice,
 						  UiHost::Severity::Warning);
 	}

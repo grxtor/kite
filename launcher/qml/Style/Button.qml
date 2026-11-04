@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
@@ -91,12 +90,18 @@ T.Button {
         : (control.down || control.checked ? Theme.palette.pressedOverlay
            : control.hovered ? Theme.palette.hoverOverlay : "transparent")
 
-    contentItem: IconLabel {
+    // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
+    contentItem: IconText {
         spacing: control.spacing
         mirrored: control.mirrored
         display: control.display
 
-        icon: control.icon
+        iconName: control.icon.name
+        iconSource: control.icon.source
+        iconWidth: control.icon.width
+        iconHeight: control.icon.height
+        iconColor: control.icon.color
+        iconCache: control.icon.cache
         text: control.text
         font.family: Theme.font.family
         font.pixelSize: control.sizeFont

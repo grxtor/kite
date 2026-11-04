@@ -90,6 +90,7 @@ AbstractButton {
             Text {
                 width: parent.width
                 text: root.location
+                textFormat: Text.PlainText
                 elide: Text.ElideMiddle
                 color: Theme.palette.textTertiary
                 font.family: Theme.font.mono

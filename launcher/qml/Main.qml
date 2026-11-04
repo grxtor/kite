@@ -280,6 +280,9 @@ ApplicationWindow {
             // toast=<text>: a toast with an action, to see how a long message wraps.
             else if (key === "toast")
                 Qt.callLater(() => toast.show(value, "success", "Open", () => {}))
+            // link=<url>: the question a link from the network asks before it opens.
+            else if (key === "link")
+                Qt.callLater(() => ExternalLinks.open(root.contentItem, value))
             // serverjoin=<featured id>: the instance picker of quick join.
             else if (key === "serverjoin")
                 Qt.callLater(() => serverJoin.joinWithAnother(root.featuredList.find((one) => one.id === value)))

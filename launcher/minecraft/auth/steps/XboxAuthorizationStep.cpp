@@ -155,9 +155,7 @@ bool XboxAuthorizationStep::processSTSError(QNetworkReply::NetworkError error,
 					AccountTaskState::STATE_FAILED_SOFT,
 					tr("This Microsoft account does not have an XBox Live "
 					   "profile. Buy the game on %1 first.")
-						.arg("<a "
-							 "href=\"https://www.minecraft.net/en-us/store/"
-							 "minecraft-java-edition\">minecraft.net</a>"));
+						.arg("minecraft.net"));
 				return true;
 			}
 			case 2148916235: {
@@ -173,10 +171,8 @@ bool XboxAuthorizationStep::processSTSError(QNetworkReply::NetworkError error,
 					tr("This Microsoft account is underaged and is not linked "
 					   "to a family.\n\nPlease set up your account according "
 					   "to %1.")
-						.arg(
-							"<a "
-							"href=\"https://help.minecraft.net/hc/en-us/"
-							"articles/4403181904525\">help.minecraft.net</a>"));
+						.arg("https://help.minecraft.net/hc/en-us/articles/"
+							 "4403181904525"));
 				return true;
 			}
 			default: {

@@ -89,6 +89,7 @@ AbstractButton {
             x: root.glyphFirst ? Theme.icon.sm + root.spacing : 0
             width: Math.min(root.labelWidth, root.availableWidth - root.spacing - Theme.icon.sm)
             text: root.chip && root.copied ? qsTr("Copied") : root.shown
+            textFormat: Text.PlainText
             elide: Text.ElideRight
             color: root.copied ? Theme.palette.success : root.textColor
             font: nameMetrics.font

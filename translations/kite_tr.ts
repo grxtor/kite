@@ -589,7 +589,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1549"/>
+        <location filename="../launcher/Application.cpp" line="+1554"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -2670,12 +2670,12 @@ Ayrıntılar günlük dosyasında:
         <translation>Paste.ee günlüğü</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+14"/>
         <source>Paste.ee link: &lt;a href=&quot;%1&quot;&gt;%1&lt;/a&gt;</source>
         <translation>Paste.ee bağlantısı: &lt;a href=&quot;%1&quot;&gt;%1&lt;/a&gt;</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Copy Link</source>
         <translation>Bağlantıyı kopyala</translation>
     </message>
@@ -2685,7 +2685,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Tarayıcıda aç</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
@@ -2693,7 +2693,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashUploadPromptDialog</name>
     <message>
-        <location line="-131"/>
+        <location line="-137"/>
         <source>Kite Crash Report</source>
         <translation>Kite çökme raporu</translation>
     </message>
@@ -3602,6 +3602,44 @@ Ayrıntılar günlük dosyasında:
     </message>
 </context>
 <context>
+    <name>ExternalLinkDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/ExternalLinkDialog.qml" line="+26"/>
+        <source>Open this link?</source>
+        <translation>Bu bağlantı açılsın mı?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Write an email?</source>
+        <translation>E-posta yazılsın mı?</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Open link</source>
+        <translation>Bağlantıyı aç</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Write email</source>
+        <translation>E-posta yaz</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>It opens in your browser, at:</source>
+        <translation>Tarayıcında şu adreste açılır:</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Your mail app opens a new email to:</source>
+        <translation>E-posta uygulaman şu adrese yeni bir e-posta açar:</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Don&apos;t ask again</source>
+        <translation>Bir daha sorma</translation>
+    </message>
+</context>
+<context>
     <name>ExtraInstanceFolders</name>
     <message>
         <location filename="../launcher/qml/Components/ExtraInstanceFolders.qml" line="+31"/>
@@ -3619,7 +3657,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Ek klasör yok.</translation>
     </message>
     <message>
-        <location line="+43"/>
+        <location line="+44"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -5762,7 +5800,7 @@ Lütfen tekrar dene.</translation>
         <translation>Seçeneklerde ara</translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+53"/>
         <source>Nothing matches “%1”.</source>
         <translation>“%1” ile eşleşen yok.</translation>
     </message>
@@ -6036,7 +6074,7 @@ Lütfen tekrar dene.</translation>
         <translation>Hiç oynanmadı</translation>
     </message>
     <message>
-        <location line="+146"/>
+        <location line="+149"/>
         <source>%1  •  %2%</source>
         <translation>%1  •  %2%</translation>
     </message>
@@ -7624,7 +7662,7 @@ Kurulumu başlattığında indirilecekler.</translation>
         <translation>32 bit</translation>
     </message>
     <message>
-        <location line="+73"/>
+        <location line="+74"/>
         <source>Recommended</source>
         <translation>Önerilen</translation>
     </message>
@@ -7934,8 +7972,12 @@ Neden: %1.</translation>
     </message>
     <message>
         <location line="+11"/>
-        <source>Your account is currently not logged in. Please enter your password to log in again. &lt;br /&gt; &lt;br /&gt; This could be caused by a password change.</source>
-        <translation>Hesabın şu anda giriş yapmış durumda değil. Yeniden giriş yapmak için parolanı gir. &lt;br /&gt; &lt;br /&gt; Bunun sebebi bir parola değişikliği olabilir.</translation>
+        <source>Your account is currently not logged in. Please enter your password to log in again.
+
+This could be caused by a password change.</source>
+        <translation>Hesabın şu anda giriş yapmış durumda değil. Yeniden giriş yapmak için parolanı gir.
+
+Bunun sebebi bir parola değişikliği olabilir.</translation>
     </message>
     <message>
         <location line="+72"/>
@@ -8605,7 +8647,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+403"/>
+        <location filename="../launcher/qml/Main.qml" line="+406"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -8736,8 +8778,12 @@ Neden:
     <name>MainWindow</name>
     <message>
         <location filename="../launcher/core/InstancePathProblems.cpp" line="+34"/>
-        <source>This is a problem: &lt;br/&gt; - Kite will likely be deleted without warning by the operating system &lt;br/&gt; - close Kite now and extract it to a real location, not a temporary folder</source>
-        <translation>Bu bir sorun: &lt;br/&gt; - Kite büyük ihtimalle işletim sistemi tarafından uyarı verilmeden silinecek &lt;br/&gt; - Kite&apos;ı şimdi kapat ve geçici bir klasöre değil, gerçek bir konuma çıkar</translation>
+        <source>This is a problem:
+- Kite will likely be deleted without warning by the operating system
+- close Kite now and extract it to a real location, not a temporary folder</source>
+        <translation>Bu bir sorun:
+- Kite büyük ihtimalle işletim sistemi tarafından uyarı verilmeden silinecek
+- Kite&apos;ı şimdi kapat ve geçici bir klasöre değil, gerçek bir konuma çıkar</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -8746,8 +8792,12 @@ Neden:
     </message>
     <message>
         <location line="+5"/>
-        <source>You have now two options: &lt;br/&gt; - change the instance folder in the settings &lt;br/&gt; - move this installation of %1 to a different folder</source>
-        <translation>İki seçeneğin var: &lt;br/&gt; - ayarlardan kurulum klasörünü değiştir &lt;br/&gt; - bu %1 kurulumunu başka bir klasöre taşı</translation>
+        <source>You have now two options:
+- change the instance folder in the settings
+- move this installation of %1 to a different folder</source>
+        <translation>İki seçeneğin var:
+- ayarlardan kurulum klasörünü değiştir
+- bu %1 kurulumunu başka bir klasöre taşı</translation>
     </message>
     <message>
         <location line="+12"/>
@@ -8809,7 +8859,7 @@ Neden:
 <context>
     <name>ManagedPackController</name>
     <message>
-        <location filename="../launcher/models/ManagedPackController.cpp" line="+177"/>
+        <location filename="../launcher/models/ManagedPackController.cpp" line="+178"/>
         <source>Unknown pack provider.</source>
         <translation>Bilinmeyen paket sağlayıcısı.</translation>
     </message>
@@ -8819,7 +8869,7 @@ Neden:
         <translation>Kullanılabilir sürümler okunamadı.</translation>
     </message>
     <message>
-        <location line="+101"/>
+        <location line="+107"/>
         <source>Modrinth pack</source>
         <translation>Modrinth paketi</translation>
     </message>
@@ -8862,7 +8912,7 @@ Neden:
         <translation>%1 (yüklü)</translation>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+39"/>
         <source>Installed %1</source>
         <translation>Yüklü: %1</translation>
     </message>
@@ -8932,7 +8982,7 @@ Neden:
         <translation>Güncelle</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+31"/>
         <source>No changelog available for this version.</source>
         <translation>Bu sürüm için değişiklik günlüğü yok.</translation>
     </message>
@@ -11678,7 +11728,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Eklentiler bekleniyor…</translation>
     </message>
     <message>
-        <location line="+3236"/>
+        <location line="+3253"/>
         <source>Uploading skin…</source>
         <translation>Skin yükleniyor…</translation>
     </message>
@@ -14143,7 +14193,7 @@ Currently installed version: %1</source>
 <context>
     <name>SettingsGeneralSection</name>
     <message>
-        <location filename="../launcher/qml/Components/SettingsGeneralSection.qml" line="+19"/>
+        <location filename="../launcher/qml/Components/SettingsGeneralSection.qml" line="+20"/>
         <source>General</source>
         <translation>Genel</translation>
     </message>
@@ -14239,6 +14289,21 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+16"/>
+        <source>Links</source>
+        <translation>Bağlantılar</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Ask before opening web links</source>
+        <translation>Web bağlantılarını açmadan önce sor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>A link from a mod, a pack or a changelog shows where it leads before your browser opens it.</source>
+        <translation>Bir moddan, paketten ya da değişiklik günlüğünden gelen bağlantı, tarayıcın açmadan önce nereye gittiğini gösterir.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>Notifications</source>
         <translation>Bildirimler</translation>
     </message>
@@ -15899,7 +15964,7 @@ inheritsFrom eksik</translation>
         <translation>Kullanıcı adının boş olup olmadığı denetleniyor…</translation>
     </message>
     <message>
-        <location line="+109"/>
+        <location line="+107"/>
         <source>Download</source>
         <translation>İndir</translation>
     </message>
@@ -15909,7 +15974,7 @@ inheritsFrom eksik</translation>
         <translation>Yeniden denetle</translation>
     </message>
     <message>
-        <location line="+46"/>
+        <location line="+47"/>
         <source>I trust these files</source>
         <translation>Bu dosyalara güveniyorum</translation>
     </message>
@@ -16769,7 +16834,7 @@ inheritsFrom eksik</translation>
         <translation>Bu Microsoft hesabının Xbox Live profili yok. Önce oyunu şuradan satın al: %1.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+8"/>
         <source>XBox Live is not available in your country. You&apos;ve been blocked.</source>
         <translation>Xbox Live ülkende kullanılamıyor. Engellendin.</translation>
     </message>
@@ -16783,7 +16848,7 @@ Please set up your account according to %1.</source>
 Lütfen hesabını şuna göre ayarla: %1.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+9"/>
         <source>XSTS authentication ended with unrecognized error(s):
 
 %1</source>

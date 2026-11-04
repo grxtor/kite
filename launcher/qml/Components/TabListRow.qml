@@ -28,8 +28,9 @@ StateFill {
 
     property string title
     property string meta
-    // A meta of markup the caller made safe (a server's message: Text.StyledText), and how many lines it may take.
-    property int metaFormat: Text.AutoText
+    // Plain unless the caller made the meta's markup safe itself (a server's message: Text.StyledText), and how
+    // many lines it may take.
+    property int metaFormat: Text.PlainText
     property int metaLines: 1
     property bool dimmed: false
     readonly property alias thumb: thumb

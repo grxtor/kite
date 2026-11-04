@@ -30,6 +30,7 @@
 #include "InstanceImportTask.h"
 #include "InstanceList.h"
 #include "core/LauncherContext.h"
+#include "models/RichBody.h"
 #include "modplatform/flame/FlameApi.h"
 #include "modplatform/modrinth/ModrinthApi.h"
 #include "net/Download.h"
@@ -296,8 +297,14 @@ void ManagedPackController::rebuildVariants()
 			ManagedPack::releaseTypeToString(version.releaseType).toLower();
 		row[QStringLiteral("current")] = isInstalled;
 		row[QStringLiteral("installable")] = version.isInstallable();
-		// Only Modrinth includes it in the version list; CurseForge needs a request per file.
-		row[QStringLiteral("changelog")] = version.changelog;
+		/* Only Modrinth includes it in the version list; CurseForge needs a
+		 * request per file. Markdown from the pack's author, so it goes out as
+		 * RichBody's sanitised article. */
+		row[QStringLiteral("changelog")] =
+			version.changelog.isEmpty()
+				? QString()
+				: RichBody::toArticleHtml(version.changelog,
+										  RichBody::Format::Markdown);
 		m_versionsVariant.append(row);
 	}
 	emit versionsChanged();

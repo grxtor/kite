@@ -25,6 +25,8 @@
 #include <QQuickItem>
 #include <QStandardItemModel>
 #include <QQmlEngine>
+#include <QDesktopServices>
+#include <QScopeGuard>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QDragEnterEvent>
@@ -169,8 +171,40 @@ class FakeDrop : public QObject
 	}
 };
 
+/* Takes what Qt.openUrlExternally() would hand to the system for the schemes it
+ * is registered for (QDesktopServices::setUrlHandler), so a test opens nothing. */
+class LinkRecorder : public QObject
+{
+	Q_OBJECT
+
+  public:
+	QList<QUrl> opened;
+
+  public slots:
+	void open(const QUrl& url)
+	{
+		opened.append(url);
+	}
+};
+
 namespace
 {
+	/* Every shown item at or under @p item that draws @p text itself (it has
+	 * a textFormat), for a check that the text is shown as written. */
+	QList<QQuickItem*> textItemsShowing(QQuickItem* item, const QString& text)
+	{
+		QList<QQuickItem*> found;
+		if (item->isVisible() && item->property("textFormat").isValid() &&
+			item->property("text").toString() == text) {
+			found.append(item);
+		}
+		const auto children = item->childItems();
+		for (QQuickItem* child : children) {
+			found += textItemsShowing(child, text);
+		}
+		return found;
+	}
+
 	/* A fake FriendsController for the friends views: ready, with these
 	 * friends and invites. */
 	QString fakeFriends(const QString& friends, const QString& invites)
@@ -1344,6 +1378,266 @@ class QmlModuleTest : public QObject
 						  QStringLiteral("newInstanceDialog.presetSource"))
 					 .toString(),
 				 file.toString());
+	}
+
+	/* Names from other people reach every one of these: each draws its text as
+	 * written, tags and ampersand included, and a window showing them all
+	 * renders. */
+	void textViewsShowMarkupAsWritten()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import QtQuick.Controls
+			import Kite.Components
+			Window {
+				width: 900; height: 900; visible: true
+				readonly property string sample: "<b>x</b> & <i>y</i>"
+				Column {
+					Copy { objectName: "copy"; text: sample }
+					Label { objectName: "label"; text: sample }
+					Button { objectName: "button"; text: sample; icon.source: Icons.url("play") }
+					ToolButton { objectName: "toolButton"; text: sample }
+					ItemDelegate { objectName: "itemDelegate"; width: 400; text: sample }
+					TabBar { TabButton { objectName: "tabButton"; text: sample } }
+					CheckBox { objectName: "checkBox"; text: sample }
+					RadioButton { objectName: "radioButton"; text: sample }
+					Switch { objectName: "switch"; text: sample }
+					ComboBox { objectName: "comboBox"; model: [sample] }
+					TextField { objectName: "textField"; placeholderText: sample }
+					TabListRow { objectName: "tabListRow"; width: 400; title: sample; meta: sample }
+				}
+				ToolTip { id: tip; objectName: "toolTip"; text: sample }
+				Menu { id: menu; objectName: "menu"; MenuItem { objectName: "menuItem"; text: sample } }
+				Component.onCompleted: { tip.open(); menu.popup(0, 0) }
+			})",
+						  QUrl(QStringLiteral("qrc:/test/Markup.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY2(window, qPrintable(component.errorString()));
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+		const QString sample = window->property("sample").toString();
+
+		const auto shownAsWritten = [&](QQuickItem* item, int expected) {
+			const auto items = textItemsShowing(item, sample);
+			if (items.size() != expected) {
+				qWarning() << item << "draws the sample" << items.size() << "times";
+				return false;
+			}
+			for (QQuickItem* text : items) {
+				if (text->property("textFormat").toInt() != Qt::PlainText) {
+					qWarning() << text << "under" << item << "is not plain text";
+					return false;
+				}
+			}
+			return true;
+		};
+		for (const char* name : {"copy", "label", "button", "toolButton", "itemDelegate", "tabButton",
+								 "checkBox", "radioButton", "switch", "textField"}) {
+			auto* item = window->findChild<QQuickItem*>(QLatin1String(name));
+			QVERIFY2(item, name);
+			QVERIFY2(shownAsWritten(item, 1), name);
+		}
+		QVERIFY(shownAsWritten(window->findChild<QQuickItem*>(QStringLiteral("tabListRow")), 2));
+		auto* comboPopup = window->findChild<QQuickItem*>(QStringLiteral("comboBox"))
+							   ->property("popup").value<QObject*>();
+		QVERIFY(comboPopup && QMetaObject::invokeMethod(comboPopup, "open"));
+		QTRY_VERIFY(comboPopup->property("opened").toBool());
+		QTRY_VERIFY(shownAsWritten(comboPopup->property("contentItem").value<QQuickItem*>(), 1));
+		auto* tip = window->findChild<QObject*>(QStringLiteral("toolTip"));
+		QTRY_VERIFY(tip->property("opened").toBool());
+		QVERIFY(shownAsWritten(tip->property("contentItem").value<QQuickItem*>(), 1));
+		auto* menuItem = window->findChild<QQuickItem*>(QStringLiteral("menuItem"));
+		QVERIFY(menuItem);
+		QVERIFY(shownAsWritten(menuItem, 1));
+
+		QVERIFY(!window->grabWindow().isNull());
+	}
+
+	/* The style's IconText sizes itself as Qt's IconLabel does in every
+	 * display, including a button that starts icon-only and then shows its
+	 * text (a toolbar that has room again). */
+	void iconTextSizesLikeIconLabel()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import QtQuick.Controls.impl
+			import QtQuick.Templates as T
+			import Kite.Components
+			import Kite.Style as KiteStyle
+			Item {
+				property int display: T.AbstractButton.IconOnly
+				IconLabel {
+					id: qt
+					display: parent.display
+					icon.source: Icons.url("folder"); icon.width: 16; icon.height: 16
+					text: "Open folder"; spacing: 8; font.pixelSize: 14
+				}
+				KiteStyle.IconText {
+					id: ours
+					display: parent.display
+					iconSource: Icons.url("folder"); iconWidth: 16; iconHeight: 16
+					text: "Open folder"; spacing: 8; font.pixelSize: 14
+				}
+				readonly property size qtSize: Qt.size(qt.implicitWidth, qt.implicitHeight)
+				readonly property size ourSize: Qt.size(ours.implicitWidth, ours.implicitHeight)
+			})",
+						  QUrl(QStringLiteral("qrc:/test/IconText.qml")));
+		std::unique_ptr<QObject> item(component.create());
+		QVERIFY2(item, qPrintable(component.errorString()));
+
+		const int iconOnly = 0;
+		const int textOnly = 1;
+		const int textBesideIcon = 2;
+		const int textUnderIcon = 3;
+		for (const int display : {iconOnly, textBesideIcon, textOnly, iconOnly, textUnderIcon, textBesideIcon}) {
+			item->setProperty("display", display);
+			QTRY_VERIFY(item->property("qtSize").toSizeF().width() > 0);
+			QTRY_COMPARE(item->property("ourSize").toSizeF(), item->property("qtSize").toSizeF());
+		}
+	}
+
+	/* ExternalLinks lets only http, https and mail links out. One from the
+	 * network asks first, naming the host it really leads to; Kite's own
+	 * links open straight away. */
+	void externalLinksOpenOnlyWebAndMailAndAskFirst()
+	{
+		LinkRecorder links;
+		const QStringList schemes{QStringLiteral("http"), QStringLiteral("https"),
+								  QStringLiteral("mailto"), QStringLiteral("kite-test")};
+		for (const QString& scheme : schemes) {
+			QDesktopServices::setUrlHandler(scheme, &links, "open");
+		}
+		const auto unset = qScopeGuard([&schemes] {
+			for (const QString& scheme : schemes) {
+				QDesktopServices::unsetUrlHandler(scheme);
+			}
+		});
+
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			Window {
+				width: 640; height: 480; visible: true
+				Item { id: anchor; anchors.fill: parent }
+				function open(url, trusted) { return ExternalLinks.open(anchor, url, trusted) }
+				function destination(url) {
+					const link = ExternalLinks.parse(url)
+					return link ? link.destination : ""
+				}
+			})",
+						  QUrl(QStringLiteral("qrc:/test/Links.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY2(window, qPrintable(component.errorString()));
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+
+		const auto open = [&](const QString& url, bool trusted) {
+			QVariant result;
+			QMetaObject::invokeMethod(window, "open", Q_RETURN_ARG(QVariant, result),
+									  Q_ARG(QVariant, url), Q_ARG(QVariant, trusted));
+			return result.toBool();
+		};
+		const auto destination = [&](const QString& url) {
+			QVariant result;
+			QMetaObject::invokeMethod(window, "destination", Q_RETURN_ARG(QVariant, result),
+									  Q_ARG(QVariant, url));
+			return result.toString();
+		};
+
+		// Any other scheme, or no link at all, is refused, trusted or not.
+		const QRegularExpression refused(QStringLiteral("ExternalLinks: refusing"));
+		for (const QString& url : {QStringLiteral("kite-test:anything"), QStringLiteral("relative/page.html"),
+								   QString()}) {
+			for (const bool trusted : {false, true}) {
+				QTest::ignoreMessage(QtWarningMsg, refused);
+				QVERIFY2(!open(url, trusted), qPrintable(url));
+			}
+		}
+		QVERIFY(!window->findChild<QObject*>(QStringLiteral("externalLinkDialog")));
+		QCOMPARE(links.opened.size(), 0);
+
+		QCOMPARE(destination(QStringLiteral("https://kite.example@other.example/page")),
+				 QStringLiteral("other.example"));
+		QCOMPARE(destination(QStringLiteral("mailto:help@kite.example")), QStringLiteral("help@kite.example"));
+
+		// A web link opens only once the question is answered.
+		const QUrl page(QStringLiteral("https://example.com/mods?id=1"));
+		QVERIFY(open(page.toString(), false));
+		QObject* dialog = nullptr;
+		QTRY_VERIFY((dialog = window->findChild<QObject*>(QStringLiteral("externalLinkDialog"))));
+		QTRY_VERIFY(dialog->property("opened").toBool());
+		QCOMPARE(dialog->property("destination").toString(), QStringLiteral("example.com"));
+		QCOMPARE(links.opened.size(), 0);
+		QVERIFY(QMetaObject::invokeMethod(dialog, "primaryClicked"));
+		QCOMPARE(links.opened, QList<QUrl>{page});
+
+		// Kite's own link does not ask.
+		const QUrl help(QStringLiteral("https://kite.example/help"));
+		QVERIFY(open(help.toString(), true));
+		QCOMPARE(links.opened, (QList<QUrl>{page, help}));
+	}
+
+	/* The core's message is plain text: its lines are newlines, a tag in it is
+	 * shown as written, and nothing in it is a link. */
+	void uiRequestDialogShowsLinesAsPlainText()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			Window {
+				width: 900; height: 700; visible: true
+				QtObject {
+					id: host
+					property var current: null
+				}
+				QtObject {
+					id: message
+					property string kind: "message"
+					property string title: "Check your instance folder"
+					property string text: "The folder is a problem.\n\nYou have two options:\n - one\n - <b>two</b>"
+					property string severity: "warning"
+					property string acceptLabel: ""
+					property string rejectLabel: ""
+					property string filePickerMode: ""
+					property string filePickerFilter: ""
+					property string profileNameStatus: ""
+					property string profileNameError: ""
+					property int confirmDelayMs: 0
+					function accept() {}
+					function reject() {}
+				}
+				UiRequestDialog { host: host }
+				function show() { host.current = message }
+			})",
+						  QUrl(QStringLiteral("qrc:/test/Request.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY2(window, qPrintable(component.errorString()));
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+		QVERIFY(QMetaObject::invokeMethod(window, "show"));
+
+		QQuickItem* text = nullptr;
+		QTRY_VERIFY((text = window->findChild<QQuickItem*>(QStringLiteral("requestText"))) &&
+					text->isVisible() && text->width() > 0);
+		QCOMPARE(text->property("textFormat").toInt(), int(Qt::PlainText));
+		QVERIFY(text->property("text").toString().endsWith(QStringLiteral("<b>two</b>")));
+		const int lines = 5;
+		QTRY_COMPARE(text->property("lineCount").toInt(), lines);
 	}
 };
 

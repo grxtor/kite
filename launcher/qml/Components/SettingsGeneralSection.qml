@@ -8,7 +8,8 @@ import QtQuick.Controls
 /*
  * The "General" section of SettingsPage.qml: how the library sorts, what a
  * new instance starts out with, where Kite keeps its folders (and which
- * other folders it looks in for instances), and the news notices.
+ * other folders it looks in for instances), whether web links ask first,
+ * and the news notices.
  */
 SettingsScroll {
     id: root
@@ -71,6 +72,15 @@ SettingsScroll {
     ExtraInstanceFolders {
         width: parent.width
         onOpenRequested: (path) => root.openPathRequested(path)
+    }
+    SettingsGroup {
+        width: parent.width
+        title: qsTr("Links")
+        SettingSwitch {
+            key: "ConfirmWebLinks"
+            label: qsTr("Ask before opening web links")
+            description: qsTr("A link from a mod, a pack or a changelog shows where it leads before your browser opens it.")
+        }
     }
     SettingsGroup {
         width: parent.width

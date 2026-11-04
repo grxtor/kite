@@ -71,6 +71,7 @@ Button {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: control.text
+                textFormat: Text.PlainText
                 color: control.ink
                 font.family: Theme.font.family
                 font.pixelSize: control.sizeFont
