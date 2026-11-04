@@ -166,7 +166,13 @@ jobs:
 
       - name: Run build
         run: |
-          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+          # On Windows, vcpkg's post-link DLL copy (z-applocal) of one test can
+          # meet a DLL another link still holds in the shared output folder:
+          # "The process cannot access the file because it is being used by
+          # another process". A second pass relinks only what failed; a real
+          # error fails it again.
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE" ||
+            cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
 
       - name: Run tests
         env:
