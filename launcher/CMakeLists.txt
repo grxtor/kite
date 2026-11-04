@@ -50,6 +50,10 @@ set(CORE_SOURCES
     models/ContentLinkInstall.cpp
     models/LegacyUpgrade.h
     models/LegacyUpgrade.cpp
+    models/LauncherImportModel.h
+    models/LauncherImportModel.cpp
+    models/LauncherImportController.h
+    models/LauncherImportController.cpp
     models/KeyValueFilterModel.h
     models/KeyValueFilterModel.cpp
     models/AccountsController.h
@@ -1102,8 +1106,34 @@ set(CRASHDOCTOR_SOURCES
     crashdoctor/CrashWatchList.cpp
 )
 
+# Bringing instances over from other launchers (Prism, Modrinth App,
+# CurseForge, the official launcher).
+set(LAUNCHERIMPORT_SOURCES
+    launcherimport/LauncherImportTypes.h
+    launcherimport/SafeFiles.h
+    launcherimport/SafeFiles.cpp
+    launcherimport/SqliteReader.h
+    launcherimport/SqliteReader.cpp
+    launcherimport/LauncherLocations.h
+    launcherimport/LauncherLocations.cpp
+    launcherimport/LauncherScan.h
+    launcherimport/LauncherScan.cpp
+    launcherimport/ScanCommon.h
+    launcherimport/ScanMultiMc.cpp
+    launcherimport/ScanModrinth.cpp
+    launcherimport/ScanCurseForge.cpp
+    launcherimport/ScanOfficial.cpp
+    launcherimport/ImportCopy.h
+    launcherimport/ImportCopy.cpp
+    launcherimport/ImportBuild.h
+    launcherimport/ImportBuild.cpp
+    launcherimport/LauncherImportTask.h
+    launcherimport/LauncherImportTask.cpp
+)
+
 set(LOGIC_SOURCES
     ${CRASHDOCTOR_SOURCES}
+    ${LAUNCHERIMPORT_SOURCES}
     ${CORE_SOURCES}
     ${PATHMATCHER_SOURCES}
     ${NET_SOURCES}
@@ -1268,6 +1298,14 @@ add_unit_test(LoggedProcess
     )
 add_unit_test(CrashEngine
     SOURCES crashdoctor/CrashEngine_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(LauncherImport
+    SOURCES launcherimport/LauncherImport_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(SqliteReader
+    SOURCES launcherimport/SqliteReader_test.cpp
     LIBS Kite_core
     )
 add_unit_test(CrashFixer

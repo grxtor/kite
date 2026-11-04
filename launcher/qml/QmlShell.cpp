@@ -73,6 +73,7 @@
 #include "BuildConfig.h"
 #include "models/InstanceFilterModel.h"
 #include "models/NewInstanceController.h"
+#include "models/LauncherImportController.h"
 #include "minecraft/PerformanceInstanceTask.h"
 #include "minecraft/PerformanceSetupRules.h"
 #include "minecraft/PerformanceSetupTask.h"
@@ -1346,6 +1347,16 @@ QObject* QmlShell::newInstance() const
 		expose(m_newInstance->loaderVersions());
 	}
 	return expose(m_newInstance.get());
+}
+
+QObject* QmlShell::launcherImport() const
+{
+	// Made on first use; it looks for other launchers only when asked.
+	if (!m_launcherImport) {
+		m_launcherImport = std::make_unique<LauncherImportController>();
+		expose(m_launcherImport->model());
+	}
+	return expose(m_launcherImport.get());
 }
 
 QObject* QmlShell::javaController() const
