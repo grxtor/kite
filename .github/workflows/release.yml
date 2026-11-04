@@ -22,6 +22,9 @@ jobs:
 
   create_release:
     needs: build_release
+    # The signing keys are used here: required reviewers or tag rules on this environment guard
+    # them (move the two secrets into it to make that binding).
+    environment: Release
     permissions:
       contents: write
     # Not ubuntu-slim: the update feeds are made with Python.
