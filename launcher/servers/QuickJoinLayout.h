@@ -124,6 +124,11 @@ class QuickJoinLayout : public QObject
 	Q_INVOKABLE bool isShown(const QString& address) const;
 	/// Whether @p address names a server at all (it has a host).
 	Q_INVOKABLE bool isAddress(const QString& address) const;
+	/// ownId() for QML: two addresses of one server give the same.
+	Q_INVOKABLE QString ownIdOf(const QString& address) const
+	{
+		return ownId(address);
+	}
 	/// The edit dialog's Save: @p entries as it left them (in order, with
 	/// `hidden`; the own servers it removed left out or with `own` false).
 	Q_INVOKABLE void apply(const QVariantList& entries);

@@ -9,8 +9,9 @@ import Kite.Theme
 
 /*
  * "Edit the bar": every server of Home's quick-join bar, the big ones and the player's own, in the bar's order. Drag a
- * row by its handle to move it, untick it to hide it, remove one the player added. "Reset to default" puts back the
- * big servers as they come. Nothing changes until Save (QuickJoinLayout.apply()); Cancel keeps the bar as it was.
+ * row by its handle to move it, untick it to hide it, remove one the player added, add one under the list ("Add a
+ * server…", the menu's flow). "Reset to default" puts back the big servers as they come. Nothing changes until Save
+ * (QuickJoinLayout.apply()); Cancel keeps the bar as it was.
  */
 AppDialog {
     id: root
@@ -46,6 +47,23 @@ AppDialog {
         }
         return out
     }
+    // A server from "Add a server…": the row of the same server shown again and kept as theirs, else a new one last.
+    function addRow(name, address) {
+        var id = root.layout ? root.layout.ownIdOf(address) : ""
+        if (id.length === 0)
+            return
+        for (var i = 0; i < rows.count; ++i) {
+            if (root.layout.ownIdOf(rows.get(i).address) === id) {
+                rows.setProperty(i, "hidden", false)
+                rows.setProperty(i, "own", true)
+                list.positionViewAtIndex(i, ListView.Contain)
+                return
+            }
+        }
+        rows.append({ entryId: id, name: name.length > 0 ? name : address, address: address, featured: false,
+                      own: true, hidden: false })
+        list.positionViewAtEnd()
+    }
     function faviconOf(address, revision) {
         if (!root.pinger)
             return ""
@@ -69,6 +87,14 @@ AppDialog {
 
     ListModel { id: rows }
 
+    QuickJoinAddDialog {
+        id: addDialog
+        layout: root.layout
+        pinger: root.pinger
+        pins: false
+        onChosen: (name, address) => root.addRow(name, address)
+    }
+
     contentItem: ColumnLayout {
         spacing: Theme.space.md
 
@@ -80,19 +106,21 @@ AppDialog {
             wrapMode: Text.Wrap
         }
 
+        // The rows scroll past maxRows; "Add a server…" stays under them.
         BoxSurface {
             Layout.fillWidth: true
-            Layout.preferredHeight: list.contentHeight > 0
-                                    ? Math.min(list.contentHeight, list.rowHeight * root.maxRows) + Theme.space.xs * 2
-                                    : list.rowHeight
+            Layout.preferredHeight: list.height + addRow.height + Theme.space.xs * 2
             sunken: true
             radius: Theme.radius.md
 
             ListView {
                 id: list
                 objectName: "quickJoinEditList"
-                anchors.fill: parent
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
                 anchors.margins: Theme.space.xs
+                height: Math.min(contentHeight, list.rowHeight * root.maxRows)
                 clip: true
                 model: rows
                 interactive: contentHeight > height && root.dragFrom < 0
@@ -130,6 +158,24 @@ AppDialog {
                     onDragFinished: root.dragFrom = -1
                     Component.onCompleted: if (root.pinger) root.pinger.ping(model.address)
                 }
+            }
+
+            ItemDelegate {
+                id: addRow
+                objectName: "quickJoinEditAdd"
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: list.bottom
+                anchors.leftMargin: Theme.space.xs
+                anchors.rightMargin: Theme.space.xs
+                height: list.rowHeight
+                // The plus where the rows have their handles.
+                leftPadding: Theme.space.md
+                text: qsTr("Add a server…")
+                icon.source: Icons.url("plus")
+                icon.width: Theme.icon.xs
+                icon.height: Theme.icon.xs
+                onClicked: addDialog.start()
             }
         }
     }

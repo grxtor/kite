@@ -7,9 +7,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * "Add a server…" from the quick-join bar's ⋯ menu: an address and, if wanted, a name. Add pings the address first;
- * a server that answers joins the bar at once (QuickJoinLayout.pin()). One that does not is said so, and a second
- * press adds it anyway, as a server can be down for the night.
+ * "Add a server…" from the quick-join bar's ⋯ menu and from "Edit the bar": an address and, if wanted, a name. Add
+ * pings the address first; a server that answers is added at once. One that does not is said so, and a second press
+ * adds it anyway, as a server can be down for the night. From the menu it joins the bar (QuickJoinLayout.pin());
+ * with `pins` off it is only handed back (`chosen`), for the edit dialog's list that waits for Save.
  */
 AppDialog {
     id: root
@@ -17,6 +18,8 @@ AppDialog {
     // QuickJoinLayout and ServerPinger, or null.
     property var layout: null
     property var pinger: null
+    // Off: the server is handed back through `chosen` instead of pinned.
+    property bool pins: true
 
     // The address Add asked the pinger about; "" until then, and again once the address is edited.
     property string asked: ""
@@ -27,6 +30,7 @@ AppDialog {
     readonly property bool unusable: root.address.length > 0 && !!root.layout && !root.layout.isAddress(root.address)
 
     signal added(string name)
+    signal chosen(string name, string address)
 
     function statusOf(address, revision) {
         return root.pinger && address.length > 0 ? root.pinger.status(address) : ({})
@@ -50,6 +54,11 @@ AppDialog {
         root.pinger.ping(root.address)
     }
     function add() {
+        if (!root.pins) {
+            root.chosen(nameField.text.trim(), root.address)
+            root.close()
+            return
+        }
         if (!root.layout || !root.layout.pin(nameField.text, root.address))
             return
         root.added(nameField.text.trim().length > 0 ? nameField.text.trim() : root.address)
