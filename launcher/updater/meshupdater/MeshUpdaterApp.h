@@ -216,6 +216,10 @@ class MeshUpdaterApp : public QApplication
 	//! Writes the success or failure marker the launcher reports at its next start.
 	void writeOutcomeMarker(bool failed);
 
+	/*! Windows: until Kite and any game started from it are closed, asks the user to close them (Retry,
+	 * Cancel). False if they cancelled. Elsewhere files in use can be replaced, so always true. */
+	bool waitForLauncherToClose();
+
 	// -- helpers ----------------------------------------------------------
 
 	/*! The files an update touches: manifest.txt (written by the packaging, entries may be globs) when

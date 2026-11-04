@@ -98,11 +98,20 @@ class KiteExternalUpdater : public ExternalUpdater
 	//! startInstall(), then get out of the updater's way: it waits for this process to be gone.
 	void performUpdate(const QString& versionTag);
 
+	/*! An AppImage's updater runs from the AppImage's mount, which goes when Kite exits: Kite waits
+	 * for it here, then starts the new AppImage itself. */
+	void installFromAppImage(const QString& versionTag);
+
+	//! kite-updater installing \a versionTag and leaving the launcher closed.
+	QProcess* makeInstallProcess(const QString& versionTag);
+
 	//! Arm, re-arm or disarm the schedule to match the current preferences.
 	void resetAutoCheckTimer();
 
-	//! Stamp this moment as the last check and re-arm.
-	void noteCheckCompleted();
+	/*! Ends a check and re-arms the schedule. \a answered: the updater reached the release list and
+	 * said yes or no, the only kind of check "Last checked" counts; after a failure the next
+	 * automatic try is an hour away instead of a day. */
+	void noteCheckCompleted(bool answered);
 
 	//! The check process ended on its own; reports the result.
 	void onCheckFinished(int exitCode);

@@ -16,14 +16,17 @@ nothing on a developer's machine is needed to make a release.
 | macOS app (`.dmg` / `.zip`) | Sparkle 2.10, inside Kite | Downloads the build's `.zip`, checks its EdDSA signature, swaps the app and restarts. An update downloaded but not installed yet goes in when Kite quits. |
 | Windows installer (`Setup.exe`) | `kite-updater.exe` | Downloads the new `Setup.exe`, checks it, then runs it silently (`/S /Update /Relaunch`); the installer keeps the shortcuts and file association the installation had and starts Kite again. |
 | Windows portable / plain `.zip`, Linux portable `.tar.gz` | `kite-updater` | Downloads the archive, checks it, unpacks it beside the data folder, backs up what it replaces and copies it in from a second copy of itself (a running program cannot overwrite itself on Windows), then starts Kite. |
-| Linux AppImage | `kite-updater` (from inside the AppImage) | Downloads the new AppImage, checks it, renames it over the old file (atomic, same folder) and starts it. The `.zsync` files are still published for AppImageUpdate and AppImageLauncher users. |
+| Linux AppImage | `kite-updater` (from inside the AppImage) | Downloads the new AppImage, checks it and renames it over the old file (atomic, same folder). Kite stays open meanwhile, because the updater lives in the AppImage's mount, which goes when Kite exits; then Kite starts the new file. The `.zsync` files are still published for AppImageUpdate and AppImageLauncher users. |
 | Scoop, AUR (`kite-bin`), Flatpak | the package manager | Kite only says a release is out and what to run (`scoop update kite`, …). The packages write `updates-managed-by.txt` into the installation; `kite-updater` refuses to install over them. |
 | Homebrew cask | Sparkle | The cask says `auto_updates true`, so `brew upgrade` leaves Kite to update itself. |
 
 On Windows and Linux the check and the install are done by `kite-updater`, a separate program
 next to `kite`: it asks the GitHub API for the releases, compares the newest tag with the
 installed version (`kite --version`), and picks the release file that matches the build
-(`Kite_BUILD_ARTIFACT`, portable or not, AppImage or not, CPU). The prompt itself is Kite's own
+(`Kite_BUILD_ARTIFACT`, portable or not, AppImage or not, CPU). On Windows it touches nothing
+while Kite or a game started from it still holds its files; it asks the user to close them.
+A failed automatic check stays in the log and is tried again an hour later; only "Check now"
+shows errors, and "Last checked" counts only checks that got an answer. The prompt itself is Kite's own
 window; its release notes are the GitHub release's text, shown through the same sanitizer as
 mod descriptions (no raw HTML, links ask before they open).
 

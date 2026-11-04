@@ -535,8 +535,10 @@ ${EndIf}
 ClearErrors
 ${GetOptions} $R0 "/Update" $R1
 ${IfNot} ${Errors}
-  ; kite-updater exits right after starting this; its files are among those replaced.
+  ; kite-updater exits right after starting this; its files are among those replaced. It has
+  ; nothing left to do, so one that is still up after the wait is stopped.
   Sleep 2000
+  nsExec::Exec /TIMEOUT=2000 'TaskKill /IM @Kite_AppBinaryName@-updater.exe /F'
   ; Uninstalling the old version removes the shortcuts and the file association, and the defaults
   ; would bring back only the Start Menu shortcut: keep what the installation has now.
   ${IfNot} ${FileExists} "$SMPROGRAMS\@Kite_DisplayName@.lnk"

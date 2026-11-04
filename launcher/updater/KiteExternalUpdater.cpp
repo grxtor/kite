@@ -50,6 +50,22 @@ namespace
 	//! The check at start waits for the launcher's own start-up traffic to settle.
 	constexpr int kStartupCheckDelayMs = 10000;
 
+	//! After a check that got no answer (offline, GitHub down), the next automatic one.
+	constexpr int kRetryAfterFailureMs = 60 * 60 * 1000;
+
+	//! How long a closing Kite waits for an AppImage update it started.
+	constexpr int kAppImageInstallTimeoutMs = 30 * 60 * 1000;
+
+	/*! Whether Kite runs from an AppImage: the runtime sets APPIMAGE (the file) and APPDIR (where it
+	 * is mounted, which is gone once Kite exits). */
+	bool runsFromAppImage(const QDir& appDir)
+	{
+		const QString image = qEnvironmentVariable("APPIMAGE");
+		const QString mount = qEnvironmentVariable("APPDIR");
+		return !image.isEmpty() && !mount.isEmpty() &&
+			   appDir.absolutePath().startsWith(QDir(mount).absolutePath());
+	}
+
 	constexpr int kStartTimeoutMs = 5000;
 	constexpr int kFinishTimeoutMs = 60000;
 
@@ -229,8 +245,11 @@ void KiteExternalUpdater::checkForUpdates(bool triggeredByUser)
 				onCheckStartFailed(reason);
 			});
 	connect(proc, &QProcess::finished, this,
-			[this](int exitCode, QProcess::ExitStatus) {
-				onCheckFinished(exitCode);
+			[this](int exitCode, QProcess::ExitStatus status) {
+				// A crash's exit code means nothing, and 0 would read as "up to date".
+				onCheckFinished(status == QProcess::NormalExit
+									? exitCode
+									: int(CheckExitCode::CheckError));
 			});
 
 	const QString program = updaterExecutablePath();
@@ -263,7 +282,7 @@ void KiteExternalUpdater::onCheckStartFailed(const QString& reason)
 			tr("Failed to start the updater.\nReason: %1.").arg(reason),
 			UiHost::Severity::Information);
 	}
-	noteCheckCompleted();
+	noteCheckCompleted(false);
 }
 
 void KiteExternalUpdater::onCheckTimedOut()
@@ -291,7 +310,7 @@ void KiteExternalUpdater::onCheckTimedOut()
 			tr("The updater did not start within 5 seconds."),
 			UiHost::Severity::Information);
 	}
-	noteCheckCompleted();
+	noteCheckCompleted(false);
 }
 
 void KiteExternalUpdater::onCheckFinished(int exitCode)
@@ -303,7 +322,8 @@ void KiteExternalUpdater::onCheckFinished(int exitCode)
 	const QByteArray stdError = proc->readAllStandardError();
 	releaseCheckProcess();
 	handleCheckResult(exitCode, stdOutput, stdError);
-	noteCheckCompleted();
+	noteCheckCompleted(exitCode == CheckExitCode::NoUpdate ||
+					   exitCode == CheckExitCode::UpdateAvailable);
 }
 
 void KiteExternalUpdater::handleCheckResult(int exitCode,
@@ -391,14 +411,19 @@ void KiteExternalUpdater::handleCheckResult(int exitCode,
 	}
 }
 
-void KiteExternalUpdater::noteCheckCompleted()
+void KiteExternalUpdater::noteCheckCompleted(bool answered)
 {
-	m_lastCheck = QDateTime::currentDateTime();
-	m_settings->setValue(kKeyLastCheck, m_lastCheck.toString(Qt::ISODate));
-	m_settings->sync();
-
 	m_checking = false;
-	resetAutoCheckTimer();
+	if (answered) {
+		m_lastCheck = QDateTime::currentDateTime();
+		m_settings->setValue(kKeyLastCheck, m_lastCheck.toString(Qt::ISODate));
+		m_settings->sync();
+		resetAutoCheckTimer();
+	} else if (m_autoCheck) {
+		// Not "a day after the last check": that may be long past, which would retry at once and
+		// keep retrying.
+		m_updateTimer.start(kRetryAfterFailureMs);
+	}
 	emit stateChanged();
 }
 
@@ -506,6 +531,11 @@ void KiteExternalUpdater::performUpdate(const QString& versionTag)
 	m_pendingTag.clear();
 	m_pendingVersion.clear();
 
+	if (runsFromAppImage(m_appDir)) {
+		installFromAppImage(versionTag);
+		return;
+	}
+
 	if (!startInstall(versionTag, true)) {
 		emit stateChanged();
 		LAUNCHER->uiHost()->message(
@@ -519,6 +549,47 @@ void KiteExternalUpdater::performUpdate(const QString& versionTag)
 
 	// The updater replaces the files this process runs from, so leave; it waits for us to be gone.
 	QCoreApplication::exit();
+}
+
+QProcess* KiteExternalUpdater::makeInstallProcess(const QString& versionTag)
+{
+	auto* proc = new QProcess(this);
+	proc->setProgram(updaterExecutablePath());
+	QStringList args = commonArguments();
+	args.append({QStringLiteral("--install-version"), versionTag,
+				 QStringLiteral("--no-relaunch")});
+	proc->setArguments(args);
+	return proc;
+}
+
+void KiteExternalUpdater::installFromAppImage(const QString& versionTag)
+{
+	QProcess* proc = makeInstallProcess(versionTag);
+	connect(proc, &QProcess::finished, this,
+			[this, proc](int exitCode, QProcess::ExitStatus status) {
+				proc->deleteLater();
+				if (status != QProcess::NormalExit || exitCode != 0) {
+					// Failed or cancelled; the updater told the user why.
+					qWarning() << "Updater: the AppImage update ended with"
+							   << exitCode;
+					emit stateChanged();
+					return;
+				}
+				if (m_gamesRunning) {
+					LAUNCHER->uiHost()->message(
+						tr("Update Installed"),
+						tr("The new version starts the next time you open "
+						   "Kite."),
+						UiHost::Severity::Information);
+					return;
+				}
+				QProcess::startDetached(qEnvironmentVariable("APPIMAGE"), {});
+				QCoreApplication::exit();
+			});
+	qDebug() << "Updater: installing" << versionTag
+			 << "into the AppImage, waiting for it:" << proc->program()
+			 << proc->arguments();
+	proc->start();
 }
 
 QDateTime KiteExternalUpdater::lastCheck()
@@ -555,8 +626,18 @@ void KiteExternalUpdater::applicationExiting()
 		return;
 	}
 	qDebug() << "Updater: Kite is closing; installing" << m_pendingTag;
+	const QString tag = std::exchange(m_pendingTag, QString());
+	if (runsFromAppImage(m_appDir)) {
+		// The updater lives in this AppImage's mount: this process keeps it, until the new file is
+		// in place. The window is gone already.
+		std::unique_ptr<QProcess> proc(makeInstallProcess(tag));
+		proc->start();
+		if (!proc->waitForFinished(kAppImageInstallTimeoutMs))
+			qWarning() << "Updater: the AppImage update did not finish in time.";
+		return;
+	}
 	// No relaunch: the user closed Kite and expects it to stay closed.
-	startInstall(std::exchange(m_pendingTag, QString()), false);
+	startInstall(tag, false);
 }
 
 QString KiteExternalUpdater::managerDisplayName(const QString& managedBy)

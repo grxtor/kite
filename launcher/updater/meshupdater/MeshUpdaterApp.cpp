@@ -250,6 +250,9 @@ namespace
 
 	constexpr int kHandshakePollMs = 200;
 
+	//! How long a launcher that started an install gets to finish quitting before the user is asked.
+	constexpr int kLauncherExitGraceMs = 15000;
+
 	/*! Whether \a path contains \a needle as literal bytes. A gate before running a binary to ask
 	 * whether it knows an option: an older updater may put up a dialog nobody dismisses and cost
 	 * the full timeout. A match only earns the right to ask properly. */
@@ -303,6 +306,7 @@ namespace
 #else
 #include <cerrno>
 #include <csignal>
+#include <unistd.h>
 #endif
 
 namespace
@@ -405,7 +409,9 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 
 	logToConsole = parser.isSet(QStringLiteral("debug"));
 #if defined(Q_OS_WIN32)
-	if (logToConsole)
+	// Not for a check: its stdout is the launcher's pipe, which the console would take over when
+	// Kite itself was started from a terminal.
+	if (logToConsole && !parser.isSet(QStringLiteral("check-only")))
 		attachParentConsole();
 #endif
 
@@ -486,7 +492,11 @@ MeshUpdaterApp::MeshUpdaterApp(int& argc, char** argv) : QApplication(argc, argv
 
 	// An AppImage is one read-only file mounted at a temporary path; updating means replacing that
 	// file (installAppImage()).
-	if (binPath.startsWith(QLatin1String("/tmp/.mount_"))) {
+	const QString appImageMount =
+		QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPDIR"));
+	if (binPath.startsWith(QLatin1String("/tmp/.mount_")) ||
+		(!appImageMount.isEmpty() &&
+		 binPath.startsWith(QDir(appImageMount).absolutePath()))) {
 		m_isAppImage = true;
 		m_appImagePath =
 			QProcessEnvironment::systemEnvironment().value(
@@ -1344,6 +1354,12 @@ void MeshUpdaterApp::installFrom(const QString& archivePath)
 		}
 	}
 
+	if (!waitForLauncherToClose()) {
+		abortWith(tr("The update was cancelled: %1 is still running.")
+					  .arg(BuildConfig.KITE_DISPLAYNAME));
+		return;
+	}
+
 	clearUpdateLog();
 
 	// Kept next to the markers so the launcher can show what it updated to after the release list
@@ -2110,7 +2126,10 @@ void MeshUpdaterApp::installAppImage(const QString& downloadedPath)
 	 * renamed over it, which leaves the running copy's open file intact. Same directory, so the
 	 * rename cannot cross file systems and is atomic: a crash leaves the old AppImage or the new
 	 * one, never half of one. */
-	const QFileInfo target(m_appImagePath);
+	// The file itself, not a link to it: renaming over a link would replace the link.
+	const QFileInfo target(QFileInfo(m_appImagePath).canonicalFilePath().isEmpty()
+							   ? m_appImagePath
+							   : QFileInfo(m_appImagePath).canonicalFilePath());
 	const QString staged = target.dir().absoluteFilePath(
 		QLatin1Char('.') + target.fileName() + QLatin1String(".update"));
 
@@ -2134,8 +2153,26 @@ void MeshUpdaterApp::installAppImage(const QString& downloadedPath)
 	}
 
 	QFile stagedFile(staged);
-	stagedFile.setPermissions(target.permissions() | QFileDevice::ExeOwner |
-							  QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+	bool staging = stagedFile.setPermissions(
+		target.permissions() | QFileDevice::ExeOwner | QFileDevice::ReadOwner |
+		QFileDevice::WriteOwner);
+#if defined(Q_OS_UNIX)
+	// On disk before it takes the old one's name: a power cut must not leave an empty AppImage.
+	if (staging && stagedFile.open(QIODevice::ReadOnly)) {
+		staging = ::fsync(stagedFile.handle()) == 0;
+		stagedFile.close();
+	}
+#endif
+	if (!staging) {
+		QFile::remove(staged);
+		logUpdate(tr("Could not prepare the new AppImage at %1").arg(staged));
+		showFatalError(tr("Update Failed"),
+					   tr("Could not prepare the new AppImage at %1.\n"
+						  "\n"
+						  "Your installation has not been changed.")
+						   .arg(QDir::toNativeSeparators(staged)));
+		return;
+	}
 
 	if (std::rename(QFile::encodeName(staged).constData(),
 					QFile::encodeName(target.absoluteFilePath()).constData()) !=
@@ -2166,6 +2203,57 @@ void MeshUpdaterApp::installAppImage(const QString& downloadedPath)
 
 	m_status = Succeeded;
 	QCoreApplication::exit(ExitSuccess);
+}
+
+bool MeshUpdaterApp::waitForLauncherToClose()
+{
+#if defined(Q_OS_WIN32)
+	/* Windows refuses to open a running program's file for writing, and a game holds the launcher's
+	 * jars open: the plainest proof that Kite and its games are gone. Without it the installer would
+	 * force Kite closed (and orphan a game), and the archive install would fail halfway. */
+	const QStringList held = {
+		m_launcherExecutable,
+		QDir(m_rootPath).absoluteFilePath(QStringLiteral("jars/NewLaunch.jar")),
+	};
+	const auto busyFile = [&held]() -> QString {
+		for (const QString& path : held) {
+			QFile file(path);
+			if (!file.exists())
+				continue;
+			if (!file.open(QIODevice::ReadWrite | QIODevice::ExistingOnly))
+				return path;
+			file.close();
+		}
+		return {};
+	};
+
+	// "Restart and update" starts this and quits: give Kite a moment to finish quitting first.
+	QElapsedTimer grace;
+	grace.start();
+	while (!busyFile().isEmpty() && grace.elapsed() < kLauncherExitGraceMs) {
+		QCoreApplication::processEvents();
+		QThread::msleep(kHandshakePollMs);
+	}
+
+	for (QString busy = busyFile(); !busy.isEmpty(); busy = busyFile()) {
+		logUpdate(tr("%1 is in use; waiting for %2 to close.")
+					  .arg(QDir::toNativeSeparators(busy),
+						   BuildConfig.KITE_DISPLAYNAME));
+		QMessageBox box;
+		box.setIcon(QMessageBox::Information);
+		box.setWindowTitle(tr("Close %1").arg(BuildConfig.KITE_DISPLAYNAME));
+		box.setText(tr("%1 is still running.").arg(BuildConfig.KITE_DISPLAYNAME));
+		box.setInformativeText(
+			tr("Close %1, and any game started from it, then choose Retry to "
+			   "install the update.")
+				.arg(BuildConfig.KITE_DISPLAYNAME));
+		box.setStandardButtons(QMessageBox::Retry | QMessageBox::Cancel);
+		box.setDefaultButton(QMessageBox::Retry);
+		if (box.exec() != QMessageBox::Retry)
+			return false;
+	}
+#endif
+	return true;
 }
 
 void MeshUpdaterApp::writeOutcomeMarker(bool failed)
