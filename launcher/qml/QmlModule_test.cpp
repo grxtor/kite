@@ -437,6 +437,69 @@ class QmlModuleTest : public QObject
 		QCOMPARE(bar->property("fullWidth").toInt(), full);
 	}
 
+	/* Where a friend plays: a big server by its name, any other by its
+	 * address, the favicon once the server answers; servers are pinged only
+	 * while a view shows them, each once. */
+	void friendPlacesNameServersAndPingWhileShown()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			FriendPlaces {
+				id: places
+				property var asked: []
+				featured: [{ id: "hypixel", name: "Hypixel", address: "mc.hypixel.net" }]
+				friends: [
+					{ name: "jeb_", state: "playing", worldType: "server", host: "mc.hypixel.net", port: 25565 },
+					{ name: "Kai", state: "playing", worldType: "server", host: "smp.example.com", port: 25570 },
+					{ name: "Alex", state: "playing", worldType: "server", host: "mc.hypixel.net", port: 0 },
+					{ name: "Dinnerbone", state: "playing", worldType: "singleplayer", host: "", port: 0 },
+					{ name: "Notch", state: "online", worldType: "", host: "", port: 0 }
+				]
+				pinger: QtObject {
+					property int revision: 0
+					function ping(address) { places.asked.push(address) }
+					function status(address) {
+						return address === "mc.hypixel.net" ? { state: "online", online: 26776, favicon: "data:x" }
+															: { state: "pending" }
+					}
+					function friendsOn(address, people) {
+						return people.filter((one) => one.host === address)
+					}
+				}
+				function nameOfIndex(i) { return of(friends[i]).name || "" }
+				function faviconOfIndex(i) { return of(friends[i]).favicon || "" }
+				function onlineOfIndex(i) { return of(friends[i]).online }
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> places(component.create());
+		QVERIFY2(places, qPrintable(component.errorString()));
+
+		auto call = [&](const char* method, int index) {
+			QVariant result;
+			QMetaObject::invokeMethod(places.get(), method, Q_RETURN_ARG(QVariant, result),
+									  Q_ARG(QVariant, index));
+			return result;
+		};
+		QCOMPARE(call("nameOfIndex", 0).toString(), QStringLiteral("Hypixel"));
+		QCOMPARE(call("faviconOfIndex", 0).toString(), QStringLiteral("data:x"));
+		QCOMPARE(call("onlineOfIndex", 0).toInt(), 26776);
+		// Not a server Kite knows, and no answer yet.
+		QCOMPARE(call("nameOfIndex", 1).toString(), QStringLiteral("smp.example.com:25570"));
+		QCOMPARE(call("faviconOfIndex", 1).toString(), QString());
+		QCOMPARE(call("onlineOfIndex", 1).toInt(), -1);
+		// Not on a server whose address they show.
+		QCOMPARE(call("nameOfIndex", 3).toString(), QString());
+
+		QCOMPARE(places->property("asked").toList().size(), 0);
+		places->setProperty("active", true);
+		const QStringList asked = places->property("asked").toStringList();
+		QCOMPARE(asked, QStringList({ QStringLiteral("mc.hypixel.net"), QStringLiteral("smp.example.com:25570") }));
+	}
+
 	/* A quick-join entry's tooltip says what a click does and what is
 	 * live there. */
 	void quickJoinEntryTipSaysWhatAClickDoes()

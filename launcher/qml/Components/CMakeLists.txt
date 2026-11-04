@@ -125,6 +125,8 @@ qt_add_qml_module(Kite_qml_components
         FriendJoinButton.qml
         FriendsRetry.qml
         FriendsState.qml
+        FriendPlaces.qml
+        ServerFavicon.qml
         GroupHeading.qml
         HomeWorldList.qml
         InstanceArt.qml

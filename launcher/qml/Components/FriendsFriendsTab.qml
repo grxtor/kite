@@ -5,7 +5,8 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Friends page's "Friends" tab: everyone on the list in three groups -- playing, online, offline (FriendsGroup).
+ * The Friends page's "Friends" tab: everyone on the list in three groups -- in game, in Kite, offline
+ * (FriendsGroup).
  * With nobody on the list it is FriendsEmptyState; until the list has been read it is neither, so a person with
  * friends is not told they have none while it loads.
  */
@@ -18,6 +19,8 @@ Item {
     property var joinFlow: null
     property bool stale: false
     property bool actionsEnabled: true
+    // Main.qml's FriendPlaces, for the server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
 
     signal joinRequested(var friend)
 
@@ -33,7 +36,8 @@ Item {
 
         FriendsGroup {
             width: parent.width
-            title: qsTr("PLAYING — %1").arg(root.groups.playing.length)
+            title: qsTr("IN GAME — %1").arg(root.groups.playing.length)
+            places: root.places
             friends: root.groups.playing
             menu: root.menu
             joinFlow: root.joinFlow
@@ -42,7 +46,8 @@ Item {
         }
         FriendsGroup {
             width: parent.width
-            title: qsTr("ONLINE — %1").arg(root.groups.online.length)
+            title: qsTr("IN KITE — %1").arg(root.groups.online.length)
+            places: root.places
             friends: root.groups.online
             menu: root.menu
             stale: root.stale
@@ -50,6 +55,7 @@ Item {
         FriendsGroup {
             width: parent.width
             title: qsTr("OFFLINE — %1").arg(root.groups.offline.length)
+            places: root.places
             friends: root.groups.offline
             menu: root.menu
             stale: root.stale

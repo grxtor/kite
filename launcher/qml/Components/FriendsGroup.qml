@@ -5,7 +5,8 @@ import QtQuick
 import Kite.Theme
 
 /*
- * One group of the Friends tab ("PLAYING — 2"): a caption over the friends in it, each with Join when joinable and a
+ * One group of the Friends tab ("IN GAME — 2"): a caption over the friends in it, each saying where they play
+ * (server favicon and name, game version), with Join when joinable and a
  * ⋯ to remove or block (the page's FriendPersonMenu, `menu`). Hides itself while empty; it only says what was asked
  * for, the page confirms and acts.
  */
@@ -17,6 +18,8 @@ Column {
     property var menu: null
     property var joinFlow: null
     property bool stale: false
+    // Main.qml's FriendPlaces, for the server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
 
     signal joinRequested(var friend)
 
@@ -37,6 +40,7 @@ Column {
             width: root.width
             friend: modelData
             stale: root.stale
+            place: root.places.of(modelData)
 
             FriendJoinButton {
                 friend: row.modelData

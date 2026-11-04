@@ -21,6 +21,8 @@ Item {
     property var recentWorldsModel: null
     // FriendsController, or null.
     property var friends: null
+    // Main.qml's FriendPlaces.
+    property FriendPlaces friendPlaces: FriendPlaces {}
     property var joinFlow: null
     // The right-edge friends panel is out with the same friends: this panel leaves them to it.
     property bool friendsInPanel: false
@@ -96,6 +98,7 @@ Item {
                 width: parent.width
                 visible: root.showsFriends
                 controller: root.friends
+                places: root.friendPlaces
                 joinFlow: root.joinFlow
                 setupShowsSignIn: gettingStarted.shown && !root.signedIn
                 onManageRequested: (tab) => root.friendsRequested(tab)

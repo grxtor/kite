@@ -6,7 +6,7 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The friends panel opened out: header, then who is in game, online and, folded until opened, offline
+ * The friends panel opened out: header, then who is in game, in Kite and, folded until opened, offline
  * (FriendsPanelGroup). Requests, blocked people and adding by name stay on the Friends page. FriendsSidePanel
  * builds this once and never tears it down, so the folds hold for the session.
  */
@@ -17,6 +17,8 @@ Item {
     property FriendsState friendsState: FriendsState {}
     property var joinFlow: null
     property var menu: null
+    // Main.qml's FriendPlaces, for the server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
 
     // Which groups show their rows; offline starts folded.
     property bool playingOpen: true
@@ -87,6 +89,7 @@ Item {
                 FriendsPanelGroup {
                     width: parent.width
                     title: qsTr("IN GAME — %1").arg(root.friendsState.groups.playing.length)
+                    places: root.places
                     friends: root.friendsState.groups.playing
                     expanded: root.playingOpen
                     menu: root.menu
@@ -98,7 +101,8 @@ Item {
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("ONLINE — %1").arg(root.friendsState.groups.online.length)
+                    title: qsTr("IN KITE — %1").arg(root.friendsState.groups.online.length)
+                    places: root.places
                     friends: root.friendsState.groups.online
                     expanded: root.onlineOpen
                     menu: root.menu
@@ -109,6 +113,7 @@ Item {
                 FriendsPanelGroup {
                     width: parent.width
                     title: qsTr("OFFLINE — %1").arg(root.friendsState.groups.offline.length)
+                    places: root.places
                     friends: root.friendsState.groups.offline
                     expanded: root.offlineOpen
                     menu: root.menu

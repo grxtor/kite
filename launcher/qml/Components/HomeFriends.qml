@@ -16,6 +16,8 @@ Column {
 
     // FriendsController, or null.
     property var controller: null
+    // Where friends play (Main.qml's FriendPlaces): server names and favicons.
+    property FriendPlaces places: FriendPlaces {}
 
     signal manageRequested(string tab)
     signal signInRequested()
@@ -147,6 +149,7 @@ Column {
                 width: root.width + Theme.space.sm * 2
                 friend: slot.modelData
                 stale: root.friendsState.stale
+                place: root.places.of(slot.modelData)
                 compact: true
                 interactive: true
                 onClicked: root.manageRequested("friends")
