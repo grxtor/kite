@@ -2396,7 +2396,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashCauseView</name>
     <message>
-        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+107"/>
+        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+109"/>
         <source>and %1 more</source>
         <translation>ve %1 tane daha</translation>
     </message>
@@ -2518,7 +2518,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
     </message>
     <message>
-        <location line="+73"/>
+        <location line="+77"/>
         <source>Share the log?</source>
         <translation>Günlük paylaşılsın mı?</translation>
     </message>
@@ -2536,12 +2536,12 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorModel</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+134"/>
-        <source>Lately it crashed like this %1 times and then started on a later try, which points at the graphics driver or an overlay rather than a mod.</source>
-        <translation>Son zamanlarda %1 kez böyle çöktü, sonra bir sonraki denemede açıldı; bu bir moddan çok ekran kartı sürücüsünü ya da bir kaplamayı gösterir.</translation>
+        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+135"/>
+        <source>Lately it crashed like this %1 times, then started on a later try.</source>
+        <translation>Son zamanlarda %1 kez böyle çöktü, sonraki denemede açıldı.</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+11"/>
         <source>%1 (needed by %2)</source>
         <translation>%1 (%2 istiyor)</translation>
     </message>
@@ -2571,7 +2571,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Bu kurulumun özel Java ayarları kapatılsın mı? Geri al onları geri getirir.</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+52"/>
         <source>Exit code %1</source>
         <translation>Çıkış kodu %1</translation>
     </message>
@@ -2649,7 +2649,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>CrashDoctorService</name>
     <message>
-        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+131"/>
+        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+132"/>
         <source>Crash rules</source>
         <translation>Çökme kuralları</translation>
     </message>

@@ -19,7 +19,8 @@ ColumnLayout {
     id: root
 
     // {ruleId, title, explanation, line, count, rows, fixes: [{action, label, params, runner, confirm}]},
-    // and a muted detail: the exit code ("Exit code 1" for "couldn't tell", a native crash's in words).
+    // and a muted detail: the exit code ("Exit code 1" for "couldn't tell", a native crash's in words),
+    // after how often it crashed like this before a start.
     property var cause: null
     // The first cause gets the accent button; the others a plain one.
     property bool main: true
@@ -88,6 +89,7 @@ ColumnLayout {
                 text: root.cause ? root.cause.detail || "" : ""
                 role: "caption"
                 tone: "tertiary"
+                wrapMode: Text.Wrap
                 textFormat: Text.PlainText
             }
 
