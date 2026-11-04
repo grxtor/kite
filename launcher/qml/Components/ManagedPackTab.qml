@@ -242,9 +242,12 @@ Item {
                 clip: true
                 ScrollBar.vertical: ScrollBar {}
 
+                // RichBody's article (ManagedPackController): its links are http(s) or mail only.
                 RemoteRichText {
                     id: changelog
                     width: parent.width
+                    format: "html"
+                    article: true
                     source: !root.picked ? ""
                             : root.picked.changelog.length > 0
                             ? root.picked.changelog

@@ -50,7 +50,8 @@ class ManagedPackController : public QObject
 	/// fetchVersions()/updateToVersion() are no-ops then.
 	Q_PROPERTY(bool hasPackId READ hasPackId CONSTANT)
 	/// {id, label, name, minecraft, releaseType ("release", "beta", "alpha" or ""),
-	/// current, installable, changelog}, newest first; empty until fetchVersions() succeeds.
+	/// current, installable, changelog (an HTML article from RichBody, or "")}, newest
+	/// first; empty until fetchVersions() succeeds.
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
 	/// Name filter for the "update from a file" dialog, e.g. "Modrinth pack (*.mrpack *.zip)".
 	Q_PROPERTY(QString fileFilter READ fileFilter CONSTANT)
