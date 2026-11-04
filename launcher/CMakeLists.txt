@@ -1689,7 +1689,7 @@ add_unit_test(FriendChatQml
     )
 qt_import_qml_plugins(FriendChatQml_test)
 
-# The 1.3.0 dialogs: "What's new", the quick-join bar's edit and add dialogs, its one-time note and a drag in it.
+# The 1.3.1 dialogs: "What's new", the quick-join bar's edit and add dialogs, its one-time note and a drag in it.
 add_unit_test(LauncherUxQml
     SOURCES qml/LauncherUxQml_test.cpp
     LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui

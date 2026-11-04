@@ -18,7 +18,7 @@
  */
 
 /*
- * The 1.3.0 launcher dialogs over their real C++ side: "What's new" (WhatsNew),
+ * The 1.3.1 launcher dialogs over their real C++ side: "What's new" (WhatsNew),
  * "Edit the bar" and "Add a server" of Home's quick-join bar (QuickJoinLayout),
  * the bar's one-time note, and a drag in the bar itself.
  */
@@ -44,11 +44,15 @@ namespace
 {
 	const QByteArray kNotes = R"({
 		"formatVersion": 1,
-		"releases": [ { "version": "1.3.0", "items": [
-			{ "icon": "server", "title": { "en": "Big servers, one click away" },
-			  "text": { "en": "Drag them into your own order." } },
-			{ "icon": "users", "title": { "en": "A new friends panel" },
-			  "text": { "en": "Invites and requests come first." } } ] } ]
+		"releases": [
+			{ "version": "1.3.1", "items": [
+				{ "icon": "sliders", "title": { "en": "A top bar of your own" },
+				  "text": { "en": "Drag the servers into your order." } } ] },
+			{ "version": "1.3.0", "items": [
+				{ "icon": "server", "title": { "en": "Big servers, one click away" },
+				  "text": { "en": "A click joins." } },
+				{ "icon": "users", "title": { "en": "A new friends panel" },
+				  "text": { "en": "Invites and requests come first." } } ] } ]
 	})";
 
 	const QByteArray kServers = R"({ "formatVersion": 1, "servers": [
@@ -234,13 +238,20 @@ class LauncherUxQmlTest : public QObject
 		auto settings = std::make_shared<INISettingsObject>(file);
 		settings->registerSetting(QuickJoinLayout::kLayoutSetting, QString());
 		settings->registerSetting(QuickJoinLayout::kHintSetting, false);
-		settings->registerSetting(WhatsNew::kSeenSetting, QString("1.2.0"));
+		settings->registerSetting(WhatsNew::kSeenSetting, QString("1.3.0"));
 		settings->registerSetting("Language", QString("en_US"));
 		m_settings = settings;
 		m_featured = std::make_unique<FeaturedServers>();
 		QVERIFY(m_featured->loadFromJson(kServers));
 		m_layout = std::make_unique<QuickJoinLayout>(m_featured.get(), m_settings);
-		m_notes = std::make_unique<WhatsNew>(kNotes, QStringLiteral("1.3.0"), m_settings);
+		notesFrom(QStringLiteral("1.3.0"));
+	}
+
+	/* The notes of Kite 1.3.1 for someone who last saw @p seen's. */
+	void notesFrom(const QString& seen)
+	{
+		m_settings->set(WhatsNew::kSeenSetting, seen);
+		m_notes = std::make_unique<WhatsNew>(kNotes, QStringLiteral("1.3.1"), m_settings);
 		m_notes->setLanguage(QStringLiteral("en_US"));
 	}
 
@@ -263,10 +274,12 @@ class LauncherUxQmlTest : public QObject
 		)"));
 		QObject* dialog = find("dialog");
 		QTRY_VERIFY(dialog->property("opened").toBool());
-		QVERIFY(showing(QStringLiteral("What's new in Kite 1.3.0")));
-		QVERIFY(showing(QStringLiteral("Big servers, one click away")));
-		QVERIFY(showing(QStringLiteral("Drag them into your own order.")));
-		QVERIFY(showing(QStringLiteral("A new friends panel")));
+		// From the last release: its notes alone, no number over them.
+		QVERIFY(showing(QStringLiteral("What's new in Kite 1.3.1")));
+		QVERIFY(showing(QStringLiteral("A top bar of your own")));
+		QVERIFY(showing(QStringLiteral("Drag the servers into your order.")));
+		QVERIFY(!showing(QStringLiteral("Big servers, one click away")));
+		QVERIFY(!showing(QStringLiteral("Kite 1.3.1")));
 		QVERIFY(showing(QStringLiteral("All notes")));
 		// One way out, no Cancel beside it.
 		QVERIFY(button(QStringLiteral("Great")));
@@ -275,7 +288,32 @@ class LauncherUxQmlTest : public QObject
 		click(QStringLiteral("Great"));
 		QTRY_VERIFY(!dialog->property("visible").toBool());
 		QVERIFY(!m_notes->pending());
-		QCOMPARE(m_settings->get(WhatsNew::kSeenSetting).toString(), QString("1.3.0"));
+		QCOMPARE(m_settings->get(WhatsNew::kSeenSetting).toString(), QString("1.3.1"));
+	}
+
+	void whatsNewFromFurtherBackListsEachReleaseSince()
+	{
+		notesFrom(QStringLiteral("1.2.0"));
+		load(QStringLiteral(R"(
+			WhatsNewDialog { id: dialog; objectName: "dialog"; notes: testNotes }
+			Component.onCompleted: dialog.open()
+		)"));
+		QObject* dialog = find("dialog");
+		QTRY_VERIFY(dialog->property("opened").toBool());
+		QVERIFY(showing(QStringLiteral("What's new since 1.2.0")));
+		QVERIFY(showing(QStringLiteral("Kite 1.3.1")));
+		QVERIFY(showing(QStringLiteral("Kite 1.3.0")));
+		QVERIFY(showing(QStringLiteral("A top bar of your own")));
+		QVERIFY(showing(QStringLiteral("Big servers, one click away")));
+		QVERIFY(showing(QStringLiteral("A new friends panel")));
+		// About's "What's new" afterwards: this version's alone.
+		click(QStringLiteral("Great"));
+		QTRY_VERIFY(!dialog->property("visible").toBool());
+		m_notes->showLatest();
+		QVERIFY(QMetaObject::invokeMethod(dialog, "open"));
+		QTRY_VERIFY(dialog->property("opened").toBool());
+		QTRY_VERIFY(showing(QStringLiteral("What's new in Kite 1.3.1")));
+		QVERIFY(!showing(QStringLiteral("Big servers, one click away")));
 	}
 
 	void whatsNewClosedAnyWayCountsAsSeen()
@@ -324,6 +362,47 @@ class LauncherUxQmlTest : public QObject
 		QTRY_VERIFY(!dialog->property("visible").toBool());
 		QCOMPARE(idsOf(m_layout->entries()), QStringList({"b", "c", "a"}));
 		QCOMPARE(idsOf(m_layout->shown()), QStringList({"c", "a"}));
+	}
+
+	void editTheBarAddsAServerThatWaitsForSave()
+	{
+		load(QStringLiteral(R"(
+			QuickJoinEditDialog { id: dialog; objectName: "dialog"; layout: testLayout; pinger: fakePinger }
+			Component.onCompleted: dialog.edit()
+		)"));
+		QObject* dialog = find("dialog");
+		QTRY_VERIFY(dialog->property("opened").toBool());
+		QTRY_COMPARE(rows().size(), 3);
+		click(QStringLiteral("Add a server…"));
+		QObject* address = nullptr;
+		QTRY_VERIFY((address = find("quickJoinAddAddress")) && address->property("visible").toBool());
+		address->setProperty("text", QStringLiteral("mc.friends.example"));
+		find("quickJoinAddName")->setProperty("text", QStringLiteral("Friends"));
+		click(QStringLiteral("Add"));
+		QVERIFY(QMetaObject::invokeMethod(pinger(), "answer", Q_ARG(QVariant, "mc.friends.example"),
+										  Q_ARG(QVariant, "online")));
+		// A row at the end, with a remove of its own; the bar itself waits for Save.
+		QTRY_COMPARE(rows().size(), 4);
+		QObject* added = rows().last();
+		QCOMPARE(added->property("name").toString(), QString("Friends"));
+		QVERIFY(added->property("own").toBool());
+		QCOMPARE(m_layout->shown().size(), 3);
+		// The address of a big server already listed shows that row again instead.
+		QVERIFY(QMetaObject::invokeMethod(rows().at(1), "shownToggled", Q_ARG(bool, false)));
+		click(QStringLiteral("Add a server…"));
+		QTRY_VERIFY(find("quickJoinAddAddress")->property("visible").toBool());
+		find("quickJoinAddAddress")->setProperty("text", QStringLiteral("PLAY.bravo.example:25565"));
+		click(QStringLiteral("Add"));
+		QVERIFY(QMetaObject::invokeMethod(pinger(), "answer", Q_ARG(QVariant, "PLAY.bravo.example:25565"),
+										  Q_ARG(QVariant, "online")));
+		QTRY_VERIFY(rows().at(1)->property("shown").toBool());
+		QCOMPARE(rows().size(), 4);
+
+		click(QStringLiteral("Save"));
+		QTRY_VERIFY(!dialog->property("visible").toBool());
+		const QString own = QuickJoinLayout::ownId(QStringLiteral("mc.friends.example"));
+		QCOMPARE(idsOf(m_layout->shown()), QStringList({"a", "b", "c", own}));
+		QVERIFY(m_layout->shown().at(1).toMap().value("own").toBool());
 	}
 
 	void editTheBarResetsAndCancelKeepsTheBar()
