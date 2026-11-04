@@ -116,6 +116,9 @@ namespace CrashDoctor
 
 	/// The first cause that is no fallback, or null: Kite could not say why.
 	const Cause* firstExplained(const QList<Cause>& causes);
+	/// What the crash window shows of @p causes: without the fallbacks once a
+	/// cause that is none explains the crash, as they would only repeat it.
+	QList<Cause> shownCauses(const QList<Cause>& causes);
 
 	inline constexpr int kLogTailLines = 400;
 	inline constexpr int kMaxFindingsPerRule = 10;

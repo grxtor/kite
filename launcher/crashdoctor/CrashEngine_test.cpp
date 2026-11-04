@@ -524,6 +524,10 @@ class CrashEngineTest : public QObject
 			QStringLiteral("en"));
 		QVERIFY(firstExplained(known));
 		QCOMPARE(firstExplained(known)->ruleId, QStringLiteral("overlay.discord"));
+		// Shown: the fallbacks only while nothing explains the crash.
+		QCOMPARE(ruleIds(known), QStringList({"overlay.discord", "exit.windows-access-violation"}));
+		QCOMPARE(ruleIds(shownCauses(known)), QStringList({"overlay.discord"}));
+		QCOMPARE(ruleIds(shownCauses(unknown)), ruleIds(unknown));
 	}
 
 	// The JVM that crashed names its pid; the one Kite started comes after.

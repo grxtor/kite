@@ -348,7 +348,7 @@ namespace CrashDoctor
 			report.retriedNativeCrashes = snapshot.retriedNativeCrashes;
 		}
 
-		report.causes = CrashDoctor::analyse(catalog, evidence, facts, language);
+		report.causes = shownCauses(CrashDoctor::analyse(catalog, evidence, facts, language));
 		report.facts = facts;
 		report.fixDidNotHelp =
 			snapshot.since.isValid() && snapshot.lastFixAt.isValid() && snapshot.lastFixAt < snapshot.since &&

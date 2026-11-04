@@ -22,6 +22,7 @@
 #include <QRegularExpression>
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 
 #include "CrashActions.h"
 #include "Version.h"
@@ -777,6 +778,17 @@ namespace CrashDoctor
 		const auto it = std::find_if(causes.begin(), causes.end(),
 									 [](const Cause& cause) { return !cause.fallback; });
 		return it == causes.end() ? nullptr : &*it;
+	}
+
+	QList<Cause> shownCauses(const QList<Cause>& causes)
+	{
+		if (!firstExplained(causes)) {
+			return causes;
+		}
+		QList<Cause> shown;
+		std::copy_if(causes.begin(), causes.end(), std::back_inserter(shown),
+					 [](const Cause& cause) { return !cause.fallback; });
+		return shown;
 	}
 
 	QList<Cause> analyse(const Catalog& catalog, const Evidence& raw, const Facts& facts,
