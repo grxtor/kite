@@ -29,6 +29,7 @@
 
 #include <algorithm>
 
+#include "CrashExitCodes.h"
 #include "CrashFiles.h"
 #include "Sys.h"
 #include "core/LauncherContext.h"
@@ -63,6 +64,12 @@ namespace CrashDoctor
 		/// latest.log is rewritten at each start; without a launch to go by,
 		/// files this much older than its last line are from another run.
 		constexpr int kRunWindowSecs = 60 * 60;
+		const QString kConfigFolder = QStringLiteral("config");
+		/// Shader mods by id, and the settings file each keeps in config/.
+		const QList<QPair<QString, QString>> kShaderMods{
+			{QStringLiteral("iris"), QStringLiteral("iris.properties")},
+			{QStringLiteral("oculus"), QStringLiteral("oculus.properties")},
+		};
 
 		QString osName()
 		{
@@ -157,10 +164,14 @@ namespace CrashDoctor
 		auto it = kExit.globalMatch(log);
 		while (it.hasNext()) {
 			const auto match = it.next();
-			last = qMakePair(match.captured(2).toInt(),
-							 match.captured(1).startsWith(QLatin1String("crashed"))
-								 ? QStringLiteral("crash")
-								 : QStringLiteral("normal"));
+			// A Windows status can come unsigned (3221225477); it is kept signed.
+			const auto code = ExitCodes::fromNumber(match.captured(2).toLongLong());
+			if (!code) {
+				continue;
+			}
+			last = qMakePair(*code, match.captured(1).startsWith(QLatin1String("crashed"))
+										? QStringLiteral("crash")
+										: QStringLiteral("normal"));
 		}
 		return last;
 	}
@@ -172,6 +183,62 @@ namespace CrashDoctor
 			QRegularExpression::MultilineOption);
 		const auto match = kJava.match(log);
 		return match.hasMatch() ? JavaVersion(match.captured(1)).major() : 0;
+	}
+
+	QList<qint64> jvmPidsFromLog(const QString& log)
+	{
+		static const QRegularExpression kCrashed(
+			QStringLiteral("(?:\\bpid=(\\d{1,10}), tid=\\d|\\bhs_err_pid(\\d{1,10})\\.log\\b)"));
+		static const QRegularExpression kStarted(QStringLiteral("^Minecraft process ID: (\\d{1,10})$"),
+												 QRegularExpression::MultilineOption);
+		QList<qint64> pids;
+		const auto add = [&pids](const QString& digits) {
+			const qint64 pid = digits.toLongLong();
+			if (pid > 0 && !pids.contains(pid)) {
+				pids.append(pid);
+			}
+		};
+		auto crashed = kCrashed.globalMatch(log);
+		while (crashed.hasNext()) {
+			const auto match = crashed.next();
+			add(match.captured(1).isEmpty() ? match.captured(2) : match.captured(1));
+		}
+		auto started = kStarted.globalMatch(log);
+		while (started.hasNext()) {
+			add(started.next().captured(1));
+		}
+		return pids;
+	}
+
+	bool shaderPackOn(const QString& gameRoot, const QSet<QString>& installed)
+	{
+		for (const auto& [mod, name] : kShaderMods) {
+			QFile file(QDir(gameRoot).filePath(kConfigFolder + QLatin1Char('/') + name));
+			if (!installed.contains(mod) || !file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+				continue;
+			}
+			// Java properties as Iris and Oculus write them: key=value lines.
+			QString pack;
+			bool enabled = true;
+			for (const QByteArray& raw : file.readAll().split('\n')) {
+				const QString line = QString::fromUtf8(raw).trimmed();
+				const qsizetype equals = line.indexOf(QLatin1Char('='));
+				if (line.startsWith(QLatin1Char('#')) || equals < 0) {
+					continue;
+				}
+				const QString key = line.left(equals).trimmed();
+				const QString value = line.mid(equals + 1).trimmed();
+				if (key == QLatin1String("shaderPack")) {
+					pack = value;
+				} else if (key == QLatin1String("enableShaders")) {
+					enabled = value != QLatin1String("false");
+				}
+			}
+			if (enabled && !pack.isEmpty()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	Snapshot snapshot(MinecraftInstance& instance, LaunchTask* task)
@@ -254,7 +321,8 @@ namespace CrashDoctor
 		}
 		if (snapshot.files.isEmpty() && since.isValid()) {
 			report.crashReportPath = CrashFiles::newestCrashReport(snapshot.gameRoot, since);
-			report.jvmErrorPath = CrashFiles::newestJvmErrorReport(snapshot.gameRoot, since);
+			report.jvmErrorPath =
+				CrashFiles::newestJvmErrorReport(snapshot.gameRoot, since, jvmPidsFromLog(evidence.log));
 		}
 		report.files = {report.crashReportPath, report.jvmErrorPath,
 						snapshot.files.isEmpty() ? latest : snapshot.files.log};
@@ -271,6 +339,7 @@ namespace CrashDoctor
 			facts.javaNow = logged;
 		}
 		scanMods(snapshot.modsDir, snapshot.performanceFiles, report, facts);
+		facts.shadersOn = shaderPackOn(snapshot.gameRoot, facts.installed);
 
 		report.causes = CrashDoctor::analyse(catalog, evidence, facts, language);
 		report.facts = facts;

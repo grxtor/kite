@@ -1995,5 +1995,487 @@
   },
   "verify": false,
   "note": "OptiFine/Sodium names in a normal mod list"
+ },
+ {
+  "name": "gpu.driver-native-crash.intel",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.driver-native-crash.intel.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.driver-native-crash",
+   "captures": {
+    "lib": "ig9icd64.dll"
+   },
+   "also": [
+    "exit.windows-access-violation"
+   ],
+   "absent": [
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": "Intel OpenGL driver"
+ },
+ {
+  "name": "gpu.driver-native-crash.nvidia-compiler",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.driver-native-crash.nvidia-compiler.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.driver-native-crash",
+   "captures": {
+    "lib": "nvgpucomp64.dll"
+   },
+   "absent": [
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": "NVIDIA's shader compiler"
+ },
+ {
+  "name": "gpu.driver-native-crash.linux-mesa",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.driver-native-crash.linux-mesa.json",
+  "source": null,
+  "facts": {
+   "os": "linux",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": 6,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.driver-native-crash",
+   "captures": {
+    "lib": "libgallium-24.2.8.so"
+   }
+  },
+  "verify": false,
+  "note": "Mesa 24.1+ keeps its drivers in libgallium"
+ },
+ {
+  "name": "gpu.driver-crash-sodium",
+  "kind": "synthetic",
+  "file": "synthetic/gpu.driver-crash-sodium.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [
+    "sodium",
+    "iris",
+    "fabric-api"
+   ],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "gpu.driver-crash-sodium",
+   "captures": {
+    "lib": "atio6axx.dll"
+   },
+   "absent": [
+    "gpu.driver-native-crash",
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": "AMD driver with Sodium and Iris"
+ },
+ {
+  "name": "overlay.rivatuner",
+  "kind": "synthetic",
+  "file": "synthetic/overlay.rivatuner.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "overlay.rivatuner",
+   "captures": {
+    "lib": "RTSSHooks64.dll"
+   },
+   "absent": [
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "overlay.rivatuner.below-driver",
+  "kind": "synthetic",
+  "file": "synthetic/overlay.rivatuner.below-driver.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "overlay.rivatuner",
+   "captures": {
+    "lib": "RTSSHooks64.dll"
+   },
+   "also": [
+    "gpu.driver-native-crash"
+   ],
+   "absent": [
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": "the hook is on the crashing thread under the driver frame"
+ },
+ {
+  "name": "overlay.steam",
+  "kind": "synthetic",
+  "file": "synthetic/overlay.steam.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "overlay.steam",
+   "captures": {
+    "lib": "GameOverlayRenderer64.dll"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "overlay.discord",
+  "kind": "synthetic",
+  "file": "synthetic/overlay.discord.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "overlay.discord",
+   "captures": {
+    "lib": "DiscordHook64.dll"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "overlay.obs",
+  "kind": "synthetic",
+  "file": "synthetic/overlay.obs.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "overlay.obs",
+   "captures": {
+    "lib": "graphics-hook64.dll"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "overlay.nvidia",
+  "kind": "synthetic",
+  "file": "synthetic/overlay.nvidia.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "overlay.nvidia",
+   "captures": {
+    "lib": "nvspcap64.dll"
+   }
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "native.antivirus-hook",
+  "kind": "synthetic",
+  "file": "synthetic/native.antivirus-hook.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "native.antivirus-hook",
+   "captures": {
+    "lib": "aswhook.dll"
+   },
+   "absent": [
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": "Avast's hook"
+ },
+ {
+  "name": "native.jvm-crash",
+  "kind": "synthetic",
+  "file": "synthetic/native.jvm-crash.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "native.jvm-crash",
+   "captures": {
+    "lib": "jvm.dll"
+   },
+   "also": [
+    "exit.windows-access-violation"
+   ]
+  },
+  "verify": false,
+  "note": ""
+ },
+ {
+  "name": "native.unknown-library",
+  "kind": "synthetic",
+  "file": "synthetic/native.unknown-library.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "native.unknown-library",
+   "captures": {
+    "lib": "VCRUNTIME140.dll"
+   },
+   "also": [
+    "exit.windows-access-violation"
+   ]
+  },
+  "verify": false,
+  "note": "a frame no rule knows: the honest fallback"
+ },
+ {
+  "name": "exit.windows-native-crash.stack-buffer-overrun",
+  "kind": "synthetic",
+  "file": "synthetic/exit.windows-native-crash.stack-buffer-overrun.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "1.21.1",
+   "javaNow": 21,
+   "javaRecommended": 21,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073740791,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "exit.windows-native-crash"
+  },
+  "verify": false,
+  "note": "the exit code logged unsigned, as a wrapper passes it on"
+ },
+ {
+  "name": "exit.windows-access-violation.dandy-pack",
+  "kind": "synthetic",
+  "file": "synthetic/exit.windows-access-violation.dandy-pack.json",
+  "source": null,
+  "facts": {
+   "os": "windows",
+   "arch": "x86_64",
+   "loader": "fabric",
+   "mc": "26.3",
+   "javaNow": 25,
+   "javaRecommended": 25,
+   "memoryMb": 4096,
+   "systemMemoryMb": 16384,
+   "installed": [],
+   "performanceMods": [],
+   "customJvmArgs": false,
+   "exitCode": -1073741819,
+   "exitStatus": "crash",
+   "modded": true
+  },
+  "expect": {
+   "top": "exit.windows-access-violation",
+   "absent": [
+    "native.unknown-library"
+   ]
+  },
+  "verify": false,
+  "note": "a player's Kite 1.2.0 log: no hs_err, the CTM warnings are noise"
  }
 ]

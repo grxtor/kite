@@ -39,7 +39,7 @@ namespace CrashPayload
 	inline constexpr int kMaxRules = 20;
 
 	/// Whether @p report has something to send: error lines, and no rule that
-	/// knew the crash unless its fix did not help.
+	/// knew the crash (fallbacks do not know it) unless its fix did not help.
 	bool sendable(const CrashDoctor::Report& report);
 	/// The JSON body for @p report; @p kiteVersion is BuildConfig's.
 	QJsonObject build(const CrashDoctor::Report& report, const QString& kiteVersion);

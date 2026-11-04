@@ -1076,6 +1076,8 @@ set(CRASHDOCTOR_SOURCES
     crashdoctor/CrashDoctorService.cpp
     crashdoctor/CrashEngine.h
     crashdoctor/CrashEngine.cpp
+    crashdoctor/CrashExitCodes.h
+    crashdoctor/CrashExitCodes.cpp
     crashdoctor/CrashFiles.h
     crashdoctor/CrashFiles.cpp
     crashdoctor/CrashFixer.h

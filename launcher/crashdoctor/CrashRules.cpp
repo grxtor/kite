@@ -24,6 +24,7 @@
 #include <QSet>
 
 #include "CrashActions.h"
+#include "CrashExitCodes.h"
 
 namespace CrashDoctor
 {
@@ -195,10 +196,14 @@ namespace CrashDoctor
 			if (when.contains("memoryRoom")) {
 				out->memoryRoom = when.value("memoryRoom").toBool();
 			}
+			// Signed or unsigned: a Windows status matches in both forms.
 			for (const QJsonValue& code : when.value("exitCode").toArray()) {
-				out->exitCodes.append(code.toInt());
+				if (const auto folded = ExitCodes::fromNumber(code.toInteger())) {
+					out->exitCodes.append(*folded);
+				}
 			}
 			out->exitStatus = when.value("exitStatus").toString();
+			out->mods = strings(when.value("mods"));
 			const QJsonObject inSet = when.value("inSet").toObject();
 			for (auto it = inSet.begin(); it != inSet.end(); ++it) {
 				out->inSet.insert(it.key(), it.value().toString());
@@ -289,6 +294,7 @@ namespace CrashDoctor
 			if (rule.priority < 0 || rule.priority > 100) {
 				return fail(QStringLiteral("priority out of range"));
 			}
+			rule.fallback = object.value("fallback").toBool();
 			const QJsonValue key = object.value("key");
 			rule.key = key.isArray() ? strings(key)
 				: key.isString()	 ? QStringList{key.toString()}

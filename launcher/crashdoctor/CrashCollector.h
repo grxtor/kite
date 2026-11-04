@@ -133,6 +133,14 @@ namespace CrashDoctor
 	std::optional<QPair<int, QString>> exitFromLog(const QString& log);
 	/// The Java major CheckJava logged ("Java is version 17.0.15, ..."), or 0.
 	int javaFromLog(const QString& log);
+	/// The processes whose hs_err file would be this run's, each once: the JVM
+	/// that says it crashed ("pid=1234, tid=…", "hs_err_pid1234.log"), then the
+	/// one Kite started ("Minecraft process ID: 1234"), which is the game itself
+	/// only when it runs in Kite's own launcher JVM.
+	QList<qint64> jvmPidsFromLog(const QString& log);
+	/// Whether Iris or Oculus is installed (@p installed) and its settings in
+	/// <gameRoot>/config name a shader pack without turning shaders off.
+	bool shaderPackOn(const QString& gameRoot, const QSet<QString>& installed);
 
 	inline constexpr qsizetype kMaxLogBytes = 2 * 1024 * 1024;
 	inline constexpr qsizetype kMaxCrashReportBytes = 1024 * 1024;

@@ -271,6 +271,11 @@ namespace CrashDoctor
 			if (!when.exitStatus.isEmpty() && when.exitStatus != facts.exitStatus) {
 				return false;
 			}
+			if (!when.mods.isEmpty() &&
+				std::none_of(when.mods.begin(), when.mods.end(),
+							 [&facts](const QString& id) { return facts.installed.contains(id); })) {
+				return false;
+			}
 			return true;
 		}
 
@@ -683,7 +688,8 @@ namespace CrashDoctor
 			};
 			for (const FixSpec& fix : rule.fixes) {
 				const CrashActions::Spec* spec = CrashActions::find(fix.action);
-				if (!spec || (spec->windowsOnly && facts.os != QLatin1String("windows"))) {
+				if (!spec || (spec->windowsOnly && facts.os != QLatin1String("windows")) ||
+					(spec->needsShaders && !facts.shadersOn)) {
 					continue;
 				}
 				QList<ResolvedFix> each;
@@ -766,6 +772,13 @@ namespace CrashDoctor
 		return out;
 	}
 
+	const Cause* firstExplained(const QList<Cause>& causes)
+	{
+		const auto it = std::find_if(causes.begin(), causes.end(),
+									 [](const Cause& cause) { return !cause.fallback; });
+		return it == causes.end() ? nullptr : &*it;
+	}
+
 	QList<Cause> analyse(const Catalog& catalog, const Evidence& raw, const Facts& facts,
 						 const QString& language)
 	{
@@ -784,6 +797,7 @@ namespace CrashDoctor
 			const Rule& rule = *match.rule;
 			Cause cause;
 			cause.ruleId = rule.id;
+			cause.fallback = rule.fallback;
 			cause.findings = match.findings;
 			const bool strong = std::any_of(match.findings.begin(), match.findings.end(),
 											[](const Finding& finding) { return strongSource(finding.source); });

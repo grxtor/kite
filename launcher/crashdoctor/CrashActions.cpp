@@ -107,6 +107,9 @@ namespace CrashActions
 				if (spec.name == QLatin1String("disableMod")) {
 					spec.batch = true;
 				}
+				if (spec.name == QLatin1String("turnOffShaders")) {
+					spec.needsShaders = true;
+				}
 			}
 			return specs;
 		}

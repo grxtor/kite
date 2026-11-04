@@ -97,6 +97,8 @@ namespace CrashDoctor
 		QList<int> exitCodes;
 		/// "normal", "crash" or empty.
 		QString exitStatus;
+		/// Any of these mods is installed (ids).
+		QStringList mods;
 		/// Per instance: capture -> fact set ("performanceMods", "installed").
 		QHash<QString, QString> inSet;
 		/// Per instance: capture -> whether it must be an installed mod.
@@ -106,6 +108,10 @@ namespace CrashDoctor
 	struct Rule {
 		QString id;
 		int priority = 0;
+		/// Says what Kite saw (a native frame, an exit code) without knowing
+		/// why: the crash still counts as one Kite could not explain, so it can
+		/// be sent to Kite and is read again with newer rules.
+		bool fallback = false;
 		/// Captures that tell instances apart; all captures when empty.
 		QStringList key;
 		Conditions when;

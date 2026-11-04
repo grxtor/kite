@@ -74,6 +74,8 @@ namespace CrashActions
 		bool confirm = false;
 		/// Offered on Windows only.
 		bool windowsOnly = false;
+		/// Offered only while a shader pack is on (Facts::shadersOn).
+		bool needsShaders = false;
 		/// Several findings of one card can share one run (all ids at once).
 		bool batch = false;
 	};

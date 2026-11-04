@@ -24,6 +24,7 @@
 
 #include "CrashActions.h"
 #include "CrashDoctorService.h"
+#include "CrashExitCodes.h"
 #include "CrashFixer.h"
 #include "core/LauncherContext.h"
 #include "minecraft/MinecraftInstance.h"
@@ -122,7 +123,10 @@ QVariantList CrashDoctorModel::causes() const
 	if (!report) {
 		return out;
 	}
+	// The exit code of a native crash says something; a plain one is noise next to a cause.
+	const bool native = report->exitCode && CrashDoctor::ExitCodes::windowsStatus(*report->exitCode);
 	for (const CrashDoctor::Cause& cause : report->causes) {
+		const bool top = out.isEmpty();
 		QVariantList rows;
 		for (const CrashDoctor::Finding& finding : cause.findings) {
 			const auto [what, by] = rowParts(finding, report->modNames);
@@ -162,6 +166,7 @@ QVariantList CrashDoctorModel::causes() const
 		out.append(QVariantMap{{"ruleId", cause.ruleId},
 							   {"title", cause.title},
 							   {"explanation", cause.explanation},
+							   {"detail", top && native ? exitDetail() : QString()},
 							   {"line", first.line},
 							   {"count", int(cause.findings.size())},
 							   {"rows", rows},
@@ -192,6 +197,14 @@ bool CrashDoctorModel::hasExitCode() const
 {
 	const auto report = CrashDoctorService::instance()->report(m_id);
 	return report && report->exitCode.has_value();
+}
+
+QString CrashDoctorModel::exitDetail() const
+{
+	const auto report = CrashDoctorService::instance()->report(m_id);
+	return report && report->exitCode
+			   ? tr("Exit code %1").arg(CrashDoctor::ExitCodes::describe(*report->exitCode))
+			   : QString();
 }
 
 QString CrashDoctorModel::undoAction() const

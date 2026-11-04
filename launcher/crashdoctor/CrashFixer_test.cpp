@@ -17,11 +17,14 @@
  * limitations under the License.
  */
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
 
+#include "crashdoctor/CrashCollector.h"
+#include "crashdoctor/CrashFiles.h"
 #include "crashdoctor/CrashFixer.h"
 #include "settings/INISettingsObject.h"
 
@@ -224,6 +227,50 @@ class CrashFixerTest : public QObject
 		QCOMPARE(read(iris), QByteArray("shaderPack=Complementary.zip\nenableShaders=false\n"));
 		QVERIFY(undoFix(f.target(), *undo, nullptr));
 		QCOMPARE(read(iris), QByteArray("shaderPack=Complementary.zip\nenableShaders=true\n"));
+	}
+
+	// The crash doctor offers to turn shaders off only while a pack is on,
+	// and the fix leaves none on.
+	void shaderPackOnUntilTurnedOff()
+	{
+		Fixture f;
+		const QSet<QString> iris{QStringLiteral("iris")};
+		QVERIFY(!shaderPackOn(f.gameRoot, iris));
+		f.write("config/iris.properties", "# Iris settings\nshaderPack=\nenableShaders=true\n");
+		QVERIFY(!shaderPackOn(f.gameRoot, iris));
+		f.write("config/iris.properties", "shaderPack=Complementary.zip\r\nenableShaders=true\r\n");
+		QVERIFY(shaderPackOn(f.gameRoot, iris));
+		QVERIFY(!shaderPackOn(f.gameRoot, {}));
+		QVERIFY(applyFix(f.target(), fix("turnOffShaders"), f.report, nullptr).has_value());
+		QVERIFY(!shaderPackOn(f.gameRoot, iris));
+		f.write("config/oculus.properties", "shaderPack=BSL.zip\n");
+		QVERIFY(shaderPackOn(f.gameRoot, {QStringLiteral("oculus")}));
+	}
+
+	// The hs_err file of the JVM the log names wins, also from the temporary
+	// folder the JVM falls back to; without a pid, the newest in the game root.
+	void jvmErrorReportByPid()
+	{
+		Fixture f;
+		const QDateTime since = QDateTime::currentDateTime().addSecs(-60);
+		const QString older = f.write("hs_err_pid111.log", "# A fatal error");
+		const QString newer = f.write("hs_err_pid222.log", "# A fatal error");
+		QFile touched(newer);
+		QVERIFY(touched.open(QIODevice::ReadWrite));
+		QVERIFY(touched.setFileTime(QDateTime::currentDateTime().addSecs(5), QFileDevice::FileModificationTime));
+		touched.close();
+		QCOMPARE(CrashFiles::newestJvmErrorReport(f.gameRoot, since), QFileInfo(newer).absoluteFilePath());
+		QCOMPARE(CrashFiles::newestJvmErrorReport(f.gameRoot, since, {111}), QFileInfo(older).absoluteFilePath());
+		QCOMPARE(CrashFiles::newestJvmErrorReport(f.gameRoot, since.addSecs(3600), {111}), QString());
+
+		// A pid no other test run can have: well above any real one.
+		const qint64 pid = 3999999000LL + QCoreApplication::applicationPid() % 1000;
+		QFile temp(QDir(QDir::tempPath()).filePath(QStringLiteral("hs_err_pid%1.log").arg(pid)));
+		QVERIFY(temp.open(QIODevice::WriteOnly));
+		temp.close();
+		QCOMPARE(CrashFiles::newestJvmErrorReport(f.gameRoot, since, {pid, 111}),
+				 QFileInfo(temp.fileName()).absoluteFilePath());
+		temp.remove();
 	}
 
 	void shadersOffWithoutAFileUndoesToNoFile()

@@ -1,6 +1,6 @@
 {
 	"formatVersion": 1,
-	"catalogVersion": 1,
+	"catalogVersion": 2,
 	"classHints": [
 		{
 			"prefix": "net.fabricmc.fabric.api",
@@ -2276,7 +2276,342 @@
 			"match": {
 				"any": [
 					{
-						"re": "^#\\s+C\\s+\\[(?<lib>(?:atio6axx|atioglxx|amdxx64|amdvlk64|ig\\w{0,12}icd\\w{0,4}|igxelpicd64|nvoglv\\w{0,4}|nvwgf2umx|libnvidia-glcore|libnvidia-eglcore|radeonsi_dri|iris_dri|i965_dri|libGLX_mesa|AppleMetalOpenGLRenderer|AGXMetal\\w{0,12}|libvulkan_\\w{1,16})[\\w.]{0,16})\\+0x",
+						"re": "^#\\s+C\\s+\\[(?<lib>(?:atio6axx|atioglxx|amdxx64|amdvlk64|amdxc64|aticfx64|ig\\w{0,12}icd\\w{0,4}|igxelpicd64|igc64|igvk64|nvoglv\\w{0,4}|nvwgf2umx|nvgpucomp\\w{0,4}|libnvidia-glcore|libnvidia-eglcore|libnvidia-gpucomp|radeonsi_dri|iris_dri|i965_dri|libgallium|libGLX_mesa|AppleMetalOpenGLRenderer|AGXMetal\\w{0,12}|libvulkan_\\w{1,16})[\\w.\\-]{0,20})\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "The graphics driver crashed",
+				"tr": "Ekran kartı sürücüsü çöktü"
+			},
+			"explanation": {
+				"en": "Java crashed inside the graphics driver ({lib}), not in Minecraft or a mod. Update the driver from your graphics card's maker (AMD, Intel or NVIDIA); if it keeps happening, turn shaders off or switch the graphics card.",
+				"tr": "Java, Minecraft'ta ya da bir modda değil, ekran kartı sürücüsünün içinde ({lib}) çöktü. Sürücüyü ekran kartının üreticisinden (AMD, Intel ya da NVIDIA) güncelle; sürerse gölgelendiricileri kapat ya da ekran kartını değiştir."
+			},
+			"fixes": [
+				{
+					"action": "useDedicatedGpu",
+					"label": {
+						"en": "Use the faster graphics card",
+						"tr": "Güçlü ekran kartını kullan"
+					}
+				},
+				{
+					"action": "turnOffShaders",
+					"label": {
+						"en": "Turn off shaders",
+						"tr": "Gölgelendiricileri kapat"
+					}
+				}
+			]
+		},
+		{
+			"id": "gpu.driver-crash-sodium",
+			"priority": 73,
+			"when": {
+				"mods": [
+					"sodium",
+					"embeddium",
+					"rubidium",
+					"iris",
+					"oculus"
+				]
+			},
+			"match": {
+				"any": [
+					{
+						"re": "^#\\s+C\\s+\\[(?<lib>(?:atio6axx|atioglxx|amdxx64|amdvlk64|amdxc64|aticfx64|ig\\w{0,12}icd\\w{0,4}|igxelpicd64|igc64|igvk64|nvoglv\\w{0,4}|nvwgf2umx|nvgpucomp\\w{0,4}|libnvidia-glcore|libnvidia-eglcore|libnvidia-gpucomp|radeonsi_dri|iris_dri|i965_dri|libgallium|libGLX_mesa|AppleMetalOpenGLRenderer|AGXMetal\\w{0,12}|libvulkan_\\w{1,16})[\\w.\\-]{0,20})\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"gpu.driver-native-crash",
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "The graphics driver crashed",
+				"tr": "Ekran kartı sürücüsü çöktü"
+			},
+			"explanation": {
+				"en": "Java crashed inside the graphics driver ({lib}), not in a mod. Sodium and Iris use graphics features that old drivers get wrong, so a current driver from your card's maker (AMD, Intel or NVIDIA) usually ends this crash. If you use shaders, turn them off until then.",
+				"tr": "Java, bir modda değil ekran kartı sürücüsünün içinde ({lib}) çöktü. Sodium ve Iris, eski sürücülerin hatalı çalıştırdığı grafik özelliklerini kullanır; bu çökme genelde kartın üreticisinden (AMD, Intel ya da NVIDIA) alınan güncel sürücüyle biter. Gölgelendirici kullanıyorsan o zamana kadar kapat."
+			},
+			"fixes": [
+				{
+					"action": "turnOffShaders",
+					"label": {
+						"en": "Turn off shaders",
+						"tr": "Gölgelendiricileri kapat"
+					}
+				},
+				{
+					"action": "useDedicatedGpu",
+					"label": {
+						"en": "Use the faster graphics card",
+						"tr": "Güçlü ekran kartını kullan"
+					}
+				}
+			]
+		},
+		{
+			"id": "overlay.rivatuner",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "^(?:#\\s+)?C\\s+\\[(?<lib>(?:RTSSHooks64|RTSSHooks)\\.dll)\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "RivaTuner's overlay crashed the game",
+				"tr": "RivaTuner kaplaması oyunu çökertti"
+			},
+			"explanation": {
+				"en": "RivaTuner Statistics Server, which comes with MSI Afterburner, draws its overlay inside games ({lib}) and broke Minecraft. Close it while you play, or in RivaTuner add javaw.exe and set its Application detection level to None.",
+				"tr": "MSI Afterburner ile gelen RivaTuner Statistics Server, kaplamasını oyunların içine çiziyor ({lib}) ve Minecraft'ı bozdu. Oynarken onu kapat ya da RivaTuner'da javaw.exe'yi ekleyip Application detection level ayarını None yap."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "overlay.steam",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "^(?:#\\s+)?C\\s+\\[(?<lib>(?:GameOverlayRenderer64|GameOverlayRenderer)\\.dll)\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "Steam's overlay crashed the game",
+				"tr": "Steam kaplaması oyunu çökertti"
+			},
+			"explanation": {
+				"en": "Steam draws its in-game overlay inside Minecraft ({lib}) when Kite is started from Steam, and the overlay broke the game. In Steam, open Kite's Properties and turn off the Steam Overlay while in-game.",
+				"tr": "Kite Steam'den açıldığında Steam, oyun içi kaplamasını Minecraft'ın içine çiziyor ({lib}) ve bu kaplama oyunu bozdu. Steam'de Kite'ın Özellikler'ini aç ve oyun içi Steam arayüzünü kapat."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "overlay.discord",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "^(?:#\\s+)?C\\s+\\[(?<lib>(?:DiscordHook64|DiscordHook)\\.dll)\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "Discord's overlay crashed the game",
+				"tr": "Discord kaplaması oyunu çökertti"
+			},
+			"explanation": {
+				"en": "Discord draws its in-game overlay inside Minecraft ({lib}), and it broke the game. Turn the overlay off in Discord's settings (Game Overlay), at least for Minecraft.",
+				"tr": "Discord, oyun içi kaplamasını Minecraft'ın içine çiziyor ({lib}) ve bu oyunu bozdu. Discord ayarlarındaki oyun içi kaplamayı en azından Minecraft için kapat."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "overlay.obs",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "^(?:#\\s+)?C\\s+\\[(?<lib>(?:graphics-hook64|graphics-hook32)\\.dll)\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "OBS game capture crashed the game",
+				"tr": "OBS oyun yakalaması oyunu çökertti"
+			},
+			"explanation": {
+				"en": "OBS Studio's Game Capture puts its own code inside the game to record it ({lib}), and that broke Minecraft. Record Minecraft with Window Capture instead, or close OBS while you play.",
+				"tr": "OBS Studio'nun Oyun Yakalama kaynağı, kaydetmek için oyunun içine kendi kodunu koyuyor ({lib}) ve bu Minecraft'ı bozdu. Minecraft'ı Pencere Yakalama ile kaydet ya da oynarken OBS'yi kapat."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "overlay.nvidia",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "^(?:#\\s+)?C\\s+\\[(?<lib>(?:nvspcap64|nvspcap)\\.dll)\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "NVIDIA's overlay crashed the game",
+				"tr": "NVIDIA kaplaması oyunu çökertti"
+			},
+			"explanation": {
+				"en": "The NVIDIA App (or GeForce Experience) puts its overlay and recording inside games ({lib}), and that broke Minecraft. Turn its in-game overlay off in its settings.",
+				"tr": "NVIDIA App (ya da GeForce Experience), kaplamasını ve kaydını oyunların içine koyuyor ({lib}) ve bu Minecraft'ı bozdu. Ayarlarından oyun içi kaplamayı kapat."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "native.antivirus-hook",
+			"priority": 75,
+			"match": {
+				"any": [
+					{
+						"re": "^(?:#\\s+)?C\\s+\\[(?<lib>(?:aswhook|avghook[ax]|atcuf(?:32|64)|hmpalert|sysfer|mbae(?:64)?|guard(?:32|64)|TmUmEvt(?:64)?|WRusr|CyMemDef(?:64)?|umppc\\d{3,6})\\.dll)\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						],
+						"i": true
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"suppresses": [
+				"native.unknown-library"
+			],
+			"title": {
+				"en": "Your antivirus crashed the game",
+				"tr": "Antivirüs programın oyunu çökertti"
+			},
+			"explanation": {
+				"en": "Your antivirus or security program puts its own code into other programs to watch them ({lib}), and that broke Minecraft. Add Java (javaw.exe) and Kite as exceptions in it, or turn its exploit protection off for them.",
+				"tr": "Antivirüs ya da güvenlik programın, izlemek için başka programların içine kendi kodunu koyuyor ({lib}) ve bu Minecraft'ı bozdu. Programda Java'yı (javaw.exe) ve Kite'ı istisna olarak ekle ya da onlar için istismar korumasını kapat."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "native.jvm-crash",
+			"priority": 40,
+			"fallback": true,
+			"match": {
+				"any": [
+					{
+						"re": "^#\\s+V\\s+\\[(?<lib>(?:jvm\\.dll|libjvm\\.(?:so|dylib)))\\+0x",
 						"in": [
 							"hsErr",
 							"log"
@@ -2288,12 +2623,97 @@
 				"lib": "text"
 			},
 			"title": {
-				"en": "The graphics driver crashed",
-				"tr": "Ekran kartı sürücüsü çöktü"
+				"en": "Java itself crashed",
+				"tr": "Java'nın kendisi çöktü"
 			},
 			"explanation": {
-				"en": "Java crashed inside the graphics driver ({lib}), not in Minecraft or a mod. Update the driver; if it keeps happening, turn off shaders or switch the graphics card.",
-				"tr": "Java, Minecraft'ta ya da bir modda değil, ekran kartı sürücüsünün içinde ({lib}) çöktü. Sürücüyü güncelle; sürerse gölgelendiricileri kapat ya da ekran kartını değiştir."
+				"en": "The game stopped inside Java ({lib}), not in Minecraft's or a mod's code. That is usually a Java bug, a custom Java argument or faulty memory. Kite doesn't know this crash yet, so sending it helps. The Java Kite picks for this version is the safest to try.",
+				"tr": "Oyun Minecraft'ın ya da bir modun kodunda değil, Java'nın içinde ({lib}) durdu. Bu genelde bir Java hatası, özel bir Java argümanı ya da arızalı bellektir. Kite bu çökmeyi henüz tanımıyor, göndermen yardımcı olur. Denemesi en güvenli olan, Kite'ın bu sürüm için seçtiği Java."
+			},
+			"fixes": [
+				{
+					"action": "useRecommendedJava",
+					"label": {
+						"en": "Let Kite choose",
+						"tr": "Kite seçsin"
+					}
+				}
+			]
+		},
+		{
+			"id": "native.unknown-library",
+			"priority": 38,
+			"fallback": true,
+			"match": {
+				"any": [
+					{
+						"re": "^#\\s+C\\s+\\[(?<lib>[^\\]\\s+]{1,80})\\+0x",
+						"in": [
+							"hsErr",
+							"log"
+						]
+					}
+				]
+			},
+			"captures": {
+				"lib": "text"
+			},
+			"title": {
+				"en": "The game crashed in {lib}",
+				"tr": "Oyun {lib} içinde çöktü"
+			},
+			"explanation": {
+				"en": "Java crashed in native code, inside {lib}: not a Java error a mod leaves behind. Kite doesn't know this file yet; send the crash so the next rules can tell. Updating the graphics driver helps most often.",
+				"tr": "Java, yerel kodda {lib} içinde çöktü; bu bir modun bıraktığı bir Java hatası değil. Kite bu dosyayı henüz tanımıyor; sonraki kuralların söyleyebilmesi için çökmeyi gönder. Çoğu zaman ekran kartı sürücüsünü güncellemek işe yarar."
+			},
+			"fixes": [
+				{
+					"action": "uploadLog",
+					"label": {
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
+					}
+				}
+			]
+		},
+		{
+			"id": "exit.windows-native-crash",
+			"priority": 34,
+			"fallback": true,
+			"when": {
+				"os": [
+					"windows"
+				],
+				"exitCode": [
+					-1073740791,
+					3221226505,
+					-1073741795,
+					3221225501,
+					-1073741571,
+					3221225725,
+					-1073740940,
+					3221226356,
+					-2147483645,
+					2147483651
+				]
+			},
+			"match": {
+				"any": [
+					{
+						"re": "^Process (?:crashed with exitcode|exited with code) -?\\d+\\.$",
+						"in": [
+							"log"
+						]
+					}
+				]
+			},
+			"title": {
+				"en": "Windows stopped the game",
+				"tr": "Windows oyunu durdurdu"
+			},
+			"explanation": {
+				"en": "Native code in the game broke and Windows closed it: not a Java error a mod leaves behind. That is most often the graphics driver or a program that puts itself into games (an overlay, an antivirus). Update the driver and turn overlays off.",
+				"tr": "Oyundaki yerel kod bozuldu ve Windows oyunu kapattı; bu bir modun bıraktığı bir Java hatası değil. Çoğu zaman ekran kartı sürücüsü ya da kendini oyunlara sokan bir programdır (kaplama, antivirüs). Sürücüyü güncelle, kaplamaları kapat."
 			},
 			"fixes": [
 				{
@@ -2768,6 +3188,7 @@
 		{
 			"id": "exit.windows-access-violation",
 			"priority": 35,
+			"fallback": true,
 			"when": {
 				"os": [
 					"windows"
@@ -2792,8 +3213,8 @@
 				"tr": "Oyun Java'nın dışında çöktü"
 			},
 			"explanation": {
-				"en": "Windows closed the game because native code broke (code 0xC0000005), most often the graphics driver or an overlay (Discord, recording apps). Update the driver and turn overlays off.",
-				"tr": "Windows oyunu kapattı çünkü yerel kod bozuldu (kod 0xC0000005); çoğunlukla ekran kartı sürücüsü ya da bir kaplama (Discord, ekran kaydı uygulaması). Sürücüyü güncelle, kaplamaları kapat."
+				"en": "Windows closed the game because native code broke, most often the graphics driver or an overlay (Discord, recording apps). Update the driver and turn overlays off.",
+				"tr": "Windows oyunu kapattı çünkü yerel kod bozuldu; çoğunlukla ekran kartı sürücüsü ya da bir kaplama (Discord, ekran kaydı uygulaması). Sürücüyü güncelle, kaplamaları kapat."
 			},
 			"fixes": [
 				{
@@ -2801,6 +3222,13 @@
 					"label": {
 						"en": "Use the faster graphics card",
 						"tr": "Güçlü ekran kartını kullan"
+					}
+				},
+				{
+					"action": "turnOffShaders",
+					"label": {
+						"en": "Turn off shaders",
+						"tr": "Gölgelendiricileri kapat"
 					}
 				}
 			]
