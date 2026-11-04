@@ -10,6 +10,10 @@ import Kite.Theme
  * five literal lines. Roles up from title use the heading face and the token weight; caption, label and body stay at
  * Font.Normal (the token weight of label is Medium, but most label text has always been regular), so set
  * font.weight when a label should be Medium. Any Text property set on the instance wins over these defaults.
+ *
+ * Plain text by default: much of what this shows comes from someone else (instance, world, server and mod names,
+ * descriptions from mod sites), and AutoText would read tags in it as markup. A site that shows markup it made safe
+ * itself sets textFormat.
  */
 Text {
     id: root
@@ -64,4 +68,5 @@ Text {
     font.pixelSize: root.spec.pixelSize
     font.weight: root.regularWeight ? Font.Normal : root.spec.weight
     font.letterSpacing: root.role === "overline" ? Theme.type.overline.letterSpacing : 0
+    textFormat: Text.PlainText
 }

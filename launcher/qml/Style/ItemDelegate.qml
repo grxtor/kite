@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
@@ -25,13 +24,20 @@ T.ItemDelegate {
     icon.color: !control.enabled ? Theme.palette.textDisabled
               : control.highlighted ? Theme.palette.accentText : Theme.palette.textPrimary
 
-    contentItem: IconLabel {
+    // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
+    contentItem: IconText {
         spacing: control.spacing
         mirrored: control.mirrored
         display: control.display
-        alignment: control.display === IconLabel.IconOnly || control.display === IconLabel.TextUnderIcon ? Qt.AlignCenter : Qt.AlignLeft
+        alignment: control.display === T.AbstractButton.IconOnly || control.display === T.AbstractButton.TextUnderIcon
+                   ? Qt.AlignCenter : Qt.AlignLeft
 
-        icon: control.icon
+        iconName: control.icon.name
+        iconSource: control.icon.source
+        iconWidth: control.icon.width
+        iconHeight: control.icon.height
+        iconColor: control.icon.color
+        iconCache: control.icon.cache
         text: control.text
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize

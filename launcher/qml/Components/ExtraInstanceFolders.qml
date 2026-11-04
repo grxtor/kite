@@ -81,6 +81,7 @@ Column {
                         Text {
                             Layout.fillWidth: true
                             text: row.modelData
+                            textFormat: Text.PlainText
                             elide: Text.ElideMiddle
                             color: Theme.palette.textPrimary
                             font.family: Theme.font.mono

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import QtQuick
-import QtQuick.Controls.impl
 import QtQuick.Templates as T
 import Kite.Theme
 
@@ -26,7 +25,8 @@ T.MenuItem {
     icon.height: Theme.icon.sm
     icon.color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
 
-    contentItem: IconLabel {
+    // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
+    contentItem: IconText {
         readonly property real arrowPadding: control.subMenu && control.arrow ? control.arrow.width + control.spacing : 0
         readonly property real indicatorPadding: control.checkable && control.indicator ? control.indicator.width + control.spacing : 0
         leftPadding: !control.mirrored ? indicatorPadding : arrowPadding
@@ -37,16 +37,16 @@ T.MenuItem {
         display: control.display
         alignment: Qt.AlignLeft
 
-        // Field by field, not `icon: control.icon`: a submenu's entry gets its
-        // Menu's icon wholesale, with no size or colour, and drew it at the
-        // SVG's own size.
-        icon.source: control.icon.source
-        icon.name: control.icon.name
-        icon.width: Theme.icon.sm
-        icon.height: Theme.icon.sm
-        icon.color: control.subMenu ? (control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled)
-                                    : control.icon.color
-        icon.cache: control.icon.cache
+        // The menu's own size and colour, not the control's: a submenu's entry
+        // gets its Menu's icon wholesale, with no size or colour, and drew it
+        // at the SVG's own size.
+        iconSource: control.icon.source
+        iconName: control.icon.name
+        iconWidth: Theme.icon.sm
+        iconHeight: Theme.icon.sm
+        iconColor: control.subMenu ? (control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled)
+                                   : control.icon.color
+        iconCache: control.icon.cache
         text: control.text
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize

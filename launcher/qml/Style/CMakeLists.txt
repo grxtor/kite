@@ -28,6 +28,7 @@ qt_add_qml_module(Kite_qml_style
         Dialog.qml
         FocusRing.qml
         Frame.qml
+        IconText.qml
         ItemDelegate.qml
         Label.qml
         Menu.qml

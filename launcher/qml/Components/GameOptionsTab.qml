@@ -221,6 +221,7 @@ TabScroll {
                         Text {
                             Layout.preferredWidth: parent.width / 2
                             text: key
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: Theme.palette.textPrimary
                             font.family: Theme.font.mono
@@ -229,6 +230,7 @@ TabScroll {
                         Text {
                             Layout.fillWidth: true
                             text: value
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: Theme.palette.textSecondary
                             font.family: Theme.font.mono

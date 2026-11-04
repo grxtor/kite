@@ -171,6 +171,22 @@ class FakeDrop : public QObject
 
 namespace
 {
+	/* Every shown item at or under @p item that draws @p text itself (it has
+	 * a textFormat), for a check that the text is shown as written. */
+	QList<QQuickItem*> textItemsShowing(QQuickItem* item, const QString& text)
+	{
+		QList<QQuickItem*> found;
+		if (item->isVisible() && item->property("textFormat").isValid() &&
+			item->property("text").toString() == text) {
+			found.append(item);
+		}
+		const auto children = item->childItems();
+		for (QQuickItem* child : children) {
+			found += textItemsShowing(child, text);
+		}
+		return found;
+	}
+
 	/* A fake FriendsController for the friends views: ready, with these
 	 * friends and invites. */
 	QString fakeFriends(const QString& friends, const QString& invites)
@@ -1345,6 +1361,130 @@ class QmlModuleTest : public QObject
 					 .toString(),
 				 file.toString());
 	}
+
+	/* Names from other people reach every one of these: each draws its text as
+	 * written, tags and ampersand included, and a window showing them all
+	 * renders. */
+	void textViewsShowMarkupAsWritten()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import QtQuick.Controls
+			import Kite.Components
+			Window {
+				width: 900; height: 900; visible: true
+				readonly property string sample: "<b>x</b> & <i>y</i>"
+				Column {
+					Copy { objectName: "copy"; text: sample }
+					Label { objectName: "label"; text: sample }
+					Button { objectName: "button"; text: sample; icon.source: Icons.url("play") }
+					ToolButton { objectName: "toolButton"; text: sample }
+					ItemDelegate { objectName: "itemDelegate"; width: 400; text: sample }
+					TabBar { TabButton { objectName: "tabButton"; text: sample } }
+					CheckBox { objectName: "checkBox"; text: sample }
+					RadioButton { objectName: "radioButton"; text: sample }
+					Switch { objectName: "switch"; text: sample }
+					ComboBox { objectName: "comboBox"; model: [sample] }
+					TextField { objectName: "textField"; placeholderText: sample }
+					TabListRow { objectName: "tabListRow"; width: 400; title: sample; meta: sample }
+				}
+				ToolTip { id: tip; objectName: "toolTip"; text: sample }
+				Menu { id: menu; objectName: "menu"; MenuItem { objectName: "menuItem"; text: sample } }
+				Component.onCompleted: { tip.open(); menu.popup(0, 0) }
+			})",
+						  QUrl(QStringLiteral("qrc:/test/Markup.qml")));
+		QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+		std::unique_ptr<QObject> object(component.create());
+		auto* window = qobject_cast<QQuickWindow*>(object.get());
+		QVERIFY2(window, qPrintable(component.errorString()));
+		QVERIFY(QTest::qWaitForWindowExposed(window));
+		const QString sample = window->property("sample").toString();
+
+		const auto shownAsWritten = [&](QQuickItem* item, int expected) {
+			const auto items = textItemsShowing(item, sample);
+			if (items.size() != expected) {
+				qWarning() << item << "draws the sample" << items.size() << "times";
+				return false;
+			}
+			for (QQuickItem* text : items) {
+				if (text->property("textFormat").toInt() != Qt::PlainText) {
+					qWarning() << text << "under" << item << "is not plain text";
+					return false;
+				}
+			}
+			return true;
+		};
+		for (const char* name : {"copy", "label", "button", "toolButton", "itemDelegate", "tabButton",
+								 "checkBox", "radioButton", "switch", "textField"}) {
+			auto* item = window->findChild<QQuickItem*>(QLatin1String(name));
+			QVERIFY2(item, name);
+			QVERIFY2(shownAsWritten(item, 1), name);
+		}
+		QVERIFY(shownAsWritten(window->findChild<QQuickItem*>(QStringLiteral("tabListRow")), 2));
+		auto* comboPopup = window->findChild<QQuickItem*>(QStringLiteral("comboBox"))
+							   ->property("popup").value<QObject*>();
+		QVERIFY(comboPopup && QMetaObject::invokeMethod(comboPopup, "open"));
+		QTRY_VERIFY(comboPopup->property("opened").toBool());
+		QTRY_VERIFY(shownAsWritten(comboPopup->property("contentItem").value<QQuickItem*>(), 1));
+		auto* tip = window->findChild<QObject*>(QStringLiteral("toolTip"));
+		QTRY_VERIFY(tip->property("opened").toBool());
+		QVERIFY(shownAsWritten(tip->property("contentItem").value<QQuickItem*>(), 1));
+		auto* menuItem = window->findChild<QQuickItem*>(QStringLiteral("menuItem"));
+		QVERIFY(menuItem);
+		QVERIFY(shownAsWritten(menuItem, 1));
+
+		QVERIFY(!window->grabWindow().isNull());
+	}
+
+	/* The style's IconText sizes itself as Qt's IconLabel does in every
+	 * display, including a button that starts icon-only and then shows its
+	 * text (a toolbar that has room again). */
+	void iconTextSizesLikeIconLabel()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import QtQuick.Controls.impl
+			import QtQuick.Templates as T
+			import Kite.Components
+			import Kite.Style as KiteStyle
+			Item {
+				property int display: T.AbstractButton.IconOnly
+				IconLabel {
+					id: qt
+					display: parent.display
+					icon.source: Icons.url("folder"); icon.width: 16; icon.height: 16
+					text: "Open folder"; spacing: 8; font.pixelSize: 14
+				}
+				KiteStyle.IconText {
+					id: ours
+					display: parent.display
+					iconSource: Icons.url("folder"); iconWidth: 16; iconHeight: 16
+					text: "Open folder"; spacing: 8; font.pixelSize: 14
+				}
+				readonly property size qtSize: Qt.size(qt.implicitWidth, qt.implicitHeight)
+				readonly property size ourSize: Qt.size(ours.implicitWidth, ours.implicitHeight)
+			})",
+						  QUrl(QStringLiteral("qrc:/test/IconText.qml")));
+		std::unique_ptr<QObject> item(component.create());
+		QVERIFY2(item, qPrintable(component.errorString()));
+
+		const int iconOnly = 0;
+		const int textOnly = 1;
+		const int textBesideIcon = 2;
+		const int textUnderIcon = 3;
+		for (const int display : {iconOnly, textBesideIcon, textOnly, iconOnly, textUnderIcon, textBesideIcon}) {
+			item->setProperty("display", display);
+			QTRY_VERIFY(item->property("qtSize").toSizeF().width() > 0);
+			QTRY_COMPARE(item->property("ourSize").toSizeF(), item->property("qtSize").toSizeF());
+		}
+	}
+
 };
 
 int main(int argc, char* argv[])

@@ -56,6 +56,7 @@ ColumnLayout {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: parent.text
+            textFormat: Text.PlainText
             color: root.inkSecondary
             font.family: Theme.font.family
             font.pixelSize: root.metaSize
@@ -69,6 +70,7 @@ ColumnLayout {
         id: nameText
         Layout.fillWidth: true
         text: root.name
+        textFormat: Text.PlainText
         fontSizeMode: Text.HorizontalFit
         minimumPixelSize: Theme.type.heading.pixelSize
         elide: Text.ElideRight
@@ -101,6 +103,7 @@ ColumnLayout {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: Format.crashLine(root.crashCause)
+                textFormat: Text.PlainText
                 color: Theme.palette.warning
                 font.family: Theme.font.family
                 font.pixelSize: root.metaSize

@@ -52,6 +52,7 @@ HomeRowBase {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: parent.parent.text
+                textFormat: Text.PlainText
                 color: parent.parent.ink
                 font.family: Theme.font.family
                 font.pixelSize: Theme.type.overline.pixelSize
@@ -129,6 +130,7 @@ HomeRowBase {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.playTimeText
+                        textFormat: Text.PlainText
                         color: root.inkSecondary
                         font.family: Theme.font.family
                         font.pixelSize: Theme.type.overline.pixelSize

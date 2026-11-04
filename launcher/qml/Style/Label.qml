@@ -15,6 +15,9 @@ T.Label {
     font.weight: Theme.type.body.weight
 
     color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
+    // Plain unless a site says otherwise: dialog titles and labels often carry a name from someone else (an
+    // instance, a world, a pack), and AutoText would read its tags as markup.
+    textFormat: Text.PlainText
     // accentText, not accent: the shade the palette guarantees to read as
     // text on its surfaces.
     linkColor: Theme.palette.accentText

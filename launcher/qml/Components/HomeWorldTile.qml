@@ -103,6 +103,7 @@ AbstractButton {
                 id: nameText
                 width: parent.width
                 text: control.worldName
+                textFormat: Text.PlainText
                 elide: Text.ElideRight
                 color: control.nameInk
                 font.family: Theme.font.family
@@ -119,6 +120,7 @@ AbstractButton {
                     id: instanceText
                     width: Math.max(0, Math.min(implicitWidth, metaRow.width - whenText.implicitWidth))
                     text: control.instanceName
+                    textFormat: Text.PlainText
                     elide: Text.ElideRight
                     color: control.metaInk
                     font.family: Theme.font.family
@@ -128,6 +130,7 @@ AbstractButton {
                     id: whenText
                     readonly property string when: Format.lastPlayed(control.lastPlayed)
                     text: (control.instanceName.length > 0 && when.length > 0 ? "  •  " : "") + when
+                    textFormat: Text.PlainText
                     color: control.metaInk
                     font.family: Theme.font.family
                     font.pixelSize: control.metaSize
