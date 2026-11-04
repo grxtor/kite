@@ -16,6 +16,10 @@ Menu {
     property string personUuid
     property string personName
     property bool canRemove: true
+    // Where the ⋯ that opened it ends, in this menu's parent: the menu hangs from there, right edges in line. Its
+    // width settles once its entries are laid out, so its x follows it rather than being set once.
+    property real anchorRight: 0
+    property real anchorBottom: 0
 
     signal removeRequested(string uuid, string name)
     // `friend`: they are on your list, so blocking also removes them.
@@ -25,11 +29,14 @@ Menu {
         root.personUuid = uuid
         root.personName = name
         root.canRemove = removable
-        var at = button.mapToItem(root.parent, button.width, button.height + Theme.space.xs)
-        root.x = at.x - root.width
-        root.y = at.y
+        var at = button.mapToItem(root.parent, button.width, button.height)
+        root.anchorRight = at.x
+        root.anchorBottom = at.y
         root.open()
     }
+
+    x: root.anchorRight - root.width
+    y: root.anchorBottom + Theme.space.xs
 
     MenuEntry {
         visible: root.canRemove

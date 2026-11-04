@@ -18,7 +18,8 @@ AbstractButton {
 
     readonly property int tipDelayMs: 500
 
-    implicitHeight: Theme.control.height
+    // As tall as Join above it.
+    implicitHeight: Theme.control.heightSm
     hoverEnabled: true
     focusPolicy: Qt.TabFocus
     Accessible.name: qsTr("Message %1").arg(root.name)

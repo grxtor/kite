@@ -33,6 +33,7 @@ Popup {
     readonly property var presence: Format.friendPresence(root.friend)
 
     readonly property int cardWidth: 296
+    // One scale for heads: 32 in rows, 40 in the strip, 48 here.
     readonly property int headSize: 48
 
     signal joinRequested(var friend)
@@ -60,8 +61,13 @@ Popup {
     x: -root.width - Theme.space.sm
     y: Math.round(root.centreY - root.height / 2)
     width: root.cardWidth
-    padding: Theme.space.lg
+    // Compact for a few lines, like Discord's popout: menus' glass, a smaller corner and padding than a dialog's.
+    padding: Theme.space.md
     margins: Theme.space.sm
+    background: GlassSurface {
+        radius: Theme.radius.md
+        level: Theme.elevation.md
+    }
     // Esc only reaches a popup that has the focus.
     focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent

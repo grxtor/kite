@@ -35,7 +35,8 @@ Rectangle {
 
     visible: root.friend.state === "playing"
     implicitHeight: column.implicitHeight + Theme.space.md * 2
-    radius: Theme.radius.md
+    // Inside the card's corner, a step smaller.
+    radius: Theme.radius.sm
     color: Theme.palette.surfaceSunken
 
     ColumnLayout {
