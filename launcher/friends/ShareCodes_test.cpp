@@ -248,22 +248,24 @@ class ShareCodesTest : public QObject
 	{
 		const Entry optedOut{Kind::Mod, Platform::CurseForge, "306612", "4000000"};
 		const Entry badName{Kind::Mod, Platform::CurseForge, "1", "2"};
+		const Entry driveName{Kind::Mod, Platform::CurseForge, "3", "4"};
 		ShareContent::Resolved resolved;
 		ShareContent::addCurseForge(
-			resolved, {faithful(), optedOut, badName},
+			resolved, {faithful(), optedOut, badName, driveName},
 			json(R"({ "data": [
 				{ "id": 5432100, "modId": 238222, "fileName": "Faithful.zip", "fileLength": 99,
 				  "downloadUrl": "https:\/\/edge.forgecdn.net/files/Faithful.zip",
 				  "hashes": [ { "algo": 1, "value": "f00" } ] },
 				{ "id": 4000000, "modId": 306612, "fileName": "fabric-api.jar", "downloadUrl": null },
-				{ "id": 2, "modId": 1, "fileName": "../escape.jar" } ] })").value("data").toArray(),
+				{ "id": 2, "modId": 1, "fileName": "../escape.jar" },
+				{ "id": 4, "modId": 3, "fileName": "C:escape.jar" } ] })").value("data").toArray(),
 			array(R"([ { "id": 238222, "name": "Faithful 32x", "slug": "faithful-32x" } ])"));
 		QCOMPARE(resolved.items.size(), 2);
 		QCOMPARE(resolved.items.at(0).download.sha1, QStringLiteral("f00"));
 		QCOMPARE(resolved.items.at(0).download.name, QStringLiteral("Faithful 32x"));
 		QVERIFY(resolved.items.at(1).download.browserDownloadOnly);
 		QVERIFY(resolved.items.at(1).download.downloadUrl.contains("/306612/files/4000000/"));
-		QCOMPARE(resolved.missingNames, QStringList{"1"});
+		QCOMPARE(resolved.missingNames, (QStringList{"1", "3"}));
 		QCOMPARE(ShareContent::curseForgeIdsBody("fileIds", {"5432100", "4000000"}),
 				 QByteArray(R"({"fileIds":[5432100,4000000]})"));
 	}
