@@ -20,9 +20,6 @@
 
 #include "models/UpdateSettingsController.h"
 
-#include <algorithm>
-#include <cmath>
-
 UpdateSettingsController::UpdateSettingsController(QObject* parent)
 	: QObject(parent)
 {
@@ -33,8 +30,8 @@ UpdateSettingsController::~UpdateSettingsController() = default;
 void UpdateSettingsController::setBackend(Backend backend)
 {
 	m_backend = std::move(backend);
-	m_available = m_backend.automaticallyChecks && m_backend.setAutomaticallyChecks &&
-				  m_backend.intervalSeconds && m_backend.setIntervalSeconds &&
+	m_available = m_backend.automaticallyChecks &&
+				  m_backend.setAutomaticallyChecks && m_backend.lastCheck &&
 				  m_backend.checkNow;
 	emit changed();
 }
@@ -58,26 +55,35 @@ void UpdateSettingsController::setAutoCheck(bool check)
 	emit changed();
 }
 
-int UpdateSettingsController::intervalHours() const
+QString UpdateSettingsController::channel() const
+{
+	return m_available ? m_backend.channel : QString();
+}
+
+qint64 UpdateSettingsController::lastCheckedMs() const
 {
 	if (!m_available) {
 		return 0;
 	}
-	return static_cast<int>(
-		std::lround(m_backend.intervalSeconds() / secondsPerHour));
+	const QDateTime last = m_backend.lastCheck();
+	return last.isValid() ? last.toMSecsSinceEpoch() : 0;
 }
 
-void UpdateSettingsController::setIntervalHours(int hours)
+QString UpdateSettingsController::pendingVersion() const
 {
-	if (!m_available) {
-		return;
-	}
-	hours = std::max(hours, 0);
-	if (hours == intervalHours()) {
-		return;
-	}
-	m_backend.setIntervalSeconds(double(hours) * secondsPerHour);
-	emit changed();
+	return m_available && m_backend.pendingVersion ? m_backend.pendingVersion()
+												   : QString();
+}
+
+bool UpdateSettingsController::canInstallNow() const
+{
+	return m_available &&
+		   (!m_backend.canInstallNow || m_backend.canInstallNow());
+}
+
+QString UpdateSettingsController::managedBy() const
+{
+	return m_available ? m_backend.managedBy : QString();
 }
 
 void UpdateSettingsController::checkNow()
@@ -85,4 +91,17 @@ void UpdateSettingsController::checkNow()
 	if (m_available) {
 		m_backend.checkNow();
 	}
+}
+
+void UpdateSettingsController::installPendingNow()
+{
+	if (m_available && m_backend.installPendingNow && canInstallNow() &&
+		!pendingVersion().isEmpty()) {
+		m_backend.installPendingNow();
+	}
+}
+
+void UpdateSettingsController::refresh()
+{
+	emit changed();
 }

@@ -486,12 +486,25 @@ if(UNIX AND APPLE)
         set(MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION_KEY
             "<key>LSMinimumSystemVersion</key>\n    <string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>")
     endif()
-    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "" CACHE STRING "Public key for Sparkle update feed")
+    # Sparkle installs an update only when its archive carries an EdDSA signature by this key
+    # (SUPublicEDKey); the release workflow signs with the SPARKLE_ED_PRIVATE_KEY secret and fails if
+    # that secret is not this key's. Changing it strands every installed copy: Sparkle accepts a new
+    # key only from an update signed with the old one.
+    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "1xiINdScFsbf7TYDhMqXWSVkZKl3/VWODTwwa6f4Z0o=" CACHE STRING "Public key for Sparkle update feed")
+    # Empty: the appcast the release workflow attaches to the latest GitHub release for this build
+    # (appcast-<Kite_BUILD_ARTIFACT>.xml). A local build has no artifact name and so no updater.
     set(MACOSX_SPARKLE_UPDATE_FEED_URL "" CACHE STRING "URL for Sparkle update feed")
+    if(MACOSX_SPARKLE_UPDATE_FEED_URL STREQUAL "" AND NOT Kite_BUILD_ARTIFACT STREQUAL "")
+        set(MACOSX_SPARKLE_UPDATE_FEED_URL
+            "${Kite_UPDATER_GITHUB_REPO}/releases/latest/download/appcast-${Kite_BUILD_ARTIFACT}.xml")
+    endif()
 
-    set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.8.0/Sparkle-2.8.0.tar.xz" CACHE STRING "URL to Sparkle release archive")
-    set(MACOSX_SPARKLE_SHA256 "fd5681ee92bf238aaac2d08214ceaf0cc8976e452d7f882d80bac1e61581f3b1" CACHE STRING "SHA256 checksum for Sparkle release archive")
-    set(MACOSX_SPARKLE_DIR "${CMAKE_BINARY_DIR}/frameworks/Sparkle")
+    # Pinned, not cache variables: a build directory configured before a bump must not keep fetching
+    # the old archive. The directory is versioned for the same reason.
+    set(MACOSX_SPARKLE_VERSION "2.10.0")
+    set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/${MACOSX_SPARKLE_VERSION}/Sparkle-${MACOSX_SPARKLE_VERSION}.tar.xz")
+    set(MACOSX_SPARKLE_SHA256 "c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c")
+    set(MACOSX_SPARKLE_DIR "${CMAKE_BINARY_DIR}/frameworks/Sparkle-${MACOSX_SPARKLE_VERSION}")
 
     install(FILES ${Kite_Branding_ICNS} DESTINATION ${RESOURCES_DEST_DIR} RENAME ${Kite_AppID}.icns)
 

@@ -44,10 +44,12 @@ class KiteExternalUpdater : public ExternalUpdater
 	 * \a autoCheckDefault is what "check automatically" means for an installation that has never answered; it
 	 * applies once and is then written to the config, so a user who turned checks off before the updater kept
 	 * a config of its own does not get them back on.
-	 * Starts the automatic check schedule and, for the "On Launch" interval, performs a silent check before
-	 * returning. */
+	 * \a managedBy names the package manager that updates this installation (UpdateLockFile::managedBy(), or
+	 * "flatpak"); then a release is only announced, with what to run.
+	 * With automatic checks on, a silent check runs shortly after start and then once a day. */
 	KiteExternalUpdater(const QString& appDir, const QString& dataDir,
-						  bool autoCheckDefault = true);
+						bool autoCheckDefault = true,
+						const QString& managedBy = QString());
 	~KiteExternalUpdater() override;
 
 	//! Interactive check: shows progress, and reports even a negative result.
@@ -59,12 +61,22 @@ class KiteExternalUpdater : public ExternalUpdater
 	void checkForUpdates(bool triggeredByUser);
 
 	bool getAutomaticallyChecksForUpdates() override;
-	double getUpdateCheckInterval() override;
 	bool getBetaAllowed() override;
 
 	void setAutomaticallyChecksForUpdates(bool check) override;
-	void setUpdateCheckInterval(double seconds) override;
 	void setBetaAllowed(bool allowed) override;
+
+	QDateTime lastCheck() override;
+	QString pendingInstall() override;
+	QString managedBy() override;
+	void installPendingNow() override;
+	void applicationExiting() override;
+
+	//! How to name \a managedBy to the user ("scoop" -> "Scoop").
+	static QString managerDisplayName(const QString& managedBy);
+
+	//! What to tell the user to run, when \a managedBy updates Kite.
+	static QString managedUpdateHint(const QString& managedBy);
 
 	/*! Where the updater sits relative to the installation root: at the root on Windows, in bin/ elsewhere.
 	 * Application uses it to decide whether updates are available at all. */
@@ -76,10 +88,14 @@ class KiteExternalUpdater : public ExternalUpdater
 
   private:
 	//! Ask, remember the answer, then act on it.
-	void offerUpdate(const QString& versionName, const QString& versionTag,
-					 const QString& releaseNotes, bool triggeredByUser);
+	void offerUpdate(const QString& versionTag, const QString& releaseNotes,
+					 bool triggeredByUser);
 
-	//! Hand the install over to the updater and get out of its way.
+	/*! Starts kite-updater on the install of \a versionTag, detached. \a relaunch: whether it starts
+	 * Kite again once it is done. False, with the reason shown, when it could not be started. */
+	bool startInstall(const QString& versionTag, bool relaunch);
+
+	//! startInstall(), then get out of the updater's way: it waits for this process to be gone.
 	void performUpdate(const QString& versionTag);
 
 	//! Arm, re-arm or disarm the schedule to match the current preferences.
@@ -116,7 +132,12 @@ class KiteExternalUpdater : public ExternalUpdater
 
 	bool m_allowBeta = false;
 	bool m_autoCheck = true;
-	double m_updateInterval = 0.0;
+
+	QString m_managedBy;
+
+	//! Chosen with "Update when I close Kite": installed by applicationExiting().
+	QString m_pendingTag;
+	QString m_pendingVersion;
 
 	//! Guards against a second check while one is already running.
 	bool m_checking = false;

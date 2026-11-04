@@ -225,6 +225,11 @@ class Application : public QApplication, public LauncherContext
 
 	void addRunningInstance();
 	void subRunningInstance();
+	/* Keeps the updater from replacing Kite while a game started from it
+	 * runs. */
+	void tellUpdaterAboutGames();
+	//! Sparkle's relaunch into an update waits for a game to end.
+	void showInstallWaitsForGame();
 	bool shouldExitNow() const;
 
   private:
