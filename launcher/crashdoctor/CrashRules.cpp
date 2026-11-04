@@ -24,6 +24,7 @@
 #include <QSet>
 
 #include "CrashActions.h"
+#include "CrashExitCodes.h"
 
 namespace CrashDoctor
 {
@@ -34,6 +35,7 @@ namespace CrashDoctor
 		/// pattern stays far below it on the corpus.
 		constexpr int kMatchLimit = 2000000;
 		constexpr int kMaxFixes = 3;
+		constexpr int kMaxNotes = 3;
 		constexpr int kMaxPatterns = 8;
 		constexpr int kMaxTextLength = 400;
 
@@ -195,10 +197,14 @@ namespace CrashDoctor
 			if (when.contains("memoryRoom")) {
 				out->memoryRoom = when.value("memoryRoom").toBool();
 			}
+			// Signed or unsigned: a Windows status matches in both forms.
 			for (const QJsonValue& code : when.value("exitCode").toArray()) {
-				out->exitCodes.append(code.toInt());
+				if (const auto folded = ExitCodes::fromNumber(code.toInteger())) {
+					out->exitCodes.append(*folded);
+				}
 			}
 			out->exitStatus = when.value("exitStatus").toString();
+			out->mods = strings(when.value("mods"));
 			const QJsonObject inSet = when.value("inSet").toObject();
 			for (auto it = inSet.begin(); it != inSet.end(); ++it) {
 				out->inSet.insert(it.key(), it.value().toString());
@@ -289,6 +295,7 @@ namespace CrashDoctor
 			if (rule.priority < 0 || rule.priority > 100) {
 				return fail(QStringLiteral("priority out of range"));
 			}
+			rule.fallback = object.value("fallback").toBool();
 			const QJsonValue key = object.value("key");
 			rule.key = key.isArray() ? strings(key)
 				: key.isString()	 ? QStringList{key.toString()}
@@ -393,6 +400,27 @@ namespace CrashDoctor
 						}
 					}
 				}
+			}
+
+			for (const QJsonValue& item : object.value("notes").toArray()) {
+				if (rule.notes.size() == kMaxNotes) {
+					break;
+				}
+				const QJsonObject note = item.toObject();
+				Note parsed;
+				readConditions(note.value("when").toObject(), &parsed.when);
+				parsed.text = note.value("text").toObject();
+				if (!hasBothLanguages(parsed.text)) {
+					return fail(QStringLiteral("note needs en and tr"));
+				}
+				for (const QJsonValue& value : parsed.text) {
+					for (const QString& placeholder : placeholders(value.toString())) {
+						if (!names.contains(placeholder)) {
+							return fail(QStringLiteral("unknown placeholder %1").arg(placeholder));
+						}
+					}
+				}
+				rule.notes.append(parsed);
 			}
 
 			const QJsonArray fixes = object.value("fixes").toArray();

@@ -1,0 +1,8 @@
+{
+ "note": "",
+ "verify": false,
+ "docs": {
+  "hsErr": "#\n# A fatal error has been detected by the Java Runtime Environment:\n#\n#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb3c1d2e4f, pid=8124, tid=10240\n#\n# JRE version: OpenJDK Runtime Environment Microsoft-9388422 (21.0.5+11) (build 21.0.5+11-LTS)\n# Java VM: OpenJDK 64-Bit Server VM Microsoft-9388422 (21.0.5+11-LTS, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, windows-amd64)\n# Problematic frame:\n# C  [nvspcap64.dll+0x4e1f8]\n#\n# No core dump will be written. Minidumps are not enabled by default on client versions of Windows\n#\n# The crash happened outside the Java Virtual Machine in native code.\n# See problematic frame for where to report the bug.\n#\n\n---------------  T H R E A D  ---------------\n\nCurrent thread (0x0000021f6e4a1230):  JavaThread \"Render thread\" [_thread_in_native, id=10240, stack(0x000000b5c1a00000,0x000000b5c1b00000) (1024K)]\n\nStack: [0x000000b5c1a00000,0x000000b5c1b00000],  sp=0x000000b5c1afe1a0,  free space=1016k\nNative frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)\nC  [nvspcap64.dll+0x4e1f8]\nC  [opengl32.dll+0x2a1c3]\nC  [lwjgl.dll+0x13d6a]\nj  org.lwjgl.system.JNI.invokePI(JJ)I+0\nj  org.lwjgl.glfw.GLFW.glfwSwapBuffers(J)V+7\n\n",
+  "log": "[20:34:38] [Render thread/INFO]: Loaded 1290 recipes\nGame process exited with code -1073741819\nExiting with -1073741819\nProcess crashed with exitcode -1073741819.\n"
+ }
+}

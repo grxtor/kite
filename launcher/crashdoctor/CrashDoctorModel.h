@@ -35,9 +35,12 @@ class MinecraftInstance;
  * the parameters given here.
  *
  * Each cause: ruleId, title, explanation, line (the log line that shows it),
- * count, rows (one line per finding of a grouped card), fixes. Each fix:
- * action, label, params, runner ("fixer", "flow", "navigation"), confirm
- * (the question to ask first, "" for none).
+ * count, rows (one line per finding of a grouped card), detail (under the
+ * first cause of a native crash: how often it crashed like this before a
+ * start, and the exit code in words; else ""), fixes. Each fix: action,
+ * label, params, runner ("fixer", "flow", "navigation"), confirm (the question
+ * to ask first, "" for none), url (openDriverPage: Kite's address of the
+ * maker's driver page).
  *
  * Sending the crash to Kite (CrashDoctorModelSend.cpp): canSend while there is
  * one to send and it was not sent, sendState after, payload what goes, in
@@ -52,6 +55,8 @@ class CrashDoctorModel : public QObject
 	Q_PROPERTY(QString crashReport READ crashReport NOTIFY changed)
 	Q_PROPERTY(int exitCode READ exitCode NOTIFY changed)
 	Q_PROPERTY(bool hasExitCode READ hasExitCode NOTIFY changed)
+	/// "Exit code 0xC0000005 (memory access violation)", "Exit code 1", or "".
+	Q_PROPERTY(QString exitDetail READ exitDetail NOTIFY changed)
 	Q_PROPERTY(QString undoAction READ undoAction NOTIFY undoChanged)
 	Q_PROPERTY(bool canSend READ canSend NOTIFY sendChanged)
 	/// "", "sending", "queued" (no connection yet), "sent" or "failed".
@@ -76,6 +81,7 @@ class CrashDoctorModel : public QObject
 	QString crashReport() const;
 	int exitCode() const;
 	bool hasExitCode() const;
+	QString exitDetail() const;
 	/// The action the last fix of this instance was, while it can be undone.
 	QString undoAction() const;
 	bool canSend() const;

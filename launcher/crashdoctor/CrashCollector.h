@@ -85,6 +85,8 @@ namespace CrashDoctor
 		/// The rule of the last fix tried on this instance, and when.
 		QString lastFixRule;
 		QDateTime lastFixAt;
+		/// NativeCrashStreak::retried() of the instance before this run.
+		int retriedNativeCrashes = 0;
 	};
 
 	/// The outcome of one analysis, kept until the next launch.
@@ -120,6 +122,9 @@ namespace CrashDoctor
 		/// Found by rules that came after the crash (CrashFollowUp): the time
 		/// of the crash, invalid otherwise.
 		QDateTime solvedLaterFor;
+		/// This crash is a native one and the instance crashed like this this
+		/// many times lately before a later try started (0: not so).
+		int retriedNativeCrashes = 0;
 	};
 
 	/// Reads @p instance's settings and @p task's log (null: none).
@@ -133,6 +138,14 @@ namespace CrashDoctor
 	std::optional<QPair<int, QString>> exitFromLog(const QString& log);
 	/// The Java major CheckJava logged ("Java is version 17.0.15, ..."), or 0.
 	int javaFromLog(const QString& log);
+	/// The processes whose hs_err file would be this run's, each once: the JVM
+	/// that says it crashed ("pid=1234, tid=…", "hs_err_pid1234.log"), then the
+	/// one Kite started ("Minecraft process ID: 1234"), which is the game itself
+	/// only when it runs in Kite's own launcher JVM.
+	QList<qint64> jvmPidsFromLog(const QString& log);
+	/// Whether Iris or Oculus is installed (@p installed) and its settings in
+	/// <gameRoot>/config name a shader pack without turning shaders off.
+	bool shaderPackOn(const QString& gameRoot, const QSet<QString>& installed);
 
 	inline constexpr qsizetype kMaxLogBytes = 2 * 1024 * 1024;
 	inline constexpr qsizetype kMaxCrashReportBytes = 1024 * 1024;

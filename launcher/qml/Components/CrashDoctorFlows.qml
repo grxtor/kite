@@ -126,6 +126,10 @@ Item {
         case "openMemorySettings":
             root.navigateTab("settings")
             break
+        // The address is Kite's own (CrashActions::driverPage), never the rules'.
+        case "openDriverPage":
+            ExternalLinks.open(root, fix.url, true)
+            break
         }
     }
 

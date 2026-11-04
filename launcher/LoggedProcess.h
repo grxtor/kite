@@ -22,6 +22,7 @@
 
 #include <QProcess>
 #include "MessageLevel.h"
+#include "ProcessOutput.h"
 
 /* A basic process with line-based logging; hides some of QProcess's nastier
  * bits. */
@@ -74,8 +75,8 @@ class LoggedProcess : public QProcess
 #endif
 
   private:
-	QString m_err_leftover;
-	QString m_out_leftover;
+	ProcessOutput::LineDecoder m_err;
+	ProcessOutput::LineDecoder m_out;
 	bool m_killed = false;
 	State m_state = NotRunning;
 	int m_exit_code = 0;

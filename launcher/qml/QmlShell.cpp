@@ -820,6 +820,11 @@ void QmlShell::debugUseCrashRules(const QString& path)
 	CrashDoctorService::instance()->debugUseCatalog(path);
 }
 
+void QmlShell::debugUseCrashOs(const QString& os)
+{
+	CrashDoctorService::instance()->debugUseOs(os);
+}
+
 void QmlShell::debugClick(const QString& spec)
 {
 	const QStringList parts = spec.split(QLatin1Char(','));

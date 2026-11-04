@@ -29,7 +29,9 @@
 #include "crashdoctor/CrashActions.h"
 #include "crashdoctor/CrashCollector.h"
 #include "crashdoctor/CrashEngine.h"
+#include "crashdoctor/CrashExitCodes.h"
 #include "crashdoctor/CrashRules.h"
+#include "crashdoctor/CrashStreak.h"
 
 using namespace CrashDoctor;
 
@@ -43,7 +45,9 @@ using namespace CrashDoctor;
  */
 namespace
 {
-	constexpr int kCatalogRules = 41;
+	constexpr int kCatalogRules = 53;
+	constexpr int kAccessViolation = -1073741819;
+	constexpr qint64 kAccessViolationUnsigned = 3221225477LL;
 	constexpr int kBudgetMs = 8000;
 	constexpr int kNoiseLines = 20000;
 
@@ -279,6 +283,9 @@ class CrashEngineTest : public QObject
 		QVERIFY(!mac.isEmpty());
 		QVERIFY(mac.first().fixes.isEmpty());
 		facts.os = QStringLiteral("windows");
+		// One graphics card: there is no faster one to pick.
+		QVERIFY(analyse(m_catalog, {log, {}, {}}, facts, QStringLiteral("en")).first().fixes.isEmpty());
+		facts.severalGpus = true;
 		const QList<Cause> windows = analyse(m_catalog, {log, {}, {}}, facts, QStringLiteral("en"));
 		QCOMPARE(windows.first().fixes.first().action, QStringLiteral("useDedicatedGpu"));
 	}
@@ -422,6 +429,190 @@ class CrashEngineTest : public QObject
 		facts.memoryMb = 1024;
 		facts.systemMemoryMb = 2048;
 		QCOMPARE(facts.lowerMemoryMb(), 1024);
+	}
+
+	// A Windows status reads as words, in both of the forms it comes in; a
+	// plain code stays a number.
+	void windowsExitCodesInWords()
+	{
+		using namespace ExitCodes;
+		const QList<QPair<quint32, QString>> statuses{
+			{0xC0000005u, "memory access violation"}, {0xC0000409u, "stack buffer overrun"},
+			{0xC000001Du, "illegal instruction"},	   {0xC00000FDu, "stack overflow"},
+			{0xC0000374u, "heap corruption"},		   {0x80000003u, "breakpoint"}};
+		for (const auto& [code, meaning] : statuses) {
+			const int folded = static_cast<qint32>(code);
+			QVERIFY(windowsStatus(code));
+			QCOMPARE(windowsStatus(folded), windowsStatus(code));
+			QVERIFY(fromNumber(code).has_value());
+			QCOMPARE(*fromNumber(code), folded);
+			QCOMPARE(describe(folded), QStringLiteral("%1 (%2)").arg(hex(code), meaning));
+		}
+		QCOMPARE(describe(kAccessViolation), QStringLiteral("0xC0000005 (memory access violation)"));
+		for (const int plain : {-1, 0, 1, 134}) {
+			QVERIFY(!windowsStatus(plain));
+			QCOMPARE(describe(plain), QString::number(plain));
+		}
+		QVERIFY(!fromNumber(qint64(1) << 32));
+		QVERIFY(!fromNumber(-(qint64(1) << 32)));
+	}
+
+	// Kite's exit line and a rule's exitCode list fold the unsigned form, so
+	// both say the same crash.
+	void unsignedExitCodesAreFolded()
+	{
+		const auto exit = exitFromLog(QStringLiteral("Process crashed with exitcode 3221225477.\n"));
+		QVERIFY(exit.has_value());
+		QCOMPARE(exit->first, kAccessViolation);
+		QVERIFY(!exitFromLog(QStringLiteral("Process exited with code 99999999999.\n")).has_value());
+
+		const QJsonObject rule{
+			{"id", "test.unsigned"},
+			{"priority", 50},
+			{"when", QJsonObject{{"exitCode", QJsonArray{kAccessViolationUnsigned}}}},
+			{"match", QJsonObject{{"any", QJsonArray{QJsonObject{{"re", "boom"}, {"in", QJsonArray{"log"}}}}}}},
+			{"title", QJsonObject{{"en", "Boom"}, {"tr", "Bum"}}},
+			{"explanation", QJsonObject{{"en", "It went boom."}, {"tr", "Bum dedi."}}}};
+		const QJsonObject root{{"formatVersion", kFormatVersion}, {"rules", QJsonArray{rule}}};
+		const auto catalog = Catalog::parse(QJsonDocument(root).toJson());
+		QVERIFY(catalog.has_value());
+		Facts facts;
+		facts.exitCode = kAccessViolation;
+		QCOMPARE(analyse(*catalog, {QStringLiteral("boom\n"), {}, {}}, facts, QStringLiteral("en")).size(), 1);
+		facts.exitCode = 1;
+		QVERIFY(analyse(*catalog, {QStringLiteral("boom\n"), {}, {}}, facts, QStringLiteral("en")).isEmpty());
+	}
+
+	// The maker's driver page first; turning shaders off only when a shader
+	// pack is on, the faster card only when there are two.
+	void driverCrashFixes()
+	{
+		const Evidence evidence{
+			QStringLiteral("Process crashed with exitcode -1073741819.\n"), {},
+			QStringLiteral("# Problematic frame:\n# C  [atio6axx.dll+0x1a1a20]\n")};
+		Facts facts;
+		facts.os = QStringLiteral("windows");
+		facts.loader = QStringLiteral("fabric");
+		facts.exitCode = kAccessViolation;
+		const auto actions = [&] {
+			QStringList out;
+			const QList<Cause> causes = analyse(m_catalog, evidence, facts, QStringLiteral("en"));
+			for (const ResolvedFix& fix : causes.first().fixes) {
+				out << fix.action;
+			}
+			return out;
+		};
+		QCOMPARE(actions(), QStringList({"openDriverPage"}));
+		facts.shadersOn = true;
+		QCOMPARE(actions(), QStringList({"openDriverPage", "turnOffShaders"}));
+		facts.severalGpus = true;
+		QCOMPARE(actions(), QStringList({"openDriverPage", "turnOffShaders", "useDedicatedGpu"}));
+
+		const Cause top = analyse(m_catalog, evidence, facts, QStringLiteral("tr")).first();
+		QCOMPARE(top.title, QStringLiteral("AMD ekran kartı sürücüsü çöktü"));
+		QCOMPARE(top.explanation, QStringLiteral("Oyunu Minecraft ya da bir mod değil, AMD sürücüsü (atio6axx.dll) "
+												 "çökertti. Sürücünü AMD'nin sitesinden güncelle."));
+		QCOMPARE(top.fixes.first().params.value("vendor").toString(), QStringLiteral("amd"));
+		QCOMPARE(top.fixes.first().label, QStringLiteral("AMD sürücüsünü güncelle"));
+		// With Sodium or Iris, the note about old drivers.
+		facts.installed = {QStringLiteral("sodium")};
+		QVERIFY(analyse(m_catalog, evidence, facts, QStringLiteral("en"))
+					.first()
+					.explanation.endsWith(QStringLiteral("Sodium and Iris are known to crash on old drivers.")));
+	}
+
+	// A rule picks the maker; the address is Kite's. A rule cannot name a
+	// page, nor another maker.
+	void driverPageIsKitesOwn()
+	{
+		QVERIFY(CrashActions::driverPage(QStringLiteral("amd")).startsWith(QStringLiteral("https://www.amd.com/")));
+		QVERIFY(CrashActions::driverPage(QStringLiteral("intel")).startsWith(QStringLiteral("https://www.intel.com/")));
+		QVERIFY(CrashActions::driverPage(QStringLiteral("nvidia")).startsWith(QStringLiteral("https://www.nvidia.com/")));
+		QVERIFY(CrashActions::driverPage(QStringLiteral("https://evil.example")).isEmpty());
+
+		const auto rule = [](const QJsonObject& params) {
+			return QJsonObject{
+				{"id", "test.driver"},
+				{"priority", 50},
+				{"match", QJsonObject{{"any", QJsonArray{QJsonObject{{"re", "boom"}}}}}},
+				{"title", QJsonObject{{"en", "Boom"}, {"tr", "Bum"}}},
+				{"explanation", QJsonObject{{"en", "It went boom."}, {"tr", "Bum dedi."}}},
+				{"fixes", QJsonArray{QJsonObject{{"action", "openDriverPage"},
+												 {"params", params},
+												 {"label", QJsonObject{{"en", "Go"}, {"tr", "Git"}}}}}}};
+		};
+		for (const QJsonObject& bad : {QJsonObject{{"vendor", "https://evil.example"}},
+									   QJsonObject{{"vendor", "amd"}, {"url", "https://evil.example"}}}) {
+			const QJsonObject root{{"formatVersion", kFormatVersion}, {"rules", QJsonArray{rule(bad)}}};
+			QStringList skipped;
+			const auto catalog = Catalog::parse(QJsonDocument(root).toJson(), nullptr, &skipped);
+			QVERIFY(catalog.has_value());
+			QVERIFY(catalog->rules.first().fixes.isEmpty());
+			QCOMPARE(skipped.size(), 1);
+		}
+	}
+
+	// A fallback names what Kite saw; the crash is still one Kite could not
+	// explain until a rule that knows it matches.
+	void fallbacksExplainNothing()
+	{
+		Facts facts;
+		facts.os = QStringLiteral("windows");
+		facts.exitCode = kAccessViolation;
+		const QString log = QStringLiteral("Process crashed with exitcode -1073741819.\n");
+		const QList<Cause> unknown = analyse(
+			m_catalog, {log, {}, QStringLiteral("# Problematic frame:\n# C  [VCRUNTIME140.dll+0x13a4]\n")}, facts,
+			QStringLiteral("en"));
+		QCOMPARE(ruleIds(unknown), QStringList({"native.unknown-library", "exit.windows-access-violation"}));
+		QVERIFY(unknown.first().fallback);
+		QCOMPARE(unknown.first().title, QStringLiteral("The game crashed in VCRUNTIME140.dll"));
+		QVERIFY(!firstExplained(unknown));
+
+		const QList<Cause> known = analyse(
+			m_catalog, {log, {}, QStringLiteral("# Problematic frame:\n# C  [DiscordHook64.dll+0x3f2a0]\n")}, facts,
+			QStringLiteral("en"));
+		QVERIFY(firstExplained(known));
+		QCOMPARE(firstExplained(known)->ruleId, QStringLiteral("overlay.discord"));
+		// Shown: the fallbacks only while nothing explains the crash.
+		QCOMPARE(ruleIds(known), QStringList({"overlay.discord", "exit.windows-access-violation"}));
+		QCOMPARE(ruleIds(shownCauses(known)), QStringList({"overlay.discord"}));
+		QCOMPARE(ruleIds(shownCauses(unknown)), ruleIds(unknown));
+	}
+
+	// The JVM that crashed names its pid; the one Kite started comes after.
+	void jvmPidsFromTheCrashHeader()
+	{
+		const QString log = QStringLiteral(
+			"Minecraft process ID: 4100\n\n"
+			"#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb3c1d2e4f, pid=8124, tid=10240\n"
+			"# An error report file with more information is saved as:\n"
+			"# C:\\Games\\Kite\\instances\\Skies\\minecraft\\hs_err_pid8124.log\n"
+			"[12:00:00] [main/INFO]: hs_err_pid77.log\n");
+		QCOMPARE(jvmPidsFromLog(log), QList<qint64>({8124, 77, 4100}));
+		QVERIFY(jvmPidsFromLog(QStringLiteral("no crash here")).isEmpty());
+	}
+
+	// Native crashes in a row, ended by a launch that worked: the next crash
+	// window can say it starts on a later try.
+	void nativeCrashesBeforeAStart()
+	{
+		const QDateTime now = QDateTime::currentDateTimeUtc();
+		NativeCrashStreak streak;
+		streak = streak.afterCrash(true).afterCrash(true).afterCrash(true);
+		QCOMPARE(streak.crashes, 3);
+		QCOMPARE(streak.retried(now), 0);
+		streak = streak.afterCleanRun(now);
+		QCOMPARE(streak.crashes, 0);
+		QCOMPARE(streak.retried(now), 3);
+		// Kept across a restart; another clean run changes nothing.
+		streak = NativeCrashStreak::fromJson(streak.toJson()).afterCleanRun(now.addDays(1));
+		QCOMPARE(streak.retried(now.addDays(1)), 3);
+		QCOMPARE(streak.retried(now.addDays(kRetriedCrashesDays + 1)), 0);
+		// One crash and a start is bad luck; a crash of another kind breaks the row.
+		QCOMPARE(NativeCrashStreak().afterCrash(true).afterCleanRun(now).retried(now), 0);
+		QCOMPARE(NativeCrashStreak().afterCrash(true).afterCrash(false).afterCrash(true).afterCleanRun(now).retried(now),
+				 0);
+		QCOMPARE(NativeCrashStreak::fromJson(QStringLiteral("not json")).crashes, 0);
 	}
 
 	void normalizeStripsFormatting()

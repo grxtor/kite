@@ -26,6 +26,19 @@ class GpuPreferenceTest : public QObject
 	Q_OBJECT
 
   private slots:
+	// The software renderer and Microsoft's adapters are no graphics card; a
+	// machine with one real card never gets "use the faster card".
+	void graphicsCardsAreRealOnes()
+	{
+		QVERIFY(GpuPreference::isGraphicsCard(0x1002, false));
+		QVERIFY(GpuPreference::isGraphicsCard(0x8086, false));
+		QVERIFY(!GpuPreference::isGraphicsCard(0x1414, false));
+		QVERIFY(!GpuPreference::isGraphicsCard(0x10DE, true));
+#ifndef Q_OS_WIN
+		QVERIFY(!GpuPreference::hasSeveralGraphicsCards());
+#endif
+	}
+
 	void highPerformanceIsWhatWindowsWrites()
 	{
 		QCOMPARE(GpuPreference::highPerformance(),

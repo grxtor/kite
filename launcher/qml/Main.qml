@@ -302,6 +302,9 @@ ApplicationWindow {
                 root.call("debugSendCrash", value)
             else if (key === "crashrules")
                 root.call("debugUseCrashRules", value)
+            // crashos=windows: crashes read after it are read as if the game ran on that system.
+            else if (key === "crashos")
+                root.call("debugUseCrashOs", value)
             // click=x,y[,right[,delayMs]]: a real click at a window point.
             else if (key === "click")
                 root.call("debugClick", value)

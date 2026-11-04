@@ -60,6 +60,14 @@ namespace GpuPreference
 	QString encodeWritten(const QStringList& names);
 	QStringList decodeWritten(const QString& stored);
 
+	/// Whether an adapter Windows lists is a graphics card of its own: not
+	/// the software renderer, nor one of Microsoft's (remote, basic display).
+	bool isGraphicsCard(quint32 vendorId, bool software);
+	/// Two or more graphics cards (a laptop's built-in and its fast one), the
+	/// only case where the high-performance choice can change which card runs
+	/// the game. Asked once a run; false anywhere but Windows.
+	bool hasSeveralGraphicsCards();
+
 #ifdef Q_OS_WIN
 	/// At launch: with kSetting on, gives @p javaPath the high-performance
 	/// card unless it already has a value.

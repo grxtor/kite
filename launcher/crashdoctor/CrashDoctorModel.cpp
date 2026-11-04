@@ -24,6 +24,7 @@
 
 #include "CrashActions.h"
 #include "CrashDoctorService.h"
+#include "CrashExitCodes.h"
 #include "CrashFixer.h"
 #include "core/LauncherContext.h"
 #include "minecraft/MinecraftInstance.h"
@@ -122,7 +123,21 @@ QVariantList CrashDoctorModel::causes() const
 	if (!report) {
 		return out;
 	}
+	// The exit code of a native crash says something; a plain one is noise next to a cause.
+	const bool native = report->exitCode && CrashDoctor::ExitCodes::windowsStatus(*report->exitCode);
 	for (const CrashDoctor::Cause& cause : report->causes) {
+		const bool top = out.isEmpty();
+		// Muted under the explanation of the first cause: how often it crashed
+		// like this before a start, then the exit code in words.
+		QStringList details;
+		if (top && report->retriedNativeCrashes > 0) {
+			// Never fewer than CrashDoctor::kMinRetriedCrashes: always the plural.
+			details << tr("Lately it crashed like this %1 times, then started on a later try.")
+						   .arg(report->retriedNativeCrashes);
+		}
+		if (top && native) {
+			details << exitDetail();
+		}
 		QVariantList rows;
 		for (const CrashDoctor::Finding& finding : cause.findings) {
 			const auto [what, by] = rowParts(finding, report->modNames);
@@ -156,12 +171,15 @@ QVariantList CrashDoctorModel::causes() const
 									 {"label", fix.label},
 									 {"params", fix.params},
 									 {"runner", runnerName(spec->runner)},
-									 {"confirm", confirm}});
+									 {"confirm", confirm},
+									 // Kite's own address for a maker's driver page.
+									 {"url", CrashActions::driverPage(fix.params.value("vendor").toString())}});
 		}
 		const CrashDoctor::Finding& first = cause.findings.first();
 		out.append(QVariantMap{{"ruleId", cause.ruleId},
 							   {"title", cause.title},
 							   {"explanation", cause.explanation},
+							   {"detail", details.join(QLatin1Char('\n'))},
 							   {"line", first.line},
 							   {"count", int(cause.findings.size())},
 							   {"rows", rows},
@@ -192,6 +210,14 @@ bool CrashDoctorModel::hasExitCode() const
 {
 	const auto report = CrashDoctorService::instance()->report(m_id);
 	return report && report->exitCode.has_value();
+}
+
+QString CrashDoctorModel::exitDetail() const
+{
+	const auto report = CrashDoctorService::instance()->report(m_id);
+	return report && report->exitCode
+			   ? tr("Exit code %1").arg(CrashDoctor::ExitCodes::describe(*report->exitCode))
+			   : QString();
 }
 
 QString CrashDoctorModel::undoAction() const

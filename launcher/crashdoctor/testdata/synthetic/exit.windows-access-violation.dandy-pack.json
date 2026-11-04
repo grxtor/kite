@@ -1,0 +1,7 @@
+{
+ "note": "a player's Kite 1.2.0 log: no hs_err, the CTM warnings are noise",
+ "verify": false,
+ "docs": {
+  "log": "[20:34:38] [Worker-Main-4/WARN]: Method 'ctm' requires 47 tiles but 48 were provided in file 'minecraft:optifine/ctm/default/glass_yellow/glass_yellow.properties' in pack 'file/!     Â§dDanÂ§bdy Â§8[Â§f16Â§dxÂ§8] 26.3.zip'\nGame process exited with code -1073741819\nExiting with -1073741819\nProcess crashed with exitcode -1073741819.\n"
+ }
+}

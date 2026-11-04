@@ -82,6 +82,9 @@ class CrashDoctorService : public QObject
 	void send(const QString& instanceId, bool alwaysFromNow);
 	/// Dev route "crashrules=<file>": uses that catalog as if it was downloaded.
 	bool debugUseCatalog(const QString& path);
+	/// Dev route "crashos=<os>": analyses as if the game ran on @p os
+	/// ("windows"), so Windows-only causes and fixes can be reviewed elsewhere.
+	void debugUseOs(const QString& os);
 
   signals:
 	/// A report for @p instanceId is ready, possibly with no known cause.
@@ -109,4 +112,5 @@ class CrashDoctorService : public QObject
 	bool m_refreshed = false;
 	NetJob::Ptr m_refreshJob;
 	CrashFollowUp* m_followUp = nullptr;
+	QString m_debugOs;
 };

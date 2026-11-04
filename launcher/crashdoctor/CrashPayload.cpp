@@ -81,7 +81,8 @@ namespace CrashPayload
 
 	bool sendable(const CrashDoctor::Report& report)
 	{
-		return !report.lines.lines.isEmpty() && (report.causes.isEmpty() || report.fixDidNotHelp);
+		return !report.lines.lines.isEmpty() &&
+			   (!CrashDoctor::firstExplained(report.causes) || report.fixDidNotHelp);
 	}
 
 	QJsonObject build(const CrashDoctor::Report& report, const QString& kiteVersion)

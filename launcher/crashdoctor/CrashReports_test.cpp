@@ -114,6 +114,24 @@ class CrashReportsTest : public QObject
 		QVERIFY(!CrashPayload::sendable(report));
 	}
 
+	// A fallback cause names what Kite saw; the crash is still one to send,
+	// until a cause that knows it comes along.
+	void fallbackCausesStillSend()
+	{
+		Report report = sampleReport();
+		Cause seen;
+		seen.ruleId = QStringLiteral("native.unknown-library");
+		seen.fallback = true;
+		report.causes = {seen};
+		QVERIFY(CrashPayload::sendable(report));
+		QCOMPARE(CrashPayload::build(report, QStringLiteral("1.2.0")).value("rules").toArray(),
+				 QJsonArray{QStringLiteral("native.unknown-library")});
+		Cause known;
+		known.ruleId = QStringLiteral("overlay.discord");
+		report.causes.append(known);
+		QVERIFY(!CrashPayload::sendable(report));
+	}
+
 	void readableSaysWhatGoes()
 	{
 		const QVariantMap shown = CrashPayload::readable(CrashPayload::build(sampleReport(), QStringLiteral("1.2.0")));
