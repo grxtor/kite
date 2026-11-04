@@ -35,6 +35,8 @@ Dialog {
     property bool closeOnPrimary: true
     property string cancelText: qsTr("Cancel")
     property bool showCancel: true
+    // False for a dialog whose accent button is in its content; Cancel then closes it.
+    property bool showPrimary: true
     // A press outside closes the dialog; leave false when it holds input.
     property bool closeOnOutsidePress: false
     property alias footerLeading: leadingSlot.data
@@ -77,6 +79,7 @@ Dialog {
                 onClicked: root.close()
             }
             Button {
+                visible: root.showPrimary
                 text: root.primaryText
                 icon.source: root.primaryIcon.length > 0 ? Icons.url(root.primaryIcon) : ""
                 highlighted: true

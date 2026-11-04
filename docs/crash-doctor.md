@@ -29,6 +29,19 @@ What it reads: the live log (it has the JVM's start errors and Kite's own lines 
 `logs/latest.log` never has), the newest `crash-reports/crash-*.txt` and `hs_err_pid*.log` of the
 run, and the metadata of the enabled jars in `mods/`.
 
+## On screen
+
+- Right after a crash (a launch that just ended), the window "Why <instance> crashed" opens once by
+  itself (`CrashDoctorDialog.qml`): each cause in its own box, the first fix as the button, the rest
+  in ⋯. It never opens for an old crash; after a restart there is no report to show.
+- Afterwards the instance's Log tab has one line above the log, "The game crashed: <cause>", with the
+  main fix, Details and ⋯ (`CrashDoctorPanel.qml`). It stays until the next launch or ⋯ > Hide this.
+- Home says "Crashed: <cause>" where it said "Crashed last time" (`InstanceList`'s `crashCause`).
+- When nothing fits it says Kite couldn't find the cause and offers to share the log, after asking.
+
+Review snapshots: dev routes `crashwindow=<id>` (as if the crash just happened) and
+`crashdoctor=<id>` (as if read again later), plus `review=crashdetails` on the Log tab.
+
 ## A rule
 
 ```jsonc
@@ -116,7 +129,7 @@ when the file loads.
 | `updateMod` | `mods` | The install review, replacing the files | the review |
 | `updateLoader` | | Opens the Version tab | |
 | `rematchPerformanceMods` | | Runs Kite Performance's setup again | |
-| `uploadLog` | | Uploads the log to paste.ee | yes |
+| `uploadLog` | | Shares the log through paste.ee (the link is copied) | yes |
 | `open…` | | Mods / instance / worlds folder, Backups, Content, Java or memory settings, the log | |
 
 Nothing is deleted: files are renamed aside, and the last fix of an instance can be undone, also

@@ -395,11 +395,11 @@
 			},
 			"explanation": {
 				"en": "You changed the Minecraft version and {modName} stayed on the file for the old one. Let Kite look for the {mc} build again; if there still isn't one, turn the mod off and the game starts.",
-				"tr": "Sürümü değiştirince {modName} eski sürümün dosyasında kaldı. Kite {mc} için yeniden baksın; hâlâ yoksa modu kapat, oyun açılır."
+				"tr": "Sürümü değiştirince {modName} eski sürümün dosyasında kaldı. Kite {mc} için yeniden bakabilir; hâlâ yoksa modu kapat, oyun açılır."
 			},
 			"groupExplanation": {
 				"en": "You changed the Minecraft version and these mods stayed on the files for the old one. Let Kite look for the {mc} builds again; turn off the ones that still have none.",
-				"tr": "Sürümü değiştirince bu modlar eski sürümün dosyalarında kaldı. Kite {mc} için yeniden baksın; hâlâ olmayanları kapat."
+				"tr": "Sürümü değiştirince bu modlar eski sürümün dosyalarında kaldı. Kite {mc} için yeniden bakabilir; hâlâ olmayanları kapat."
 			},
 			"fixes": [
 				{
@@ -509,7 +509,7 @@
 			},
 			"explanation": {
 				"en": "This instance starts with Java {javaRuntime|javaNow}, but {modName|cls} is made for Java {javaMajor}. Kite can download Java {javaMajor} and use it for this instance only.",
-				"tr": "Bu kurulum Java {javaRuntime|javaNow} ile açılıyor ama {modName|cls} Java {javaMajor} için yapılmış. Kite Java {javaMajor} indirip sadece bu kurulumda kullansın."
+				"tr": "Bu kurulum Java {javaRuntime|javaNow} ile açılıyor ama {modName|cls} Java {javaMajor} için yapılmış. Kite Java {javaMajor} indirip sadece bu kurulumda kullanabilir."
 			},
 			"fixes": [
 				{
@@ -557,7 +557,7 @@
 			},
 			"explanation": {
 				"en": "Minecraft {mc} and its mod loader expect Java {javaRecommended}. Let Kite pick the right Java for this version again.",
-				"tr": "Minecraft {mc} ve mod yükleyicisi Java {javaRecommended} bekliyor. Kite bu sürüme uygun Java'yı yeniden seçsin."
+				"tr": "Minecraft {mc} ve mod yükleyicisi Java {javaRecommended} bekliyor. Kite bu sürüme uygun Java'yı yeniden seçebilir."
 			},
 			"fixes": [
 				{
@@ -648,7 +648,7 @@
 			},
 			"explanation": {
 				"en": "This instance is set to a Java that is missing or broken. Let Kite choose the Java for Minecraft {mc} again.",
-				"tr": "Bu kurulumun ayarında silinmiş ya da bozuk bir Java var. Kite Minecraft {mc} için Java'yı yeniden seçsin."
+				"tr": "Bu kurulumun ayarında silinmiş ya da bozuk bir Java var. Kite Minecraft {mc} için Java'yı yeniden seçebilir."
 			},
 			"fixes": [
 				{
@@ -696,7 +696,7 @@
 			},
 			"explanation": {
 				"en": "The game's libraries are for {have} and the Java running them is for {need} (one of them goes through Rosetta). Let Kite pick a Java that matches this version's libraries.",
-				"tr": "Oyunun kütüphaneleri {have} için, onları açan Java {need} için (biri Rosetta'dan geçiyor). Kite bu sürümün kütüphanelerine uyan Java'yı seçsin."
+				"tr": "Oyunun kütüphaneleri {have} için, onları açan Java {need} için (biri Rosetta'dan geçiyor). Kite bu sürümün kütüphanelerine uyan Java'yı seçebilir."
 			},
 			"fixes": [
 				{
@@ -1015,7 +1015,7 @@
 			},
 			"explanation": {
 				"en": "{byName} needs Fabric API to run and it isn't installed. Kite can install the build for {mc}.",
-				"tr": "{byName} çalışmak için Fabric API istiyor, kurulu değil. Kite {mc} için olanı yüklesin."
+				"tr": "{byName} çalışmak için Fabric API istiyor, kurulu değil. Kite {mc} için olanı yükleyebilir."
 			},
 			"fixes": [
 				{
@@ -1101,11 +1101,11 @@
 			},
 			"explanation": {
 				"en": "{byName|by} doesn't start without {modName|mod} ({range}). Kite can find it on Modrinth and install the build for {mc}.",
-				"tr": "{byName|by}, {modName|mod} olmadan açılmıyor ({range}). Kite Modrinth'te bulup {mc} için olanı yüklesin."
+				"tr": "{byName|by}, {modName|mod} olmadan açılmıyor ({range}). Kite Modrinth'te bulup {mc} için olanı yükleyebilir."
 			},
 			"groupExplanation": {
 				"en": "These mods don't start without the mods they need. Kite can find them on Modrinth and install the builds for {mc}.",
-				"tr": "Bu modlar istedikleri modlar olmadan açılmıyor. Kite Modrinth'te bulup {mc} için olanları yüklesin."
+				"tr": "Bu modlar istedikleri modlar olmadan açılmıyor. Kite Modrinth'te bulup {mc} için olanları yükleyebilir."
 			},
 			"fixes": [
 				{
@@ -1179,11 +1179,11 @@
 			},
 			"explanation": {
 				"en": "A mod looks for {clsModName} and it isn't installed. Kite can install it for {mc}.",
-				"tr": "Bir mod {clsModName} arıyor, kurulu değil. Kite {mc} için yüklesin."
+				"tr": "Bir mod {clsModName} arıyor, kurulu değil. Kite {mc} için yükleyebilir."
 			},
 			"groupExplanation": {
 				"en": "Some mods look for library mods that aren't installed. Kite can install them for {mc}.",
-				"tr": "Bazı modlar kurulu olmayan kütüphane modlarını arıyor. Kite {mc} için hepsini yüklesin."
+				"tr": "Bazı modlar kurulu olmayan kütüphane modlarını arıyor. Kite hepsini {mc} için yükleyebilir."
 			},
 			"fixes": [
 				{
@@ -1243,7 +1243,7 @@
 			],
 			"title": {
 				"en": "Mods expect another version of {clsModName}",
-				"tr": "Modlar {clsModName} için başka sürüm bekliyor"
+				"tr": "Modlar {clsModName} modunun başka bir sürümünü istiyor"
 			},
 			"explanation": {
 				"en": "{clsModName} is installed, but a mod uses a part of it that this version doesn't have. Update {clsModName} and the mods that use it to the builds for {mc}.",
@@ -1254,7 +1254,7 @@
 					"action": "updateMod",
 					"label": {
 						"en": "Update {clsModName}",
-						"tr": "{clsModName} güncelle"
+						"tr": "{clsModName} modunu güncelle"
 					},
 					"params": {
 						"mods": [
@@ -1493,7 +1493,7 @@
 					"action": "updateMod",
 					"label": {
 						"en": "Update {modName|mod}",
-						"tr": "{modName|mod} güncelle"
+						"tr": "{modName|mod} modunu güncelle"
 					},
 					"params": {
 						"mods": [
@@ -1575,7 +1575,7 @@
 					"action": "updateMod",
 					"label": {
 						"en": "Update {by}",
-						"tr": "{by} güncelle"
+						"tr": "{by} modunu güncelle"
 					},
 					"params": {
 						"mods": [
@@ -1791,7 +1791,7 @@
 			},
 			"explanation": {
 				"en": "The mods folder has more than one file of {mod} ({files}). Kite keeps the newest and turns the others off.",
-				"tr": "mods klasöründe {mod} modunun birden fazla dosyası var ({files}). Kite en yenisini bırakıp ötekileri kapatsın."
+				"tr": "mods klasöründe {mod} modunun birden fazla dosyası var ({files}). Kite en yenisini bırakıp ötekileri kapatabilir."
 			},
 			"fixes": [
 				{
@@ -1928,7 +1928,7 @@
 					"action": "updateMod",
 					"label": {
 						"en": "Update {mod}",
-						"tr": "{mod} güncelle"
+						"tr": "{mod} modunu güncelle"
 					},
 					"params": {
 						"mods": [
@@ -2021,7 +2021,7 @@
 					"action": "updateMod",
 					"label": {
 						"en": "Update {modName|mod}",
-						"tr": "{modName|mod} güncelle"
+						"tr": "{modName|mod} modunu güncelle"
 					},
 					"params": {
 						"mods": [
@@ -2258,7 +2258,7 @@
 			},
 			"explanation": {
 				"en": "Minecraft couldn't get OpenGL from the graphics driver: the driver is missing, too old, or the game ran on the built-in graphics. Update the driver from your GPU maker's site; on laptops, let Kite use the faster graphics card.",
-				"tr": "Minecraft ekran kartı sürücüsünden OpenGL alamadı: sürücü yok, çok eski ya da oyun dahili ekran kartında açıldı. Sürücüyü üreticinin sitesinden güncelle; dizüstündeysen Kite güçlü ekran kartını kullansın."
+				"tr": "Minecraft ekran kartı sürücüsünden OpenGL alamadı: sürücü yok, çok eski ya da oyun dahili ekran kartında açıldı. Sürücüyü üreticinin sitesinden güncelle; dizüstündeysen Kite güçlü ekran kartını kullanabilir."
 			},
 			"fixes": [
 				{
@@ -2401,7 +2401,7 @@
 			},
 			"explanation": {
 				"en": "Minecraft couldn't find {lib}, one of the files that talk to the screen and sound. Let Kite check and download the game files again.",
-				"tr": "Minecraft ekran ve sesle konuşan dosyalardan {lib} dosyasını bulamadı. Kite oyun dosyalarını kontrol edip yeniden indirsin."
+				"tr": "Minecraft ekran ve sesle konuşan dosyalardan {lib} dosyasını bulamadı. Kite oyun dosyalarını kontrol edip yeniden indirebilir."
 			},
 			"fixes": [
 				{
@@ -2445,7 +2445,7 @@
 			},
 			"explanation": {
 				"en": "On a Mac this Minecraft version has to start with a special Java flag, and this launch didn't get it (usually a custom version file). Kite can add the flag for this instance.",
-				"tr": "Mac'te bu Minecraft sürümü özel bir Java ayarıyla açılmalı, bu açılışta yoktu (genelde özel bir sürüm dosyası yüzünden). Kite bu kurulum için o ayarı eklesin."
+				"tr": "Mac'te bu Minecraft sürümü özel bir Java ayarıyla açılmalı, bu açılışta yoktu (genelde özel bir sürüm dosyası yüzünden). Kite bu kurulum için o ayarı ekleyebilir."
 			},
 			"fixes": [
 				{
@@ -2458,8 +2458,8 @@
 				{
 					"action": "uploadLog",
 					"label": {
-						"en": "Upload the log",
-						"tr": "Günlüğü yükle"
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
 					}
 				}
 			]
@@ -2508,7 +2508,7 @@
 			},
 			"explanation": {
 				"en": "{file} is empty or half-written, usually after the game or the computer shut down suddenly. Kite moves it aside and the mod writes a fresh one with default settings.",
-				"tr": "{file} boş ya da yarım yazılmış; genelde oyun ya da bilgisayar aniden kapanınca olur. Kite onu kenara alsın, mod varsayılan ayarlarla yenisini yazar."
+				"tr": "{file} boş ya da yarım yazılmış; genelde oyun ya da bilgisayar aniden kapanınca olur. Kite onu kenara alabilir, mod varsayılan ayarlarla yenisini yazar."
 			},
 			"fixes": [
 				{
@@ -2552,7 +2552,7 @@
 			},
 			"explanation": {
 				"en": "Minecraft couldn't read options.txt. Kite can set it aside so the game starts with default options (keys and video settings go back to default; you can undo).",
-				"tr": "Minecraft options.txt dosyasını okuyamadı. Kite onu kenara alsın, oyun varsayılan ayarlarla açılsın (tuşlar ve görüntü ayarları sıfırlanır, geri alabilirsin)."
+				"tr": "Minecraft options.txt dosyasını okuyamadı. Kite onu kenara alabilir, oyun varsayılan ayarlarla açılır (tuşlar ve görüntü ayarları sıfırlanır, geri alabilirsin)."
 			},
 			"fixes": [
 				{
@@ -2672,7 +2672,7 @@
 					"action": "updateMod",
 					"label": {
 						"en": "Update {ns}",
-						"tr": "{ns} güncelle"
+						"tr": "{ns} modunu güncelle"
 					},
 					"params": {
 						"mods": [
@@ -2752,15 +2752,15 @@
 				"tr": "Dünya oluşurken iki mod çakışıyor"
 			},
 			"explanation": {
-				"en": "A mod touched the world from the wrong thread ({what}); Minecraft stops to protect the save. It's usually a world-generation or speed-up mod added recently. Send the log to find which one.",
-				"tr": "Bir mod dünyaya yanlış iş parçacığından dokundu ({what}); Minecraft dünyayı korumak için durdu. Genelde yeni eklenen bir dünya oluşturma ya da hızlandırma modudur. Hangisi olduğunu bulmak için günlüğü gönder."
+				"en": "A mod touched the world from the wrong thread ({what}); Minecraft stops to protect the save. It's usually a world-generation or speed-up mod added recently. Share the log to find out which one.",
+				"tr": "Bir mod dünyaya yanlış iş parçacığından dokundu ({what}); Minecraft dünyayı korumak için durdu. Genelde yeni eklenen bir dünya oluşturma ya da hızlandırma modudur. Hangisi olduğunu bulmak için günlüğü paylaş."
 			},
 			"fixes": [
 				{
 					"action": "uploadLog",
 					"label": {
-						"en": "Upload the log",
-						"tr": "Günlüğü yükle"
+						"en": "Share the log",
+						"tr": "Günlüğü paylaş"
 					}
 				}
 			]

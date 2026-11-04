@@ -229,6 +229,12 @@ ApplicationWindow {
                 Qt.callLater(() => serverJoin.joinWithAnother(root.featuredList.find((one) => one.id === value)))
             else if (key === "crashed")
                 root.call("debugMarkInstanceCrashed", value)
+            // crashdoctor=<id>: the crash doctor reads that instance's last run's files, as a crash
+            // read again later; crashwindow=<id> as one that just happened, which opens the window.
+            else if (key === "crashdoctor")
+                root.call("debugAnalyseCrash", value)
+            else if (key === "crashwindow")
+                root.call("debugCrashNow", value)
             // click=x,y[,right[,delayMs]]: a real click at a window point.
             else if (key === "click")
                 root.call("debugClick", value)
@@ -519,6 +525,13 @@ ApplicationWindow {
         // found no version of these mods for the instance's new Minecraft.
         // A toast holds one line, so it names the mods and the button leads
         // to where they are removed or updated.
+        // From C++ (QmlShell::crashAnalysed()): the crash doctor read why instance @p id crashed.
+        // A crash that just happened opens the "why" window once; one read again later (the Log
+        // tab's own analysis) does not. The Log tab's strip says it afterwards.
+        function onCrashAnalysed(id, cause, fresh) {
+            if (fresh)
+                root.dialog(crashWindowLoader).show(id)
+        }
         function onPerformanceUnmatchedFound(id, names) {
             toast.show(qsTr("No version of %1 for this Minecraft yet. The game may not start.").arg(names.join(", ")),
                        "danger", qsTr("Show mods"), function () {
@@ -1102,6 +1115,37 @@ ApplicationWindow {
             shell: root.shell
             onCreated: root.page = "home"
             onOpenInstanceRequested: (id) => root.navigate("instance/" + id + "/content")
+        }
+    }
+
+    Loader {
+        id: crashWindowLoader
+        active: false
+        sourceComponent: CrashDoctorDialog {
+            shell: root.shell
+            toast: toast
+            onTabRequested: (id, tab) => {
+                root.openInstance(id)
+                if (instancePage)
+                    instancePage.tab = tab
+            }
+            onLogLineRequested: (id, line) => {
+                root.openInstance(id)
+                if (instancePage)
+                    instancePage.showCrashLine(line)
+            }
+            onCrashReportRequested: (id, name) => {
+                root.openInstance(id)
+                if (instancePage)
+                    instancePage.showCrashReport(name)
+            }
+            onUploadRequested: (id) => {
+                root.openInstance(id)
+                if (instancePage)
+                    instancePage.uploadCrashLog()
+            }
+            onPlayRequested: (id) => root.launch(id)
+            onFolderRequested: (path) => root.call("openPath", path)
         }
     }
 

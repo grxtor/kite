@@ -63,7 +63,7 @@ Column {
             totalTimePlayed: source.totalTimePlayed, gameVersion: source.gameVersion,
             loader: source.loader, iconTint: source.iconTint, packArt: source.packArt || "",
             coverImage: source.coverImage || "", coverKind: source.coverKind || "",
-            hasCrashed: source.hasCrashed
+            hasCrashed: source.hasCrashed, crashCause: source.crashCause || ""
         }
     }
     // One more than shown, so the hero's own row can drop out.
@@ -98,9 +98,10 @@ Column {
         required property string coverImage
         required property string coverKind
         required property bool hasCrashed
+        required property string crashCause
         readonly property string signature: [instanceId, name, iconKey, isRunning, canLaunch, lastLaunch,
                                              totalTimePlayed, gameVersion, loader, packArt, coverImage,
-                                             coverKind, hasCrashed].join("\n")
+                                             coverKind, hasCrashed, crashCause].join("\n")
     }
     Instantiator {
         id: playedReader
@@ -183,6 +184,7 @@ Column {
             coverImage: ""
             packArt: modelData.packArt
             hasCrashed: modelData.hasCrashed
+            crashCause: modelData.crashCause
             selected: root.selectedId === row.instanceId
             onTapped: root.tap(row.instanceId)
             onSelectRequested: root.selectRequested(row.instanceId)

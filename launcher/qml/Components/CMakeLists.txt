@@ -103,6 +103,12 @@ qt_add_qml_module(Kite_qml_components
         ContentDropFlow.qml
         ScreenshotsTab.qml
         LogTab.qml
+        CrashCauseMenu.qml
+        CrashCauseView.qml
+        CrashDoctorBody.qml
+        CrashDoctorDialog.qml
+        CrashDoctorFlows.qml
+        CrashDoctorPanel.qml
         LogSourcePicker.qml
         LogLines.qml
         LogFindBar.qml

@@ -15,7 +15,7 @@ Item {
     required property var row
     property int size: Theme.type.caption.pixelSize
     property bool inlineTime: false
-    property string crashText: qsTr("Crashed last time")
+    property string crashText: Format.crashLine(root.row.crashCause)
 
     readonly property string versionText: Format.versionLine(root.row.loader, root.row.gameVersion)
     readonly property string playTimeText: root.inlineTime && SettingsStore.bool("ShowGameTime")

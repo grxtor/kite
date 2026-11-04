@@ -92,6 +92,7 @@ Item {
         const owners = {
             versionmore: ["version", versionTab], newcomponent: ["version", versionTab],
             otherlogs: ["log", logTab], logfind: ["log", logTab],
+            crashdetails: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
             browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
         }
@@ -102,6 +103,19 @@ Item {
         reviewDelay.run(function () { owner[1].review(name) })
     }
 
+    // From the crash window (Main.qml): its line in the log, the crash report, the upload.
+    function showCrashLine(line) {
+        root.tab = "log"
+        reviewDelay.run(function () { logTab.showLine(line) })
+    }
+    function showCrashReport(name) {
+        root.tab = "log"
+        reviewDelay.run(function () { logTab.showFile("crash-reports/" + name) })
+    }
+    function uploadCrashLog() {
+        root.tab = "log"
+        reviewDelay.run(logTab.uploadLogNow)
+    }
     function openHeaderMenu() {
         reviewDelay.run(function () {
             if (root.headerCard)
@@ -449,7 +463,10 @@ Item {
                 log: root.details ? root.details.log : null
                 otherLogs: root.details ? root.details.otherLogs : null
                 details: root.details
+                shell: root.shell
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
+                onTabRequested: (tab) => root.tab = tab
+                onPlayRequested: root.playRequested(root.instanceId)
             }
 
             InstanceSettingsTab {

@@ -12,7 +12,8 @@ import Kite.Theme
  * crash-reports/*.txt) behind one drop-down (LogSourcePicker). "Live" follows
  * the newest line only while "Follow" is on; scrolling up turns it off. Upload
  * sends the log to paste.ee (key set in Settings, Log upload) and copies the
- * link.
+ * link. After a crash the crash doctor's strip sits above the live log: why
+ * it crashed, the fix, and the details (CrashDoctorPanel).
  */
 Item {
     id: root
@@ -23,10 +24,15 @@ Item {
     // OtherLogsModel (roles: name), or null.
     property var otherLogs: null
     property var details: null
+    property var shell: null
     readonly property var uploader: details ? details.logUploader : null
+    readonly property var doctor: details ? details.crashDoctor : null
     readonly property var model: log ? log.model : null
 
     signal openFolderRequested(string path)
+    // From the crash doctor: another tab of the instance page, and Play after a fix.
+    signal tabRequested(string tab)
+    signal playRequested()
 
     property string view: "live"
 
@@ -57,6 +63,29 @@ Item {
             root.view = "other"
         else if (name === "logfind")
             findBar.text = "Loading"
+        else if (name === "crashdetails")
+            crashPanel.expanded = true
+    }
+
+    // The log to paste.ee, the player having said yes (CrashDoctorFlows asks).
+    function uploadLogNow() {
+        if (!root.uploader || root.uploader.busy || !root.log)
+            return
+        root.view = "live"
+        root.uploading = true
+        root.uploader.uploadText(root.log.text())
+    }
+
+    readonly property int lineSearchLength: 80
+    // The crash doctor's evidence: found in the live log, else in the crash report it came from.
+    function showLine(line) {
+        const needle = line.slice(0, root.lineSearchLength)
+        if (root.log && root.log.findLines(needle).length > 0) {
+            root.view = "live"
+            findBar.text = needle
+        } else if (root.doctor && root.doctor.crashReportName().length > 0) {
+            root.showFile("crash-reports/" + root.doctor.crashReportName())
+        }
     }
 
     onModelChanged: finder.schedule()
@@ -94,10 +123,31 @@ Item {
         toastItem: toast
     }
 
+    CrashDoctorFlows {
+        id: crashFlows
+        doctor: root.doctor
+        details: root.details
+        shell: root.shell
+        toast: toast
+        onNavigateTab: (tab) => root.tabRequested(tab)
+        onOpenFolder: (path) => root.openFolderRequested(path)
+        onPlayRequested: root.playRequested()
+        onCrashReportRequested: (name) => root.showFile("crash-reports/" + name)
+        onUploadRequested: root.uploadLogNow()
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.space.md
         visible: root.view === "live"
+
+        CrashDoctorPanel {
+            id: crashPanel
+            Layout.fillWidth: true
+            doctor: root.doctor
+            flows: crashFlows
+            onShowLine: (line) => root.showLine(line)
+        }
 
         RowLayout {
             Layout.fillWidth: true

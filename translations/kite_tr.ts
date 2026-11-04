@@ -1039,7 +1039,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>BundleDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/BundleDialog.qml" line="+47"/>
+        <location filename="../launcher/qml/Components/BundleDialog.qml" line="+49"/>
         <source>Automatic</source>
         <translation>Otomatik</translation>
     </message>
@@ -1054,7 +1054,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Konfor</translation>
     </message>
     <message>
-        <location line="+52"/>
+        <location line="+65"/>
         <location line="+12"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
@@ -1085,7 +1085,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Vulkan çoğu zaman daha akıcıdır, özellikle Windows&apos;ta. Otomatik&apos;te seçimi oyun yapar.</translation>
     </message>
     <message>
-        <location line="+47"/>
+        <location line="+48"/>
         <source>Nothing in this bundle for this loader.</source>
         <translation>Bu paketin bu yükleyici için bir şeyi yok.</translation>
     </message>
@@ -1118,7 +1118,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>BundleModList</name>
     <message>
-        <location filename="../launcher/qml/Components/BundleModList.qml" line="+164"/>
+        <location filename="../launcher/qml/Components/BundleModList.qml" line="+181"/>
         <source>Installed</source>
         <translation>Yüklü</translation>
     </message>
@@ -2366,6 +2366,270 @@ Ayrıntılar günlük dosyasında:
     </message>
 </context>
 <context>
+    <name>CrashCauseMenu</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashCauseMenu.qml" line="+44"/>
+        <source>Share the log</source>
+        <translation>Günlüğü paylaş</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Open the crash report</source>
+        <translation>Çökme raporunu aç</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Undo the last fix</source>
+        <translation>Son düzeltmeyi geri al</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Hide this</source>
+        <translation>Bunu gizle</translation>
+    </message>
+</context>
+<context>
+    <name>CrashCauseView</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashCauseView.qml" line="+95"/>
+        <source>and %1 more</source>
+        <translation>ve %1 tane daha</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Share the log</source>
+        <translation>Günlüğü paylaş</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+    <message>
+        <location line="-28"/>
+        <source>Show in log</source>
+        <translation>Günlükte göster</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctor</name>
+    <message>
+        <location filename="../launcher/crashdoctor/CrashFixer.cpp" line="+152"/>
+        <source>Could not rename %1.</source>
+        <translation>%1 yeniden adlandırılamadı.</translation>
+    </message>
+    <message>
+        <location line="+117"/>
+        <source>The launcher settings are not available.</source>
+        <translation>Başlatıcı ayarlarına ulaşılamadı.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Could not change options.txt.</source>
+        <translation>options.txt değiştirilemedi.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>The mod is no longer in the mods folder.</source>
+        <translation>Mod artık mods klasöründe değil.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>The file is not there any more.</source>
+        <translation>Dosya artık orada değil.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Could not change %1.</source>
+        <translation>Değiştirilemedi: %1</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>This fix is not one Kite can do here.</source>
+        <translation>Kite bu düzeltmeyi burada yapamıyor.</translation>
+    </message>
+    <message>
+        <location line="+31"/>
+        <source>%1 could not be put back.</source>
+        <translation>Geri konamadı: %1</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctorBody</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashDoctorBody.qml" line="+32"/>
+        <source>1 more possible cause</source>
+        <translation>1 olası neden daha</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 more possible causes</source>
+        <translation>%1 olası neden daha</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Reading why the game crashed…</source>
+        <translation>Oyunun neden çöktüğüne bakılıyor…</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctorDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashDoctorDialog.qml" line="+42"/>
+        <source>Why the game crashed</source>
+        <translation>Oyun neden çöktü</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Why %1 crashed</source>
+        <translation>%1 neden çöktü</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+    <message>
+        <location line="+61"/>
+        <source>Reading why the game crashed…</source>
+        <translation>Oyunun neden çöktüğüne bakılıyor…</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctorFlows</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashDoctorFlows.qml" line="+41"/>
+        <source>Play</source>
+        <translation>Oyna</translation>
+    </message>
+    <message>
+        <location line="+52"/>
+        <source>Looking…</source>
+        <translation>Aranıyor…</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Kite Performance could not be set up for this instance.</source>
+        <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
+    </message>
+    <message>
+        <location line="+70"/>
+        <source>Share the log?</source>
+        <translation>Günlük paylaşılsın mı?</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Share</source>
+        <translation>Paylaş</translation>
+    </message>
+    <message>
+        <location line="-1"/>
+        <source>The game&apos;s log goes to paste.ee and Kite copies the link for you. Your account details and your user folder are hidden.</source>
+        <translation>Oyunun günlüğü paste.ee&apos;ye gider, Kite bağlantıyı senin için kopyalar. Hesap bilgilerin ve kullanıcı klasörün gizlenir.</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctorModel</name>
+    <message>
+        <location filename="../launcher/crashdoctor/CrashDoctorModel.cpp" line="+129"/>
+        <source>%1 (needed by %2)</source>
+        <translation>%1 (%2 istiyor)</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Turn off %1? The file is not deleted: you can turn it back on under Content.</source>
+        <translation>%1 kapatılsın mı? Dosya silinmez, İçerik sekmesinden yeniden açabilirsin.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Turn off the older copy (%1)? The file is not deleted.</source>
+        <translation>Eski kopya (%1) kapatılsın mı? Dosya silinmez.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Reset %1? Kite keeps the old file next to it, and Undo puts it back.</source>
+        <translation>%1 sıfırlansın mı? Kite eski dosyayı yanında saklar, Geri al onu yerine koyar.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Reset options.txt? Keys and video settings go back to default. Kite keeps the old file, and Undo puts it back.</source>
+        <translation>options.txt sıfırlansın mı? Tuşlar ve görüntü ayarları varsayılana döner. Kite eski dosyayı saklar, Geri al onu yerine koyar.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Turn off the custom Java arguments for this instance? Undo brings them back.</source>
+        <translation>Bu kurulumun özel Java ayarları kapatılsın mı? Geri al onları geri getirir.</translation>
+    </message>
+    <message>
+        <location line="+69"/>
+        <location line="+4"/>
+        <source>This crash is no longer known.</source>
+        <translation>Bu çökmenin kaydı artık yok.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <location line="+23"/>
+        <source>Close the game first.</source>
+        <translation>Önce oyunu kapat.</translation>
+    </message>
+    <message>
+        <location line="-14"/>
+        <source>Done. Play again to see if it works.</source>
+        <translation>Tamam. İşe yaradı mı görmek için tekrar oyna.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>There is nothing to undo.</source>
+        <translation>Geri alınacak bir şey yok.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Undone.</source>
+        <translation>Geri alındı.</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctorPanel</name>
+    <message>
+        <location filename="../launcher/qml/Components/CrashDoctorPanel.qml" line="+77"/>
+        <source>Reading why the game crashed…</source>
+        <translation>Oyunun neden çöktüğüne bakılıyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The game crashed: %1</source>
+        <translation>Oyun çöktü: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The game crashed; Kite couldn&apos;t find the cause</source>
+        <translation>Oyun çöktü, Kite nedenini bulamadı</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Share the log</source>
+        <translation>Günlüğü paylaş</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Details</source>
+        <translation>Ayrıntılar</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+</context>
+<context>
+    <name>CrashDoctorService</name>
+    <message>
+        <location filename="../launcher/crashdoctor/CrashDoctorService.cpp" line="+114"/>
+        <source>Crash rules</source>
+        <translation>Çökme kuralları</translation>
+    </message>
+</context>
+<context>
     <name>CrashReportDialog</name>
     <message>
         <location filename="../launcher/crashreporter/CrashReportDialog.cpp" line="+93"/>
@@ -2683,7 +2947,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>DependencyResolver</name>
     <message>
-        <location filename="../launcher/modplatform/DependencyResolver.cpp" line="+238"/>
+        <location filename="../launcher/modplatform/DependencyResolver.cpp" line="+254"/>
         <source>Resolving dependencies...</source>
         <translation>Bağımlılıklar çözümleniyor...</translation>
     </message>
@@ -3680,7 +3944,32 @@ Lütfen tekrar dene.</translation>
         <translation>%1 sa %2 dk</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+7"/>
+        <source>Crashed: %1</source>
+        <translation>Çöktü: %1</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Crashed last time</source>
+        <translation>Geçen sefer çöktü</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>This crash doesn&apos;t look like one Kite knows. Share the log to show it to someone who can help; your account details and your user folder are hidden.</source>
+        <translation>Bu çökme Kite&apos;ın tanıdığı bir şeye benzemiyor. Günlüğü paylaş, yardım edebilecek birine göster; hesap bilgilerin ve kullanıcı klasörün gizlenir.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Kite couldn&apos;t find the cause</source>
+        <translation>Kite nedenini bulamadı</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The game stopped with code %1.</source>
+        <translation>Oyun %1 koduyla kapandı.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
         <source>Minecraft</source>
         <translation>Minecraft</translation>
     </message>
@@ -4971,6 +5260,14 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
+    <name>GameProcessStep</name>
+    <message>
+        <location filename="../launcher/minecraft/launch/GameProcessStep.cpp" line="+58"/>
+        <source>The game was stopped.</source>
+        <translation>Oyun durduruldu.</translation>
+    </message>
+</context>
+<context>
     <name>GameType</name>
     <message>
         <location filename="../launcher/qml/Components/WorldsTab.qml" line="+69"/>
@@ -5049,7 +5346,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeContinuePlaying</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeContinuePlaying.qml" line="+151"/>
+        <location filename="../launcher/qml/Components/HomeContinuePlaying.qml" line="+152"/>
         <source>Continue playing</source>
         <translation>Oynamaya devam et</translation>
     </message>
@@ -5221,7 +5518,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeHeroTitle</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeHeroTitle.qml" line="+38"/>
+        <location filename="../launcher/qml/Components/HomeHeroTitle.qml" line="+39"/>
         <source>Played %1</source>
         <translation>%1 oynandı</translation>
     </message>
@@ -5231,13 +5528,7 @@ Lütfen tekrar dene.</translation>
         <translation>Hiç oynanmadı</translation>
     </message>
     <message>
-        <location line="+63"/>
-        <location line="+44"/>
-        <source>Crashed last time</source>
-        <translation>Geçen sefer çöktü</translation>
-    </message>
-    <message>
-        <location line="+39"/>
+        <location line="+146"/>
         <source>%1  •  %2%</source>
         <translation>%1  •  %2%</translation>
     </message>
@@ -5245,17 +5536,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeJumpCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+164"/>
+        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+165"/>
         <source>New</source>
         <translation>Yeni</translation>
     </message>
     <message>
-        <location line="+31"/>
-        <source>Crashed last time</source>
-        <translation>Geçen sefer çöktü</translation>
-    </message>
-    <message>
-        <location line="+39"/>
+        <location line="+70"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -5333,14 +5619,6 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
-    <name>HomeRowMeta</name>
-    <message>
-        <location filename="../launcher/qml/Components/HomeRowMeta.qml" line="+18"/>
-        <source>Crashed last time</source>
-        <translation>Geçen sefer çöktü</translation>
-    </message>
-</context>
-<context>
     <name>HomeRowPlay</name>
     <message>
         <location filename="../launcher/qml/Components/HomeRowPlay.qml" line="+38"/>
@@ -5359,14 +5637,6 @@ Lütfen tekrar dene.</translation>
         <location filename="../launcher/qml/Components/HomeSidePanel.qml" line="+122"/>
         <source>Recent worlds</source>
         <translation>Son dünyalar</translation>
-    </message>
-</context>
-<context>
-    <name>HomeStageCard</name>
-    <message>
-        <location filename="../launcher/qml/Components/HomeStageCard.qml" line="+109"/>
-        <source>Crashed last time</source>
-        <translation>Geçen sefer çöktü</translation>
     </message>
 </context>
 <context>
@@ -5524,7 +5794,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceContentController</name>
     <message>
-        <location filename="../launcher/models/InstanceContentController.cpp" line="+517"/>
+        <location filename="../launcher/models/InstanceContentController.cpp" line="+575"/>
         <source>No file was chosen.</source>
         <translation>Hiç dosya seçilmedi.</translation>
     </message>
@@ -5563,7 +5833,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceDetails</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="+340"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="+345"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>
     </message>
@@ -5573,7 +5843,7 @@ Lütfen tekrar dene.</translation>
         <translation>Dünyayı kopyala</translation>
     </message>
     <message>
-        <location line="+136"/>
+        <location line="+141"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -5988,12 +6258,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceList</name>
     <message>
-        <location filename="../launcher/InstanceList.cpp" line="+275"/>
+        <location filename="../launcher/InstanceList.cpp" line="+287"/>
         <source>%1 Instance</source>
         <translation>%1 kurulumu</translation>
     </message>
     <message>
-        <location line="+1638"/>
+        <location line="+1644"/>
         <source>Could not remove a file the updated pack no longer includes: %1</source>
         <translation>Güncellenen paketin artık içermediği bir dosya kaldırılamadı: %1</translation>
     </message>
@@ -6100,7 +6370,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+135"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+149"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -6161,12 +6431,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+316"/>
+        <location line="+319"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-194"/>
+        <location line="-197"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -6186,7 +6456,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+174"/>
+        <location line="+177"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -7229,7 +7499,7 @@ Demoyu oynamak ister misin?</translation>
         <translation>Profil oluşturucu başlatılamadı: %1</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+59"/>
         <source>Already stopping</source>
         <translation>Zaten durduruluyor</translation>
     </message>
@@ -7310,7 +7580,7 @@ Demoyu oynamak ister misin?</translation>
 <context>
     <name>LaunchTask</name>
     <message>
-        <location filename="../launcher/launch/LaunchTask.cpp" line="+118"/>
+        <location filename="../launcher/launch/LaunchTask.cpp" line="+120"/>
         <source>Preparing to launch</source>
         <translation>Başlatmaya hazırlanılıyor</translation>
     </message>
@@ -7399,7 +7669,7 @@ Oyun hâlâ dosyalara günlük yazıyor ve disk alanını endişe verici hızda 
         <translation>%1 kurulumunun kütüphaneleri</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+15"/>
         <source>Null jar is specified in the metadata, aborting.</source>
         <translation>Meta verisinde boş jar belirtilmiş, işlem durduruluyor.</translation>
     </message>
@@ -7417,7 +7687,7 @@ Dosyaları eklemen ya da bunları gerektiren paketleri kaldırman gerekiyor.
 Bu sorunu elle düzeltmen gerekecek.</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+31"/>
         <source>Game update failed: it was impossible to fetch the required libraries.
 Reason:
 %1</source>
@@ -7571,7 +7841,7 @@ Neden:
 <context>
     <name>LogTab</name>
     <message>
-        <location filename="../launcher/qml/Components/LogTab.qml" line="+130"/>
+        <location filename="../launcher/qml/Components/LogTab.qml" line="+180"/>
         <source>Follow</source>
         <translation>Takip et</translation>
     </message>
@@ -7779,7 +8049,7 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+317"/>
+        <location filename="../launcher/qml/Main.qml" line="+323"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
@@ -7789,7 +8059,17 @@ Neden:
         <translation>Oynamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
     <message>
-        <location line="+173"/>
+        <location line="+142"/>
+        <source>No version of %1 for this Minecraft yet. The game may not start.</source>
+        <translation>%1 için bu Minecraft sürümüne uygun dosya henüz yok. Oyun açılmayabilir.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Show mods</source>
+        <translation>Modları göster</translation>
+    </message>
+    <message>
+        <location line="+47"/>
         <source>Delete “%1”? Its folder — worlds, mods, screenshots — is removed for good.</source>
         <translation>“%1” silinsin mi? Klasörü (dünyalar, modlar, ekran görüntüleri) tamamen kaldırılır.</translation>
     </message>
@@ -7829,7 +8109,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+330"/>
+        <location line="+361"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -8867,7 +9147,7 @@ AppImageUpdate&apos;i yükle ya da yeni sürümü elle indir.</translation>
 <context>
     <name>MinecraftInstance</name>
     <message>
-        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+841"/>
+        <location filename="../launcher/minecraft/MinecraftInstance.cpp" line="+871"/>
         <source>Kite mod: %1</source>
         <translation>Kite modu: %1</translation>
     </message>
@@ -9680,7 +9960,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+82"/>
+        <location line="+85"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -9787,7 +10067,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-361"/>
+        <location line="-364"/>
         <source>Pick a Minecraft version.</source>
         <translation>Bir Minecraft sürümü seç.</translation>
     </message>
@@ -9803,7 +10083,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
-        <location line="+359"/>
+        <location line="+362"/>
         <source>None for this version</source>
         <translation>Bu sürüm için yok</translation>
     </message>
@@ -10583,24 +10863,25 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PerformanceSetupTask</name>
     <message>
-        <location filename="../launcher/minecraft/PerformanceSetupTask.cpp" line="+49"/>
+        <location filename="../launcher/minecraft/PerformanceSetupTask.cpp" line="+100"/>
         <source>Checking Kite Performance</source>
         <translation>Kite Performans kontrol ediliyor</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+8"/>
         <source>Kite Performance needs a mod loader; this instance is left as it is</source>
         <translation>Kite Performans bir mod yükleyici ister; bu kurulum olduğu gibi bırakıldı</translation>
     </message>
     <message>
         <location line="+6"/>
-        <location line="+21"/>
-        <location line="+43"/>
+        <location line="+45"/>
+        <location line="+65"/>
+        <location line="+55"/>
         <source>Kite Performance: up to date</source>
         <translation>Kite Performans: güncel</translation>
     </message>
     <message>
-        <location line="-27"/>
+        <location line="-82"/>
         <source>Looking for mods you already have</source>
         <translation>Zaten sahip olduğun modlar aranıyor</translation>
     </message>
@@ -10615,12 +10896,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Performans modları bulunuyor</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+7"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+41"/>
         <location line="+11"/>
         <source>Kite Performance: no matching mods for this version</source>
         <translation>Kite Performans: bu sürüm için uygun mod yok</translation>
@@ -10631,12 +10912,22 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Kite Performans: Modrinth&apos;e ulaşılamadı; değişiklik yapmadan oynatılıyor</translation>
     </message>
     <message>
-        <location line="-23"/>
+        <location line="+52"/>
+        <source>No version for Minecraft %1: %2.</source>
+        <translation>Minecraft %1 için sürümü yok: %2.</translation>
+    </message>
+    <message>
+        <location line="-75"/>
         <source>Downloading performance mods</source>
         <translation>Performans modları indiriliyor</translation>
     </message>
+    <message>
+        <location line="-205"/>
+        <source>Waiting for Kite Performance</source>
+        <translation>Kite Performans bekleniyor</translation>
+    </message>
     <message numerus="yes">
-        <location line="+29"/>
+        <location line="+235"/>
         <source>Kite Performance: added %n mod(s)</source>
         <translation>
             <numerusform>Kite Performans: %n mod eklendi</numerusform>
@@ -10888,18 +11179,28 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PrepareKiteMod</name>
     <message>
-        <location filename="../launcher/minecraft/launch/PrepareKiteMod.cpp" line="+62"/>
+        <location filename="../launcher/minecraft/launch/PrepareKiteMod.cpp" line="+63"/>
         <source>Checking the Kite mod</source>
         <translation>Kite modu kontrol ediliyor</translation>
     </message>
     <message>
         <location line="+5"/>
-        <location line="+62"/>
+        <location line="+95"/>
         <source>Kite mod</source>
         <translation>Kite modu</translation>
     </message>
     <message>
-        <location line="-29"/>
+        <location line="-61"/>
+        <source>Kite mod: KITE_MOD_JAR is made for Minecraft %1, not %2; it is left out of this launch</source>
+        <translation>Kite modu: KITE_MOD_JAR Minecraft %1 için yapılmış, %2 için değil; bu açılışta eklenmiyor</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Kite mod: using KITE_MOD_JAR %1</source>
+        <translation>Kite modu: KITE_MOD_JAR kullanılıyor: %1</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Kite mod: Fabric Loader %1 is too old for it</source>
         <translation>Kite modu: Fabric Loader %1 bunun için çok eski</translation>
     </message>
@@ -10914,13 +11215,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Kite modu: sürüm listesi alınamadı</translation>
     </message>
     <message>
+        <location line="+21"/>
+        <source>Kite mod: %1 is made for Minecraft %2, not %3; it is left out of this launch</source>
+        <translation>Kite modu: %1, Minecraft %2 için yapılmış, %3 için değil; bu açılışta eklenmiyor</translation>
+    </message>
+    <message>
         <location line="+6"/>
-        <location line="+49"/>
         <source>Kite mod: %1 ready</source>
         <translation>Kite modu: %1 hazır</translation>
     </message>
     <message>
-        <location line="-40"/>
+        <location line="+6"/>
         <source>Downloading the Kite mod</source>
         <translation>Kite modu indiriliyor</translation>
     </message>
@@ -11814,7 +12119,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+404"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+479"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -11824,7 +12129,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+316"/>
+        <location line="+341"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -13088,7 +13393,7 @@ Currently installed version: %1</source>
         <translation>Giriş yapılmadı</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+16"/>
         <source>Privacy</source>
         <translation>Gizlilik</translation>
     </message>
@@ -13119,7 +13424,7 @@ Currently installed version: %1</source>
         <translation>Oynadığını arkadaşların görür ama nerede oynadığını görmez.</translation>
     </message>
     <message>
-        <location line="-49"/>
+        <location line="-56"/>
         <location line="+4"/>
         <source>Use Friends</source>
         <translation>Arkadaşlık özelliğini kullan</translation>
@@ -13190,12 +13495,12 @@ Currently installed version: %1</source>
         <translation>Bu, %1 hesabının verisi. Diğer Minecraft hesaplarının verisi kalır.</translation>
     </message>
     <message>
-        <location line="-80"/>
+        <location line="-87"/>
         <source>Friends add you by this Minecraft name.</source>
         <translation>Arkadaşlar seni bu Minecraft adıyla ekler.</translation>
     </message>
     <message>
-        <location line="+52"/>
+        <location line="+59"/>
         <source>Let friends join the server I am on</source>
         <translation>Arkadaşlarımın bulunduğum sunucuya katılmasına izin ver</translation>
     </message>
@@ -14832,7 +15137,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>VerifyJavaInstall</name>
     <message>
-        <location filename="../launcher/minecraft/launch/VerifyJavaInstall.cpp" line="+256"/>
+        <location filename="../launcher/minecraft/launch/VerifyJavaInstall.cpp" line="+280"/>
         <source>Current Java version %1 does not meet the requirement of Java %2.</source>
         <translation>Mevcut Java sürümü %1, Java %2 gereksinimini karşılamıyor.</translation>
     </message>
@@ -14857,7 +15162,12 @@ inheritsFrom eksik</translation>
         <translation>Java %1 gerekli ama yüklü değil. Otomatik Java indirme kapalı.</translation>
     </message>
     <message>
-        <location line="-38"/>
+        <location line="-68"/>
+        <source>Choosing the Java for this version again.</source>
+        <translation>Bu sürüm için Java yeniden seçiliyor.</translation>
+    </message>
+    <message>
+        <location line="+30"/>
         <source>No Java is set up. Looking for Java %1.</source>
         <translation>Ayarlı bir Java yok. Java %1 aranıyor.</translation>
     </message>
@@ -15225,7 +15535,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldCopyTask</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="-436"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="-444"/>
         <source>The operation failed. See the launcher log for details.</source>
         <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
     </message>

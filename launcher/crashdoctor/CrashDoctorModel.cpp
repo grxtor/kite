@@ -32,8 +32,6 @@
 
 namespace
 {
-	/// Between "who needs" and "what" in a row of a grouped card.
-	const char* const kArrow = " \u2192 ";
 
 	QString runnerName(CrashActions::Runner runner)
 	{
@@ -59,18 +57,15 @@ namespace
 		return QString();
 	}
 
-	/// One line of a grouped card: who needs what, else the log line. Mod ids
-	/// read as the names the installed files give them.
-	QString rowText(const CrashDoctor::Finding& finding, const QHash<QString, QString>& names)
+	/// What one finding of a grouped card is about and who needs it, as the
+	/// names the installed files give them; empty "what" when it names none.
+	QPair<QString, QString> rowParts(const CrashDoctor::Finding& finding,
+									 const QHash<QString, QString>& names)
 	{
 		const auto named = [&names](const QString& value) { return names.value(value, value); };
-		const QString what = named(firstOf(finding.captures, {"modName", "mod", "clsModName", "clsMod",
-															  "jar", "file", "bName", "b"}));
-		const QString by = named(firstOf(finding.captures, {"byName", "by", "aName", "a"}));
-		if (what.isEmpty()) {
-			return finding.line;
-		}
-		return by.isEmpty() ? what : by + QString::fromUtf8(kArrow) + what;
+		return {named(firstOf(finding.captures, {"modName", "mod", "clsModName", "clsMod", "jar",
+												 "file", "bName", "b"})),
+				named(firstOf(finding.captures, {"byName", "by", "aName", "a"}))};
 	}
 
 	SettingsObject* launcherSettings()
@@ -128,7 +123,10 @@ QVariantList CrashDoctorModel::causes() const
 	for (const CrashDoctor::Cause& cause : report->causes) {
 		QVariantList rows;
 		for (const CrashDoctor::Finding& finding : cause.findings) {
-			rows.append(rowText(finding, report->modNames));
+			const auto [what, by] = rowParts(finding, report->modNames);
+			rows.append(what.isEmpty()	 ? finding.line
+						: by.isEmpty() ? what
+									   : tr("%1 (needed by %2)").arg(what, by));
 		}
 		QVariantList fixes;
 		for (const CrashDoctor::ResolvedFix& fix : cause.fixes) {
