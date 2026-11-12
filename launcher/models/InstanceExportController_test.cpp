@@ -164,6 +164,45 @@ class InstanceExportControllerTest : public QObject
 		QVERIFY(!entries.contains(".backups/old.zip"));
 	}
 
+	/* An instance imported with Link plays in another launcher's folder. Its
+	 * zip carries those game files under its own game folder, like any
+	 * instance's, but not that launcher's own files or sign-in, and its
+	 * instance.cfg loses the link. */
+	void zipCarriesALinkedGameFolder()
+	{
+		const QString game = m_dir.filePath("other-launcher/.minecraft");
+		QVERIFY(writeFile(FS::PathCombine(game, "saves/World/level.dat")));
+		QVERIFY(writeFile(FS::PathCombine(game, "mods/a.jar")));
+		QVERIFY(writeFile(FS::PathCombine(game, "options.txt")));
+		QVERIFY(writeFile(FS::PathCombine(game, "logs/latest.log")));
+		QVERIFY(writeFile(FS::PathCombine(game, "launcher_accounts.json")));
+		auto instance = makeInstance("linked", "../other-launcher/.minecraft");
+		const QString root = instance->instanceRoot();
+		instance->settings()->registerSetting("LinkedGameDir", "");
+		instance->settings()->set("LinkedGameDir", QFileInfo(game).canonicalFilePath());
+
+		InstanceExportController controller(instance);
+		const QString output = m_dir.filePath("linked-export.zip");
+		auto* watcher = qobject_cast<TaskWatcher*>(
+			controller.exportTo(QUrl::fromLocalFile(output).toString()));
+		QVERIFY(watcher);
+		waitFor(watcher);
+		QVERIFY2(watcher->succeeded(), qPrintable(watcher->error()));
+
+		const QStringList entries = MMCZip::listEntries(output);
+		QVERIFY2(entries.contains("minecraft/saves/World/level.dat"), qPrintable(entries.join(", ")));
+		QVERIFY(entries.contains("minecraft/mods/a.jar"));
+		QVERIFY(entries.contains("minecraft/options.txt"));
+		QVERIFY(!entries.join(",").contains("launcher_accounts"));
+		QVERIFY(!entries.join(",").contains("logs/"));
+		QCOMPARE(entries.count("instance.cfg"), 1);
+
+		const QByteArray text = MMCZip::readFileFromZip(output, "instance.cfg");
+		QVERIFY2(!text.contains("LinkedGameDir"), text.constData());
+		QVERIFY(text.contains("name=linked"));
+		QVERIFY(QFile::exists(FS::PathCombine(root, "instance.cfg")));
+	}
+
 	/* Icons the launcher renders -- from a built-in icon, possibly the
 	 * player's own game textures -- never go; a file named after a custom
 	 * icon's key is that icon, and stays. */

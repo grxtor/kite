@@ -1,0 +1,16 @@
+{
+  "path": "Old Profile",
+  "metadata": {
+    "name": "Old Profile",
+    "game_version": "1.19.2",
+    "loader": "quilt",
+    "loader_version": {"id": "0.17.6", "url": "", "stable": true},
+    "last_played": "2024-03-01T12:00:00.000Z"
+  },
+  "projects": {
+    "mods/sodium.jar": {"sha512": "x", "disabled": false, "metadata": {"type": "modrinth", "project": {"id": "AANobbMI", "slug": "sodium", "title": "Sodium"}, "version": {"id": "OihdIimA", "version_number": "0.4.4"}}},
+    "mods\\lithium.jar": {"sha512": "y", "disabled": false, "metadata": {"type": "modrinth", "project": {"id": "gvQqBUqZ", "slug": "lithium", "title": "Lithium"}, "version": {"id": "ZSNsJrPI", "version_number": "0.10.0"}}},
+    "../../escape.jar": {"sha512": "z", "disabled": false, "metadata": {"type": "modrinth", "project": {"id": "EVIL0001"}, "version": {"id": "EVIL0002"}}},
+    "mods/local.jar": {"sha512": "w", "disabled": false, "metadata": {"type": "unknown"}}
+  }
+}

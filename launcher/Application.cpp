@@ -879,6 +879,9 @@ void Application::initSettings()
 	m_settings->registerSetting("UiSidebarCollapsed", true);
 	m_settings->registerSetting("UiSidebarWidth", 240);
 	m_settings->registerSetting("UiReduceMotion", false);
+	// Home's "Set up Kite" step for other launchers' instances: true once the
+	// player imported some or hid the step.
+	m_settings->registerSetting("SetupImportDone", false);
 
 	/* Screen-top menu bar (macOS only; elsewhere carried but unused). The
 	 * second key is the original name, kept so existing configs still read. */

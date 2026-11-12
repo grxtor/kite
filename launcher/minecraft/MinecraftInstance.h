@@ -96,6 +96,12 @@ class MinecraftInstance : public BaseInstance
 	// Path to the instance's minecraft directory.
 	QString gameRoot() const override;
 
+	/* The game folder of an instance in @p instanceRoot: @p linkedGameDir
+	 * when it names an existing folder (an instance imported with Link uses
+	 * another launcher's), else its own minecraft or .minecraft. */
+	static QString gameRootFor(const QString& instanceRoot,
+							   const QString& linkedGameDir);
+
 	// Path to the instance's minecraft bin directory.
 	QString binRoot() const;
 

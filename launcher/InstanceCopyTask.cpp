@@ -22,12 +22,16 @@
 #include "FileSystem.h"
 #include "NullInstance.h"
 #include "pathmatcher/RegexpMatcher.h"
+#include "launcherimport/ImportBuild.h"
+#include "launcherimport/ImportCopy.h"
+#include "launcherimport/LinkedGame.h"
 #include <QtConcurrentRun>
 
 InstanceCopyTask::InstanceCopyTask(InstancePtr origInstance, bool copySaves,
 								   bool keepPlaytime)
 {
 	m_origInstance = origInstance;
+	m_copySaves = copySaves;
 	m_keepPlaytime = keepPlaytime;
 
 	if (!copySaves) {
@@ -45,7 +49,30 @@ void InstanceCopyTask::executeTask()
 	FS::copy folderCopy(m_origInstance->instanceRoot(), m_stagingPath);
 	folderCopy.followSymlinks(false).blacklist(m_matcher.get());
 
-	m_copyFuture = QtConcurrent::run(QThreadPool::globalInstance(), folderCopy);
+	/* An instance imported with Link plays in another launcher's folder; its
+	 * duplicate gets those files as its own (what a Copy import takes) instead
+	 * of a second link to the same folder. */
+	const QString linkedGame = LauncherImport::outsideGameRoot(*m_origInstance);
+	const QStringList leaveOut =
+		m_copySaves ? QStringList() : QStringList{QStringLiteral("saves")};
+	const QString ownGame = FS::PathCombine(m_stagingPath, "minecraft");
+
+	m_copyFuture = QtConcurrent::run(
+		QThreadPool::globalInstance(),
+		[folderCopy, linkedGame, leaveOut, ownGame]() mutable {
+			if (!folderCopy()) {
+				return false;
+			}
+			if (linkedGame.isEmpty()) {
+				return true;
+			}
+			const std::atomic_bool never{false};
+			const LauncherImport::CopyPlan plan =
+				LauncherImport::planCopy(linkedGame, nullptr, leaveOut);
+			QString error;
+			return !plan.tooLarge &&
+				   LauncherImport::runCopy(plan, ownGame, never, nullptr, &error);
+		});
 	connect(&m_copyFutureWatcher, &QFutureWatcher<bool>::finished, this,
 			&InstanceCopyTask::copyFinished);
 	connect(&m_copyFutureWatcher, &QFutureWatcher<bool>::canceled, this,
@@ -64,6 +91,9 @@ void InstanceCopyTask::copyFinished()
 	auto instanceSettings = std::make_shared<INISettingsObject>(
 		FS::PathCombine(m_stagingPath, "instance.cfg"));
 	instanceSettings->registerSetting("InstanceType", "Legacy");
+	/* A duplicate stands on its own, linked or not. */
+	instanceSettings->registerSetting(LauncherImport::kLinkedGameDirKey, "");
+	instanceSettings->reset(LauncherImport::kLinkedGameDirKey);
 
 	InstancePtr inst(
 		new NullInstance(m_globalSettings, instanceSettings, m_stagingPath));

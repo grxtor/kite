@@ -15,6 +15,8 @@ Item {
 
     property bool hasInstances: false
     property bool signedIn: false
+    // QmlShell.launcherImport, or null.
+    property var importer: null
     // NewsModel, or null.
     property var news: null
     // RecentWorldsModel, or null.
@@ -28,6 +30,7 @@ Item {
     property bool friendsInPanel: false
 
     signal signInRequested()
+    signal importRequested()
     // tab: "friends", "requests" or "add".
     signal friendsRequested(string tab)
     signal navigateRequested(string target)
@@ -90,7 +93,9 @@ Item {
                 visible: gettingStarted.shown
                 hasInstances: root.hasInstances
                 signedIn: root.signedIn
+                importer: root.importer
                 onSignInRequested: root.signInRequested()
+                onImportRequested: root.importRequested()
             }
 
             HomeFriends {

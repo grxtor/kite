@@ -36,6 +36,10 @@ class QFileSystemModel;
 class ExportFileTree;
 class MinecraftInstance;
 class TaskWatcher;
+namespace MMCZip
+{
+	class ExportToZipTask;
+}
 
 /*
  * Exports one instance for the QML dialog. "zip" writes the instance folder as
@@ -176,6 +180,9 @@ class InstanceExportController : public QObject
 	MMCZip::FilterFileFunction snapshotFilter() const;
 	Task* buildTask(const QString& output);
 	void saveInstanceIcon() const;
+	/* A .zip export's instance.cfg without a link to another launcher's
+	 * folder and, for an instance that has one, that folder's game files. */
+	void addLinkedGameFiles(MMCZip::ExportToZipTask* task) const;
 	void setError(const QString& error);
 	void loadPackFields();
 	QString ignoreFileName() const;

@@ -1,0 +1,15 @@
+{
+  "name": "All the Mods (synthetic)",
+  "gameVersion": "1.20.1",
+  "baseModLoader": {"name": "forge-47.2.0", "forgeVersion": "47.2.0", "minecraftVersion": "1.20.1", "type": 1},
+  "lastPlayed": "2026-10-30T18:20:00Z",
+  "installPath": "C:\\Users\\nobody\\curseforge\\minecraft\\Instances\\All the Mods",
+  "installedAddons": [
+    {"addonID": 238222, "name": "Just Enough Items", "installedFile": {"id": 4712866, "fileName": "jei-forge.jar", "downloadUrl": "https://edge.forgecdn.net/files/4712/866/jei-forge.jar"}},
+    {"addonID": 999001, "name": "Disabled Mod", "installedFile": {"id": 5000001, "fileName": "disabled-mod.jar"}},
+    {"addonID": 999002, "name": "Pack", "installedFile": {"id": 5000002, "fileName": "pack.zip"}},
+    {"addonID": 999003, "name": "Escape", "installedFile": {"id": 5000003, "fileName": "../../escape.jar"}},
+    {"addonID": 999004, "name": "Absolute", "installedFile": {"id": 5000004, "fileName": "/tmp/absolute.jar"}},
+    {"addonID": 999005, "name": "Not On Disk", "installedFile": {"id": 5000005, "fileName": "missing.jar"}}
+  ]
+}

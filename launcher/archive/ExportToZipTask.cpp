@@ -98,7 +98,8 @@ namespace MMCZip
 		}
 
 		qint64 done = 0;
-		const qint64 total = m_files.length() + m_extraFiles.size();
+		const qint64 total =
+			m_files.length() + m_extraFiles.size() + m_mappedFiles.size();
 
 		/* Generated entries first, so a truncated archive still has the
 		 * manifest. */
@@ -143,6 +144,17 @@ namespace MMCZip
 			if (!zip.addFile(absolute, m_destinationPrefix + relative)) {
 				return ZipResult(tr("Could not read and compress %1: %2")
 									 .arg(relative, zip.errorString()));
+			}
+			reportProgress(++done, total);
+		}
+
+		for (const auto& [absolute, entry] : m_mappedFiles) {
+			if (m_cancelled.load())
+				return ZipResult();
+			reportStatus(tr("Compressing: %1").arg(entry));
+			if (!zip.addFile(absolute, m_destinationPrefix + entry)) {
+				return ZipResult(tr("Could not read and compress %1: %2")
+									 .arg(entry, zip.errorString()));
 			}
 			reportProgress(++done, total);
 		}
