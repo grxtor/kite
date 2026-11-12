@@ -291,6 +291,7 @@ void ModUpdateCheckTask::executeTask()
 					}
 					qWarning() << "Update check failed for" << entry.name << ":"
 							   << reason;
+					m_failed++;
 					onOneDone();
 				});
 		propagateStepsFrom(job);

@@ -322,6 +322,14 @@ qt_add_qml_module(Kite_qml_components
         LegacyUpgradeNotice.qml
         ContentResultRow.qml
         ContentProjectPanel.qml
+        WhatsNewDialog.qml
+        WhatsNewItem.qml
+        QuickJoinAddDialog.qml
+        QuickJoinEditDialog.qml
+        QuickJoinEditRow.qml
+        QuickJoinHint.qml
+        QuickJoinMenus.qml
+        ModUpdatesLine.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg
@@ -347,6 +355,7 @@ qt_add_qml_module(Kite_qml_components
         icons/folder-input.svg
         icons/globe.svg
         icons/grid.svg
+        icons/grip-vertical.svg
         icons/home.svg
         icons/hourglass.svg
         icons/image.svg
@@ -360,6 +369,8 @@ qt_add_qml_module(Kite_qml_components
         icons/more.svg
         icons/moon.svg
         icons/package.svg
+        icons/pin.svg
+        icons/pin-off.svg
         icons/play.svg
         icons/plus.svg
         icons/puzzle.svg
@@ -369,8 +380,10 @@ qt_add_qml_module(Kite_qml_components
         icons/server.svg
         icons/settings.svg
         icons/share.svg
+        icons/shield-check.svg
         icons/sliders.svg
         icons/sort.svg
+        icons/stethoscope.svg
         icons/stop.svg
         icons/sun.svg
         icons/terminal.svg

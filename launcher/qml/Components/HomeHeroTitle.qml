@@ -31,6 +31,10 @@ ColumnLayout {
     property bool iconMeta: false
     property int metaSize: Theme.type.body.pixelSize
     property int metaSpacing: Theme.space.lg
+    // How many of its mods have a newer version (ModUpdateReminder); "3 updates" leads to them.
+    property int modUpdates: 0
+
+    signal updatesRequested()
 
     // Rounded up: a layout rounds widths, and a name a fraction too narrow elides.
     readonly property int naturalWidth: Math.ceil(Math.max(nameText.implicitWidth, identity.implicitWidth))
@@ -120,6 +124,15 @@ ColumnLayout {
             text: root.playTimeText
             tabular: true
         }
+        ModUpdatesLine {
+            anchors.verticalCenter: parent.verticalCenter
+            objectName: "heroModUpdates"
+            count: root.modUpdates
+            ink: root.inkSecondary
+            textSize: root.metaSize
+            iconSize: root.metaIconSize
+            onClicked: root.updatesRequested()
+        }
     }
 
     // The play time drops to a second line rather than run under Play when the column is narrow.
@@ -173,6 +186,15 @@ ColumnLayout {
                 color: root.inkSecondary
                 font.features: ({ "tnum": 1 })
             }
+        }
+        ModUpdatesLine {
+            objectName: "heroModUpdates"
+            count: root.modUpdates
+            ink: root.inkSecondary
+            iconSize: Theme.icon.sm
+            // After the play time, with the same gap the dot leaves before it.
+            leftPadding: root.showsWhen && root.playTimeText.length > 0 ? Theme.space.sm : 0
+            onClicked: root.updatesRequested()
         }
     }
 

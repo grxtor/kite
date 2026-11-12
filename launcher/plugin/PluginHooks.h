@@ -102,6 +102,12 @@ enum MMCOHookId : uint32_t {
 	 * happened, worth a desktop notification; once per crash. Payload: MMCOCrashFixNotice*. The
 	 * return value is ignored. */
 	MMCO_HOOK_CRASH_FIX_FOUND = 0x0A00,
+
+	/* MMCO_HOOK_MOD_UPDATES_FOUND: a background check found newer versions of an instance's mods,
+	 * worth a desktop notification; at most once a day for all instances, and only while the
+	 * launcher's ModUpdateNotifications setting is on (off by default). Payload:
+	 * MMCOModUpdatesNotice*. The return value is ignored. */
+	MMCO_HOOK_MOD_UPDATES_FOUND = 0x0B00,
 };
 
 /* Hook callback signature.
@@ -261,6 +267,16 @@ struct MMCOCrashFixNotice {
 	const char* rule_id;	   /* the crash rule that knows it now, "mods.crashed" */
 	const char* title;		   /* "A fix was found" */
 	const char* body;		   /* "Last Tuesday's Skies crash has a fix now."; never empty */
+};
+
+/* Payload for MMCO_HOOK_MOD_UPDATES_FOUND. Strings are UTF-8, owned by the host and valid only
+ * during the callback. title and body are worded by Kite in the launcher's language, ready to show. */
+struct MMCOModUpdatesNotice {
+	const char* instance_id;   /* the instance whose mods have newer versions */
+	const char* instance_name; /* its name as the library shows it */
+	int count;				   /* how many of its mods */
+	const char* title;		   /* "New mod versions" */
+	const char* body;		   /* "3 mods in Survival have new versions."; never empty */
 };
 
 struct MMCOFriendsNotice {

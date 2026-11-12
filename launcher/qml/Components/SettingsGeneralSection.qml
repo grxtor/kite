@@ -51,6 +51,23 @@ SettingsScroll {
     }
     SettingsGroup {
         width: parent.width
+        title: qsTr("Mod updates")
+        SettingSwitch {
+            id: modUpdateChecks
+            key: "ModUpdateChecks"
+            label: qsTr("Check for mod updates")
+            description: qsTr("Once a day, Kite looks for newer versions of an instance's mods and says how many there are. Nothing is installed until you update.")
+        }
+        SettingSwitch {
+            key: "ModUpdateNotifications"
+            enabled: modUpdateChecks.checked
+            forcedOff: !modUpdateChecks.checked
+            label: qsTr("Notify me on the desktop")
+            description: qsTr("At most once a day, when an instance's mods have new versions.")
+        }
+    }
+    SettingsGroup {
+        width: parent.width
         title: qsTr("Folders")
         description: qsTr("Relative paths are inside Kite's data folder. Changing a folder does not move what is already in it.")
         Repeater {

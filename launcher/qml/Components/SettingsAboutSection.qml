@@ -16,6 +16,9 @@ SettingsScroll {
 
     // QmlShell.about (AboutInfo), or null.
     property var about: null
+    // QmlShell.whatsNew (WhatsNew), or null: "What's new" shows while this version has notes.
+    property var whatsNew: null
+    signal whatsNewRequested()
     readonly property bool shown: !!root.about
     property bool licencesOpen: false
 
@@ -50,6 +53,15 @@ SettingsScroll {
         width: parent.width
         title: root.about ? root.about.name : ""
         FactRow { label: qsTr("Version"); value: root.about ? root.about.version : "" }
+        SettingRow {
+            visible: !!root.whatsNew && root.whatsNew.version.length > 0
+            label: qsTr("What's new")
+            description: root.whatsNew ? qsTr("What came with Kite %1.").arg(root.whatsNew.version) : ""
+            Button {
+                text: qsTr("Show")
+                onClicked: root.whatsNewRequested()
+            }
+        }
         FactRow { label: qsTr("Platform"); value: root.about ? root.about.platform : "" }
         FactRow { label: qsTr("Built"); value: root.about ? root.about.buildDate : "" }
         FactRow { label: qsTr("Commit"); value: root.about ? root.about.commit : ""; monospace: true }

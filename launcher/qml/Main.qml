@@ -77,6 +77,8 @@ ApplicationWindow {
             LauncherStore.updates = root.shell.updateSettings
             LauncherStore.catPacks = root.shell.catPacks
             LauncherStore.icons = root.shell
+            LauncherStore.modUpdates = root.shellValue("modUpdates")
+            LauncherStore.quickJoin = root.shellValue("quickJoin")
             var mode = SettingsStore.string("UiThemeMode")
             if (mode === "dark" || mode === "light" || mode === "system")
                 Theme.mode = mode
@@ -177,6 +179,19 @@ ApplicationWindow {
                 root.dialog(newInstanceLoader).openModPicker()
             else if (key === "nav")
                 root.navigate(value)
+            // whatsnew[=<version>]: the notes after that version (the newest alone without one), whatever this build's.
+            else if (key === "whatsnew") {
+                root.whatsNew.debugShowSince(value)
+                root.dialog(whatsNewLoader).open()
+            }
+            // modupdates=<id>,<count>: as if the background check had found that many.
+            else if (key === "modupdates") {
+                var update = value.split(",")
+                LauncherStore.modUpdates.debugRecord(update[0], parseInt(update[1]))
+            }
+            // quickjoin=edit|add|hint|menu opens that part of Home's quick-join bar.
+            else if (key === "quickjoin")
+                Qt.callLater(quickJoinBar.debugOpen, value)
             else if (key === "import")
                 root.openImport(value)
             else if (key === "friends")
@@ -883,11 +898,14 @@ ApplicationWindow {
         // Home only: the big servers to join in one click, against the right of the page's column.
         middle: [
             QuickJoinBar {
-                visible: root.page === "home" && root.featuredList.length > 0
+                id: quickJoinBar
+                visible: root.page === "home" && !!LauncherStore.quickJoin
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(implicitWidth, parent.width - Theme.space.xl)
-                servers: root.featuredList
+                layout: LauncherStore.quickJoin
+                hintAllowed: !root.onboarding && !(root.whatsNew && root.whatsNew.pending)
+                             && !(whatsNewLoader.item && whatsNewLoader.item.visible)
                 pinger: root.serverPinger
                 friends: root.friendsController ? root.friendsController.friends : []
                 joinFlow: serverJoin
@@ -1070,7 +1088,12 @@ ApplicationWindow {
                                 shareCodes: root.shareCodes
                                 friendsAccountName: root.shellValue("accountKind") === "Microsoft"
                                                     ? root.shellValue("accountName", "") : ""
+                                whatsNew: root.whatsNew
                                 onOpenPathRequested: (path) => root.call("openPath", path)
+                                onWhatsNewRequested: {
+                                    root.whatsNew.showLatest()
+                                    root.dialog(whatsNewLoader).open()
+                                }
                         }
                     }
 
@@ -1212,6 +1235,22 @@ ApplicationWindow {
             onCreated: root.page = "home"
             onOpenInstanceRequested: (id) => root.navigate("instance/" + id + "/content")
         }
+    }
+
+    // "What's new in Kite 1.3.0", once after an update and from Settings → About.
+    readonly property var whatsNew: root.shellValue("whatsNew")
+    Loader {
+        id: whatsNewLoader
+        active: false
+        sourceComponent: WhatsNewDialog {
+            notes: root.whatsNew
+        }
+    }
+    // Waits for onboarding and a moment for the window to settle; never over another dialog it would hide.
+    Timer {
+        interval: 600
+        running: !!root.whatsNew && root.whatsNew.pending && !root.onboarding && root.visible
+        onTriggered: if (!whatsNewLoader.item || !whatsNewLoader.item.visible) root.dialog(whatsNewLoader).open()
     }
 
     Loader {

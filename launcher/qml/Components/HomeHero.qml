@@ -63,6 +63,15 @@ Item {
     readonly property string playTimeText: SettingsStore.bool("ShowGameTime") && Number(root.totalTimePlayed) > 0
                                            ? Format.playTime(root.totalTimePlayed) : ""
     readonly property real gapBelow: view.item ? view.item.gapBelow : 0
+    // How many of its mods have a newer version (ModUpdateReminder); asked again whenever the hero shows another
+    // instance, which the reminder answers at most once a day per instance.
+    readonly property var updates: LauncherStore.modUpdates
+    readonly property int modUpdates: root.updatesOf(root.instanceId, root.updates ? root.updates.revision : 0)
+    function updatesOf(id, revision) {
+        return root.updates && id.length > 0 ? root.updates.count(id) : 0
+    }
+    function openUpdates() { root.navigateRequested("instance/" + root.instanceId + "/content") }
+    onInstanceIdChanged: if (root.updates && root.instanceId.length > 0) root.updates.check(root.instanceId)
     readonly property real playCenterY: view.item ? view.item.playCenterY : 0
 
     // The views feed their taps here. The hero already shows this instance, so one tap does nothing: two open its page,

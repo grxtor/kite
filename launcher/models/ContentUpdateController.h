@@ -236,6 +236,8 @@ class ContentUpdateController : public QObject
 
 	ContentUpdateList* m_updates = nullptr;
 	QString m_updatesKind;
+	/// The updates listed are those of every file of the kind, not a selection.
+	bool m_updatesWhole = false;
 	std::shared_ptr<ModFolderModel> m_updatesFolder;
 	QPointer<ModUpdateCheckTask> m_check;
 	QString m_lastError;
