@@ -22,21 +22,16 @@ export interface Release {
 // is published (not while it is a draft): the site deploys from main, and an unpublished
 // release's files are 404s.
 const SITE_DOWNLOAD_VERSION = '1.3.0';
-// macOS Apple silicon and Intel Legacy (macOS 12) separately: v1.3.0 is going out without those
-// two builds. Flip this to SITE_DOWNLOAD_VERSION once the 1.3.0 arm64 and Legacy .dmg files are
-// on the release.
-const MAC_ARM_LEGACY_VERSION = '1.2.0';
 
 const FILES = `https://github.com/grxtor/kite/releases/download/v${SITE_DOWNLOAD_VERSION}`;
-const MAC_ARM_LEGACY_FILES = `https://github.com/grxtor/kite/releases/download/v${MAC_ARM_LEGACY_VERSION}`;
 
 export const release: Release = {
   version: SITE_DOWNLOAD_VERSION,
   downloads: {
     macos: [
-      { build: 'macosArm', url: `${MAC_ARM_LEGACY_FILES}/Kite-macOS-ARM-Qt6-v${MAC_ARM_LEGACY_VERSION}.dmg` },
+      { build: 'macosArm', url: `${FILES}/Kite-macOS-ARM-Qt6-v${SITE_DOWNLOAD_VERSION}.dmg` },
       { build: 'macosIntel', url: `${FILES}/Kite-macOS-Intel-Qt6-v${SITE_DOWNLOAD_VERSION}.dmg` },
-      { build: 'macosLegacy', url: `${MAC_ARM_LEGACY_FILES}/Kite-macOS-Intel-Legacy-Qt6-v${MAC_ARM_LEGACY_VERSION}.dmg` },
+      { build: 'macosLegacy', url: `${FILES}/Kite-macOS-Intel-Legacy-Qt6-v${SITE_DOWNLOAD_VERSION}.dmg` },
     ],
     windows: [
       { build: 'windowsX64', url: `${FILES}/Kite-Windows-MSVC-Qt6-Setup-v${SITE_DOWNLOAD_VERSION}.exe` },
