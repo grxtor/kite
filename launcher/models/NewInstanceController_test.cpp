@@ -233,6 +233,32 @@ class NewInstanceControllerTest : public QObject
 				 QString("could not reach the metadata server"));
 	}
 
+	/// reload() after a failure clears the error and starts a fresh load task.
+	void test_loaderVersions_reload_retriesAfterFailure()
+	{
+		FakeVersionList list({});
+		list.setLoaded(false);
+		auto* first = new ScriptedTask();
+		list.setLoadTask(Task::Ptr(first));
+
+		LoaderVersionListProxy proxy;
+		proxy.setSourceModel(&list);
+		first->driveFailure("offline");
+		QVERIFY(!proxy.loading());
+		QCOMPARE(proxy.error(), QString("offline"));
+
+		auto* second = new ScriptedTask();
+		list.setLoadTask(Task::Ptr(second));
+		proxy.reload();
+		QVERIFY(proxy.loading());
+		QVERIFY(proxy.error().isEmpty());
+		QVERIFY(second->isRunning());
+
+		second->driveSuccess();
+		QVERIFY(!proxy.loading());
+		QVERIFY(proxy.error().isEmpty());
+	}
+
 	/// "Exact if present": a build naming no Minecraft version (Fabric, Quilt) is
 	/// always kept; one that does must match exactly.
 	void test_loaderVersions_exactIfPresentFilter()
@@ -276,6 +302,36 @@ class NewInstanceControllerTest : public QObject
 		// crashing or guessing.
 		QCOMPARE(composeSuggestedInstanceName("1.21.1", "not-a-loader"),
 				 QString("1.21.1"));
+	}
+
+	/// A chosen loader without a version is refused, never dropped to vanilla.
+	void test_resolveCreationLoader()
+	{
+		QString uid = "stale";
+		QString version = "stale";
+
+		// Vanilla: nothing to install, and stale outputs are cleared.
+		QVERIFY(resolveCreationLoader(QString(), QString(), &uid, &version));
+		QVERIFY(uid.isEmpty());
+		QVERIFY(version.isEmpty());
+
+		QVERIFY(resolveCreationLoader("fabric", "0.16.5", &uid, &version));
+		QCOMPARE(uid, QString("net.fabricmc.fabric-loader"));
+		QCOMPARE(version, QString("0.16.5"));
+
+		QVERIFY(resolveCreationLoader("neoforge", "21.1.1", &uid, &version));
+		QCOMPARE(uid, QString("net.neoforged"));
+
+		// The silent-drop case: Fabric picked, its version list not loaded yet,
+		// failed, or empty for this Minecraft version.
+		QVERIFY(!resolveCreationLoader("fabric", QString(), &uid, &version));
+		QVERIFY(uid.isEmpty());
+		QVERIFY(version.isEmpty());
+		QVERIFY(!resolveCreationLoader("forge", QString(), &uid, &version));
+
+		// An unknown loader name is refused too.
+		QVERIFY(!resolveCreationLoader("not-a-loader", "1.0", &uid, &version));
+		QVERIFY(uid.isEmpty());
 	}
 
 	void test_suggestedImportName()
