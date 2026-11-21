@@ -21,6 +21,7 @@
 #include "models/LibraryController.h"
 
 #include "DesktopServices.h"
+#include "FileSystem.h"
 #include "InstanceCopyTask.h"
 #include "InstanceList.h"
 #include "icons/IconList.h"
@@ -63,6 +64,11 @@ QStringList LibraryController::collapsedGroups() const
 bool LibraryController::canUndoDelete() const
 {
 	return m_instances->trashedSomething();
+}
+
+bool LibraryController::trashAvailable() const
+{
+	return FS::canTrash();
 }
 
 QString LibraryController::lastDeletedName() const

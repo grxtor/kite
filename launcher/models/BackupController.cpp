@@ -30,6 +30,7 @@
 #include <functional>
 
 #include "FileSystem.h"
+#include "models/TrashUndo.h"
 #include "tasks/Task.h"
 #include "tasks/TaskWatcher.h"
 
@@ -263,6 +264,20 @@ QObject* BackupController::model() const
 	return m_model.get();
 }
 
+QObject* BackupController::trash() const
+{
+	return m_trash;
+}
+
+void BackupController::setTrashUndo(TrashUndo* trash)
+{
+	m_trash = trash;
+	if (trash) {
+		connect(trash, &TrashUndo::restored, this,
+				&BackupController::refresh);
+	}
+}
+
 bool BackupController::running() const
 {
 	return m_instance && m_instance->isRunning();
@@ -337,14 +352,23 @@ QObject* BackupController::deleteBackup(int row)
 	const BackupEntry entry = m_entries.at(row);
 	BackupManager manager = m_manager;
 
-	auto* task = new BackupJobTask(m_instance->id(), false, tr("Deleting backup…"), [manager, entry]() mutable {
-		return manager.deleteBackup(entry);
+	if (m_trash) {
+		m_trash->begin();
+	}
+	// Filled by the worker, read here once it is done.
+	auto trashed = std::make_shared<QList<FS::Trashed>>();
+
+	auto* task = new BackupJobTask(m_instance->id(), false, tr("Deleting backup…"), [manager, entry, trashed]() mutable {
+		return manager.deleteBackup(entry, trashed.get());
 	});
 
 	auto* watcher = new TaskWatcher(Task::Ptr(task), this);
 	watcher->setTitle(tr("Delete"));
-	connect(watcher, &TaskWatcher::finished, this, [this](bool ok) {
+	connect(watcher, &TaskWatcher::finished, this, [this, trashed](bool ok) {
 		if (ok) {
+			if (m_trash) {
+				m_trash->add(*trashed);
+			}
 			refresh();
 		}
 	});

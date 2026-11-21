@@ -56,6 +56,7 @@ Item {
     signal openFolderRequested(string path)
     signal changeVersionRequested(string key)
     signal resetMetadataRequested(string key, string name)
+    signal removeRequested(string key, string name)
 
     function isSelected(key) {
         return root.selectedKeys.indexOf(key) >= 0
@@ -96,10 +97,9 @@ Item {
         root.anchorKey = ""
     }
 
+    // ContentTab removes it: at once when it goes to the trash, after a question when it does not.
     function confirmRemove(key, name) {
-        confirm.key = key
-        confirm.text = qsTr("Remove “%1” from this instance? The file is deleted.").arg(name)
-        confirm.open()
+        root.removeRequested(key, name)
     }
 
     onKindChanged: {
@@ -247,18 +247,5 @@ Item {
         title: qsTr("No matches")
         body: root.model ? qsTr("Nothing here matches “%1”.").arg(root.model.filterText) : ""
         MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
-    }
-
-    ConfirmDialog {
-        id: confirm
-        property string key: ""
-        title: qsTr("Remove")
-        confirmText: qsTr("Remove")
-        onConfirmed: {
-            if (root.controller)
-                root.controller.remove(root.kind, [key])
-            if (root.isSelected(key))
-                root.toggle(key)
-        }
     }
 }

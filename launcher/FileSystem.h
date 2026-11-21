@@ -105,6 +105,27 @@ namespace FS
 	 * so, since that cannot be undone. */
 	bool trash(const QString& path, QString* pathInTrash = nullptr);
 
+	/** Something trash() took: where it was and where it is now, which is all
+	 * putting it back needs. */
+	struct Trashed {
+		QString path;
+		QString trashPath;
+	};
+
+	/** trash(), else deletePath(). True when @p path is gone either way; it
+	 * is appended to @p trashed only when it went to the trash, so an empty
+	 * list after a success means the removal was permanent. */
+	bool trashOrDelete(const QString& path, QList<Trashed>* trashed = nullptr);
+
+	/** Moves @p item back out of the trash to where it was. False, with the
+	 * item still in the trash, if something else is at that path by now or
+	 * the move fails. */
+	bool restoreTrashed(const Trashed& item);
+
+	/** For tests: with a folder set, trash() moves things into it instead of
+	 * the user's trash; an empty string switches back. */
+	void setTrashFolderForTests(const QString& folder);
+
 	QString PathCombine(const QString& path1, const QString& path2);
 	QString PathCombine(const QString& path1, const QString& path2,
 						const QString& path3);

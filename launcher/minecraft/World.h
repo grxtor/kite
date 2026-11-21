@@ -23,6 +23,11 @@
 #include <QDateTime>
 #include <optional>
 
+namespace FS
+{
+	struct Trashed;
+}
+
 struct GameType {
 	GameType() = default;
 	GameType(std::optional<int> original);
@@ -87,8 +92,9 @@ class World
 	{
 		return m_containerFile;
 	}
-	// delete all the files of this world
-	bool destroy();
+	// Moves this world to the trash, or deletes it where there is none.
+	// @p trashed receives it only when it went to the trash.
+	bool destroy(QList<FS::Trashed>* trashed = nullptr);
 	// replace this world with a copy of the other
 	bool replace(World& with);
 	// change the world's filesystem path (used by world lists for *MAGIC*

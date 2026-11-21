@@ -85,8 +85,10 @@ class WorldList : public QAbstractListModel
 	/// Install a world from location
 	void installWorld(QFileInfo filename);
 
-	/// Deletes the mod at the given index.
-	virtual bool deleteWorld(int index);
+	/// Moves the world at the given index to the trash, or deletes it where
+	/// there is none. @p trashed receives it only when it went to the trash.
+	virtual bool deleteWorld(int index,
+							 QList<FS::Trashed>* trashed = nullptr);
 
 	/// Removes the world icon, if any
 	virtual bool resetIcon(int index);

@@ -1028,6 +1028,21 @@ Ayrıntılar günlük dosyasında:
         <source>Export backup</source>
         <translation>Yedeği dışa aktar</translation>
     </message>
+    <message>
+        <location line="+0"/>
+        <source>Move the backup “%1” to the trash?</source>
+        <translation>“%1” yedeği çöp kutusuna taşınsın mı?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Backup deleted.</source>
+        <translation>Yedek silindi.</translation>
+    </message>
 </context>
 <context>
     <name>BaseProfiler</name>
@@ -1426,6 +1441,11 @@ Ayrıntılar günlük dosyasında:
         <location line="+2"/>
         <source>Try other words, fewer filters, or the other site.</source>
         <translation>Başka sözcükler, daha az filtre ya da diğer siteyi dene.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
     </message>
 </context>
 <context>
@@ -2153,6 +2173,36 @@ Ayrıntılar günlük dosyasında:
         <location line="+1"/>
         <source>List copied.</source>
         <translation>Liste kopyalandı.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move %1 %2 to the trash?</source>
+        <translation>%1 %2 çöp kutusuna taşınsın mı?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Remove “%1” from this instance? The file is deleted.</source>
+        <translation>“%1” bu kurulumdan kaldırılsın mı? Dosya silinir.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>“%1” removed.</source>
+        <translation>“%1” kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>File removed.</source>
+        <translation>Dosya kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 %2 removed.</source>
+        <translation>%1 %2 kaldırıldı.</translation>
     </message>
 </context>
 <context>
@@ -3160,6 +3210,16 @@ Ayrıntılar günlük dosyasında:
         <location line="+0"/>
         <source>All files (*)</source>
         <translation>Tüm dosyalar (*)</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Data pack removed.</source>
+        <translation>Veri paketi kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>The data pack could not be removed. Is the game running?</source>
+        <translation>Veri paketi kaldırılamadı. Oyun çalışıyor olabilir mi?</translation>
     </message>
 </context>
 <context>
@@ -7279,6 +7339,11 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <source>Delete…</source>
         <translation>Sil…</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
 </context>
 <context>
     <name>InstanceSection</name>
@@ -8385,6 +8450,26 @@ Demoyu oynamak ister misin?</translation>
         <source>This can cause the instance to get corrupted and should only be used if Minecraft is frozen for some reason</source>
         <translation>Bu, kurulumun bozulmasına yol açabilir; yalnızca Minecraft herhangi bir sebeple donduysa kullan.</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Open Accounts</source>
+        <translation>Hesaplar&apos;ı aç</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Can&apos;t cancel right now</source>
+        <translation>Şu an iptal edilemiyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Kite is in the middle of a step that can&apos;t be stopped. Try again in a moment.</source>
+        <translation>Kite şu an durdurulamayan bir adımın ortasında. Birazdan tekrar dene.</translation>
+    </message>
 </context>
 <context>
     <name>LaunchOptionsMenu</name>
@@ -8432,6 +8517,59 @@ Demoyu oynamak ister misin?</translation>
         <location line="+10"/>
         <source>Set up %1…</source>
         <translation>%1 kur…</translation>
+    </message>
+</context>
+<context>
+    <name>LaunchFailure</name>
+    <message>
+        <location filename="../launcher/launch/LaunchFailure.cpp" line="+1"/>
+        <source>Sign in to play</source>
+        <translation>Oynamak için giriş yap</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 wasn&apos;t started because the account can&apos;t be used to play yet. Sign in on the Accounts page, then press Play again.</source>
+        <translation>%1 başlatılmadı çünkü bu hesapla henüz oynanamıyor. Hesaplar sayfasından giriş yap, sonra tekrar Oyna&apos;ya bas.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sign in</source>
+        <translation>Giriş yap</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Couldn&apos;t sign in</source>
+        <translation>Giriş yapılamadı</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 wasn&apos;t started because Kite couldn&apos;t check your account. Check your internet connection and try again.</source>
+        <translation>%1 başlatılmadı çünkü Kite hesabını kontrol edemedi. İnternet bağlantına bakıp tekrar dene.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Couldn&apos;t start %1</source>
+        <translation>%1 başlatılamadı</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The game didn&apos;t open: Kite ran into a problem while getting it ready.</source>
+        <translation>Oyun açılmadı: Kite oyunu hazırlarken bir sorun çıktı.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Show log</source>
+        <translation>Günlüğü göster</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Reason: %1</source>
+        <translation>Sebep: %1</translation>
     </message>
 </context>
 <context>
@@ -9031,6 +9169,16 @@ Neden:
         <location line="+6"/>
         <source>The instance could not be deleted. Is it running, or are its files in use?</source>
         <translation>Kurulum silinemedi. Çalışıyor olabilir mi ya da dosyaları kullanımda mı?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move “%1” to the trash? Its folder goes with it: worlds, mods, screenshots.</source>
+        <translation>“%1” çöp kutusuna taşınsın mı? Klasörü de onunla gider: dünyalar, modlar, ekran görüntüleri.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
     </message>
 </context>
 <context>
@@ -10259,6 +10407,11 @@ Kurulumun değişmedi.</translation>
         <location line="-82"/>
         <source>Change</source>
         <translation>Değiştir</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
     </message>
 </context>
 <context>
@@ -13698,6 +13851,26 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <source>Open screenshots folder</source>
         <translation>Ekran görüntüleri klasörünü aç</translation>
     </message>
+    <message>
+        <location line="+0"/>
+        <source>Delete this screenshot? It cannot be recovered.</source>
+        <translation>Bu ekran görüntüsü silinsin mi? Geri getirilemez.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Delete %1 screenshots? They cannot be recovered.</source>
+        <translation>%1 ekran görüntüsü silinsin mi? Geri getirilemezler.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Screenshot deleted.</source>
+        <translation>Ekran görüntüsü silindi.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 screenshots deleted.</source>
+        <translation>%1 ekran görüntüsü silindi.</translation>
+    </message>
 </context>
 <context>
     <name>SearchBox</name>
@@ -16414,6 +16587,24 @@ inheritsFrom eksik</translation>
     </message>
 </context>
 <context>
+    <name>Toast</name>
+    <message>
+        <location filename="../launcher/qml/Components/Toast.qml" line="+38"/>
+        <source>Undo</source>
+        <translation>Geri al</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Not everything could be put back. What is missing is still in the trash.</source>
+        <translation>Her şey geri konulamadı. Eksik olanlar hâlâ çöp kutusunda.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 The trash was not available, so this cannot be undone.</source>
+        <translation>%1 Çöp kutusu kullanılamadı, bu yüzden geri alınamaz.</translation>
+    </message>
+</context>
+<context>
     <name>TranslationsModel</name>
     <message>
         <location filename="../launcher/translations/TranslationsModel.cpp" line="+393"/>
@@ -16801,6 +16992,16 @@ inheritsFrom eksik</translation>
         <location line="+50"/>
         <source>Could not start the Java at %1.</source>
         <translation>%1 konumundaki Java başlatılamadı.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Looking for Java %1</source>
+        <translation>Java %1 aranıyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Downloading Java %1</source>
+        <translation>Java %1 indiriliyor</translation>
     </message>
 </context>
 <context>
@@ -17306,6 +17507,26 @@ inheritsFrom eksik</translation>
         <location line="+1"/>
         <source>Worlds you create in single player show up here. You can also add one from a .zip.</source>
         <translation>Tek oyunculu modda oluşturduğun dünyalar burada görünür. Bir .zip&apos;ten de ekleyebilirsin.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move the world “%1” to the trash?</source>
+        <translation>“%1” dünyası çöp kutusuna taşınsın mı?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>World deleted.</source>
+        <translation>Dünya silindi.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>The world could not be deleted. Are its files in use?</source>
+        <translation>Dünya silinemedi. Dosyaları kullanımda olabilir mi?</translation>
     </message>
 </context>
 <context>

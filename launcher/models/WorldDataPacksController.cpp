@@ -28,6 +28,7 @@
 #include "minecraft/WorldList.h"
 #include "minecraft/mod/DataPackFolderModel.h"
 #include "models/ModFolderWatch.h"
+#include "models/TrashUndo.h"
 
 WorldDataPacksController::WorldDataPacksController(MinecraftInstance* instance,
 													WorldList* worlds,
@@ -118,17 +119,41 @@ void WorldDataPacksController::setEnabled(int row, bool enabled)
 											  : ModFolderModel::Disable);
 }
 
-void WorldDataPacksController::remove(int row)
+void WorldDataPacksController::setTrashUndo(TrashUndo* trash)
+{
+	m_trash = trash;
+	if (!trash) {
+		return;
+	}
+	connect(trash, &TrashUndo::restored, this, [this] {
+		if (m_model) {
+			m_model->metadataIndex()->load();
+			m_model->update();
+		}
+	});
+}
+
+bool WorldDataPacksController::remove(int row)
 {
 	if (!m_model || !m_sorted || row < 0 || row >= m_sorted->rowCount()) {
-		return;
+		return false;
 	}
 	const QModelIndex source =
 		m_sorted->mapToSource(m_sorted->index(row, 0));
 	if (!source.isValid()) {
-		return;
+		return false;
 	}
-	m_model->deleteMods({ source });
+	const QString path =
+		m_model->at(size_t(source.row())).filename().absoluteFilePath();
+	if (m_trash) {
+		m_trash->begin();
+	}
+	QList<FS::Trashed> trashed;
+	m_model->deleteMods({ source }, &trashed);
+	if (m_trash) {
+		m_trash->add(trashed);
+	}
+	return !QFileInfo::exists(path);
 }
 
 bool WorldDataPacksController::install(const QString& fileUrlOrPath)

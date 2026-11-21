@@ -211,13 +211,43 @@ Item {
         if (root.content)
             root.content.setEnabled(root.kind, packList.selectedKeys, enabled)
     }
+    readonly property var trash: root.details ? root.details.trash : null
     function bulkRemove() {
-        const keys = packList.selectedKeys
+        root.askRemove(packList.selectedKeys, "")
+    }
+    // One file on its way to the trash is removed at once: the toast's Undo is the way back. Several files, or any
+    // number where there is no trash and the removal is permanent, are confirmed first.
+    function askRemove(keys, name) {
+        const toTrash = !!root.trash && root.trash.available
+        if (toTrash && keys.length === 1) {
+            root.removeKeys(keys, name)
+            return
+        }
         bulkConfirm.keys = keys
-        bulkConfirm.text = keys.length === 1
-            ? qsTr("Remove this file from the instance? It is deleted.")
-            : qsTr("Remove %1 %2 from this instance? The files are deleted.").arg(keys.length).arg(root.current.noun)
+        bulkConfirm.name = name
+        bulkConfirm.confirmText = toTrash ? qsTr("Move to trash") : qsTr("Remove")
+        if (toTrash)
+            bulkConfirm.text = qsTr("Move %1 %2 to the trash?").arg(keys.length).arg(root.current.noun)
+        else if (keys.length > 1)
+            bulkConfirm.text = qsTr("Remove %1 %2 from this instance? The files are deleted.").arg(keys.length).arg(root.current.noun)
+        else
+            bulkConfirm.text = name.length > 0 ? qsTr("Remove “%1” from this instance? The file is deleted.").arg(name)
+                                               : qsTr("Remove this file from the instance? It is deleted.")
         bulkConfirm.open()
+    }
+    // @p name is set for a row's own "Remove", which leaves the other ticks alone.
+    function removeKeys(keys, name) {
+        const removed = root.content ? root.content.remove(root.kind, keys) : 0
+        if (name.length === 0)
+            packList.clearSelection()
+        else if (packList.isSelected(keys[0]))
+            packList.toggle(keys[0])
+        if (removed < keys.length)
+            toast.show(qsTr("Some files could not be removed. Is the game running?"), "danger")
+        else if (keys.length === 1)
+            toast.showDeleted(name.length > 0 ? qsTr("“%1” removed.").arg(name) : qsTr("File removed."), root.trash)
+        else
+            toast.showDeleted(qsTr("%1 %2 removed.").arg(removed).arg(root.current.noun), root.trash)
     }
     function exportList(keys) {
         exportDialog.keys = keys
@@ -438,6 +468,7 @@ Item {
             updatable: root.updatable
             onChangeVersionRequested: (key) => root.withLoader(() => flows.changeVersion(key))
             onResetMetadataRequested: (key, name) => flows.resetMetadata([key], name)
+            onRemoveRequested: (key, name) => root.askRemove([key], name)
         }
     }
 
@@ -501,14 +532,10 @@ Item {
     ConfirmDialog {
         id: bulkConfirm
         property var keys: []
+        property string name: ""
         title: qsTr("Remove")
         confirmText: qsTr("Remove")
-        onConfirmed: {
-            const removed = root.content ? root.content.remove(root.kind, keys) : 0
-            packList.clearSelection()
-            if (removed < keys.length)
-                toast.show(qsTr("Some files could not be removed. Is the game running?"), "danger")
-        }
+        onConfirmed: root.removeKeys(keys, name)
     }
 
     ConfirmDialog {

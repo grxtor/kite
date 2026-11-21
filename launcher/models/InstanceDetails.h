@@ -54,6 +54,7 @@ class ContentDrop;
 class LogUploader;
 class CrashDoctorModel;
 class ScreenshotUploader;
+class TrashUndo;
 
 /*
  * QML bridge for one instance's detail page. Holds the InstancePtr, so the
@@ -80,6 +81,8 @@ class InstanceDetails : public QObject
 	/// Created lazily, so opening the page never touches the network.
 	Q_PROPERTY(QObject* contentBrowser READ contentBrowser CONSTANT)
 
+	/// What the last delete on this page sent to the trash (TrashUndo).
+	Q_PROPERTY(QObject* trash READ trash CONSTANT)
 	Q_PROPERTY(QObject* worlds READ worlds CONSTANT)
 	Q_PROPERTY(QString worldsDir READ worldsDir CONSTANT)
 	Q_PROPERTY(QObject* worldDataPacks READ worldDataPacks CONSTANT)
@@ -139,9 +142,11 @@ class InstanceDetails : public QObject
 	bool contentChangesAllowed() const;
 	QObject* contentBrowser() const;
 
+	QObject* trash() const;
 	QObject* worlds() const;
 	QString worldsDir() const;
-	Q_INVOKABLE void deleteWorld(int row);
+	/// To the trash where there is one (see `trash`), else for good.
+	Q_INVOKABLE bool deleteWorld(int row);
 	/// False (no change) for a name that trims to nothing.
 	Q_INVOKABLE bool renameWorld(int row, const QString& name);
 	/// Copies off the GUI thread; null for a bad row or a blank name.
@@ -236,6 +241,7 @@ class InstanceDetails : public QObject
 	LogUploader* m_logUploader = nullptr;
 	CrashDoctorModel* m_crashDoctor = nullptr;
 	ScreenshotUploader* m_screenshotUploader = nullptr;
+	TrashUndo* m_trash = nullptr;
 };
 
 /* QML view of the current LaunchTask's LogModel; model() is null between launches. */

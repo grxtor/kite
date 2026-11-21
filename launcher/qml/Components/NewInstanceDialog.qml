@@ -673,15 +673,28 @@ AppDialog {
                 running: !!root.controller && root.controller.minecraftVersions.loading
                 visible: running
             }
-            Copy {
+            ColumnLayout {
                 anchors.centerIn: parent
                 width: parent.width - Theme.space.xxl * 2
-                horizontalAlignment: Text.AlignHCenter
+                spacing: Theme.space.md
                 visible: !!root.controller && root.controller.minecraftVersions.error.length > 0
-                text: root.controller ? root.controller.minecraftVersions.error : ""
-                role: "label"
-                tone: "danger"
-                wrapMode: Text.Wrap
+                         && !root.controller.minecraftVersions.loading
+                Copy {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.controller ? root.controller.minecraftVersions.error : ""
+                    role: "label"
+                    tone: "danger"
+                    wrapMode: Text.Wrap
+                }
+                Button {
+                    Layout.alignment: Qt.AlignHCenter
+                    enabled: !root.creating
+                    buttonSize: "sm"
+                    text: qsTr("Try again")
+                    icon.source: Icons.url("refresh")
+                    onClicked: root.controller.minecraftVersions.reload()
+                }
             }
         }
 

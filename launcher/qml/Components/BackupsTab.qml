@@ -67,6 +67,7 @@ Item {
     // A different instance's controller: what this tab was doing belonged to the previous one.
     onControllerChanged: {
         root.watcher = null
+        root.deleteJob = null
         root.actionError = ""
     }
 
@@ -186,7 +187,9 @@ Item {
                         icon.source: Icons.url("trash")
                         onTriggered: {
                             deleteConfirm.row = row.index
-                            deleteConfirm.text = qsTr("Delete the backup “%1”? This cannot be undone.").arg(row.title)
+                            deleteConfirm.text = deleteConfirm.toTrash
+                                ? qsTr("Move the backup “%1” to the trash?").arg(row.title)
+                                : qsTr("Delete the backup “%1”? This cannot be undone.").arg(row.title)
                             deleteConfirm.open()
                         }
                     }
@@ -250,13 +253,29 @@ Item {
     ConfirmDialog {
         id: deleteConfirm
         property int row: -1
+        readonly property bool toTrash: !!root.controller && root.controller.trash.available
         title: qsTr("Delete backup")
-        confirmText: qsTr("Delete")
+        confirmText: toTrash ? qsTr("Move to trash") : qsTr("Delete")
         onConfirmed: if (root.controller) {
             root.actionError = ""
-            root.startJob(root.controller.deleteBackup(row))
+            var job = root.controller.deleteBackup(row)
+            if (root.startJob(job))
+                root.deleteJob = job
         }
     }
+
+    // The delete runs off the GUI thread; its toast (with Undo when it went to the trash) waits for it.
+    property var deleteJob: null
+    Connections {
+        target: root.deleteJob
+        function onFinished(ok) {
+            root.deleteJob = null
+            if (ok && root.controller)
+                toast.showDeleted(qsTr("Backup deleted."), root.controller.trash)
+        }
+    }
+
+    Toast { id: toast }
 
     FileDialog {
         id: importDialog

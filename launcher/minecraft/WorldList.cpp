@@ -100,12 +100,12 @@ bool WorldList::isValid()
 	return m_dir.exists() && m_dir.isReadable();
 }
 
-bool WorldList::deleteWorld(int index)
+bool WorldList::deleteWorld(int index, QList<FS::Trashed>* trashed)
 {
 	if (index >= worlds.size() || index < 0)
 		return false;
 	World& m = worlds[index];
-	if (m.destroy()) {
+	if (m.destroy(trashed)) {
 		beginRemoveRows(QModelIndex(), index, index);
 		worlds.removeAt(index);
 		endRemoveRows();

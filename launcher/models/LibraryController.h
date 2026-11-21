@@ -45,6 +45,8 @@ class LibraryController : public QObject
 				   collapsedGroupsChanged)
 	Q_PROPERTY(bool canUndoDelete READ canUndoDelete NOTIFY trashChanged)
 	Q_PROPERTY(QString lastDeletedName READ lastDeletedName NOTIFY trashChanged)
+	/// Whether a deleted instance goes to a trash here; false means it is gone for good.
+	Q_PROPERTY(bool trashAvailable READ trashAvailable CONSTANT)
 	/// IconList, for the duplicate dialog's icon picker. Null without one.
 	Q_PROPERTY(QObject* iconsModel READ iconsModel CONSTANT)
 	Q_PROPERTY(QString iconsDir READ iconsDir CONSTANT)
@@ -57,6 +59,7 @@ class LibraryController : public QObject
 	QStringList collapsedGroups() const;
 	bool canUndoDelete() const;
 	QString lastDeletedName() const;
+	bool trashAvailable() const;
 	QObject* iconsModel() const;
 	QString iconsDir() const;
 

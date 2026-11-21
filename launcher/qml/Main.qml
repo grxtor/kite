@@ -249,7 +249,7 @@ ApplicationWindow {
             // review=versionmore|newcomponent|otherlogs|logfind|shotselect|shotrename
             else if (key === "review")
                 Qt.callLater(instancePage.review, value)
-            // ask=pickAccount|busySkip: questions only a real launch asks.
+            // ask=pickAccount|busySkip|launchFailed|launchAccount: questions only a real launch asks.
             else if (key === "ask")
                 root.call("debugShowRequest", value)
             // updates=idle|pending|pendingGame|managed: Settings > Updates with a stand-in updater.
@@ -660,7 +660,11 @@ ApplicationWindow {
     function askDelete(id, name) {
         var deleteDialog = root.dialog(deleteLoader)
         deleteDialog.targetId = id
-        deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
+        var library = root.shell.library
+        deleteDialog.toTrash = !!library && library.trashAvailable
+        deleteDialog.text = deleteDialog.toTrash
+            ? qsTr("Move \u201c%1\u201d to the trash? Its folder goes with it: worlds, mods, screenshots.").arg(name)
+            : qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
         deleteDialog.open()
     }
 
@@ -1292,8 +1296,9 @@ ApplicationWindow {
         active: false
         sourceComponent: ConfirmDialog {
             property string targetId
+            property bool toTrash: false
             title: qsTr("Delete instance")
-            confirmText: qsTr("Delete instance")
+            confirmText: toTrash ? qsTr("Move to trash") : qsTr("Delete instance")
             onConfirmed: {
                 if (root.shell.deleteInstance(targetId)) {
                     if (root.selectedId === targetId)

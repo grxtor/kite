@@ -227,7 +227,9 @@ Item {
                             icon.source: Icons.url("trash")
                             onTriggered: root.guarded(() => {
                                 confirm.row = cell.index
-                                confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
+                                confirm.text = confirm.toTrash
+                                    ? qsTr("Move the world “%1” to the trash?").arg(cell.displayName)
+                                    : qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
                                 confirm.open()
                             })
                         }
@@ -247,9 +249,17 @@ Item {
     ConfirmDialog {
         id: confirm
         property int row: -1
+        readonly property bool toTrash: !!root.details && root.details.trash.available
         title: qsTr("Delete world")
-        confirmText: qsTr("Delete world")
-        onConfirmed: if (root.details) root.details.deleteWorld(row)
+        confirmText: toTrash ? qsTr("Move to trash") : qsTr("Delete world")
+        onConfirmed: {
+            if (!root.details)
+                return
+            if (root.details.deleteWorld(row))
+                toast.showDeleted(qsTr("World deleted."), root.details.trash)
+            else
+                toast.show(qsTr("The world could not be deleted. Are its files in use?"), "danger")
+        }
     }
 
     PromptDialog {

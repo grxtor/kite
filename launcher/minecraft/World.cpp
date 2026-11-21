@@ -632,16 +632,12 @@ bool World::replace(World& with)
 	return success;
 }
 
-bool World::destroy()
+bool World::destroy(QList<FS::Trashed>* trashed)
 {
 	if (!is_valid)
 		return false;
-	if (m_containerFile.isDir()) {
-		QDir d(m_containerFile.filePath());
-		return d.removeRecursively();
-	} else if (m_containerFile.isFile()) {
-		QFile file(m_containerFile.absoluteFilePath());
-		return file.remove();
+	if (m_containerFile.isDir() || m_containerFile.isFile()) {
+		return FS::trashOrDelete(m_containerFile.absoluteFilePath(), trashed);
 	}
 	return true;
 }

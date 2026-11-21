@@ -118,8 +118,29 @@ Item {
         root.uploader.upload(paths)
     }
 
+    readonly property var trash: root.details ? root.details.trash : null
+    // One screenshot on its way to the trash goes at once: the toast's Undo is the way back. Several, or any number
+    // where there is no trash and the delete is permanent, are confirmed first.
+    function askRemove(paths) {
+        var toTrash = !!root.trash && root.trash.available
+        if (toTrash && paths.length === 1) {
+            root.removeAll(paths)
+            return
+        }
+        deleteConfirm.paths = paths
+        deleteConfirm.confirmText = toTrash ? qsTr("Move to trash") : qsTr("Delete")
+        if (toTrash)
+            deleteConfirm.text = qsTr("Move %1 screenshots to the trash?").arg(paths.length)
+        else
+            deleteConfirm.text = paths.length === 1 ? qsTr("Delete this screenshot? It cannot be recovered.")
+                                                    : qsTr("Delete %1 screenshots? They cannot be recovered.").arg(paths.length)
+        deleteConfirm.open()
+    }
+
     // Moves @p paths to the trash, last row first so earlier rows keep their numbers.
     function removeAll(paths) {
+        if (root.trash)
+            root.trash.begin()
         var rows = []
         for (var i = 0; i < paths.length; ++i) {
             var row = root.rowOf(paths[i])
@@ -133,8 +154,11 @@ Item {
                 failed++
         }
         root.clearSelection()
+        var removed = rows.length - failed
         if (failed > 0)
             toast.show(qsTr("Some screenshots could not be deleted."), "danger")
+        else if (removed > 0)
+            toast.showDeleted(removed === 1 ? qsTr("Screenshot deleted.") : qsTr("%1 screenshots deleted.").arg(removed), root.trash)
     }
 
     function copyImage(row) {
@@ -222,13 +246,7 @@ Item {
                 visible: root.selectedCount > 0
                 text: qsTr("Delete")
                 icon.source: Icons.url("trash")
-                onClicked: {
-                    deleteConfirm.paths = Object.keys(root.selected)
-                    deleteConfirm.text = deleteConfirm.paths.length === 1
-                        ? qsTr("Move this screenshot to the trash?")
-                        : qsTr("Move %1 screenshots to the trash?").arg(deleteConfirm.paths.length)
-                    deleteConfirm.open()
-                }
+                onClicked: root.askRemove(Object.keys(root.selected))
             }
             Button {
                 visible: root.selectedCount === 0 && root.coverSource.length > 0 && !root.coverListed
@@ -417,16 +435,7 @@ Item {
                     MenuItem {
                         text: root.selectedCount > 1 && cell.picked ? qsTr("Delete selected…") : qsTr("Delete")
                         icon.source: Icons.url("trash")
-                        onTriggered: {
-                            var paths = root.targets(cell.path)
-                            if (paths.length > 1) {
-                                deleteConfirm.paths = paths
-                                deleteConfirm.text = qsTr("Move %1 screenshots to the trash?").arg(paths.length)
-                                deleteConfirm.open()
-                            } else {
-                                root.removeAll(paths)
-                            }
-                        }
+                        onTriggered: root.askRemove(root.targets(cell.path))
                     }
                 }
 

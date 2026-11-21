@@ -27,6 +27,8 @@ set(CORE_SOURCES
     models/SettingsAdapter.cpp
     models/InstanceDetails.h
     models/InstanceDetails.cpp
+    models/TrashUndo.h
+    models/TrashUndo.cpp
     models/ContentBrowser.h
     models/ContentBrowser.cpp
     models/LoaderInstaller.h
@@ -256,6 +258,8 @@ set(LAUNCH_SOURCES
     launch/steps/Update.h
     launch/LaunchStep.cpp
     launch/LaunchStep.h
+    launch/LaunchFailure.cpp
+    launch/LaunchFailure.h
     launch/LaunchTask.cpp
     launch/LaunchTask.h
     launch/LaunchProgressTracker.cpp
@@ -1262,6 +1266,10 @@ add_unit_test(LaunchTask
     SOURCES launch/LaunchTask_test.cpp
     LIBS Kite_core
     )
+add_unit_test(LaunchFailure
+    SOURCES launch/LaunchFailure_test.cpp
+    LIBS Kite_core
+    )
 add_unit_test(LoggedProcess
     SOURCES LoggedProcess_test.cpp
     LIBS Kite_core
@@ -1303,6 +1311,11 @@ add_unit_test(SettingsAdapter
 
 add_unit_test(InstanceLogBridge
     SOURCES models/InstanceDetails_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(TrashUndo
+    SOURCES models/TrashUndo_test.cpp
     LIBS Kite_core
     )
 

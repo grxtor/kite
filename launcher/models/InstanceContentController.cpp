@@ -42,6 +42,7 @@
 #include "models/ContentUpdateController.h"
 #include "models/ModFolderWatch.h"
 #include "models/ModHealthModel.h"
+#include "models/TrashUndo.h"
 #include "modplatform/BundleCatalog.h"
 #include "modplatform/modrinth/ModrinthApi.h"
 #include "settings/Setting.h"
@@ -398,7 +399,19 @@ int InstanceContentController::remove(const QString& kind,
 							? modrinthProjectOf(*folder, mod.filename().fileName())
 							: QString());
 	}
-	if (indexes.isEmpty() || !folder->deleteMods(indexes)) {
+	if (indexes.isEmpty()) {
+		return 0;
+	}
+	if (m_trash) {
+		m_trash->begin();
+	}
+	m_performanceUndoPaths.clear();
+	QList<FS::Trashed> trashed;
+	const bool deleted = folder->deleteMods(indexes, &trashed);
+	if (m_trash) {
+		m_trash->add(trashed);
+	}
+	if (!deleted) {
 		return 0;
 	}
 	int removed = 0;
@@ -410,10 +423,52 @@ int InstanceContentController::remove(const QString& kind,
 		}
 	}
 	if (keepsPerformance && removed > 0) {
+		if (m_trash && !trashed.isEmpty()) {
+			auto settings = m_instance->settings();
+			m_performanceUndoPaths = paths;
+			m_performanceUndoExcluded =
+				settings->get(kPerformanceExcluded).toString();
+			m_performanceUndoIncluded =
+				settings->get(kPerformanceIncluded).toString();
+		}
 		forgetRemovedMods(*m_instance, removedProjects);
 	}
 	folder->update();
 	return removed;
+}
+
+void InstanceContentController::setTrashUndo(TrashUndo* trash)
+{
+	m_trash = trash;
+	if (trash) {
+		connect(trash, &TrashUndo::restored, this,
+				&InstanceContentController::onTrashRestored);
+	}
+}
+
+void InstanceContentController::onTrashRestored(const QStringList& paths)
+{
+	/* The sidecars came back with their files; the index only knows once it
+	 * reads the folder again. */
+	for (ContentFilterModel* proxy : std::as_const(m_models)) {
+		if (auto* folder = proxy->folderModel()) {
+			folder->metadataIndex()->load();
+			folder->update();
+		}
+	}
+
+	const bool minePutBack =
+		std::any_of(m_performanceUndoPaths.cbegin(),
+					m_performanceUndoPaths.cend(),
+					[&paths](const QString& path) {
+						return paths.contains(path);
+					});
+	if (minePutBack) {
+		auto settings = m_instance->settings();
+		settings->set(kPerformanceExcluded, m_performanceUndoExcluded);
+		settings->set(kPerformanceIncluded, m_performanceUndoIncluded);
+		m_performanceUndoPaths.clear();
+	}
 }
 
 QString InstanceContentController::localPath(const QString& fileUrlOrPath)

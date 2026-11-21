@@ -443,6 +443,9 @@ Item {
                     title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
                     body: root.browser && root.browser.error.length > 0 ? root.browser.error
                                                                          : qsTr("Try other words, fewer filters, or the other site.")
+                    actionText: root.browser && root.browser.error.length > 0 ? qsTr("Try again") : ""
+                    actionIcon: "refresh"
+                    onActionTriggered: root.browser.search()
                     MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
                 }
             }

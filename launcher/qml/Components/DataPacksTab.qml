@@ -153,6 +153,11 @@ Item {
                         text: qsTr("Remove…")
                         icon.source: Icons.url("trash")
                         onTriggered: {
+                            // To the trash with an Undo: no question. Without a trash it is permanent, so ask.
+                            if (root.details.trash.available) {
+                                root.remove(row.index)
+                                return
+                            }
                             confirm.row = row.index
                             confirm.text = qsTr("Remove “%1” from this world? The file is deleted.").arg(row.name)
                             confirm.open()
@@ -175,8 +180,19 @@ Item {
         property int row: -1
         title: qsTr("Remove data pack")
         confirmText: qsTr("Remove")
-        onConfirmed: if (root.controller) root.controller.remove(row)
+        onConfirmed: root.remove(row)
     }
+
+    function remove(row) {
+        if (!root.controller)
+            return
+        if (root.controller.remove(row))
+            toast.showDeleted(qsTr("Data pack removed."), root.details.trash)
+        else
+            toast.show(qsTr("The data pack could not be removed. Is the game running?"), "danger")
+    }
+
+    Toast { id: toast }
 
     EmptyState {
         anchors.centerIn: parent

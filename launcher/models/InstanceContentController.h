@@ -22,6 +22,7 @@
 
 #include <QHash>
 #include <QObject>
+#include <QPointer>
 #include <QString>
 #include <QStringList>
 #include <memory>
@@ -36,6 +37,7 @@ class ContentUpdateController;
 class ModHealthModel;
 class Mod;
 class QTimer;
+class TrashUndo;
 
 /*
  * ContentTab.qml's backend: one searchable list per kind, bulk
@@ -103,7 +105,10 @@ class InstanceContentController : public QObject
 							   bool enabled);
 	/// With Kite Performance on, removed performance defaults go to
 	/// KitePerformanceExcluded and removed extras leave KitePerformanceIncluded.
+	/// The files go to the trash where there is one (InstanceDetails.trash),
+	/// else for good.
 	Q_INVOKABLE int remove(const QString& kind, const QStringList& keys);
+	void setTrashUndo(TrashUndo* trash);
 	/// @p fileUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE bool install(const QString& kind,
 							 const QString& fileUrlOrPath);
@@ -155,6 +160,7 @@ class InstanceContentController : public QObject
 	void runHealthCheck();
 	void onGlobalDataPacksChanged();
 	void setLastError(const QString& error);
+	void onTrashRestored(const QStringList& paths);
 
   private:
 	MinecraftInstance* m_instance = nullptr;
@@ -168,4 +174,11 @@ class InstanceContentController : public QObject
 	ModHealthModel* m_health = nullptr;
 	/// Single-shot, restarted by every change: a folder being read is checked once, after the last file.
 	QTimer* m_healthTimer = nullptr;
+	QPointer<TrashUndo> m_trash;
+	/// The Kite Performance lists as they were before the last remove()
+	/// changed them, and the mod files that change was for: undoing the
+	/// removal puts the lists back too.
+	QStringList m_performanceUndoPaths;
+	QString m_performanceUndoExcluded;
+	QString m_performanceUndoIncluded;
 };

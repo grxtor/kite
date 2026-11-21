@@ -235,6 +235,48 @@ class FileSystemTest : public QObject
 
 	}
 #endif
+
+	// trashOrDelete() reports what went to the trash, and restoreTrashed()
+	// puts it back unless something took its place.
+	void test_trashOrDeleteAndRestore()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		// Never the real trash: a folder of the test's own stands in.
+		FS::setTrashFolderForTests(tempDir.filePath("trash"));
+		QVERIFY(FS::canTrash());
+
+		const QString first = tempDir.filePath("a/pack.zip");
+		const QString second = tempDir.filePath("b/pack.zip");
+		for (const QString& path : {first, second}) {
+			QVERIFY(FS::ensureFilePathExists(path));
+			QFile file(path);
+			QVERIFY(file.open(QIODevice::WriteOnly));
+			file.write(path.toUtf8());
+		}
+
+		QList<FS::Trashed> trashed;
+		QVERIFY(FS::trashOrDelete(first, &trashed));
+		QVERIFY(FS::trashOrDelete(second, &trashed));
+		QCOMPARE(trashed.size(), 2);
+		QVERIFY(!QFileInfo::exists(first));
+		QVERIFY(!QFileInfo::exists(second));
+		// Same name twice: neither overwrote the other in the trash.
+		QVERIFY(trashed.at(0).trashPath != trashed.at(1).trashPath);
+
+		QVERIFY(FS::restoreTrashed(trashed.at(1)));
+		QFile back(second);
+		QVERIFY(back.open(QIODevice::ReadOnly));
+		QCOMPARE(back.readAll(), second.toUtf8());
+
+		QFile squatter(first);
+		QVERIFY(squatter.open(QIODevice::WriteOnly));
+		squatter.close();
+		QVERIFY(!FS::restoreTrashed(trashed.at(0)));
+		QVERIFY(QFileInfo::exists(trashed.at(0).trashPath));
+
+		FS::setTrashFolderForTests(QString());
+	}
 };
 
 QTEST_GUILESS_MAIN(FileSystemTest)

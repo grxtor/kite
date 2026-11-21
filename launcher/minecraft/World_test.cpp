@@ -23,8 +23,10 @@
 #include <QTemporaryDir>
 #include <optional>
 
+#include "FileSystem.h"
 #include "GZip.h"
 #include "minecraft/World.h"
+#include "minecraft/WorldList.h"
 
 // Minimal big-endian NBT writer, so the tests can build level.dat files
 // without depending on how the launcher serializes them.
@@ -621,6 +623,64 @@ class WorldTest : public QObject
 						   valid + QByteArray(65 * 1024 * 1024, '\0')));
 		World huge{QFileInfo(hugePath)};
 		QCOMPARE(huge.seed(), Q_INT64_C(0));
+	}
+
+	// A deleted world goes to the trash and comes back whole.
+	void test_DeleteGoesToTrashAndComesBack()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		// Never the real trash: a folder of the test's own stands in.
+		FS::setTrashFolderForTests(tempDir.filePath("trash"));
+		const QString saves = tempDir.filePath("saves");
+		const QString worldPath = QDir(saves).absoluteFilePath("keep me");
+
+		LevelDatSpec spec;
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+		QVERIFY(writeWorldGenSettings(worldPath, makeWorldGenSettings(42)));
+
+		WorldList list(saves);
+		QVERIFY(list.update());
+		QCOMPARE(list.size(), size_t(1));
+
+		QList<FS::Trashed> trashed;
+		QVERIFY(list.deleteWorld(0, &trashed));
+		QCOMPARE(list.size(), size_t(0));
+		QVERIFY(!QFileInfo::exists(worldPath));
+		QCOMPARE(trashed.size(), 1);
+		QCOMPARE(trashed.first().path, worldPath);
+		QVERIFY(QFileInfo::exists(trashed.first().trashPath + "/level.dat"));
+
+		QVERIFY(FS::restoreTrashed(trashed.first()));
+		QVERIFY(list.update());
+		QCOMPARE(list.size(), size_t(1));
+		QCOMPARE(list[0].name(), QString("Test World"));
+		QVERIFY(QFileInfo::exists(
+			worldPath + "/data/minecraft/world_gen_settings.dat"));
+
+		FS::setTrashFolderForTests(QString());
+	}
+
+	// Something new at the old path is not overwritten by the restore.
+	void test_RestoreDoesNotOverwrite()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		FS::setTrashFolderForTests(tempDir.filePath("trash"));
+		const QString worldPath = tempDir.filePath("saves/world");
+
+		LevelDatSpec spec;
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+		World world{QFileInfo(worldPath)};
+		QList<FS::Trashed> trashed;
+		QVERIFY(world.destroy(&trashed));
+		QCOMPARE(trashed.size(), 1);
+
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+		QVERIFY(!FS::restoreTrashed(trashed.first()));
+		QVERIFY(QFileInfo::exists(trashed.first().trashPath));
+
+		FS::setTrashFolderForTests(QString());
 	}
 };
 

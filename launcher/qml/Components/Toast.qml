@@ -32,6 +32,20 @@ GlassSurface {
         hideTimer.restart()
     }
 
+    // After a delete: @p trash is the page's TrashUndo. "Undo" is offered only for what went to the trash.
+    function showDeleted(message, trash) {
+        if (trash && trash.canUndo) {
+            root.show(message, "success", qsTr("Undo"), function () {
+                if (!trash.undo())
+                    root.show(qsTr("Not everything could be put back. What is missing is still in the trash."), "danger")
+            })
+        } else if (trash && trash.available) {
+            root.show(qsTr("%1 The trash was not available, so this cannot be undone.").arg(message), "warning")
+        } else {
+            root.show(message, "success")
+        }
+    }
+
     function hide() {
         hideTimer.stop()
         root.shown = false
