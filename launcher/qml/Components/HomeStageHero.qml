@@ -5,8 +5,9 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The hero of the Sahne look: a full-bleed stage across the top of the page. The cover (a chosen screenshot or the
- * version's title screen; else a wash of the icon's colour) sits under a scrim dark on the words' side and a fade into
+ * The hero of the Sahne look: a full-bleed stage across the top of the page. The cover (a chosen or the newest
+ * screenshot, the last world's icon or the version's title screen; else the instance's icon, large on the right over
+ * a wash of its colour) sits under a scrim dark on the words' side and a fade into
  * the page; the next section starts `overlap` px up inside that fade. A view of the HomeHero.
  */
 Item {
@@ -22,6 +23,14 @@ Item {
     readonly property int worldsWidth: 292
     // Below this width the worlds panel would crowd the name.
     readonly property int worldsMinWidth: 900
+    // The icon of a hero without a cover, between the words and the worlds panel.
+    readonly property int iconSize: 176
+    readonly property int iconTop: 84
+    readonly property int iconGap: Theme.space.xxl
+    readonly property int iconMinWidth: 760
+    readonly property bool showsIcon: !root.hero.hasBackdrop && root.width >= root.iconMinWidth
+    readonly property real iconRight: root.showsWorlds ? worlds.x - root.worldsInset - root.iconGap
+                                                       : root.hero.columnX + root.hero.columnWidth
     readonly property bool showsWorlds: root.width >= root.worldsMinWidth && worlds.hasWorlds
     readonly property color canvas: Theme.palette.canvas
     readonly property color canvasClear: Qt.rgba(canvas.r, canvas.g, canvas.b, 0)
@@ -64,6 +73,20 @@ Item {
         }
     }
 
+    Item {
+        x: root.iconRight - width
+        y: root.iconTop
+        width: root.iconSize
+        height: root.iconSize
+        visible: root.showsIcon
+
+        InstanceArt {
+            instanceId: root.hero.instanceId
+            iconKey: root.hero.iconKey
+            iconShare: 1
+        }
+    }
+
     TapHandler {
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.hero.tap()
@@ -74,7 +97,8 @@ Item {
         hero: root.hero
         x: root.hero.columnX
         y: root.stageHeight - root.leadBottom - implicitHeight
-        width: (root.showsWorlds ? worlds.x - root.worldsInset : root.width - root.hero.columnX) - x
+        width: (root.showsIcon ? root.iconRight - root.iconSize - root.iconGap
+                               : root.showsWorlds ? worlds.x - root.worldsInset : root.width - root.hero.columnX) - x
         nameSize: Theme.type.hero.pixelSize
         ink: root.hero.hasBackdrop ? Theme.media.text : Theme.palette.textPrimary
         inkSecondary: root.hero.hasBackdrop ? Theme.media.textSecondary : Theme.palette.textSecondary

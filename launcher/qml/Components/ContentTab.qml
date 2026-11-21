@@ -241,19 +241,12 @@ Item {
             readonly property int kindsWidth: showKinds ? kindChips.implicitWidth + columnSpacing : 0
             readonly property int gap: Theme.space.sm
             readonly property int updatesIconWidth: root.updatable ? Theme.control.height + gap : 0
-            readonly property int bundlesWidth: root.kind === "mods"
-                                                ? (root.speedUpOffered ? speedUpMeasure.implicitWidth + gap : 0)
-                                                  + addonsMeasure.implicitWidth + gap : 0
-            readonly property int actionsWidth: folderMeasure.implicitWidth + moreButton.implicitWidth
-                                                + addButton.implicitWidth + bundlesWidth + gap * 3
+            readonly property int actionsWidth: Theme.control.height + moreButton.implicitWidth
+                                                + addButton.implicitWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's contents never feed back into.
             readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
-            readonly property real actionsRowWidth: oneRow ? root.width - kindsWidth : root.width
-            readonly property bool compact: actionsRowWidth < searchMinWidth + updatesIconWidth + actionsWidth
-            readonly property bool updatesLabelFits: actionsRowWidth >= searchMinWidth + updatesMeasure.implicitWidth
-                                                                        + gap + actionsWidth
 
-            ChipGroup {
+            SegmentedChoice {
                 id: kindChips
                 visible: toolbar.showKinds
                 Layout.row: toolbar.oneRow ? 0 : 1
@@ -276,36 +269,12 @@ Item {
                     placeholderText: qsTr("Search %1").arg(root.current.noun)
                 }
 
-                // Only measured, so what they take does not change with what is shown.
-                Button {
-                    id: updatesMeasure
-                    visible: false
-                    text: qsTr("Check for updates")
-                    icon.source: Icons.url("refresh")
-                }
-                Button {
-                    id: folderMeasure
-                    visible: false
-                    text: qsTr("Open folder")
-                    icon.source: Icons.url("folder")
-                }
-                SpeedUpButton {
-                    id: speedUpMeasure
-                    visible: false
-                    on: root.performance
-                }
-                Button {
-                    id: addonsMeasure
-                    visible: false
-                    text: qsTr("Add-ons")
-                    icon.source: Icons.url("puzzle")
-                }
                 HoverReason {
                     visible: root.updatable
                     reason: root.lockedReason
                     Button {
                         enabled: root.unlocked && root.count > 0 && !root.flowsBusy
-                        display: toolbar.updatesLabelFits ? AbstractButton.TextBesideIcon : AbstractButton.IconOnly
+                        display: AbstractButton.IconOnly
                         text: qsTr("Check for updates")
                         icon.source: Icons.url("refresh")
                         ToolTip.visible: hovered && display === AbstractButton.IconOnly
@@ -317,7 +286,7 @@ Item {
 
                 Button {
                     id: folderButton
-                    display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+                    display: AbstractButton.IconOnly
                     text: qsTr("Open folder")
                     icon.source: Icons.url("folder")
                     ToolTip.visible: hovered && display === AbstractButton.IconOnly
@@ -336,6 +305,25 @@ Item {
 
                     Menu {
                         id: moreMenu
+                        // Kite Performance and the add-on bundles live here, so the toolbar keeps one
+                        // filled action.
+                        MenuEntry {
+                            visible: root.kind === "mods" && root.speedUpOffered
+                            enabled: root.unlocked && !root.flowsBusy
+                            text: root.performance ? qsTr("Kite Performance settings") : qsTr("Speed up")
+                            icon.source: Icons.url("zap")
+                            onTriggered: root.speedUp()
+                        }
+                        MenuEntry {
+                            visible: root.kind === "mods"
+                            enabled: root.unlocked && !root.flowsBusy
+                            text: qsTr("Add-ons")
+                            icon.source: Icons.url("puzzle")
+                            onTriggered: root.openBundles(false)
+                        }
+                        MenuDivider {
+                            visible: root.kind === "mods"
+                        }
                         MenuItem {
                             enabled: root.unlocked
                             text: qsTr("Add from file…")
@@ -381,36 +369,10 @@ Item {
                     }
                 }
 
-                HoverReason {
-                    visible: root.kind === "mods" && root.speedUpOffered
-                    reason: root.lockedReason
-                    SpeedUpButton {
-                        id: speedUpButton
-                        on: root.performance
-                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                        enabled: root.unlocked && !root.flowsBusy
-                        onClicked: root.speedUp()
-                    }
-                }
-                HoverReason {
-                    visible: root.kind === "mods"
-                    reason: root.lockedReason
-                    Button {
-                        id: addonsButton
-                        enabled: root.unlocked && !root.flowsBusy
-                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                        text: qsTr("Add-ons")
-                        icon.source: Icons.url("puzzle")
-                        ToolTip.visible: hovered && display === AbstractButton.IconOnly
-                        ToolTip.delay: 400
-                        ToolTip.text: text
-                        onClicked: root.openBundles(false)
-                    }
-                }
-
                 // Browsing works while the game runs; installing then waits.
                 Button {
                     id: addButton
+                    highlighted: true
                     text: qsTr("Add content")
                     icon.source: Icons.url("plus")
                     onClicked: root.browse()
@@ -447,7 +409,8 @@ Item {
 
         ContentSelectionBar {
             Layout.fillWidth: true
-            visible: packList.selecting
+            open: packList.selecting
+            gap: Theme.space.md
             list: packList
             listModel: root.listModel
             unlocked: root.unlocked

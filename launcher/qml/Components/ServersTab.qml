@@ -80,15 +80,17 @@ Item {
                 tip: qsTr("Refresh")
                 onClicked: root.refreshRequested()
             }
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 onClicked: root.openFolderRequested(root.serversDir)
             }
             HoverReason {
                 reason: root.lockedReason
                 Button {
                     enabled: root.unlocked
+                    highlighted: true
                     text: qsTr("Add server")
                     icon.source: Icons.url("plus")
                     onClicked: root.addServer()
@@ -112,9 +114,11 @@ Item {
             model: root.model
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: list }
             delegate: TabListRow {
                 id: row
                 required property int index
+                RiseIn { target: row; index: row.index; gate: entrance }
                 required property string name
                 required property string address
                 required property int acceptTextures
@@ -371,6 +375,10 @@ Item {
         visible: list.count === 0
         title: qsTr("No servers yet")
         body: qsTr("Servers you add in game show up here. You can also add one yourself.")
+        actionText: qsTr("Add server")
+        actionIcon: "plus"
+        actionEnabled: root.unlocked
+        onActionTriggered: root.addServer()
         MeshIcon { iconName: "server"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

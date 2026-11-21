@@ -65,14 +65,8 @@ Item {
     readonly property real gapBelow: view.item ? view.item.gapBelow : 0
     readonly property real playCenterY: view.item ? view.item.playCenterY : 0
 
-    // The views feed their taps here. The hero already shows this instance, so one tap does nothing: two open its page,
-    // three launch it.
-    function tap() { taps.tap() }
-    TapSequence {
-        id: taps
-        onTwice: root.openRequested(root.instanceId)
-        onThrice: if (root.canLaunch && !root.isRunning) root.launchRequested(root.instanceId)
-    }
+    // The views feed their taps here: a tap opens the instance's page. Only Play launches.
+    function tap() { root.openRequested(root.instanceId) }
 
     visible: root.hasInstance
     implicitHeight: view.item ? view.item.implicitHeight : 0

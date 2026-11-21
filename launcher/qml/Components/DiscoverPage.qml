@@ -78,8 +78,20 @@ Item {
 
     function open(pack) {
         root.openedPack = pack
+        // An install a row started goes on showing on the pack's page.
+        var running = quickInstall.watcherFor(pack.projectId)
+        if (running && running.running)
+            detailPage.watcher = running
         if (root.active)
             root.active.loadDetail(pack.projectId)
+    }
+
+    DiscoverQuickInstall {
+        id: quickInstall
+        model: root.active
+        installer: root.activeInstaller
+        provider: root.provider
+        onFailed: (pack) => root.open(pack)
     }
 
     // The providers a search has been asked of, so "nothing found" never shows for a search that has not
@@ -284,11 +296,14 @@ Item {
                     width: root.contentWidth
                     spacing: Theme.space.md
 
+                    ListEntrance { id: entrance; view: resultsRepeater }
                     Repeater {
                         id: resultsRepeater
                         model: root.active
                         delegate: ModpackCard {
+                            id: packCard
                             width: content.width
+                            RiseIn { target: packCard; index: model.index; gate: entrance }
                             projectId: model.projectId
                             title: model.title
                             author: model.author
@@ -300,11 +315,21 @@ Item {
                             // Not every provider has a cover (ATLauncher).
                             galleryUrl: model.galleryUrl || ""
                             accentColor: model.accentColor
-                            onClicked: root.open({ projectId: projectId, title: title, author: author,
-                                                   description: description, logoUrl: logoUrl,
-                                                   downloads: downloads, updated: updated,
-                                                   categories: model.categories, galleryUrl: galleryUrl,
-                                                   accentColor: accentColor })
+                            readonly property var pack: ({ projectId: projectId, title: title, author: author,
+                                                           description: description, logoUrl: logoUrl,
+                                                           downloads: downloads, updated: updated,
+                                                           categories: model.categories, galleryUrl: galleryUrl,
+                                                           accentColor: accentColor })
+                            readonly property var install: quickInstall.watcherFor(projectId)
+                            installState: quickInstall.pendingId === projectId ? "pending"
+                                        : !install ? ""
+                                        : install.running ? "installing"
+                                        : install.succeeded ? "installed"
+                                        : install.failed ? "failed" : ""
+                            installError: install && install.failed ? (install.error || "") : ""
+                            installEnabled: quickInstall.pendingId.length === 0
+                            onInstallRequested: quickInstall.install(pack)
+                            onClicked: root.open(pack)
                         }
                     }
 
@@ -320,6 +345,9 @@ Item {
         }
 
         ModpackDetail {
+            id: detailPage
+            // The rows learn of an install started here too.
+            onWatcherChanged: if (watcher && root.openedPack) quickInstall.remember(root.openedPack.projectId, watcher)
             pack: root.openedPack || ({})
             detail: root.active ? root.active.detail : null
             model: root.active

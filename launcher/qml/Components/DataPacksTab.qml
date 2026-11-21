@@ -71,9 +71,10 @@ Item {
                 Item { Layout.fillWidth: true }
             ]
 
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 enabled: root.controller && root.controller.ready
                 onClicked: root.openFolderRequested(root.controller ? root.controller.directory : "")
             }
@@ -81,6 +82,7 @@ Item {
                 reason: root.lockedReason
                 Button {
                     enabled: root.unlocked && root.controller && root.controller.ready
+                    highlighted: true
                     text: qsTr("Add from file…")
                     icon.source: Icons.url("plus")
                     onClicked: fileDialog.open()
@@ -104,9 +106,11 @@ Item {
             model: root.controller ? root.controller.model : null
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: list }
             delegate: TabListRow {
                 id: row
                 required property int index
+                RiseIn { target: row; index: row.index; gate: entrance }
                 required property var model
                 readonly property string name: model.name
                 readonly property var version: model.version
@@ -189,6 +193,10 @@ Item {
         visible: picker.count > 0 && list.count === 0
         title: qsTr("No data packs")
         body: qsTr("Data packs change this world's recipes, loot and more. Add a .zip to get started.")
+        actionText: qsTr("Add from file…")
+        actionIcon: "plus"
+        actionEnabled: root.unlocked && !!root.controller && root.controller.ready
+        onActionTriggered: fileDialog.open()
         MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 

@@ -9,7 +9,7 @@ import Kite.Theme
 
 /*
  * One search result of ContentBrowserView: logo, "Title by author", one line of description (or the install's
- * progress), and "Installed" once it is. Rows share one card, split by hairlines; hover and the picked row share one
+ * progress), then "Install" (the version the project's panel preselects), or "Installed" once it is. Rows share one card, split by hairlines; hover and the picked row share one
  * look, a lifted inset strip with no hairline and no accent.
  */
 AbstractButton {
@@ -40,8 +40,9 @@ AbstractButton {
     leftPadding: Theme.space.lg
     rightPadding: Theme.space.md
     hoverEnabled: true
-    onClicked: owner.select(index, { title: title, author: author, description: description,
-                                     logoUrl: logoUrl, installed: installed })
+    readonly property var project: ({ title: title, author: author, description: description,
+                                      logoUrl: logoUrl, installed: installed })
+    onClicked: owner.select(index, project)
 
     background: Item {
         // Opaque at rest too, so the logo's corner matte can always paint in exactly this colour.
@@ -145,6 +146,21 @@ AbstractButton {
             visible: row.installed || row.justInstalled || row.failed
             tone: row.failed ? "danger" : "success"
             text: row.failed ? qsTr("Failed") : qsTr("Installed")
+        }
+        HoverReason {
+            visible: !row.installed && !row.justInstalled
+            reason: owner.blockedReason
+            Button {
+                enabled: !row.downloading && !row.checking && owner.blockedReason.length === 0
+                // Outlined at rest; the row under the pointer shows its one filled action.
+                highlighted: row.hovered && enabled
+                buttonSize: "sm"
+                text: row.downloading || row.checking ? qsTr("Installing…")
+                    : row.failed ? qsTr("Try again") : qsTr("Install")
+                icon.source: Icons.url("download")
+                Accessible.name: qsTr("Install %1").arg(row.title)
+                onClicked: owner.quickInstall(row.index, row.project)
+            }
         }
     }
 }

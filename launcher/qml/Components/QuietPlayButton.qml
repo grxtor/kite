@@ -29,7 +29,7 @@ Button {
         id: plate
         implicitWidth: control.sizeHeight
         implicitHeight: control.sizeHeight
-        radius: Theme.radius.md
+        radius: Theme.radius.play
         color: (control.hovered && control.enabled) || control.down ? control.restColor : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
 

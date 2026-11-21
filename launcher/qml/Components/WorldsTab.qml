@@ -84,13 +84,15 @@ Item {
                 tip: qsTr("Refresh")
                 onClicked: if (root.details) root.details.refreshWorlds()
             }
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.worldsDir : "")
             }
             Button {
                 enabled: !!root.details && !root.busy
+                highlighted: true
                 text: qsTr("Add world")
                 icon.source: Icons.url("plus")
                 onClicked: root.guarded(() => addDialog.open())
@@ -129,9 +131,11 @@ Item {
             model: root.details ? root.details.worlds : null
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: list }
             delegate: TabListRow {
                 id: cell
                 required property int index
+                RiseIn { target: cell; index: cell.index; gate: entrance }
                 required property string name
                 required property string folder
                 required property var gameMode
@@ -319,6 +323,10 @@ Item {
         visible: list.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Worlds you create in single player show up here. You can also add one from a .zip.")
+        actionText: qsTr("Add world")
+        actionIcon: "plus"
+        actionEnabled: !!root.details && !root.busy
+        onActionTriggered: root.guarded(() => addDialog.open())
         MeshIcon { iconName: "globe"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

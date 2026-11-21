@@ -105,11 +105,11 @@ T.ComboBox {
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
-        radius: Theme.radius.md
-        color: Theme.palette.surface
+        radius: Theme.radius.sm
+        color: "transparent"
         border.width: 1
         border.color: control.popup.visible || (control.editable && control.activeFocus) ? Theme.palette.accent
-                    : control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+                    : control.hovered && control.enabled ? Theme.neutral.outlineHover : Theme.neutral.outline
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on border.color {

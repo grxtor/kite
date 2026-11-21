@@ -1776,6 +1776,16 @@ Ayrıntılar günlük dosyasında:
         <source>Installed</source>
         <translation>Yüklendi</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Install %1</source>
+        <translation>%1 yükle</translation>
+    </message>
 </context>
 <context>
     <name>ContentSelectionBar</name>
@@ -6082,6 +6092,11 @@ Lütfen tekrar dene.</translation>
         <location line="+7"/>
         <source>Sign in with Microsoft</source>
         <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Sign in</source>
+        <translation>Giriş yap</translation>
     </message>
 </context>
 <context>
@@ -10604,6 +10619,31 @@ Kurulumun değişmedi.</translation>
         <source>Updated %1</source>
         <translation>Güncellendi: %1</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Installing…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Installed</source>
+        <translation>Yüklü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Install %1</source>
+        <translation>%1 paketini yükle</translation>
+    </message>
 </context>
 <context>
     <name>ModpackDetail</name>
@@ -11144,6 +11184,51 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
+    <message>
+        <location line="-797"/>
+        <source>Loading %1 versions…</source>
+        <translation>%1 sürümleri yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Couldn&apos;t load %1 versions. Try again, or pick another type.</source>
+        <translation>%1 sürümleri yüklenemedi. Tekrar dene ya da başka bir tür seç.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 isn&apos;t available for Minecraft %2. Pick another version or type.</source>
+        <translation>%1, Minecraft %2 için yok. Başka bir sürüm ya da tür seç.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Pick a %1 version.</source>
+        <translation>Bir %1 sürümü seç.</translation>
+    </message>
+    <message>
+        <location line="+144"/>
+        <source>Couldn&apos;t start creating the instance. Check the version and type, then try again.</source>
+        <translation>Kurulum oluşturma başlatılamadı. Sürümü ve türü kontrol edip tekrar dene.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Installing %1 %2 · %3</source>
+        <translation>%1 %2 kuruluyor · %3</translation>
+    </message>
+    <message>
+        <location line="+264"/>
+        <source>Couldn&apos;t load</source>
+        <translation>Yüklenemedi</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Couldn&apos;t load the %1 versions: %2</source>
+        <translation>%1 sürümleri yüklenemedi: %2</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
 </context>
 <context>
     <name>NewInstanceKindList</name>
@@ -11672,6 +11757,11 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="+18"/>
         <source>No description.</source>
         <translation>Açıklama yok.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>by %1</source>
+        <translation>Yapımcı: %1</translation>
     </message>
     <message>
         <location line="+37"/>
@@ -13602,6 +13692,11 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <location line="+57"/>
         <source>Cover</source>
         <translation>Kapak</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Open screenshots folder</source>
+        <translation>Ekran görüntüleri klasörünü aç</translation>
     </message>
 </context>
 <context>

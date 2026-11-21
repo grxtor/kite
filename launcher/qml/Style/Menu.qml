@@ -58,8 +58,11 @@ T.Menu {
         level: Theme.elevation.md
     }
 
+    // Grows a little out of its top edge, where a menu hangs from.
+    transformOrigin: T.Popup.Top
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        NumberAnimation { property: "scale"; from: Theme.motion.popScale; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -67,6 +70,7 @@ T.Menu {
 
     T.Overlay.modal: Rectangle {
         color: Theme.palette.scrim
+        Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
     T.Overlay.modeless: Rectangle {

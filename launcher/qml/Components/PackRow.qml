@@ -53,6 +53,9 @@ Item {
     }
 
     height: header.height + (expanded ? details.implicitHeight + Theme.space.md : 0)
+    readonly property string authorsText: (model.authors || []).join(", ")
+    // The description's first line, for the row itself; the whole of it is in the details.
+    readonly property string summary: String(model.description || "").split("\n")[0].trim()
     readonly property string byline: {
         const authors = (model.authors || []).join(", ")
         return authors.length > 0 && source.length > 0 ? qsTr("%1 · %2").arg(authors).arg(source)
@@ -61,6 +64,7 @@ Item {
     clip: true
 
     StateFill {
+        id: rowFill
         anchors.fill: parent
         card: true
         rest: "transparent"
@@ -138,6 +142,9 @@ Item {
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
                 source: row.iconUrl
                 glyph: owner.iconName
+                rounded: true
+                // The row's fill is see-through at rest, over the list's card.
+                matte: Qt.tint(Theme.palette.surface, rowFill.color)
             }
 
             Column {
@@ -145,17 +152,31 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
-                Copy {
+                // Name, then who made it; under them what it does (or where it came from).
+                RowLayout {
                     width: parent.width
-                    text: row.name
-                    elide: Text.ElideRight
-                    role: "title"
-                    font.family: Theme.font.family
+                    spacing: Theme.space.sm
+                    Copy {
+                        Layout.maximumWidth: parent.width
+                        text: row.name
+                        elide: Text.ElideRight
+                        role: "title"
+                        font.family: Theme.font.family
+                    }
+                    Copy {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignBaseline
+                        visible: owner.showVersionColumn && row.authorsText.length > 0
+                        text: qsTr("by %1").arg(row.authorsText)
+                        elide: Text.ElideRight
+                        role: "label"
+                        tone: "tertiary"
+                    }
                 }
                 Copy {
                     width: parent.width
                     visible: text.length > 0
-                    text: owner.showVersionColumn ? row.byline
+                    text: owner.showVersionColumn ? (row.summary.length > 0 ? row.summary : row.source)
                           : (row.version ? String(row.version) : row.byline)
                     elide: Text.ElideRight
                     role: "label"

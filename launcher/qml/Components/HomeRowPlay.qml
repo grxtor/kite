@@ -19,6 +19,8 @@ AbstractButton {
     property int iconSize: Theme.icon.xs
     property color restFill: "transparent"
     property color restInk: Theme.palette.textTertiary
+    // False while a host keeps the button hidden: it then grows back from appearScale as it fades in.
+    property bool shown: true
 
     readonly property bool filled: control.running || control.lit
     readonly property color fill: control.running
@@ -34,20 +36,41 @@ AbstractButton {
     focusPolicy: Qt.NoFocus
     padding: 0
     opacity: enabled ? 1.0 : Theme.opacity.disabled
+    // Pressed, the button gives a little and comes back on release.
+    scale: control.down ? Theme.motion.pressScale : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.easing } }
+    transform: Scale {
+        origin.x: control.width / 2
+        origin.y: control.height / 2
+        xScale: control.shown ? 1 : Theme.motion.appearScale
+        yScale: xScale
+        Behavior on xScale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    }
+
+    // What the glyph shows, a short fade behind `running`: out, swap, in.
+    property bool shownRunning: control.running
+    Behavior on shownRunning {
+        SequentialAnimation {
+            NumberAnimation { target: glyph; property: "opacity"; to: 0; duration: Theme.motion.press }
+            PropertyAction {}
+            NumberAnimation { target: glyph; property: "opacity"; to: 1; duration: Theme.motion.fast }
+        }
+    }
 
     text: control.running ? qsTr("Stop") : qsTr("Play")
     Accessible.name: text
 
     background: KiteShape {
-        radius: Theme.radius.md - 1
+        radius: Theme.radius.play
         color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     contentItem: Item {
         MeshIcon {
+            id: glyph
             anchors.centerIn: parent
-            iconName: control.running ? "stop" : "play"
+            iconName: control.shownRunning ? "stop" : "play"
             size: control.iconSize
             color: control.ink
         }

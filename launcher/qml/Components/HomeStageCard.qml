@@ -5,9 +5,10 @@ import QtQuick
 import Kite.Theme
 
 /*
- * One "Continue playing" card of the Sahne look: 156 px tall, on the raised surface or over the instance's
- * cover under a dark fade (a wash of its icon's colour without one). "Crashed last time" (only then) and play time at the top, as plain text with no
- * chip; name and "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
+ * One "Continue playing" card of the Sahne look: 156 px tall, over the instance's cover (its newest screenshot or
+ * last world's icon) under a dark fade; without one, its own icon large at the top over a wash of the icon's colour.
+ * "Crashed last time" (only then) and play time at the top, as plain text with no chip; name and
+ * "Fabric 26.3 • 4 days ago" at the bottom; a 40 px Play appears under the pointer.
  */
 HomeRowBase {
     id: root
@@ -16,6 +17,8 @@ HomeRowBase {
     readonly property int padding: Theme.space.lg - 2
     readonly property int sidePadding: Theme.space.lg
     readonly property int playSize: Theme.control.height
+    // The icon of a card without a cover.
+    readonly property int iconSize: 72
     readonly property bool hasPhoto: root.row.coverImage.length > 0
     readonly property color tint: Icons.tint(root.row.iconKey, root.row.instanceId)
     readonly property bool hasTint: root.tint.valid && root.tint.a > 0
@@ -28,6 +31,7 @@ HomeRowBase {
                                       .filter((part) => part.length > 0).join("  •  ")
 
     implicitHeight: root.cardHeight
+    lift: Theme.motion.lift
 
     component Note: Item {
         property string text
@@ -83,6 +87,19 @@ HomeRowBase {
         matte: Theme.palette.canvas
     }
 
+    Item {
+        x: root.sidePadding
+        y: root.padding
+        width: root.iconSize
+        height: root.iconSize
+        visible: !root.hasPhoto
+
+        InstanceArt {
+            instanceId: root.row.instanceId
+            iconKey: root.row.iconKey
+            iconShare: 1
+        }
+    }
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius.lg
@@ -104,6 +121,8 @@ HomeRowBase {
             anchors.right: parent.right
             spacing: Theme.space.sm
 
+            // Beside the icon on a card without a cover.
+            leftPadding: root.hasPhoto ? 0 : root.iconSize + Theme.space.md
             Note {
                 id: note
                 visible: root.row.hasCrashed
@@ -112,7 +131,7 @@ HomeRowBase {
                 ink: Theme.palette.warning
             }
             Item {
-                width: parent.width - (note.visible ? note.width + parent.spacing : 0)
+                width: parent.width - parent.leftPadding - (note.visible ? note.width + parent.spacing : 0)
                 height: note.height
                 visible: root.playTimeText.length > 0
 
@@ -171,9 +190,10 @@ HomeRowBase {
             running: root.running
             lit: true
             enabled: root.playable
-            opacity: root.hovered || root.running ? 1 : 0
+            shown: root.hovered || root.running
+            opacity: shown ? 1 : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
             onClicked: root.togglePlay()
         }
     }

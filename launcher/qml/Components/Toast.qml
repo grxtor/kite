@@ -49,11 +49,12 @@ GlassSurface {
     visible: opacity > 0
     z: 1000
 
+    // In: up Theme.space.md px and a fade over `slow`. Out: the quick way, over `fast`.
     transform: Translate {
-        y: root.shown ? 0 : Theme.space.md + root.height * 0.15
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        y: root.shown ? 0 : Theme.space.md
+        Behavior on y { NumberAnimation { duration: root.shown ? Theme.motion.slow : Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
-    Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    Behavior on opacity { NumberAnimation { duration: root.shown ? Theme.motion.slow : Theme.motion.fast; easing.type: Theme.motion.easing } }
 
     Accessible.role: Accessible.AlertMessage
     Accessible.name: label.text

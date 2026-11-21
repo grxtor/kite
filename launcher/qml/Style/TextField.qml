@@ -8,7 +8,7 @@ import QtQuick.Templates as T
 import Kite.Theme
 
 // The field look every input in this style shares (TextField, TextArea,
-// ComboBox, SpinBox): the surface fill, the hairline border, radius md; under
+// ComboBox, SpinBox): no fill, a neutral.outline edge, radius sm; under
 // the pointer the border steps up, and focused it turns accent with a soft
 // 2 px halo.
 T.TextField {
@@ -59,11 +59,11 @@ T.TextField {
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
-        radius: Theme.radius.md
-        color: Theme.palette.surface
+        radius: Theme.radius.sm
+        color: "transparent"
         border.width: 1
         border.color: control.activeFocus ? Theme.palette.accent
-                    : control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+                    : control.hovered && control.enabled ? Theme.neutral.outlineHover : Theme.neutral.outline
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on border.color {

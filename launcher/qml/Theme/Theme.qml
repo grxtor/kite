@@ -74,6 +74,9 @@ QtObject {
         readonly property int lg: 16
         readonly property int xl: 20
         readonly property int pill: 999
+        // The Play verb's plate (PlayButton, HomeRowPlay): a step rounder than
+        // a control's sm, still well under the md/lg cap above.
+        readonly property int play: 10
     }
 
     // On a wide window a page's content stops growing at this width and centres.
@@ -153,6 +156,12 @@ QtObject {
         // An outlined control's edge under the pointer: one step over
         // palette.border.
         readonly property color borderHover: root.dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.22)
+        // The edge of an outlined control (secondary Button, text field,
+        // combo box, chip, segmented group), and that edge under the pointer.
+        // Lighter than palette.borderStrong, which is opaque and too loud for
+        // a whole toolbar of outlines.
+        readonly property color outline: root.dark ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.20)
+        readonly property color outlineHover: root.dark ? Qt.rgba(1, 1, 1, 0.34) : Qt.rgba(0, 0, 0, 0.32)
         // The hairline round a white knob (Switch, Slider) so it holds on a pale track.
         readonly property color knobEdge: Qt.rgba(0, 0, 0, 0.10)
     }
@@ -223,18 +232,34 @@ QtObject {
         readonly property color track: Qt.rgba(1, 1, 1, 0.18)
     }
 
-    /* Motion contract: a hover/press transition changes exactly one visual
-     * property over `fast` (colour, or one small scale/translate), never uses
-     * an overshoot easing on a hover transform, and has no glow. An idle
+    /* Motion contract, the calm set: short, small, quiet.
+     *   - press: a button scales to `pressScale` over `press` and back.
+     *   - hover: a colour fades over `fast`. An instance card is the one
+     *     hover that moves: it lifts `lift` px over `normal` (1 px while
+     *     pressed), its border brightens over `fast` and its Play fades in.
+     *   - selection: one marker (rail shape, tab underline) slides to the new
+     *     item over `slow`; it never pops from item to item.
+     *   - entrance: a page fades in over `normal` and rises `shift` px over
+     *     `slow`; a list's first rows fade in and rise `rise` px, `stagger`
+     *     apart (RiseIn); a menu or dialog scales up from `popScale`.
+     *   - exit: always the quick way out, a fade over `fast`.
+     * No overshoot, bounce or elastic easing anywhere, and no glow. An idle
      * animation loop is gated on a real busy/live state property, never on
-     * "the page happens to be idle".
+     * "the page happens to be idle". Every transform ends at rest: nothing is
+     * left faded or offset when an animation is cut short or motion is off.
      *
      * Selection grammar, one look per control class:
      *   - rail/list nav (SidebarNav, Settings' section list): a sliding
      *     neutral shape in the kite's cut, nose lit in the accent, accentText
      *     icon and label.
-     *   - tab strip (TabStrip, TabBar/TabButton): a soft pill behind the
-     *     active tab, accentSubtle fill and accentText label.
+     *   - tab strip (TabStrip, TabBar/TabButton, ChipGroup `tabs`): plain
+     *     text over a 1 px hairline under the whole row; one 2 px accent
+     *     underline slides to the active tab, which takes textPrimary, the
+     *     rest textTertiary. No pill behind any tab.
+     *   - segmented toggle (ViewModeToggle): one outlined group with 1 px
+     *     dividers; the active segment takes hoverOverlay and textPrimary.
+     *   - filter chip (ChipGroup): an outline; selected, the outline and the
+     *     label turn textPrimary.
      *   - swatch/tile picker (PalettePicker): an accent ring around the
      *     selected tile.
      * A control never falls back to a bare colour-only "selected" look.
@@ -247,9 +272,25 @@ QtObject {
         readonly property int fast: reduced ? 0 : 120
         readonly property int normal: reduced ? 0 : 180
         readonly property int slow: reduced ? 0 : 260
+        // A button going down under the pointer, and coming back.
+        readonly property int press: reduced ? 0 : 80
+        // Between one row and the next as a list comes in, for the first
+        // `staggerRows` rows; the rest come with the last of them.
+        readonly property int stagger: reduced ? 0 : 30
+        readonly property int staggerRows: 12
         // One half of the running dot's breathing loop.
         readonly property int pulse: reduced ? 0 : 900
         readonly property int easing: Easing.OutCubic
+        // Distances, in px: what a page (and a dialog) rises into place, what
+        // a list row rises, what a hovered card lifts.
+        readonly property int shift: 10
+        readonly property int rise: 8
+        readonly property int lift: 3
+        // A pressed button, and a menu or dialog as it starts to open.
+        readonly property real pressScale: 0.97
+        readonly property real popScale: 0.96
+        // A small piece (a card's Play, a tick) as it starts to appear.
+        readonly property real appearScale: 0.85
     }
 
     // Inter 4.1 static TTFs, bundled as Kite.Theme resources

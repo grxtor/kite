@@ -10,8 +10,7 @@ import Kite.Theme
 /*
  * One "Continue playing" row on Home: icon square, name with a plain "New" tag until first played, what it runs and
  * when it was last played, play time, Play and ⋯. Used through a wrapper against recentModel, with the roles
- * InstanceCard reads. A click is `tapped` (the host tells one, two and three apart: select, open, launch); Space selects
- * and Return opens. After a crash the sub-line says "Crashed last time" in place of when.
+ * InstanceCard reads. A click is `tapped` (the host opens the instance's page); Space selects and Return opens. After a crash the sub-line says "Crashed last time" in place of when.
  */
 Item {
     id: root

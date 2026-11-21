@@ -85,6 +85,7 @@ Item {
             }
             Button {
                 enabled: !root.busy
+                highlighted: true
                 text: qsTr("Create backup")
                 icon.source: Icons.url("archive")
                 onClicked: labelPrompt.open()
@@ -138,9 +139,11 @@ Item {
             model: root.model
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: list }
             delegate: TabListRow {
                 id: row
                 required property int index
+                RiseIn { target: row; index: row.index; gate: entrance }
                 required property string name
                 required property string timestampText
                 required property string sizeText
@@ -205,6 +208,10 @@ Item {
         visible: list.count === 0
         title: qsTr("No backups yet")
         body: qsTr("A backup is a zip of this whole instance, including its worlds and mods, that you can restore later.")
+        actionText: qsTr("Create backup")
+        actionIcon: "archive"
+        actionEnabled: !root.busy
+        onActionTriggered: labelPrompt.open()
         MeshIcon { iconName: "archive"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 

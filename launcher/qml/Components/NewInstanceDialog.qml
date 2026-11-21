@@ -37,9 +37,13 @@ AppDialog {
     // Starting value of the import field: a file or link handed in from outside (`kite --import`).
     property string presetSource: ""
 
+    // An instance was made but its id is unknown (an import that updated an existing one).
     signal created()
-    // A Kite Performance instance was created and its mods install in the background.
+    // The new instance, to open on its Content tab; a Kite Performance one installs its mods in the
+    // background.
     signal openInstanceRequested(string id)
+    // Why the last Create did not start; cleared once the picks change.
+    property string startError: ""
 
     readonly property bool creating: !!watcher && watcher.running
     // The Kite Performance pick only applies to creating.
@@ -51,7 +55,19 @@ AppDialog {
     // Why Create or Import is off, in a line; "" when it is on (or the drop zone already says why).
     readonly property string createBlocker: !root.controller ? ""
         : root.controller.selectedMinecraftVersion.length === 0 ? qsTr("Pick a Minecraft version.")
+        : root.loaderBlocker.length > 0 ? root.loaderBlocker
         : nameField.text.trim().length === 0 ? qsTr("Give the instance a name.") : ""
+    // A picked loader with no version would make a plain vanilla instance, so Create waits for one.
+    readonly property bool loaderPicked: !!root.controller && root.controller.loader.length > 0
+    readonly property string loaderError: root.loaderPicked ? root.controller.loaderVersions.error : ""
+    readonly property string loaderBlocker: !root.loaderPicked ? ""
+        : root.controller.loaderLoading ? qsTr("Loading %1 versions…").arg(root.loaderLabel(root.controller.loader))
+        : root.controller.selectedLoaderVersion.length > 0 ? ""
+        : root.loaderError.length > 0 ? qsTr("Couldn't load %1 versions. Try again, or pick another type.").arg(root.loaderLabel(root.controller.loader))
+        : root.controller.loaderVersions.count === 0
+            ? qsTr("%1 isn't available for Minecraft %2. Pick another version or type.")
+                  .arg(root.loaderLabel(root.controller.loader)).arg(root.controller.selectedMinecraftVersion)
+        : qsTr("Pick a %1 version.").arg(root.loaderLabel(root.controller.loader))
     readonly property string codeBlocker: !codePane.preview ? qsTr("Enter a share code.")
         : nameField.text.trim().length === 0 ? qsTr("Give the instance a name.") : ""
     readonly property string importBlocker: !root.controller ? ""
@@ -194,6 +210,17 @@ AppDialog {
     function create() {
         root.watcher = root.controller.create(nameField.text.trim(), groupField.text.trim(), root.selectedIcon,
                                               !root.performanceCreate)
+        root.startError = root.watcher ? ""
+            : qsTr("Couldn't start creating the instance. Check the version and type, then try again.")
+    }
+
+    // The task's own status, led by the loader being installed so a Fabric pick visibly comes along.
+    function progressText() {
+        var status = root.watcher.status || (root.mode === "import" ? qsTr("Importing…") : qsTr("Creating…"))
+        if (root.mode !== "create" || !root.loaderPicked)
+            return status
+        return qsTr("Installing %1 %2 · %3").arg(root.loaderLabel(root.controller.loader))
+                                            .arg(root.controller.selectedLoaderVersion).arg(status)
     }
 
     // Sets memory and options.txt, then installs the mods in the background. The performance bundle's
@@ -235,6 +262,7 @@ AppDialog {
     // root.mode is left alone: a pick made right after open() must not be reset.
     onAboutToShow: {
         root.watcher = null
+        root.startError = ""
         root.performanceMode = false
         root.modPicks = null
         root.nameEdited = false
@@ -259,9 +287,9 @@ AppDialog {
     Connections {
         target: root.controller
         ignoreUnknownSignals: true
-        function onSelectedMinecraftVersionChanged() { root.refreshSuggestedName() }
-        function onSelectedLoaderVersionChanged() { root.refreshSuggestedName() }
-        function onLoaderChanged() { root.refreshSuggestedName() }
+        function onSelectedMinecraftVersionChanged() { root.startError = ""; root.refreshSuggestedName() }
+        function onSelectedLoaderVersionChanged() { root.startError = ""; root.refreshSuggestedName() }
+        function onLoaderChanged() { root.startError = ""; root.refreshSuggestedName() }
     }
 
     Connections {
@@ -270,11 +298,16 @@ AppDialog {
         function onFinished(ok) {
             if (!ok)
                 return
-            if (root.performanceCreate && root.watcher.instanceId)
+            const id = root.watcher.instanceId
+            if (root.performanceCreate && id)
                 root.installPerformance()
             else {
                 root.close()
-                root.created()
+                // Straight to the new instance's Content tab, where its mods are added.
+                if (id)
+                    root.openInstanceRequested(id)
+                else
+                    root.created()
             }
         }
     }
@@ -450,6 +483,7 @@ AppDialog {
                 textRole: "version"
                 valueRole: "versionId"
                 displayText: root.controller && root.controller.loaderLoading ? qsTr("Loading…")
+                           : root.loaderError.length > 0 && count === 0 ? qsTr("Couldn't load")
                            : count === 0 ? qsTr("None for this version")
                            : root.loaderLabel(root.controller.loader) + " "
                              + (currentIndex >= 0 ? currentText : root.controller.selectedLoaderVersion)
@@ -466,6 +500,26 @@ AppDialog {
                     ignoreUnknownSignals: true
                     function onSelectedLoaderVersionChanged() { loaderVersionBox.syncToController() }
                 }
+            }
+
+            // Why the loader's versions are missing, with Try again; Vanilla or another type is the
+            // other way out.
+            Copy {
+                Layout.fillWidth: true
+                visible: root.loaderError.length > 0 && !root.controller.loaderLoading
+                text: qsTr("Couldn't load the %1 versions: %2").arg(root.loaderLabel(root.controller ? root.controller.loader : ""))
+                                                                 .arg(root.loaderError)
+                role: "caption"
+                tone: "danger"
+                wrapMode: Text.Wrap
+            }
+            Button {
+                visible: root.loaderError.length > 0 && !root.controller.loaderLoading
+                enabled: !root.creating
+                buttonSize: "sm"
+                text: qsTr("Try again")
+                icon.source: Icons.url("refresh")
+                onClicked: root.controller.loaderVersions.reload()
             }
 
             Item { Layout.fillHeight: true }
@@ -780,8 +834,7 @@ AppDialog {
                 tone: root.watcher && root.watcher.failed ? "danger" : "secondary"
                 text: root.watcher && root.watcher.failed ? (root.watcher.error ||
                           (root.mode === "import" ? qsTr("Importing the instance failed.") : qsTr("Creating the instance failed.")))
-                    : root.watcher ? (root.watcher.status ||
-                          (root.mode === "import" ? qsTr("Importing…") : qsTr("Creating…"))) : ""
+                    : root.watcher ? root.progressText() : ""
                 elide: Text.ElideRight
             }
             LaunchProgressBar {
@@ -796,9 +849,10 @@ AppDialog {
             Layout.leftMargin: Theme.space.xl
             Layout.bottomMargin: Theme.space.xl
             visible: !root.creating && !(root.watcher && root.watcher.failed)
-            text: root.mode === "import" ? root.importBlocker : root.mode === "code" ? root.codeBlocker : root.createBlocker
+            text: root.mode === "import" ? root.importBlocker : root.mode === "code" ? root.codeBlocker
+                : root.startError || root.createBlocker
             role: "label"
-            tone: "tertiary"
+            tone: root.mode === "create" && root.startError.length > 0 ? "danger" : "tertiary"
             elide: Text.ElideRight
         }
 
@@ -815,9 +869,8 @@ AppDialog {
             visible: root.mode === "create"
             text: root.creating ? qsTr("Creating…") : qsTr("Create")
             icon.source: Icons.url("plus")
-            enabled: !root.creating && !!root.controller
-                     && root.controller.selectedMinecraftVersion.length > 0
-                     && nameField.text.trim().length > 0
+            // createBlocker covers the version, the loader's version and the name.
+            enabled: !root.creating && !!root.controller && root.createBlocker.length === 0
             onClicked: {
                 root.create()
             }

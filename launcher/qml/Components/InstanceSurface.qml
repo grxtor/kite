@@ -8,8 +8,8 @@ import Kite.Theme
 /*
  * The one surface behind an instance in the library, as a tile or as a row: a fill that lifts under the pointer and
  * when selected, its own hairline (stronger with hover and selection), the hover shadow and the keyboard focus ring.
- * The host (InstanceCard, InstanceListRow) sets `hovered`, `selected` and `focused` and answers the taps: one, two
- * or three quick left clicks (TapSequence), and the right click.
+ * The host (InstanceCard, InstanceListRow) sets `hovered`, `selected` and `focused` and answers the left click and
+ * the right click.
  */
 StateFill {
     id: root
@@ -19,9 +19,8 @@ StateFill {
     property bool focused: false
 
     signal clicked()
-    signal doubleClicked()
-    signal tripleClicked()
     signal contextRequested()
+    readonly property bool pressed: leftTap.pressed
 
     card: true
     active: root.selected
@@ -37,17 +36,12 @@ StateFill {
         Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
-    TapSequence {
-        id: taps
-        onSingle: root.clicked()
-        onTwice: root.doubleClicked()
-        onThrice: root.tripleClicked()
-    }
     // ReleaseWithinBounds grabs on press, so the page's click-to-deselect handler never sees a card click.
     TapHandler {
+        id: leftTap
         acceptedButtons: Qt.LeftButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: taps.tap()
+        onTapped: root.clicked()
     }
     TapHandler {
         acceptedButtons: Qt.RightButton

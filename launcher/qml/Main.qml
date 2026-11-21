@@ -55,12 +55,6 @@ ApplicationWindow {
         root.selectedId = id
         root.page = "instance"
     }
-    // Home opens an instance on its settings, the page people want there.
-    function openInstanceSettings(id) {
-        root.openInstance(id)
-        if (instancePage)
-            instancePage.tab = "settings"
-    }
 
     Binding {
         target: LauncherStore
@@ -825,10 +819,8 @@ ApplicationWindow {
                    : root.page === "friends" ? "" : "home"
         currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
         recentModel: root.recentModel
-        pickOnTap: root.page === "home"
         onItemActivated: (id) => root.page = id
-        onRecentSelectRequested: (id) => root.selectedId = id
-        onRecentActivated: (id) => root.page === "home" ? root.openInstanceSettings(id) : root.openInstance(id)
+        onRecentActivated: (id) => root.openInstance(id)
         onRecentPlayRequested: (id) => root.launch(id)
         onNewInstanceRequested: root.openNewInstance()
 
@@ -960,8 +952,9 @@ ApplicationWindow {
             anchors.bottomMargin: panel.overhangBottom > 0 ? 0 : 1
             spacing: 0
 
-            // Fades the old page out, swaps StackLayout's currentIndex at the
-            // invisible midpoint, then fades the new page in.
+            // Fades the old page out over `fast`, swaps StackLayout's currentIndex
+            // at the invisible midpoint, then fades the new page in over `normal`
+            // while it rises `shift` px into place over `slow`.
             Item {
                 id: pageHost
                 Layout.fillWidth: true
@@ -990,7 +983,7 @@ ApplicationWindow {
                     }
                     ParallelAnimation {
                         NumberAnimation { target: pageHost; property: "opacity"; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
-                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.space.sm; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.motion.shift; to: 0; duration: Theme.motion.slow; easing.type: Theme.motion.easing }
                     }
                 }
 
@@ -999,7 +992,23 @@ ApplicationWindow {
                     function onPageChanged() {
                         pageTransition.nextIndex = pageHost.pageOrder.indexOf(root.page)
                         pageTransition.restart()
+                        if (root.page === "instance")
+                            openGuard.restart()
                     }
+                }
+
+                // One click opens an instance; the second click of a habitual double click would land on its page
+                // (Play included), so presses there are swallowed for a double-click interval after it opens, and
+                // never for less than the page takes to come in.
+                Timer {
+                    id: openGuard
+                    interval: Math.max(Qt.styleHints.mouseDoubleClickInterval, Theme.motion.fast + Theme.motion.slow)
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    z: 1
+                    enabled: openGuard.running
+                    acceptedButtons: Qt.AllButtons
                 }
 
                 // Under the pages, so anything a page draws covers it.
@@ -1038,7 +1047,7 @@ ApplicationWindow {
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
-                        onOpenInstanceRequested: (id) => root.openInstanceSettings(id)
+                        onOpenInstanceRequested: (id) => root.openInstance(id)
                         onSelectRequested: (id) => root.selectedId = id
                         onSignInRequested: root.page = "accounts"
                         onFolderRequested: (id) => root.call("openInstanceFolder", id)

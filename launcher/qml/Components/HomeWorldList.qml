@@ -22,11 +22,14 @@ Column {
     readonly property int maxWorlds: 4
     readonly property bool hasWorlds: worlds.count > 0
 
+    ListEntrance { id: entrance; view: worlds }
     Repeater {
         id: worlds
         model: root.worldsModel
         delegate: HomeWorldTile {
+            id: tile
             required property int index
+            RiseIn { target: tile; index: tile.index; gate: entrance }
 
             visible: index < root.maxWorlds
             x: -root.inset

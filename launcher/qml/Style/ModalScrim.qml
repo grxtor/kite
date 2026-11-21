@@ -14,6 +14,8 @@ Rectangle {
     id: scrim
 
     color: Theme.palette.scrim
+    // The overlay takes this from 0 to 1 as the popup opens, and back.
+    Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
 
     WindowDragZone {
         parent: T.Overlay.overlay ? T.Overlay.overlay.parent : null

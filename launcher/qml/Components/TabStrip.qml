@@ -7,7 +7,8 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * Page tabs: a row of labels, the current one on a soft pill. Tabs that do not
+ * Page tabs: a row of text labels over a hairline that runs the strip's full width, the current one textPrimary
+ * over the 2 px accent underline (one for the strip, sliding to it: TabUnderline), the rest textTertiary; a count is a dimmer number after the label. Tabs that do not
  * fit move, in order, into a "More" menu at the end; which ones fit depends
  * only on the width, never on the selection. `more: true` tabs always live in
  * the menu; `attention: true` draws the count on an accent pill.
@@ -90,6 +91,28 @@ Item {
         text: qsTr("More")
     }
 
+    // The hairline under the whole strip; the current tab's underline covers it.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 1
+        color: Theme.palette.border
+    }
+
+    // The current tab's button, or More while that tab is in its menu.
+    readonly property Item currentItem: {
+        if (root.currentOverflowTab !== null)
+            return moreButton
+        for (let i = 0; i < repeater.count; ++i) {
+            const item = repeater.itemAt(i)
+            if (item && item.selected && item.visible)
+                return item
+        }
+        return null
+    }
+    TabUnderline { target: root.currentItem }
+
     Row {
         id: row
         height: parent.height
@@ -104,8 +127,8 @@ Item {
                 readonly property bool selected: modelData.id === root.current
                 readonly property bool hasCount: modelData.count !== undefined && modelData.count >= 0
                 readonly property bool attention: tab.hasCount && modelData.count > 0 && modelData.attention === true
-                readonly property color inkColor: tab.selected ? Theme.palette.accentText
-                                                : tab.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                readonly property color inkColor: tab.selected ? Theme.palette.textPrimary
+                                                : tab.hovered ? Theme.palette.textSecondary : Theme.palette.textTertiary
 
                 // A tab's slot is its unselected label width, so selecting one never nudges the
                 // tabs after it.
@@ -148,6 +171,7 @@ Item {
                         width: tab.labelWidth
                         text: tab.modelData.label
                         color: tab.inkColor
+                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                         font.weight: tab.selected ? Font.DemiBold : Font.Medium
                     }
                     Item {
@@ -169,19 +193,14 @@ Item {
                             text: tab.hasCount ? tab.modelData.count : ""
                             role: "caption"
                             color: tab.attention ? Theme.palette.textOnAccent
-                                 : tab.selected ? tab.inkColor : Theme.palette.textTertiary
+                                 : tab.selected ? Theme.palette.textSecondary : Theme.palette.textTertiary
                             font.weight: tab.attention ? Font.DemiBold : Font.Medium
                         }
                     }
                 }
 
-                background: StateFill {
-                    radius: Theme.radius.pill
-                    hovered: tab.hovered
-                    down: tab.down
-                    active: tab.selected
-
-                    FocusFrame { around: Theme.focus.offset; cornerRadius: Theme.radius.pill; visible: tab.visualFocus }
+                background: Item {
+                    FocusFrame { around: Theme.focus.offset; cornerRadius: Theme.radius.sm; visible: tab.visualFocus }
                 }
             }
         }
@@ -191,9 +210,9 @@ Item {
         AbstractButton {
             id: moreButton
             readonly property bool selected: root.currentOverflowTab !== null
-            readonly property color inkColor: selected ? Theme.palette.accentText
-                                            : hovered || moreMenu.visible ? Theme.palette.textPrimary
-                                            : Theme.palette.textSecondary
+            readonly property color inkColor: selected ? Theme.palette.textPrimary
+                                            : hovered || moreMenu.visible ? Theme.palette.textSecondary
+                                            : Theme.palette.textTertiary
             visible: root.overflowIds.length > 0
             implicitWidth: moreLabel.implicitWidth + moreRow.spacing + Theme.icon.sm + root.pillPadding * 2
             height: row.height
@@ -221,13 +240,8 @@ Item {
                 }
             }
 
-            background: StateFill {
-                radius: Theme.radius.pill
-                hovered: moreButton.hovered || moreMenu.visible
-                down: moreButton.down
-                active: moreButton.selected
-
-                FocusFrame { around: Theme.focus.offset; cornerRadius: Theme.radius.pill; visible: moreButton.visualFocus }
+            background: Item {
+                FocusFrame { around: Theme.focus.offset; cornerRadius: Theme.radius.sm; visible: moreButton.visualFocus }
             }
 
             Menu {

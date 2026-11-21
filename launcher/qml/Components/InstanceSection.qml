@@ -299,10 +299,14 @@ Column {
             columnSpacing: root.gutter
             rowSpacing: root.gutter
 
+            ListEntrance { id: gridEntrance; view: gridRepeater }
             Repeater {
+                id: gridRepeater
                 model: root.model
                 delegate: InstanceCard {
                     id: card
+                    required property int index
+                    RiseIn { target: card; index: card.index; gate: gridEntrance }
                     // The row itself, for the one role (packArt) InstanceCard does not require.
                     required property var model
                     width: root.cardWidth
@@ -333,10 +337,14 @@ Column {
             width: body.width
             spacing: Theme.space.sm
 
+            ListEntrance { id: listEntrance; view: listRepeater }
             Repeater {
+                id: listRepeater
                 model: root.model
                 delegate: InstanceListRow {
                     id: row
+                    required property int index
+                    RiseIn { target: row; index: row.index; gate: listEntrance }
                     // The row itself, for the one role (packArt) InstanceListRow does not require.
                     required property var model
                     width: body.width

@@ -43,6 +43,17 @@ Item {
         return sum
     }
 
+    // True once the shape has a row to leave: it slides from row to row, but appears in place when the selection
+    // comes back from nowhere (an instance's own tile held it on the folded rail). Set a turn late, so the first
+    // placement is not animated.
+    property bool placed: false
+    onTargetChanged: {
+        if (!root.target)
+            root.placed = false
+        else
+            Qt.callLater(() => root.placed = !!root.target)
+    }
+
     readonly property real targetX: !root.target ? 0 : root.space ? root._offset(root.target, true) : root.insetX
     readonly property real targetY: !root.target ? 0 : root.space ? root._offset(root.target, false) : root.insetY + root.target.y
     readonly property real targetH: root.target ? root.target.height : 0
@@ -62,10 +73,10 @@ Item {
         borderWidth: 1
         borderColor: Theme.palette.border
 
-        Behavior on x { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        Behavior on width { enabled: !root.live; NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-        Behavior on height { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on x { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+        Behavior on y { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+        Behavior on width { enabled: root.placed && !root.live; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+        Behavior on height { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
     }
 
     KiteNose {

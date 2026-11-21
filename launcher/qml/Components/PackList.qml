@@ -206,10 +206,21 @@ Item {
             // Overlays the rows' right edge instead of reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
+            // A removed file fades out and the rows under it close the gap.
+            remove: Transition {
+                NumberAnimation { property: "opacity"; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+            }
+            displaced: Transition {
+                NumberAnimation { property: "y"; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+            }
+
+            ListEntrance { id: entrance; view: list }
             delegate: PackRow {
+                id: packRow
                 owner: root
                 width: ListView.view.width
                 lastRow: index === ListView.view.count - 1
+                RiseIn { target: packRow; index: packRow.index; gate: entrance }
             }
         }
 

@@ -189,6 +189,8 @@ Item {
 
         TabToolbar {
             Layout.fillWidth: true
+            // Nothing to select or open yet: the empty state carries the folder button.
+            visible: !!root.model && root.model.count > 0
 
             leading: Copy {
                 visible: root.selectedCount > 0
@@ -234,9 +236,10 @@ Item {
                 flat: true
                 onClicked: root.coverCleared()
             }
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 onClicked: root.openFolderRequested(root.directory)
             }
         }
@@ -258,9 +261,11 @@ Item {
             cellHeight: tileHeight + root.captionHeight + root.gap
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: grid }
             delegate: Item {
                 id: cell
                 required property int index
+                RiseIn { target: cell; index: cell.index; gate: entrance }
                 required property string name
                 required property string path
                 required property string url
@@ -507,6 +512,9 @@ Item {
         visible: !root.model || root.model.count === 0
         title: qsTr("No screenshots yet")
         body: qsTr("Press F2 in game; they will show up here.")
+        actionText: qsTr("Open screenshots folder")
+        actionIcon: "folder"
+        onActionTriggered: root.openFolderRequested(root.directory)
         MeshIcon { iconName: "image"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

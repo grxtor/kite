@@ -42,6 +42,7 @@ qt_add_qml_module(Kite_qml_components
         Format.qml
         SettingsPage.qml
         DiscoverPage.qml
+        DiscoverQuickInstall.qml
         ModpackCard.qml
         ModpackDetail.qml
         Skeleton.qml
@@ -120,6 +121,9 @@ qt_add_qml_module(Kite_qml_components
         ClipboardText.qml
         TabScroll.qml
         TabStrip.qml
+        TabUnderline.qml
+        RiseIn.qml
+        ListEntrance.qml
         TabToolbar.qml
         TabListRow.qml
         RowThumb.qml
@@ -316,6 +320,7 @@ qt_add_qml_module(Kite_qml_components
         RemoteRichText.qml
         PlayerHead.qml
         ViewModeToggle.qml
+        SegmentedChoice.qml
         WindowDragBand.qml
         ChipGroup.qml
         InstanceNotesTab.qml

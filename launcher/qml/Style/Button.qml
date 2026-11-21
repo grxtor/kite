@@ -6,18 +6,23 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// Four variants:
-//   primary   -> accent fill and a faint top-to-bottom tint; hover is the
-//                lighter accent fill
-//   secondary -> surfaceRaised plus the hairline border (the default)
-//   ghost     -> transparent, only a hover/press overlay
-//   danger    -> the danger red, filled, for a destructive confirmation
+// Four variants, all outlined but one:
+//   primary   -> filled with textPrimary (near-white on dark, near-black on
+//                light) under a canvas-coloured label; never the accent,
+//                which only Play fills (PlayButton)
+//   secondary -> transparent with a 1 px neutral.outline edge (the default);
+//                icon-only, the subtler palette.border edge
+//   ghost     -> transparent, no edge, textSecondary; only a hover/press
+//                overlay
+//   danger    -> transparent with a danger edge and a danger label, also for
+//                a final destructive confirmation: a filled red would be the
+//                loudest thing on a neutral screen
 // `variant` names one outright. Left empty, `highlighted`/`flat` pick it:
 // highlighted -> primary (danger with `danger` also set), flat -> ghost,
 // neither -> secondary. `highlighted` wins over `flat`.
 //
-// At most one primary button per screen: the one full accent fill a page is
-// allowed. This is a call-site discipline this file cannot enforce.
+// At most one primary button per screen. This is a call-site discipline this
+// file cannot enforce.
 T.Button {
     id: control
 
@@ -27,13 +32,12 @@ T.Button {
     // padding, label and icon sizes that go with each.
     property string buttonSize: "md"
     // With `highlighted`, a destructive action reads danger-red instead of
-    // accent. No effect alone; use variant: "danger" otherwise.
+    // primary. No effect alone; use variant: "danger" otherwise.
     property bool danger: false
 
     readonly property string resolvedVariant: control.variant.length > 0 ? control.variant
         : control.highlighted ? (control.danger ? "danger" : "primary")
         : control.flat ? "ghost" : "secondary"
-    readonly property bool filled: resolvedVariant === "primary" || resolvedVariant === "danger"
 
     readonly property int sizeHeight: buttonSize === "sm" ? Theme.control.heightSm
                                     : buttonSize === "lg" ? Theme.control.heightLg
@@ -63,32 +67,41 @@ T.Button {
     icon.height: control.sizeIcon
     icon.color: contentColor
 
-    // A filled button that is not available drops to the secondary look
-    // rather than fading: a faded accent over a dialog surface reads as a
-    // broken colour. Secondary and ghost buttons keep their shape and fade.
+    // Only primary is filled. One that is not available drops to the
+    // secondary look rather than fading: a faded white slab reads as broken.
+    // The others keep their shape and fade.
+    readonly property bool filled: resolvedVariant === "primary"
     readonly property bool primaryLook: control.filled && control.enabled
+    readonly property bool isDanger: resolvedVariant === "danger"
+    readonly property bool iconOnly: display === T.AbstractButton.IconOnly
     opacity: enabled || control.filled ? 1.0 : Theme.opacity.disabled
+    // Pressed, the whole button gives a little and comes back on release.
+    scale: control.down ? Theme.motion.pressScale : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.easing } }
 
-    // One colour for icon and label. The dark theme's danger red is a light
-    // coral that white cannot read on, so it takes the canvas' near-black.
-    readonly property color contentColor: control.primaryLook
-        ? (control.resolvedVariant === "danger" && Theme.dark ? Theme.palette.canvas : Theme.palette.textOnAccent)
+    // One colour for icon and label.
+    readonly property color contentColor: control.primaryLook ? Theme.palette.canvas
         : control.filled ? Theme.palette.textDisabled
+        : control.isDanger ? Theme.palette.danger
         : control.resolvedVariant === "ghost" && !control.hovered && !control.down && !control.checked
             ? Theme.palette.textSecondary
             : Theme.palette.textPrimary
 
-    // Filled variants have their own hover/press colours: a translucent
-    // hoverOverlay on a saturated fill would shift its hue.
-    readonly property color restColor: control.primaryLook
-        ? (control.resolvedVariant === "danger"
-            ? (control.down ? Qt.darker(Theme.palette.danger, 1.12) : control.hovered ? Qt.lighter(Theme.palette.danger, 1.08) : Theme.palette.danger)
-            : (control.down ? Theme.palette.accentPressed : control.hovered ? Theme.palette.accentHover : Theme.palette.accent))
-        : (control.resolvedVariant === "ghost" ? "transparent" : Theme.palette.surfaceRaised)
+    // The primary fill steps toward white under the pointer on dark (and
+    // lifts off black on light), and sinks when pressed.
+    readonly property color restColor: !control.primaryLook ? "transparent"
+        : control.down ? Qt.tint(Theme.palette.textPrimary, Theme.dark ? Qt.rgba(0, 0, 0, 0.14) : Qt.rgba(0, 0, 0, 0.45))
+        : control.hovered ? Qt.tint(Theme.palette.textPrimary, Theme.dark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(1, 1, 1, 0.14))
+        : Theme.palette.textPrimary
     readonly property color overlayColor: control.primaryLook || !control.enabled
         ? "transparent"
         : (control.down || control.checked ? Theme.palette.pressedOverlay
            : control.hovered ? Theme.palette.hoverOverlay : "transparent")
+    readonly property bool lit: control.hovered && control.enabled
+    readonly property color edgeColor: control.isDanger
+        ? Qt.rgba(Theme.palette.danger.r, Theme.palette.danger.g, Theme.palette.danger.b, control.lit ? 0.7 : 0.45)
+        : control.iconOnly ? (control.lit ? Theme.neutral.outline : Theme.palette.border)
+        : control.lit ? Theme.neutral.outlineHover : Theme.neutral.outline
 
     // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
     contentItem: IconText {
@@ -113,26 +126,15 @@ T.Button {
         id: background
         implicitWidth: control.sizeHeight
         implicitHeight: control.sizeHeight
-        radius: Theme.radius.md
+        radius: Theme.radius.sm
         color: control.restColor
         // Ghost shows only the hover/press overlay; a border would make it
-        // look like a fifth variant. Filled ones need no edge.
+        // look like a fifth variant. The filled primary needs no edge.
         border.width: !control.primaryLook && control.resolvedVariant !== "ghost" ? 1 : 0
-        border.color: control.hovered && control.enabled ? Theme.neutral.borderHover : Theme.palette.border
+        border.color: control.edgeColor
 
         Behavior on color {
             ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-        }
-
-        // The faint tint on a filled button.
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            visible: control.primaryLook
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.10) }
-                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
-            }
         }
 
         Rectangle {

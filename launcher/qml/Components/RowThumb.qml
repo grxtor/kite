@@ -8,7 +8,8 @@ import Kite.Theme
  * The square a list row starts with: the thing's own picture, otherwise its
  * kind's glyph. No tile of its own. A logo fills most of the square; a picture of
  * a place (a world's icon.png) fills it edge to edge, its corners rounded in
- * `matte`.
+ * `matte`. A logo's corners are rounded too where the caller says so (`rounded`)
+ * and gives the opaque colour behind the square as `matte`.
  */
 Item {
     id: root
@@ -18,6 +19,7 @@ Item {
     property bool fill: false
     property bool pixelArt: false
     property color matte: Theme.palette.surface
+    property bool rounded: root.fill
     readonly property bool hasPicture: picture.status === Image.Ready
 
     implicitWidth: Theme.control.heightLg
@@ -44,9 +46,16 @@ Item {
         size: Theme.icon.md
         color: Theme.palette.textTertiary
     }
-    CornerMatte {
-        visible: root.fill && root.hasPicture
-        cornerRadius: Theme.radius.md
-        matte: root.matte
+    // Over what the picture really paints: a logo that is not square is letterboxed.
+    Item {
+        anchors.centerIn: picture
+        width: Math.ceil(picture.paintedWidth)
+        height: Math.ceil(picture.paintedHeight)
+        visible: root.rounded && root.hasPicture
+
+        CornerMatte {
+            cornerRadius: root.fill ? Theme.radius.md : Theme.radius.sm
+            matte: root.matte
+        }
     }
 }

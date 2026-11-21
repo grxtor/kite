@@ -31,6 +31,10 @@ Item {
     readonly property int panelMinWidth: 300
     readonly property int panelMaxWidth: 440
     readonly property int busyFooterHeight: 64
+    // While the first page of a search loads: this many placeholder rows, as tall as a result (ContentResultRow's
+    // rowHeight) with its logo square and two lines.
+    readonly property int skeletonRows: 5
+    readonly property int skeletonLogoSize: 40
 
     // Every install started here, by project key. A plain JS object does not notify, so downloadsRevision is bumped
     // on every change.
@@ -157,6 +161,7 @@ Item {
         if (!root.browser)
             return
         root.searched = true
+        root.installWhenLoaded = false
         root.selectedRow = -1
         root.selectedProject = null
         root.browser.search()
@@ -168,7 +173,20 @@ Item {
     onVisibleChanged: searchIfFirstShown()
     onBrowserChanged: { root.searched = false; searchIfFirstShown() }
 
+    // "Install" on a result row: picks the project as a click does and installs the version the panel preselects,
+    // as soon as the versions are in.
+    property bool installWhenLoaded: false
+    function quickInstall(row, project) {
+        if (root.selectedRow !== row)
+            root.select(row, project)
+        if (root.pickedVersion >= 0)
+            root.install()
+        else
+            root.installWhenLoaded = true
+    }
+
     function select(row, project) {
+        root.installWhenLoaded = false
         root.installNote = ""
         root.selectedRow = row
         root.selectedProject = project
@@ -176,6 +194,7 @@ Item {
         root.browser.loadVersions(row)
     }
     function closeProject() {
+        root.installWhenLoaded = false
         root.installNote = ""
         root.selectedRow = -1
         root.selectedProject = null
@@ -192,6 +211,10 @@ Item {
     onVersionsChanged: {
         var compatible = root.versions.findIndex(v => v.isCompatible)
         root.pickedVersion = compatible >= 0 ? compatible : (root.versions.length > 0 ? 0 : -1)
+        if (root.installWhenLoaded && root.pickedVersion >= 0) {
+            root.installWhenLoaded = false
+            root.install()
+        }
     }
 
     Timer {
@@ -218,6 +241,7 @@ Item {
                 Accessible.role: Accessible.Heading
             }
             ChipGroup {
+                tabs: true
                 options: root.types
                 current: root.browser ? root.browser.contentType : "mods"
                 onActivated: (value) => {
@@ -347,19 +371,54 @@ Item {
                         onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
                                              root.browser.fetchMore()
 
+                        ListEntrance { id: entrance; view: results }
                         delegate: ContentResultRow {
+                            id: resultRow
                             owner: root
                             width: ListView.view.width
                             lastRow: index === ListView.view.count - 1
+                            RiseIn { target: resultRow; index: resultRow.index; gate: entrance }
                         }
 
                         footer: Item {
+                            id: loadingFoot
+                            readonly property bool searching: !!root.browser && root.browser.searching
+                            // Nothing to show yet: placeholder rows instead of a lone spinner.
+                            readonly property bool first: searching && results.count === 0
                             width: results.width
-                            height: root.browser && root.browser.searching ? root.busyFooterHeight : 0
+                            height: !searching ? 0 : first ? root.skeletonRows * root.busyFooterHeight : root.busyFooterHeight
                             BusyIndicator {
                                 anchors.centerIn: parent
-                                running: !!root.browser && root.browser.searching
+                                running: loadingFoot.searching && !loadingFoot.first
                                 visible: running
+                            }
+                            Column {
+                                visible: loadingFoot.first
+                                Repeater {
+                                    model: loadingFoot.first ? root.skeletonRows : 0
+                                    delegate: Item {
+                                        width: loadingFoot.width
+                                        height: root.busyFooterHeight
+                                        Skeleton {
+                                            id: logoBlock
+                                            x: Theme.space.lg
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: root.skeletonLogoSize
+                                            height: root.skeletonLogoSize
+                                            radius: Theme.radius.sm
+                                        }
+                                        Column {
+                                            anchors.left: logoBlock.right
+                                            anchors.leftMargin: Theme.space.md
+                                            anchors.right: parent.right
+                                            anchors.rightMargin: Theme.space.lg
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            spacing: Theme.space.sm
+                                            Skeleton { width: parent.width * 0.3; height: Theme.type.body.pixelSize; radius: Theme.radius.xs }
+                                            Skeleton { width: parent.width * 0.7; height: Theme.type.label.pixelSize; radius: Theme.radius.xs }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

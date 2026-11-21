@@ -75,9 +75,8 @@ Item {
         hovered: root.hovered
         selected: root.selected
         focused: root.activeFocus
-        onClicked: { root.forceActiveFocus(); root.clicked() }
-        onDoubleClicked: root.openRequested()
-        onTripleClicked: if (root.canLaunch && !root.isRunning) root.playRequested()
+        // A click opens the instance's page; only Play launches. Space and the right click select.
+        onClicked: { root.forceActiveFocus(); root.openRequested() }
         onContextRequested: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
 
         RowLayout {
