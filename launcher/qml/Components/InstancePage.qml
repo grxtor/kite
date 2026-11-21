@@ -345,6 +345,14 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: Theme.space.sm
 
+                        // While the launch prepares, as on Home and the play bar.
+                        Button {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: headerCard.launching
+                            buttonSize: "lg"
+                            text: qsTr("Cancel")
+                            onClicked: root.stopRequested(root.instanceId)
+                        }
                         PlayButton {
                             round: false
                             size: root.headerActionSize

@@ -46,6 +46,7 @@
 #endif
 
 #include "BaseInstance.h"
+#include "launch/LaunchFailure.h"
 #include "crashdoctor/CrashDoctorService.h"
 #include "minecraft/GraphicsBackend.h"
 #include "minecraft/MinecraftInstance.h"
@@ -952,6 +953,25 @@ void QmlShell::debugShowRequest(const QString& kind)
 				  } },
 			};
 			m_uiHost->runPluginModal(QStringLiteral("World Share"), document);
+		});
+	} else if (kind == QLatin1String("launchFailed") ||
+			   kind == QLatin1String("launchAccount")) {
+		// The notice of a launch that ended before the game ran
+		// (Application::showLaunchFailure()).
+		QTimer::singleShot(0, this, [this, kind]() {
+			if (!m_uiHost) {
+				return;
+			}
+			if (kind == QLatin1String("launchAccount")) {
+				LaunchFailure::present(
+					*m_uiHost, LaunchFailure::Kind::Account, QStringLiteral("Skyblock"),
+					QStringLiteral("Offline accounts need a Microsoft account that owns "
+								   "Minecraft to be signed in to Kite."));
+			} else {
+				LaunchFailure::present(
+					*m_uiHost, LaunchFailure::Kind::BeforeStart, QStringLiteral("Skyblock"),
+					QStringLiteral("Failed to download the game files: the network is unreachable."));
+			}
 		});
 	} else if (kind == QLatin1String("optionalMods")) {
 		QTimer::singleShot(0, this, [this]() {

@@ -292,6 +292,7 @@ void VerifyJavaInstall::executeTask()
 			MessageLevel::Kite);
 	}
 
+	setStatus(tr("Looking for Java %1").arg(requiredMajor));
 	const bool preferNative = nativeJavaCanRun();
 	const auto existingJava = findInstalledJava(requiredMajor, preferNative);
 	// With no Java set up, each version gets the major it asks for, downloaded
@@ -335,6 +336,7 @@ void VerifyJavaInstall::executeTask()
 	emit logLine(
 		tr("No installed Java %1 found. Downloading...").arg(requiredMajor),
 		MessageLevel::Kite);
+	setStatus(tr("Downloading Java %1").arg(requiredMajor));
 	autoDownloadJava(requiredMajor);
 #else
 	failOrUseFallback(

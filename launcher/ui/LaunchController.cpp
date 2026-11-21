@@ -60,6 +60,12 @@ void LaunchController::executeTask()
 	login();
 }
 
+void LaunchController::fail(LaunchFailure::Kind kind, const QString& reason)
+{
+	m_failureKind = kind;
+	emitFailed(reason);
+}
+
 void LaunchController::decideAccount()
 {
 	auto accounts = APPLICATION->accounts();
@@ -123,9 +129,10 @@ void LaunchController::login()
 {
 	decideAccount();
 
-	// if no account is selected, we bail
+	// if no account is selected, we bail. The player was asked and backed
+	// out (the "No Accounts" question or the account picker).
 	if (!m_accountToUse) {
-		emitFailed(tr("No account selected for launch."));
+		fail(LaunchFailure::Kind::Quiet, tr("No account selected for launch."));
 		return;
 	}
 
@@ -133,8 +140,9 @@ void LaunchController::login()
 	// that owns Minecraft signed in, an offline account cannot launch.
 	if (!m_accountToUse->isMSA() &&
 		!APPLICATION->accounts()->anyMicrosoftAccountOwnsMinecraft()) {
-		emitFailed(tr("Offline accounts need a Microsoft account that owns "
-					  "Minecraft to be signed in to Kite."));
+		fail(LaunchFailure::Kind::Account,
+			 tr("Offline accounts need a Microsoft account that owns "
+				"Minecraft to be signed in to Kite."));
 		return;
 	}
 
@@ -152,6 +160,8 @@ void LaunchController::login()
 	 * from then on this launch goes the Offline way, whatever state the
 	 * still-running refresh leaves the account in. */
 	bool refreshSkipped = false;
+	// An account that stays Errored is refreshed a few times, not for ever.
+	int refreshes = 0;
 
 	while (tryagain) {
 		m_session = std::make_shared<AuthSession>();
@@ -242,8 +252,10 @@ void LaunchController::login()
 							tryagain = true;
 							continue;
 						} else {
-							emitFailed(tr("Received undetermined session "
-										  "status during login."));
+							// The player backed out of naming the profile.
+							fail(LaunchFailure::Kind::Quiet,
+								 tr("Received undetermined session "
+									"status during login."));
 							return;
 						}
 					}
@@ -272,8 +284,9 @@ void LaunchController::login()
 						m_session->MakeDemo();
 						launchInstance();
 					} else {
-						emitFailed(tr("Launch cancelled - account does not own "
-									  "Minecraft."));
+						fail(LaunchFailure::Kind::Quiet,
+							 tr("Launch cancelled - account does not own "
+								"Minecraft."));
 					}
 				}
 				return;
@@ -282,6 +295,12 @@ void LaunchController::login()
 				// This means some sort of soft error that we can fix with a
 				// refresh ... so let's refresh.
 			case AccountState::Unchecked: {
+				if (!LaunchFailure::mayRefreshAgain(refreshes)) {
+					fail(LaunchFailure::Kind::Login,
+						 m_accountToUse->accountData()->errorString);
+					return;
+				}
+				++refreshes;
 				m_accountToUse->refresh();
 				// NOTE: fallthrough intentional
 			}
@@ -327,10 +346,14 @@ void LaunchController::login()
 			case AccountState::Expired: {
 				auto errorString = tr("The account has expired and needs to be "
 									  "logged into manually again.");
-				LAUNCHER->uiHost()->message(tr("Account refresh failed"),
-											errorString,
-											UiHost::Severity::Warning);
-				emitFailed(errorString);
+				// Accounts is where it is signed in again (its row says so).
+				if (LAUNCHER->uiHost()->confirm(
+						tr("Account refresh failed"), errorString,
+						UiHost::Severity::Warning, tr("Sign in again"),
+						tr("Cancel"))) {
+					APPLICATION->navigateQmlShell(QStringLiteral("accounts"));
+				}
+				fail(LaunchFailure::Kind::Quiet, errorString);
 				return;
 			}
 			case AccountState::Gone: {
@@ -338,14 +361,19 @@ void LaunchController::login()
 					tr("The account no longer exists on the servers. It may "
 					   "have been migrated, in which case please add the new "
 					   "account you migrated this one to.");
-				LAUNCHER->uiHost()->message(tr("Account gone"), errorString,
-											UiHost::Severity::Warning);
-				emitFailed(errorString);
+				if (LAUNCHER->uiHost()->confirm(
+						tr("Account gone"), errorString,
+						UiHost::Severity::Warning, tr("Open Accounts"),
+						tr("Cancel"))) {
+					APPLICATION->navigateQmlShell(QStringLiteral("accounts"));
+				}
+				fail(LaunchFailure::Kind::Quiet, errorString);
 				return;
 			}
 		}
 	}
-	emitFailed(tr("Failed to launch."));
+	// Only reached when the player backed out of the offline name.
+	fail(LaunchFailure::Kind::Quiet, tr("Failed to launch."));
 }
 
 void LaunchController::launchInstance()
@@ -357,7 +385,8 @@ void LaunchController::launchInstance()
 		LAUNCHER->uiHost()->message(tr("Error!"),
 									tr("Couldn't load the instance profile."),
 									UiHost::Severity::Critical);
-		emitFailed(tr("Couldn't load the instance profile."));
+		fail(LaunchFailure::Kind::Quiet,
+			 tr("Couldn't load the instance profile."));
 		return;
 	}
 
@@ -502,7 +531,7 @@ void LaunchController::readyForLaunch()
 		LAUNCHER->uiHost()->message(tr("Error!"),
 									tr("Couldn't start profiler: %1").arg(error),
 									UiHost::Severity::Critical);
-		emitFailed("Profiler startup failed!");
+		fail(LaunchFailure::Kind::Quiet, "Profiler startup failed!");
 		return;
 	}
 	BaseProfiler* profilerInstance =
@@ -527,7 +556,7 @@ void LaunchController::readyForLaunch()
 					tr("Couldn't start the profiler: %1").arg(message),
 					UiHost::Severity::Critical);
 				m_launcher->abort();
-				emitFailed("Profiler startup failed!");
+				fail(LaunchFailure::Kind::Quiet, "Profiler startup failed!");
 			});
 	profilerInstance->beginProfiling(m_launcher);
 }
@@ -555,10 +584,16 @@ void LaunchController::onFailed(QString reason)
 {
 	// A Kill the player asked for is no error to show the console for.
 	const bool stopped = m_launcher && m_launcher->isAborting();
-	if (!stopped && m_instance->settings()->get("ShowConsoleOnError").toBool()) {
+	// A game that ran and exited is the crash doctor's; one that never
+	// started gets a "Couldn't start" notice, which offers the log itself.
+	const bool started = m_launcher && m_launcher->gameStarted();
+	if (!stopped && started &&
+		m_instance->settings()->get("ShowConsoleOnError").toBool()) {
 		APPLICATION->showInstanceLog(m_instance);
 	}
-	emitFailed(reason);
+	fail(stopped || started ? LaunchFailure::Kind::Quiet
+							: LaunchFailure::Kind::BeforeStart,
+		 reason);
 }
 
 void LaunchController::onProgressRequested()
@@ -588,6 +623,12 @@ bool LaunchController::abort()
 				   "few seconds - if the game does not react, it gets killed "
 				   "automatically."),
 				UiHost::Severity::Information);
+		} else if (!m_launcher->gameStarted()) {
+			LAUNCHER->uiHost()->message(
+				tr("Can't cancel right now"),
+				tr("Kite is in the middle of a step that can't be stopped. "
+				   "Try again in a moment."),
+				UiHost::Severity::Information);
 		} else {
 			LAUNCHER->uiHost()->message(
 				tr("Can't kill Minecraft"),
@@ -596,6 +637,10 @@ bool LaunchController::abort()
 				UiHost::Severity::Warning);
 		}
 		return false;
+	}
+	// Nothing to corrupt while the game has not started: Cancel just cancels.
+	if (!m_launcher->gameStarted()) {
+		return m_launcher->abort();
 	}
 	const bool confirmed = LAUNCHER->uiHost()->confirm(
 		tr("Kill Minecraft?"),

@@ -23,6 +23,7 @@
 #include <BaseInstance.h>
 #include <tools/BaseProfiler.h>
 
+#include "launch/LaunchFailure.h"
 #include "minecraft/launch/MinecraftServerTarget.h"
 #include "minecraft/auth/MinecraftAccount.h"
 
@@ -55,6 +56,26 @@ class LaunchController : public Task
 		m_profiler = profiler;
 	}
 
+	bool online() const
+	{
+		return m_online;
+	}
+
+	bool demoMode() const
+	{
+		return m_demoMode;
+	}
+
+	MinecraftServerTargetPtr serverToJoin() const
+	{
+		return m_serverToJoin;
+	}
+
+	MinecraftAccountPtr accountToUse() const
+	{
+		return m_accountToUse;
+	}
+
 	/// Launch the demo. The account still logs in, like a normal launch.
 	void setDemoMode(bool demoMode)
 	{
@@ -78,7 +99,17 @@ class LaunchController : public Task
 
 	bool abort() override;
 
+	/// After failed(): what, if anything, is left to tell the player
+	/// (Application::controllerFailed() shows it).
+	LaunchFailure::Kind failureKind() const
+	{
+		return m_failureKind;
+	}
+
   private:
+	/// emitFailed() for a failure of @p kind; a bare emitFailed() counts as
+	/// LaunchFailure::Kind::BeforeStart, so nothing fails without a word.
+	void fail(LaunchFailure::Kind kind, const QString& reason);
 	void login();
 	void launchInstance();
 	void decideAccount();
@@ -94,6 +125,7 @@ class LaunchController : public Task
 	BaseProfilerFactory* m_profiler = nullptr;
 	bool m_online = true;
 	bool m_demoMode = false;
+	LaunchFailure::Kind m_failureKind = LaunchFailure::Kind::BeforeStart;
 	InstancePtr m_instance;
 	MinecraftAccountPtr m_accountToUse = nullptr;
 	AuthSessionPtr m_session;
