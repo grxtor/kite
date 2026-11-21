@@ -169,7 +169,7 @@ class InstanceListTest : public QObject
 				 QString());
 	}
 
-	void pickCoverPrefersCustomThenPlatformThenPanoramaThenNothing()
+	void pickCoverPrefersCustomThenScreenshotThenWorldThenPlatformThenPanorama()
 	{
 		QTemporaryDir dir;
 		QVERIFY(dir.isValid());
@@ -180,28 +180,87 @@ class InstanceListTest : public QObject
 		QVERIFY(writeFile(platform, "z", QDateTime::currentDateTime()));
 		QVERIFY(writeFile(panorama, "y", QDateTime::currentDateTime()));
 
-		auto all = InstanceList::pickCover(custom, platform, panorama);
+		const QString shot = QDir(dir.path()).filePath("latest.png");
+		const QString world = QDir(dir.path()).filePath("icon.png");
+		QVERIFY(writeFile(shot, "s", QDateTime::currentDateTime()));
+		QVERIFY(writeFile(world, "w", QDateTime::currentDateTime()));
+		const QString no;
+
+		auto all = InstanceList::pickCover(custom, shot, world, platform, panorama);
 		QCOMPARE(all.kind, QStringLiteral("custom"));
 		QCOMPARE(all.url, QUrl::fromLocalFile(custom).toString());
 
-		auto noCustom = InstanceList::pickCover(QString(), platform, panorama);
-		QCOMPARE(noCustom.kind, QStringLiteral("platform"));
-		QCOMPARE(noCustom.url, QUrl::fromLocalFile(platform).toString());
+		auto noCustom = InstanceList::pickCover(no, shot, world, platform, panorama);
+		QCOMPARE(noCustom.kind, QStringLiteral("screenshot"));
+		QCOMPARE(noCustom.url, QUrl::fromLocalFile(shot).toString());
 
-		auto onlyPanorama =
-			InstanceList::pickCover(QString(), QString(), panorama);
+		auto noShot = InstanceList::pickCover(no, no, world, platform, panorama);
+		QCOMPARE(noShot.kind, QStringLiteral("world"));
+		QCOMPARE(noShot.url, QUrl::fromLocalFile(world).toString());
+
+		auto noWorld = InstanceList::pickCover(no, no, no, platform, panorama);
+		QCOMPARE(noWorld.kind, QStringLiteral("platform"));
+		QCOMPARE(noWorld.url, QUrl::fromLocalFile(platform).toString());
+
+		auto onlyPanorama = InstanceList::pickCover(no, no, no, no, panorama);
 		QCOMPARE(onlyPanorama.kind, QStringLiteral("panorama"));
 		QCOMPARE(onlyPanorama.url, QUrl::fromLocalFile(panorama).toString());
 
-		// A picked cover or fetched art that was deleted falls through.
+		// A picture that was deleted falls through to the next kind.
 		const QString gone = QDir(dir.path()).filePath("gone.png");
-		QCOMPARE(InstanceList::pickCover(gone, platform, panorama).kind,
+		QCOMPARE(InstanceList::pickCover(gone, gone, world, platform, panorama).kind,
+				 QStringLiteral("world"));
+		QCOMPARE(InstanceList::pickCover(gone, gone, gone, platform, panorama).kind,
 				 QStringLiteral("platform"));
-		QCOMPARE(InstanceList::pickCover(gone, gone, panorama).kind,
+		QCOMPARE(InstanceList::pickCover(gone, gone, gone, gone, panorama).kind,
 				 QStringLiteral("panorama"));
-		auto none = InstanceList::pickCover(gone, gone, QString());
+		auto none = InstanceList::pickCover(gone, gone, gone, gone, no);
 		QCOMPARE(none.kind, QString());
 		QCOMPARE(none.url, QString());
+	}
+
+	void latestScreenshotIsTheNewestPictureOfTheFolder()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QDir root(dir.path());
+		QCOMPARE(InstanceList::latestScreenshot(QString()), QString());
+		QCOMPARE(InstanceList::latestScreenshot(root.path()), QString());
+
+		const QDateTime now = QDateTime::currentDateTime();
+		QVERIFY(root.mkpath("screenshots/sub.png"));
+		QVERIFY(writeFile(root.filePath("screenshots/notes.txt"), "x", now));
+		QCOMPARE(InstanceList::latestScreenshot(root.path()), QString());
+
+		QVERIFY(writeFile(root.filePath("screenshots/old.png"), "x", now.addDays(-2)));
+		QVERIFY(writeFile(root.filePath("screenshots/new.jpg"), "x", now.addDays(-1)));
+		QVERIFY(writeFile(root.filePath("screenshots/older.png"), "x", now.addDays(-3)));
+		QCOMPARE(InstanceList::latestScreenshot(root.path()),
+				 root.filePath("screenshots/new.jpg"));
+	}
+
+	void latestWorldIconIsTheLastChangedSaveWithAnIcon()
+	{
+		QTemporaryDir dir;
+		QVERIFY(dir.isValid());
+		const QDir root(dir.path());
+		QCOMPARE(InstanceList::latestWorldIcon(QString()), QString());
+		QCOMPARE(InstanceList::latestWorldIcon(root.path()), QString());
+
+		const QDateTime now = QDateTime::currentDateTime();
+		QVERIFY(root.mkpath("saves/Old"));
+		QVERIFY(root.mkpath("saves/Recent"));
+		QVERIFY(root.mkpath("saves/NewestNoIcon"));
+		QVERIFY(root.mkpath("saves/NotAWorld"));
+		QVERIFY(writeFile(root.filePath("saves/Old/level.dat"), "x", now.addDays(-5)));
+		QVERIFY(writeFile(root.filePath("saves/Old/icon.png"), "x", now));
+		QVERIFY(writeFile(root.filePath("saves/Recent/level.dat"), "x", now.addDays(-2)));
+		QVERIFY(writeFile(root.filePath("saves/Recent/icon.png"), "x", now.addDays(-9)));
+		QVERIFY(writeFile(root.filePath("saves/NewestNoIcon/level.dat"), "x", now));
+		QVERIFY(writeFile(root.filePath("saves/NotAWorld/icon.png"), "x", now));
+		// By when the world was saved, not by the icon's own date.
+		QCOMPARE(InstanceList::latestWorldIcon(root.path()),
+				 root.filePath("saves/Recent/icon.png"));
 	}
 
 	void averageIconColorWeighsVisiblePixels()
@@ -310,7 +369,8 @@ class InstanceListTest : public QObject
 		QVERIFY(QDir().mkpath(QDir(instRoot).filePath("screenshots")));
 		const QString shotPath =
 			QDir(instRoot).filePath("screenshots/shot.png");
-		QVERIFY(writeFile(shotPath, "x", QDateTime::currentDateTime()));
+		QVERIFY(writeFile(shotPath, "x",
+						   QDateTime::currentDateTime().addSecs(-3600)));
 		const QString elsewhere = QDir(instRoot).filePath("elsewhere.png");
 		QVERIFY(writeFile(elsewhere, "x", QDateTime::currentDateTime()));
 		const QString notImage =
@@ -327,17 +387,17 @@ class InstanceListTest : public QObject
 		QCOMPARE(list.roleNames().value(InstanceList::CoverKindRole),
 				 QByteArray("coverKind"));
 
-		// No screenshot is picked: no automatic cover, however many
-		// screenshots the folder holds.
-		QVERIFY(writeFile(QDir(instRoot).filePath("screenshots/newest.png"),
-						   "x", QDateTime::currentDateTime()));
+		// No screenshot is picked: the newest one of the folder is the
+		// cover, found on a worker (empty until it answers).
+		const QString newestPath =
+			QDir(instRoot).filePath("screenshots/newest.png");
+		QVERIFY(writeFile(newestPath, "x", QDateTime::currentDateTime()));
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QString());
-		QTest::qWait(100);
-		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
-				 QString());
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
+					 QUrl::fromLocalFile(newestPath).toString());
 		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
-				 QString());
+				 QStringLiteral("screenshot"));
 
 		// Only an existing image of the screenshots folder is copied; the
 		// rest is ignored (outside it, a copy of the instance could not
@@ -404,10 +464,11 @@ class InstanceListTest : public QObject
 		QVERIFY(list.getInstanceById("testinst")->coverSource().isEmpty());
 		QTRY_VERIFY(!QFileInfo::exists(QDir(instRoot).filePath(otherCopy)));
 		QVERIFY(QFileInfo(otherPath).isFile());
+		// Back to the automatic cover: the newest screenshot.
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
-					 QString());
+					 QUrl::fromLocalFile(otherPath).toString());
 		QCOMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
-				 QString());
+				 QStringLiteral("screenshot"));
 		QCOMPARE(list.data(idx, InstanceList::CoverSourceRole).toString(),
 				 QString());
 	}
@@ -490,7 +551,7 @@ class InstanceListTest : public QObject
 		QCOMPARE(list.getInstanceById("testinst")->coverImage(), copy);
 	}
 
-	void platformArtShowsUnderThePickedCoverAndAboveNothing()
+	void platformArtShowsUnderScreenshotsAndAboveNothing()
 	{
 		QTemporaryDir globalDir;
 		QVERIFY(globalDir.isValid());
@@ -507,8 +568,7 @@ class InstanceListTest : public QObject
 						   QDateTime::currentDateTime()));
 		const QString art = QDir(instRoot).filePath("kite-cover.png");
 		QVERIFY(writeFile(art, "x", QDateTime::currentDateTime()));
-		QVERIFY(writeFile(QDir(instRoot).filePath("screenshots/shot.png"), "x",
-						   QDateTime::currentDateTime()));
+		const QString shot = QDir(instRoot).filePath("screenshots/shot.png");
 
 		InstanceList list(globalSettings, {instsDir.path()});
 		QCOMPARE(list.loadList(), InstanceList::NoError);
@@ -521,12 +581,17 @@ class InstanceListTest : public QObject
 		QCOMPARE(list.data(idx, InstanceList::CoverImageRole).toString(),
 				 QUrl::fromLocalFile(art).toString());
 
-		// A picked screenshot goes over it; removing that brings it back.
-		QVERIFY(list.setCover("testinst", QDir(instRoot).filePath(
-											  "screenshots/shot.png")));
+		// A picked screenshot goes over it; unpicked, the instance's own
+		// screenshot still does, and without one the art is back.
+		QVERIFY(writeFile(shot, "x", QDateTime::currentDateTime()));
+		QVERIFY(list.setCover("testinst", shot));
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
 					 QStringLiteral("custom"));
 		list.clearCover("testinst");
+		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
+					 QStringLiteral("screenshot"));
+		QVERIFY(QFile::remove(shot));
+		list.setCoverDirs({});
 		QTRY_COMPARE(list.data(idx, InstanceList::CoverKindRole).toString(),
 					 QStringLiteral("platform"));
 
