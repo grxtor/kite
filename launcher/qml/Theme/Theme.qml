@@ -100,7 +100,7 @@ QtObject {
         readonly property int heightSm: 32
         readonly property int height: 40
         readonly property int heightLg: 48
-        readonly property int menuItemHeight: 32
+        readonly property int menuItemHeight: 28
     }
 
     // A keyboard ring stands `offset` clear of the control, solid

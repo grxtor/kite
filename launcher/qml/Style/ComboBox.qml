@@ -65,7 +65,7 @@ T.ComboBox {
 
         background: Rectangle {
             implicitHeight: Theme.control.menuItemHeight
-            radius: Theme.radius.sm
+            radius: Theme.radius.indicator
             color: row.down ? Theme.palette.pressedOverlay
                  : row.highlighted ? Theme.palette.hoverOverlay
                  : "transparent"
@@ -182,7 +182,7 @@ T.ComboBox {
 
         // The popup glass treatment Menu.qml uses.
         background: GlassSurface {
-            radius: Theme.radius.md
+            radius: Theme.radius.sm
             level: Theme.elevation.md
         }
     }

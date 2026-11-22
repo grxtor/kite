@@ -52,7 +52,8 @@ Menu {
     }
 
     x: root.anchorRight - root.width
-    y: root.anchorBottom + Theme.space.xs
+    // Under the whole row, not over its second line: the ⋯ sits mid-row, a little above the row's foot.
+    y: root.anchorBottom + Theme.space.md
 
     MenuEntry {
         visible: root.canMessage

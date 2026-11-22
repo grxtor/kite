@@ -15,7 +15,7 @@ T.MenuSeparator {
                              implicitContentHeight + topPadding + bottomPadding)
 
     // Inset like the rows' own text, so the line doesn't run wall to wall.
-    padding: Theme.space.md - Theme.space.xxs
+    padding: Theme.space.sm
     verticalPadding: Theme.space.xs
 
     contentItem: Rectangle {

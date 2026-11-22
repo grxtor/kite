@@ -17,12 +17,13 @@ T.MenuItem {
 
     // Icons on one column and text after them on another, whether or not a
     // row has an icon of its own.
-    verticalPadding: Theme.space.xs
-    horizontalPadding: Theme.space.md - Theme.space.xxs
-    spacing: Theme.space.sm + Theme.space.xxs
+    // Compact, like a system menu: caption-sized text and small icons in 28 px rows.
+    verticalPadding: Theme.space.xxs
+    horizontalPadding: Theme.space.sm
+    spacing: Theme.space.sm
 
-    icon.width: Theme.icon.sm
-    icon.height: Theme.icon.sm
+    icon.width: Theme.icon.xxs
+    icon.height: Theme.icon.xxs
     // An entry that removes or blocks something reads in the danger colour, as the dialogs' buttons do.
     property bool danger: false
     readonly property color ink: !control.enabled ? Theme.palette.textDisabled
@@ -50,15 +51,15 @@ T.MenuItem {
         // at the SVG's own size.
         iconSource: control.icon.source
         iconName: control.icon.name
-        iconWidth: Theme.icon.sm
-        iconHeight: Theme.icon.sm
+        iconWidth: Theme.icon.xxs
+        iconHeight: Theme.icon.xxs
         iconColor: control.subMenu ? (control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled)
                                    : control.ink
         iconCache: control.icon.cache
         text: control.text
         font.family: Theme.font.family
-        font.pixelSize: Theme.type.body.pixelSize
-        font.weight: Theme.type.body.weight
+        font.pixelSize: Theme.type.caption.pixelSize
+        font.weight: Theme.type.label.weight
         color: control.ink
     }
 
@@ -68,8 +69,8 @@ T.MenuItem {
     indicator: CheckMark {
         x: (control.mirrored !== control.tickAtEnd) ? control.width - width - control.rightPadding : control.leftPadding
         y: control.topPadding + (control.availableHeight - height) / 2
-        width: Theme.icon.sm
-        height: Theme.icon.sm
+        width: Theme.icon.xxs
+        height: Theme.icon.xxs
         color: Theme.palette.accentText
         visible: control.checkable && control.checked
     }
@@ -77,8 +78,8 @@ T.MenuItem {
     arrow: Chevron {
         x: control.mirrored ? control.leftPadding : control.width - width - control.rightPadding
         y: control.topPadding + (control.availableHeight - height) / 2
-        width: Theme.icon.sm
-        height: Theme.icon.sm
+        width: Theme.icon.xxs
+        height: Theme.icon.xxs
         color: Theme.palette.textTertiary
         direction: 1
         visible: control.subMenu
@@ -87,7 +88,7 @@ T.MenuItem {
     // No width of its own; Menu.qml sets the floor.
     background: Rectangle {
         implicitHeight: Theme.control.menuItemHeight
-        radius: Theme.radius.sm
+        radius: Theme.radius.indicator
         color: !control.enabled ? "transparent"
              : control.down ? Theme.palette.pressedOverlay
              : (control.highlighted || control.hovered) ? Theme.palette.hoverOverlay

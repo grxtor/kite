@@ -54,15 +54,14 @@ T.Menu {
     // The popup surface (Theme.glass): surfaceOverlay, the hairline border and the md shadow. Flat: no sheen
     // and no light top edge.
     background: GlassSurface {
-        radius: Theme.radius.md
+        radius: Theme.radius.sm
         level: Theme.elevation.md
     }
 
-    // Grows a little out of its top edge, where a menu hangs from.
-    transformOrigin: T.Popup.Top
+    // A menu is under the pointer the moment it is asked for: a quick fade and nothing else. Growing and
+    // overshooting from its top centre made a menu hung from its right corner seem to arrive from the side.
     enter: Transition {
-        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-        NumberAnimation { property: "scale"; from: Theme.motion.popScale; to: 1.0; duration: Theme.motion.pop; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
+        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.press; easing.type: Theme.motion.easing }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
