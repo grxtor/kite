@@ -89,8 +89,8 @@ ApplicationWindow {
             if (look === "stage" || look === "calm" || look === "night" || look === "classic")
                 Theme.look = look
             // A window too narrow for the panel overrides the saved choice for this session only.
-            root.friendsPanelOpen = SettingsStore.bool("FriendsPanelOpen")
-                                    && root.width >= root.friendsPanelMinWindow
+            // The panel opens over the page and closes again when done with, so it never starts open.
+            root.friendsPanelOpen = false
             root.friendsPanelExpanded = SettingsStore.bool("FriendsPanelExpanded")
             root.friendsPanelWidth = SettingsStore.number("FriendsPanelWidth")
             root.sidebarWidth = SettingsStore.number("UiSidebarWidth")
@@ -918,7 +918,6 @@ ApplicationWindow {
         // Leaves the page area's least width and, with friends, the panel's
         // narrowest opened-out width, so dragging never squeezes either.
         roomWidth: root.width - friendsPanel.minPageWidth
-                   - (root.friendsController ? friendsPanel.minExpandedWidth : 0)
         onWidthCommitted: (labelledWidth) => root.setSidebarWidth(labelledWidth)
         items: root.navItems
         footerItems: [
@@ -1015,8 +1014,8 @@ ApplicationWindow {
             else
                 instancePage.leaveBrowse()
         }
-        // The title keeps to the page's column; the toggle stands over the panel.
-        rightReserve: friendsPanel.width
+        // The friends panel opens over the page, so the bar keeps its whole width.
+        rightReserve: 0
         // Home only: the big servers to join in one click, against the right of the page's column.
         middle: [
             QuickJoinBar {
@@ -1050,20 +1049,68 @@ ApplicationWindow {
         ]
     }
 
+    // The friends panel lies over the page instead of pushing it aside: the page keeps its width, so nothing
+    // on it reflows. A press anywhere else, or Esc, closes it (not on the Friends page, where it holds a
+    // conversation next to the lists).
+    readonly property bool friendsPanelDismissable: root.friendsPanelShown && root.page !== "friends"
+    MouseArea {
+        id: friendsPanelDismiss
+        z: 19
+        anchors.left: parent.left
+        anchors.right: friendsPanel.left
+        anchors.top: topBar.bottom
+        anchors.bottom: parent.bottom
+        visible: root.friendsPanelDismissable
+        acceptedButtons: Qt.AllButtons
+        onPressed: root.setFriendsPanelOpen(false)
+        onWheel: (wheel) => wheel.accepted = true
+        Accessible.ignored: true
+
+        Rectangle {
+            anchors.fill: parent
+            color: Theme.palette.scrim
+            opacity: root.friendsPanelDismissable ? 0.5 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        }
+    }
+    Shortcut {
+        sequences: [StandardKey.Cancel]
+        enabled: root.friendsPanelDismissable
+        onActivated: root.setFriendsPanelOpen(false)
+    }
+    // An opaque ground and the shadow of a surface lying over the page.
+    Rectangle {
+        z: 19
+        x: friendsPanel.x
+        y: friendsPanel.y
+        width: friendsPanel.width
+        height: friendsPanel.height
+        visible: friendsPanel.width > 0
+        color: Theme.palette.canvas
+
+        Shadow {
+            radius: 0
+            level: Theme.elevation.lg
+        }
+    }
+
     FriendsSidePanel {
         id: friendsPanel
+        z: 20
         anchors.right: parent.right
         anchors.top: topBar.bottom
         anchors.bottom: parent.bottom
         open: root.friendsPanelShown
-        expanded: root.friendsPanelExpanded || root.page === "friends"
+        // Always opened out: the narrow strip belonged to a panel that stood beside the page.
+        expanded: true
         expandedWidth: root.friendsPanelWidth
         roomWidth: root.width - sidebar.width
         controller: root.friendsController
         places: root.friendPlaces
         joinFlow: friendJoin
         myFace: root.shellValue("accountFace", "")
-        onExpandedRequested: (expanded) => root.setFriendsPanelExpanded(expanded)
+        // Folding it away closes it.
+        onExpandedRequested: (expanded) => expanded ? root.setFriendsPanelExpanded(true) : root.setFriendsPanelOpen(false)
         onWidthCommitted: (panelWidth) => root.setFriendsPanelWidth(panelWidth)
         onFriendsRequested: (tab) => root.openFriends(tab)
         onNavigateRequested: (target) => root.navigate(target)
@@ -1075,7 +1122,7 @@ ApplicationWindow {
     Item {
         id: panel
         anchors.left: sidebar.right
-        anchors.right: friendsPanel.left
+        anchors.right: parent.right
         anchors.top: topBar.bottom
         anchors.bottom: playDock.visible ? playDock.top : parent.bottom
         clip: true
@@ -1356,7 +1403,7 @@ ApplicationWindow {
         id: playDock
         surround: root.shellColor
         anchors.left: sidebar.right
-        anchors.right: friendsPanel.left
+        anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: implicitHeight
         sideMargin: root.pageSideMargin
