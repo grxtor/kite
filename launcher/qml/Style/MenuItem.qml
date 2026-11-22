@@ -29,8 +29,11 @@ T.MenuItem {
     contentItem: IconText {
         readonly property real arrowPadding: control.subMenu && control.arrow ? control.arrow.width + control.spacing : 0
         readonly property real indicatorPadding: control.checkable && control.indicator ? control.indicator.width + control.spacing : 0
-        leftPadding: !control.mirrored ? indicatorPadding : arrowPadding
-        rightPadding: control.mirrored ? indicatorPadding : arrowPadding
+        // A checkable row with an icon of its own keeps the icon column and carries its tick at the end.
+        readonly property real leadPadding: control.tickAtEnd ? 0 : indicatorPadding
+        readonly property real trailPadding: Math.max(arrowPadding, control.tickAtEnd ? indicatorPadding : 0)
+        leftPadding: !control.mirrored ? leadPadding : trailPadding
+        rightPadding: control.mirrored ? leadPadding : trailPadding
 
         spacing: control.spacing
         mirrored: control.mirrored
@@ -54,8 +57,11 @@ T.MenuItem {
         color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
     }
 
+    readonly property bool tickAtEnd: control.checkable && (control.icon.source.toString().length > 0
+                                                            || control.icon.name.length > 0)
+
     indicator: CheckMark {
-        x: control.mirrored ? control.width - width - control.rightPadding : control.leftPadding
+        x: (control.mirrored !== control.tickAtEnd) ? control.width - width - control.rightPadding : control.leftPadding
         y: control.topPadding + (control.availableHeight - height) / 2
         width: Theme.icon.sm
         height: Theme.icon.sm

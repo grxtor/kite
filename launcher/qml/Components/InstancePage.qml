@@ -586,43 +586,55 @@ Item {
         MenuDivider {
             visible: instanceMenu.offerOptions
         }
-        MenuItem {
-            text: qsTr("Open folder")
+        // Three short submenus keep the menu to what is used most: folders, edits, and ways to hand it on.
+        Menu {
+            title: qsTr("Open folder")
             icon.source: Icons.url("folder")
-            onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
-        }
-        MenuEntry {
-            visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
-            text: qsTr("Open .minecraft folder")
-            icon.source: Icons.url("folder")
-            onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
-        }
-        MenuEntry {
-            visible: instanceMenu.isMinecraft
-            text: qsTr("Open mods folder")
-            icon.source: Icons.url("folder")
-            onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
+            MenuItem {
+                text: qsTr("Instance folder")
+                icon.source: Icons.url("folder")
+                onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
+            }
+            MenuEntry {
+                visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
+                text: qsTr(".minecraft folder")
+                icon.source: Icons.url("folder")
+                onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
+            }
+            MenuEntry {
+                visible: instanceMenu.isMinecraft
+                text: qsTr("Mods folder")
+                icon.source: Icons.url("folder")
+                onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
+            }
         }
         MenuDivider {
             visible: instanceMenu.offerManage
         }
-        MenuEntry {
-            visible: root.manageable
-            text: qsTr("Rename…")
+        SubmenuEntry {
+            menu: instanceMenu
+            submenu: editMenu
+            shown: root.manageable
+        }
+        Menu {
+            id: editMenu
+            title: qsTr("Edit")
             icon.source: Icons.url("edit")
-            onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
-        }
-        MenuEntry {
-            visible: root.manageable
-            text: qsTr("Change icon…")
-            icon.source: Icons.url("image")
-            onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
-        }
-        MenuEntry {
-            visible: root.manageable
-            text: qsTr("Change group…")
-            icon.source: Icons.url("folder-input")
-            onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
+            MenuItem {
+                text: qsTr("Rename…")
+                icon.source: Icons.url("edit")
+                onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
+            }
+            MenuItem {
+                text: qsTr("Change icon…")
+                icon.source: Icons.url("image")
+                onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
+            }
+            MenuItem {
+                text: qsTr("Change group…")
+                icon.source: Icons.url("folder-input")
+                onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
+            }
         }
         MenuEntry {
             visible: root.manageable
@@ -632,17 +644,27 @@ Item {
                          ? exportFlows.duplicateInstance(root.instanceId, instanceMenu.name, instanceMenu.group, instanceMenu.iconKey)
                          : root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
         }
-        MenuEntry {
-            visible: exportFlows.canExport
-            text: qsTr("Export…")
-            icon.source: Icons.url("archive")
-            onTriggered: exportFlows.exportInstance(root.instanceId)
+        SubmenuEntry {
+            menu: instanceMenu
+            submenu: shareMenu
+            shown: exportFlows.canExport || exportFlows.canShare
         }
-        MenuEntry {
-            visible: exportFlows.canShare
-            text: qsTr("Share as code…")
+        Menu {
+            id: shareMenu
+            title: qsTr("Share")
             icon.source: Icons.url("share")
-            onTriggered: exportFlows.shareAsCode(root.instanceId, instanceMenu.name)
+            MenuEntry {
+                visible: exportFlows.canExport
+                text: qsTr("Export…")
+                icon.source: Icons.url("archive")
+                onTriggered: exportFlows.exportInstance(root.instanceId)
+            }
+            MenuEntry {
+                visible: exportFlows.canShare
+                text: qsTr("Share as code…")
+                icon.source: Icons.url("share")
+                onTriggered: exportFlows.shareAsCode(root.instanceId, instanceMenu.name)
+            }
         }
         MenuEntry {
             visible: exportFlows.canCreateShortcut

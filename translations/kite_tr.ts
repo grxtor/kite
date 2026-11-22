@@ -7230,6 +7230,31 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <source>Delete…</source>
         <translation>Sil…</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Instance folder</source>
+        <translation>Kurulum klasörü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>.minecraft folder</source>
+        <translation>.minecraft klasörü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Mods folder</source>
+        <translation>Mod klasörü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Edit</source>
+        <translation>Düzenle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Share</source>
+        <translation>Paylaş</translation>
+    </message>
 </context>
 <context>
     <name>InstanceNotesTab</name>
@@ -7391,6 +7416,31 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <location line="+1"/>
         <source>Cancel</source>
         <translation>İptal</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Instance folder</source>
+        <translation>Kurulum klasörü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>.minecraft folder</source>
+        <translation>.minecraft klasörü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Mods folder</source>
+        <translation>Mod klasörü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Edit</source>
+        <translation>Düzenle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Share</source>
+        <translation>Paylaş</translation>
     </message>
 </context>
 <context>

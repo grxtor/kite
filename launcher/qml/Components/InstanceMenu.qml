@@ -93,38 +93,47 @@ Menu {
         icon.source: Icons.url("arrow-right")
         onTriggered: root.editRequested(root.targetId)
     }
-    MenuItem {
-        text: qsTr("Open folder")
+    // Three short submenus keep the menu to what is used most: folders, edits, and ways to hand it on.
+    Menu {
+        title: qsTr("Open folder")
         icon.source: Icons.url("folder")
-        onTriggered: root.folderRequested(root.targetId)
-    }
-    MenuEntry {
-        visible: root.gameFolder.length > 0
-        text: qsTr("Open .minecraft folder")
-        icon.source: Icons.url("folder")
-        onTriggered: root.library.openFolder(root.gameFolder)
-    }
-    MenuEntry {
-        visible: root.modsFolder.length > 0
-        text: qsTr("Open mods folder")
-        icon.source: Icons.url("folder")
-        onTriggered: root.library.openFolder(root.modsFolder)
+        MenuItem {
+            text: qsTr("Instance folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.folderRequested(root.targetId)
+        }
+        MenuEntry {
+            visible: root.gameFolder.length > 0
+            text: qsTr(".minecraft folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.library.openFolder(root.gameFolder)
+        }
+        MenuEntry {
+            visible: root.modsFolder.length > 0
+            text: qsTr("Mods folder")
+            icon.source: Icons.url("folder")
+            onTriggered: root.library.openFolder(root.modsFolder)
+        }
     }
     MenuSeparator {}
-    MenuItem {
-        text: qsTr("Rename…")
+    Menu {
+        title: qsTr("Edit")
         icon.source: Icons.url("edit")
-        onTriggered: root.renameRequested(root.targetId, root.targetName)
-    }
-    MenuItem {
-        text: qsTr("Change icon…")
-        icon.source: Icons.url("image")
-        onTriggered: root.iconRequested(root.targetId, root.targetIcon)
-    }
-    MenuItem {
-        text: qsTr("Change group…")
-        icon.source: Icons.url("folder-input")
-        onTriggered: root.groupRequested(root.targetId, root.targetGroup)
+        MenuItem {
+            text: qsTr("Rename…")
+            icon.source: Icons.url("edit")
+            onTriggered: root.renameRequested(root.targetId, root.targetName)
+        }
+        MenuItem {
+            text: qsTr("Change icon…")
+            icon.source: Icons.url("image")
+            onTriggered: root.iconRequested(root.targetId, root.targetIcon)
+        }
+        MenuItem {
+            text: qsTr("Change group…")
+            icon.source: Icons.url("folder-input")
+            onTriggered: root.groupRequested(root.targetId, root.targetGroup)
+        }
     }
     MenuItem {
         text: qsTr("Duplicate…")
@@ -134,17 +143,27 @@ Menu {
                                                           root.targetGroup, root.targetIcon)
                      : root.duplicateRequested(root.targetId, root.targetName, root.targetGroup)
     }
-    MenuEntry {
-        visible: !!root.exportFlows && root.exportFlows.canExport
-        text: qsTr("Export…")
-        icon.source: Icons.url("archive")
-        onTriggered: root.exportFlows.exportInstance(root.targetId)
+    SubmenuEntry {
+        menu: root
+        submenu: shareMenu
+        shown: !!root.exportFlows && (root.exportFlows.canExport || root.exportFlows.canShare)
     }
-    MenuEntry {
-        visible: !!root.exportFlows && root.exportFlows.canShare
-        text: qsTr("Share as code…")
+    Menu {
+        id: shareMenu
+        title: qsTr("Share")
         icon.source: Icons.url("share")
-        onTriggered: root.exportFlows.shareAsCode(root.targetId, root.targetName)
+        MenuEntry {
+            visible: !!root.exportFlows && root.exportFlows.canExport
+            text: qsTr("Export…")
+            icon.source: Icons.url("archive")
+            onTriggered: root.exportFlows.exportInstance(root.targetId)
+        }
+        MenuEntry {
+            visible: !!root.exportFlows && root.exportFlows.canShare
+            text: qsTr("Share as code…")
+            icon.source: Icons.url("share")
+            onTriggered: root.exportFlows.shareAsCode(root.targetId, root.targetName)
+        }
     }
     MenuEntry {
         visible: !!root.exportFlows && root.exportFlows.canCreateShortcut

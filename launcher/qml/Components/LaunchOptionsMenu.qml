@@ -103,6 +103,8 @@ Menu {
     // version the mods exist for.
     MenuEntry {
         text: qsTr("Kite Performance")
+        // An icon like its neighbours', so the label lines up; the tick then sits at the row's end.
+        icon.source: Icons.url("zap")
         checkable: true
         checked: root.performance
         visible: root.performanceAvailable
