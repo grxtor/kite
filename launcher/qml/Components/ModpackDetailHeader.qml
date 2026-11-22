@@ -74,13 +74,13 @@ Item {
                 size: Theme.icon.lg
                 color: Theme.palette.textTertiary
             }
-            // On a photo there is no one colour behind the corners, so the logo stays square-cornered under a
-            // hairline; on the page it is rounded like every other logo.
+            // On a photo there is no one colour behind the corners, so the logo stays square-cornered; on the
+            // page it is rounded like every other logo. No hairline over it: at 1x a light line on the picture's
+            // rounded corners read as a pale halo.
             CornerMatte {
                 visible: !root.overPhoto
                 cornerRadius: Theme.radius.xl
                 matte: Theme.palette.canvas
-                outline: Theme.palette.border
             }
         }
 
