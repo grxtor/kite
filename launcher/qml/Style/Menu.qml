@@ -25,10 +25,12 @@ T.Menu {
         return widest
     }
 
-    implicitWidth: Math.min(control.maximumWidth,
-                            Math.max(control.minimumWidth,
-                                     implicitBackgroundWidth + leftInset + rightInset,
-                                     control.widestEntry + leftPadding + rightPadding))
+    // A whole number of pixels: entries' text widths are fractional, and a menu hung by its right edge
+    // (x = anchor - width) then sat on a half pixel and visibly moved over by one when it settled.
+    implicitWidth: Math.ceil(Math.min(control.maximumWidth,
+                                      Math.max(control.minimumWidth,
+                                               implicitBackgroundWidth + leftInset + rightInset,
+                                               control.widestEntry + leftPadding + rightPadding)))
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 

@@ -51,7 +51,7 @@ Menu {
         root.open()
     }
 
-    x: root.anchorRight - root.width
+    x: Math.round(root.anchorRight - root.width)
     // Under the whole row, not over its second line: the ⋯ sits mid-row, a little above the row's foot.
     y: root.anchorBottom + Theme.space.md
 
