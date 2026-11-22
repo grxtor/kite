@@ -205,6 +205,8 @@ void AccountsController::debugSetStates(const QString& spec)
 			data->accountState = AccountState::Gone;
 			data->errorString = QStringLiteral(
 				"Failed to authenticate. The account no longer exists.");
+		} else if (key == QLatin1String("working")) {
+			data->accountState = AccountState::Working;
 		} else {
 			continue;
 		}

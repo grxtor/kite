@@ -8,9 +8,11 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One account in the Accounts page's "other accounts" list: face, name, kind and state, and the actions --
- * "Use this account" and the rest behind ⋯. An account that cannot play online (AccountStates) also says why
- * under its name and has "Sign in again" on the row. The page hides the row shown in its hero (`hidden`).
+ * One account in the Accounts page's "Other accounts" card: head, name, the kind of account in words with its
+ * state beside it, and the actions -- "Make default" and the rest behind ⋯. An account that cannot play online
+ * (AccountStates) also says why under its name and has "Sign in again" on the row. Rows lie in one card with a
+ * hairline between them (`divider`, on every row but the first shown); the page hides the row its hero shows
+ * (`hidden`), which a Column then skips.
  */
 Item {
     id: root
@@ -26,9 +28,7 @@ Item {
     required property string lastError
 
     property bool hidden: false
-    // Space under the card, counted in the row's own height: a ListView spaces even a collapsed delegate, so
-    // the list has no spacing of its own and a hidden row leaves no gap.
-    property int gap: 0
+    property bool divider: false
     // Bumped by the page when a skin may have changed, so the face url changes (AccountsPage imageRevision).
     property int rev: 0
 
@@ -38,117 +38,133 @@ Item {
     signal manageSkinRequested()
 
     readonly property string shownName: profileName.length > 0 ? profileName : name
-    readonly property int faceSize: 48
+    readonly property int faceSize: 40
     readonly property bool attention: AccountStates.needsAttention(root.stateKey)
-    readonly property string reason: root.attention ? root.lastError : ""
-    readonly property int rowHeight: root.reason.length > 0 ? 96 : 80
-    readonly property bool hovered: !root.hidden && hoverHandler.hovered
+    readonly property bool working: root.stateKey === "working"
+    readonly property string reason: !root.attention ? ""
+                                   : root.lastError.length > 0 ? root.lastError : AccountStates.summary(root.stateKey)
+    readonly property int rowHeight: root.reason.length > 0 ? 88 : 68
 
-    implicitHeight: root.hidden ? 0 : root.rowHeight + root.gap
+    implicitHeight: root.rowHeight
     visible: !root.hidden
 
+    // In the gap the card's column leaves above the row.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: Theme.space.md
+        anchors.rightMargin: Theme.space.md
+        y: -1
+        height: 1
+        color: Theme.palette.divider
+        visible: root.divider
+    }
+
     StateFill {
-        width: parent.width
-        height: root.rowHeight
-        radius: Theme.radius.lg
-        card: true
-        hovered: root.hovered
-        border.width: 1
-        border.color: Theme.palette.border
+        anchors.fill: parent
+        radius: Theme.radius.md
+        hovered: hoverHandler.hovered
+    }
+    HoverHandler { id: hoverHandler }
 
-        HoverHandler { id: hoverHandler; enabled: !root.hidden }
+    RowLayout {
+        anchors.fill: parent
+        anchors.leftMargin: Theme.space.md
+        anchors.rightMargin: Theme.space.sm
+        spacing: Theme.space.md
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: Theme.space.lg
-            anchors.rightMargin: Theme.space.lg
-            spacing: Theme.space.md
+        PlayerHead {
+            size: root.faceSize
+            source: !root.hidden && root.accountId.length > 0
+                    ? "image://accountface/" + root.accountId + "?rev=" + root.rev : ""
+        }
 
-            PlayerHead {
-                size: root.faceSize
-                source: !root.hidden && root.accountId.length > 0
-                        ? "image://accountface/" + root.accountId + "?rev=" + root.rev : ""
+        Column {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            spacing: Theme.space.xxs
+
+            Copy {
+                width: parent.width
+                text: root.shownName
+                role: "bodyStrong"
+                elide: Text.ElideRight
             }
 
-            Column {
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                spacing: Theme.space.xxs
-
+            Row {
+                spacing: Theme.space.sm
                 Copy {
-                    width: parent.width
-                    text: root.shownName
-                    role: "title"
-                    elide: Text.ElideRight
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.isMSA ? qsTr("Microsoft account") : qsTr("Offline account")
+                    role: "label"
+                    tone: "secondary"
                 }
-
-                Row {
-                    spacing: Theme.space.sm
-                    Copy {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.isMSA ? qsTr("Microsoft") : qsTr("Offline")
-                        role: "label"
-                        tone: "secondary"
-                    }
-                    AccountStateBadge {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: (root.isMSA || root.attention) && root.status.length > 0
-                        stateKey: root.stateKey
-                        text: root.status
-                    }
+                AccountStateBadge {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: (root.isMSA || root.attention || root.working) && root.status.length > 0
+                    stateKey: root.stateKey
+                    text: root.status
                 }
-
-                Copy {
-                    width: parent.width
-                    visible: root.reason.length > 0
-                    text: root.reason
-                    role: "caption"
-                    tone: "tertiary"
-                    elide: Text.ElideRight
+                BusyIndicator {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.working
+                    running: visible
+                    width: Theme.icon.sm
+                    height: Theme.icon.sm
                 }
             }
 
-            Button {
-                visible: root.attention
-                text: qsTr("Sign in again")
-                icon.source: Icons.url("refresh")
-                onClicked: root.refreshRequested()
+            Copy {
+                width: parent.width
+                visible: root.reason.length > 0
+                text: root.reason
+                role: "caption"
+                tone: "tertiary"
+                elide: Text.ElideRight
             }
-            Button {
-                visible: !root.isDefault
-                variant: "ghost"
-                text: qsTr("Use this account")
-                onClicked: root.makeDefaultRequested()
-            }
-            IconButton {
-                id: moreButton
-                iconName: "more"
-                tip: qsTr("More")
-                onClicked: rowMenu.popup(moreButton, 0, moreButton.height + Theme.space.xs)
+        }
 
-                Menu {
-                    id: rowMenu
-                    MenuEntry {
-                        // Skins and capes belong to a Microsoft account.
-                        visible: root.isMSA
-                        enabled: root.isMSA
-                        // "and", not "&": a MenuItem reads "&" as a mnemonic too.
-                        text: qsTr("Skin and cape")
-                        icon.source: Icons.url("image")
-                        onTriggered: root.manageSkinRequested()
-                    }
-                    MenuEntry {
-                        visible: root.isMSA
-                        enabled: root.isMSA
-                        text: qsTr("Sign in again")
-                        icon.source: Icons.url("refresh")
-                        onTriggered: root.refreshRequested()
-                    }
-                    MenuItem {
-                        text: qsTr("Remove account\u2026")
-                        icon.source: Icons.url("trash")
-                        onTriggered: root.removeRequested()
-                    }
+        Button {
+            visible: AccountStates.canSignInAgain(root.stateKey)
+            buttonSize: "sm"
+            text: qsTr("Sign in again")
+            icon.source: Icons.url("refresh")
+            onClicked: root.refreshRequested()
+        }
+        Button {
+            visible: !root.isDefault
+            buttonSize: "sm"
+            text: qsTr("Make default")
+            onClicked: root.makeDefaultRequested()
+        }
+        IconButton {
+            id: moreButton
+            iconName: "more"
+            tip: qsTr("More")
+            onClicked: rowMenu.popup(moreButton, 0, moreButton.height + Theme.space.xs)
+
+            Menu {
+                id: rowMenu
+                MenuEntry {
+                    // Skins and capes belong to a Microsoft account.
+                    visible: root.isMSA
+                    enabled: root.isMSA
+                    text: qsTr("Change skin")
+                    icon.source: Icons.url("image")
+                    onTriggered: root.manageSkinRequested()
+                }
+                MenuEntry {
+                    visible: root.isMSA
+                    enabled: root.isMSA
+                    text: qsTr("Sign in again")
+                    icon.source: Icons.url("refresh")
+                    onTriggered: root.refreshRequested()
+                }
+                MenuItem {
+                    danger: true
+                    text: qsTr("Remove account…")
+                    icon.source: Icons.url("trash")
+                    onTriggered: root.removeRequested()
                 }
             }
         }

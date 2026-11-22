@@ -295,6 +295,9 @@ ApplicationWindow {
                 root.network.debugSetReachability(value)
             else if (key === "accountstate")
                 root.accountsController.debugSetStates(value)
+            // accountcapes: the default account as a signed-in Microsoft account with stand-in capes.
+            else if (key === "accountcapes")
+                Qt.callLater(function() { if (root.accountsPage) root.accountsPage.debugShowCapes() })
             // sidebar=collapsed is the rail, anything else the labelled sidebar. Both are saved.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")

@@ -77,7 +77,7 @@ class AccountsController : public QObject
 	/// refresh() for the default account, wherever its row is.
 	Q_INVOKABLE void refreshDefault();
 	/// Review renders only (a no-op without KITE_QML_ROUTE): "expired",
-	/// "errored" or "gone" for the default account, and after a comma a state
+	/// "errored", "gone" or "working" for the default account, and after a comma a state
 	/// for every other one; each gets a sample reason. Nothing is saved.
 	Q_INVOKABLE void debugSetStates(const QString& spec);
 

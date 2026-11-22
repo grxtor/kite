@@ -9,9 +9,11 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlExpression>
+#include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QStandardItemModel>
+#include <functional>
 #include <memory>
 
 // QtGui's own entry to the shortcut map (declared by QtTest for widgets only).
@@ -652,6 +654,112 @@ class AppShellQmlTest : public QObject
 		accounts.stateKey = QStringLiteral("online");
 		emit accounts.changed();
 		QVERIFY(!button->property("attention").toBool());
+	}
+
+	/* The Accounts page: the default account on its card with its capes, the
+	 * others as rows that say what kind of account each is (two with one name
+	 * are told apart by it), and the actions as buttons that reach the
+	 * controller. */
+	void accountsPageShowsKindsAndActs()
+	{
+		QQmlEngine engine;
+		auto root = create(engine, R"(
+			Item {
+				id: host
+				width: 1000; height: 900
+				property int madeDefault: -1
+				property int refreshed: -1
+				property string worn: "-"
+				ListModel {
+					id: list
+					ListElement { profileName: "GRXTOR"; name: "a@b.c"; isDefault: true; isMSA: true
+						stateKey: "online"; status: "Online"; accountId: "ms"; lastError: "" }
+					ListElement { profileName: ""; name: "GRXTOR"; isDefault: false; isMSA: false
+						stateKey: "offline"; status: "Offline"; accountId: "off"; lastError: "" }
+					ListElement { profileName: "Alex"; name: "d@e.f"; isDefault: false; isMSA: true
+						stateKey: "expired"; status: "Expired"; accountId: "old"; lastError: "Token expired." }
+				}
+				QtObject {
+					id: stub
+					property var accounts: list
+					property string defaultAccountId: "ms"
+					property int defaultSkinsRevision: 0
+					property bool skinDemoRequested: false
+					property string skinDemoPose: ""
+					function accountSkinInfo(row) {
+						return { valid: row === 0, slim: false, hasSkin: false, defaultSkin: false,
+								 currentCapeId: "", currentCapeUrl: "",
+								 capes: row === 0 ? [{ id: "c1", alias: "Migrator", url: "" }] : [] }
+					}
+					function setDefault(row) { host.madeDefault = row }
+					function refresh(row) { host.refreshed = row }
+					function changeCape(row, id) { host.worn = id; return null }
+					function skins(row) { return null }
+				}
+				AccountsPage { anchors.fill: parent; controller: stub }
+			})");
+		QVERIFY(root);
+		auto* host = qobject_cast<QQuickItem*>(root.get());
+		QVERIFY(host);
+
+		QList<QQuickItem*> shown;
+		std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
+			if (!item->isVisible()) {
+				return;
+			}
+			shown.append(item);
+			for (QQuickItem* child : item->childItems()) {
+				walk(child);
+			}
+		};
+		walk(host);
+		const auto withText = [&shown](const char* type, const QString& text) {
+			QList<QQuickItem*> found;
+			for (QQuickItem* item : shown) {
+				if (item->inherits(type) &&
+					item->property("text").toString() == text) {
+					found.append(item);
+				}
+			}
+			return found;
+		};
+
+		// The hero and the expired row are Microsoft accounts, the namesake
+		// is the offline one.
+		QCOMPARE(withText("QQuickText", QStringLiteral("Microsoft account")).size(), 2);
+		QCOMPARE(withText("QQuickText", QStringLiteral("Offline account")).size(), 1);
+		QCOMPARE(withText("QQuickText", QStringLiteral("Token expired.")).size(), 1);
+
+		// Every row but the default's offers to become it.
+		const auto makeDefault =
+			withText("QQuickAbstractButton", QStringLiteral("Make default"));
+		QCOMPARE(makeDefault.size(), 2);
+		QVERIFY(QMetaObject::invokeMethod(makeDefault.first(), "clicked"));
+		QCOMPARE(host->property("madeDefault").toInt(), 1);
+
+		// Only the expired account has "Sign in again" in the open.
+		const auto signIn =
+			withText("QQuickAbstractButton", QStringLiteral("Sign in again"));
+		QCOMPARE(signIn.size(), 1);
+		QVERIFY(QMetaObject::invokeMethod(signIn.first(), "clicked"));
+		QCOMPARE(host->property("refreshed").toInt(), 2);
+		QCOMPARE(withText("QQuickAbstractButton", QStringLiteral("Change skin")).size(), 1);
+
+		// The capes of the default account: "No cape" is the one worn, and
+		// picking the other asks the controller for it.
+		QQuickItem* noCape = nullptr;
+		QQuickItem* cape = nullptr;
+		for (QQuickItem* item : shown) {
+			if (!item->property("isNoCapeOption").isValid()) {
+				continue;
+			}
+			(item->property("isNoCapeOption").toBool() ? noCape : cape) = item;
+		}
+		QVERIFY(noCape && cape);
+		QVERIFY(noCape->property("selected").toBool());
+		QCOMPARE(cape->property("label").toString(), QStringLiteral("Migrator"));
+		QVERIFY(QMetaObject::invokeMethod(cape, "clicked"));
+		QCOMPARE(host->property("worn").toString(), QStringLiteral("c1"));
 	}
 };
 

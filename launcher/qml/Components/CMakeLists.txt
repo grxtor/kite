@@ -178,6 +178,12 @@ qt_add_qml_module(Kite_qml_components
         UploadLinkToast.qml
         DialogHeader.qml
         AccountsPage.qml
+        AccountsHeader.qml
+        AccountHeroCard.qml
+        AccountCapePicker.qml
+        AccountCapeChange.qml
+        AccountSignInDialog.qml
+        OfflineAccountDialog.qml
         AccountRow.qml
         SkinCapeEditor.qml
         SkinTile.qml

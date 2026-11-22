@@ -231,45 +231,6 @@
     </message>
 </context>
 <context>
-    <name>AccountRow</name>
-    <message>
-        <location filename="../launcher/qml/Components/AccountRow.qml" line="+89"/>
-        <source>Microsoft</source>
-        <translation>Microsoft</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Offline</source>
-        <translation>Çevrimdışı</translation>
-    </message>
-    <message>
-        <location line="+31"/>
-        <source>Use this account</source>
-        <translation>Bu hesabı kullan</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>More</source>
-        <translation>Daha fazla</translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>Skin and cape</source>
-        <translation>Skin ve pelerin</translation>
-    </message>
-    <message>
-        <location line="-23"/>
-        <location line="+30"/>
-        <source>Sign in again</source>
-        <translation>Yeniden giriş yap</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Remove account…</source>
-        <translation>Hesabı kaldır…</translation>
-    </message>
-</context>
-<context>
     <name>AccountStates</name>
     <message>
         <location filename="../launcher/qml/Components/AccountStates.qml" line="+25"/>
@@ -359,200 +320,255 @@
 <context>
     <name>AccountsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/AccountsPage.qml" line="+46"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>Demo</source>
         <translation>Demo</translation>
     </message>
     <message>
-        <location line="+90"/>
-        <location line="+8"/>
-        <source>The cape could not be changed.</source>
-        <translation>Pelerin değiştirilemedi.</translation>
-    </message>
-    <message>
-        <location line="+24"/>
-        <source>Games launch with the default account.</source>
-        <translation>Oyunlar varsayılan hesapla başlar.</translation>
-    </message>
-    <message>
-        <location line="+298"/>
-        <location line="+80"/>
-        <source>Sign in with Microsoft</source>
-        <translation>Microsoft ile giriş yap</translation>
-    </message>
-    <message>
-        <location line="-66"/>
-        <location line="+17"/>
-        <source>Add offline account</source>
-        <translation>Çevrimdışı hesap ekle</translation>
-    </message>
-    <message>
-        <location line="-224"/>
-        <source>Default account</source>
-        <translation>Varsayılan hesap</translation>
-    </message>
-    <message>
-        <location line="-1"/>
-        <source>%1  ·  %2</source>
-        <translation>%1  ·  %2</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Suggested default</source>
-        <translation>Önerilen varsayılan</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Microsoft</source>
-        <translation>Microsoft</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Offline</source>
-        <translation>Çevrimdışı</translation>
-    </message>
-    <message>
-        <location line="+27"/>
-        <source>Offline only: online-mode servers and custom skins need a Microsoft account.</source>
-        <translation>Yalnızca çevrimdışı: çevrimiçi modlu sunucular ve özel skinler için Microsoft hesabı gerekir.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>Use this account</source>
-        <translation>Bu hesabı kullan</translation>
-    </message>
-    <message>
-        <location line="+14"/>
-        <source>Skin and cape</source>
-        <translation>Skin ve pelerin</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>More</source>
-        <translation>Daha fazla</translation>
-    </message>
-    <message>
-        <location line="-16"/>
-        <location line="+24"/>
-        <source>Sign in again</source>
-        <translation>Yeniden giriş yap</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Remove account…</source>
-        <translation>Hesabı kaldır…</translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <location line="+90"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>Remove “%1” from Kite? You can sign in again at any time.</source>
         <translation>“%1” Kite&apos;tan kaldırılsın mı? İstediğin zaman yeniden giriş yapabilirsin.</translation>
     </message>
     <message>
-        <location line="-73"/>
-        <source>Cape</source>
-        <translation>Pelerin</translation>
-    </message>
-    <message>
-        <location line="+20"/>
-        <source>No cape</source>
-        <translation>Pelerin yok</translation>
-    </message>
-    <message>
-        <location line="+37"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>Other accounts</source>
         <translation>Diğer hesaplar</translation>
     </message>
     <message>
-        <location line="+38"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>No accounts yet</source>
         <translation>Henüz hesap yok</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>Sign in with the Microsoft account that owns Minecraft to start playing online.</source>
         <translation>Çevrimiçi oynamaya başlamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
+        <source>Sign in with Microsoft</source>
+        <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>Remove account</source>
         <translation>Hesabı kaldır</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml"/>
         <source>Remove</source>
         <translation>Kaldır</translation>
     </message>
+</context>
+<context>
+    <name>AccountsHeader</name>
     <message>
-        <location line="+30"/>
-        <source>The name shown in game. Offline accounts cannot join online-mode servers.</source>
-        <translation>Oyunda görünen ad. Çevrimdışı hesaplar çevrimiçi modlu sunuculara katılamaz.</translation>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml"/>
+        <source>Default account</source>
+        <translation>Varsayılan hesap</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Username</source>
-        <translation>Kullanıcı adı</translation>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml"/>
+        <source>Games launch with the default account.</source>
+        <translation>Oyunlar varsayılan hesapla başlar.</translation>
     </message>
     <message>
-        <location line="-351"/>
-        <location line="+322"/>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml"/>
+        <source>No default account chosen yet.</source>
+        <translation>Henüz varsayılan hesap seçilmedi.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml"/>
         <source>Add account</source>
         <translation>Hesap ekle</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Offline accounts need a Microsoft account that owns the game first, and a name no other offline account uses.</source>
-        <translation>Çevrimdışı hesap için önce oyuna sahip bir Microsoft hesabı gerekir; ayrıca başka hiçbir çevrimdışı hesabın kullanmadığı bir ad seçmelisin.</translation>
-    </message>
-    <message>
-        <location line="+111"/>
-        <source>Cancel</source>
-        <translation>İptal</translation>
-    </message>
-    <message>
-        <location line="-45"/>
-        <source>Signed in. You&apos;re ready to play.</source>
-        <translation>Giriş yapıldı. Oynamaya hazırsın.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Sign-in failed.</source>
-        <translation>Giriş başarısız.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Continue in your browser…</source>
-        <translation>Tarayıcıda devam et…</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>A browser window opened on Microsoft&apos;s sign-in page. Sign in there; this window updates by itself.</source>
-        <translation>Microsoft&apos;un giriş sayfası tarayıcıda açıldı. Orada giriş yap; bu pencere kendiliğinden güncellenir.</translation>
-    </message>
-    <message>
-        <location line="+15"/>
-        <source>Done</source>
-        <translation>Bitti</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Try again</source>
-        <translation>Tekrar dene</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Open browser again</source>
-        <translation>Tarayıcıyı yeniden aç</translation>
-    </message>
-    <message>
-        <location line="-427"/>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml"/>
         <source>Microsoft account</source>
         <translation>Microsoft hesabı</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml"/>
         <source>Offline account</source>
         <translation>Çevrimdışı hesap</translation>
+    </message>
+</context>
+<context>
+    <name>AccountHeroCard</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Microsoft account</source>
+        <translation>Microsoft hesabı</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Offline account</source>
+        <translation>Çevrimdışı hesap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Plays offline. Online-mode servers and your own skin need a Microsoft account.</source>
+        <translation>Çevrimdışı oynar. Çevrimiçi modlu sunucular ve kendi skinin için Microsoft hesabı gerekir.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Make default</source>
+        <translation>Varsayılan yap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Change skin</source>
+        <translation>Skin değiştir</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>Remove account…</source>
+        <translation>Hesabı kaldır…</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+</context>
+<context>
+    <name>AccountCapePicker</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountCapePicker.qml"/>
+        <source>Cape</source>
+        <translation>Pelerin</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountCapePicker.qml"/>
+        <source>No cape</source>
+        <translation>Pelerin yok</translation>
+    </message>
+</context>
+<context>
+    <name>AccountCapeChange</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountCapeChange.qml"/>
+        <source>The cape could not be changed.</source>
+        <translation>Pelerin değiştirilemedi.</translation>
+    </message>
+</context>
+<context>
+    <name>AccountSignInDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Sign in with Microsoft</source>
+        <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Signed in. You&apos;re ready to play.</source>
+        <translation>Giriş yapıldı. Oynamaya hazırsın.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Sign-in failed.</source>
+        <translation>Giriş başarısız.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Continue in your browser…</source>
+        <translation>Tarayıcıda devam et…</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>A browser window opened on Microsoft&apos;s sign-in page. Sign in there; this window updates by itself.</source>
+        <translation>Microsoft&apos;un giriş sayfası tarayıcıda açıldı. Orada giriş yap; bu pencere kendiliğinden güncellenir.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Done</source>
+        <translation>Bitti</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Open browser again</source>
+        <translation>Tarayıcıyı yeniden aç</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+</context>
+<context>
+    <name>OfflineAccountDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineAccountDialog.qml"/>
+        <source>Add offline account</source>
+        <translation>Çevrimdışı hesap ekle</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineAccountDialog.qml"/>
+        <source>Add account</source>
+        <translation>Hesap ekle</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineAccountDialog.qml"/>
+        <source>Offline accounts need a Microsoft account that owns the game first, and a name no other offline account uses.</source>
+        <translation>Çevrimdışı hesap için önce oyuna sahip bir Microsoft hesabı gerekir; ayrıca başka hiçbir çevrimdışı hesabın kullanmadığı bir ad seçmelisin.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineAccountDialog.qml"/>
+        <source>The name shown in game. Offline accounts cannot join online-mode servers.</source>
+        <translation>Oyunda görünen ad. Çevrimdışı hesaplar çevrimiçi modlu sunuculara katılamaz.</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineAccountDialog.qml"/>
+        <source>Username</source>
+        <translation>Kullanıcı adı</translation>
+    </message>
+</context>
+<context>
+    <name>AccountRow</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>Microsoft account</source>
+        <translation>Microsoft hesabı</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>Offline account</source>
+        <translation>Çevrimdışı hesap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>Make default</source>
+        <translation>Varsayılan yap</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>Change skin</source>
+        <translation>Skin değiştir</translation>
+    </message>
+    <message>
+        <location filename="../launcher/qml/Components/AccountRow.qml"/>
+        <source>Remove account…</source>
+        <translation>Hesabı kaldır…</translation>
     </message>
 </context>
 <context>

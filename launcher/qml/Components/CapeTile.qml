@@ -7,9 +7,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * One choice in the cape picker: a real cape, "No cape" (an "x"), or an owned cape whose texture has not resolved
- * (a neutral silhouette). The front strip is a 10x16 region at (1, 1) of the 64x32 texture; Image has no source
- * rectangle, so the crop overscales the texture inside a clipped Item.
+ * One choice in the cape picker: a real cape, "No cape" (an empty, struck-through cape slot), or an owned cape
+ * whose texture has not resolved (a neutral silhouette). The front strip is a 10x16 region at (1, 1) of the 64x32
+ * texture; Image has no source rectangle, so the crop overscales the texture inside a clipped Item. The chosen
+ * tile wears a textPrimary outline, never a tint.
  */
 Item {
     id: root
@@ -30,19 +31,26 @@ Item {
     readonly property real silhouetteHeight: 0.72
     readonly property int compactPadding: Theme.space.sm
 
-    implicitWidth: root.compact ? root.stripWidth * root.thumbScale + root.compactPadding * 2 : 72
-    implicitHeight: root.compact ? root.stripHeight * root.thumbScale + root.compactPadding * 2 : 100
+    implicitWidth: root.compact ? root.stripWidth * root.thumbScale + root.compactPadding * 2 : 88
+    implicitHeight: root.compact ? root.stripHeight * root.thumbScale + root.compactPadding * 2 : 118
 
-    ToolTip.visible: root.compact && hover.hovered
+    ToolTip.visible: hover.hovered && (root.compact || nameLabel.truncated)
     ToolTip.delay: 400
     ToolTip.text: root.label
 
-    // The one surface: selection tints it, the pointer lifts it; no border.
+    readonly property int selectionWidth: 2
+
+    Accessible.role: Accessible.RadioButton
+    Accessible.name: root.label
+    Accessible.checked: root.selected
+
+    // The pointer lifts the tile; the selection is the outline alone.
     StateFill {
         anchors.fill: parent
         radius: Theme.radius.md
-        hovered: hover.hovered && root.enabled
-        active: root.selected
+        hovered: hover.hovered && root.enabled && !root.selected
+        border.width: root.selected ? root.selectionWidth : 0
+        border.color: Theme.palette.textPrimary
     }
 
     Item {
@@ -69,12 +77,21 @@ Item {
         }
     }
 
-    MeshIcon {
-        anchors.centerIn: thumb
-        visible: !root.hasCape && root.isNoCapeOption
-        iconName: "x"
-        size: Theme.icon.md
-        color: Theme.palette.textTertiary
+    // "No cape": the slot a cape would fill, empty and struck through.
+    Rectangle {
+        anchors.fill: thumb
+        visible: root.isNoCapeOption
+        radius: Theme.radius.xs
+        color: "transparent"
+        border.width: 1
+        border.color: Theme.neutral.outline
+
+        MeshIcon {
+            anchors.centerIn: parent
+            iconName: "ban"
+            size: Theme.icon.sm
+            color: Theme.palette.textTertiary
+        }
     }
 
     // A cloak shape for an owned cape whose texture is not known yet; not an absence, so it must not read as "No
@@ -108,6 +125,7 @@ Item {
     }
 
     Copy {
+        id: nameLabel
         visible: !root.compact
         anchors.top: thumb.bottom
         anchors.topMargin: Theme.space.xs
@@ -117,7 +135,9 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         text: root.label
         role: "caption"
-        tone: "secondary"
+        tone: root.selected ? "primary" : "secondary"
+        wrapMode: Text.Wrap
+        maximumLineCount: 2
         elide: Text.ElideRight
     }
 
