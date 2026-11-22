@@ -51,10 +51,10 @@ T.Menu {
         T.ScrollIndicator.vertical: ScrollIndicator { }
     }
 
-    // The popup glass treatment (Theme.glass): surfaceOverlay, the hairline
-    // border, a light top edge and the md shadow.
+    // The popup surface (Theme.glass): surfaceOverlay, the hairline border and the md shadow. Flat: no sheen
+    // and no light top edge.
     background: GlassSurface {
-        radius: Theme.radius.lg
+        radius: Theme.radius.md
         level: Theme.elevation.md
     }
 

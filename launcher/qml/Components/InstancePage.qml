@@ -297,7 +297,8 @@ Item {
                         iconKey: headerCard.iconKey.length > 0 ? headerCard.iconKey : "default"
                         instanceId: root.instanceId
                         packArt: headerCard.model.packArt || ""
-                        matte: Theme.palette.canvas
+                        // Over the cover no one colour lies behind the tile, so nothing can matte its corners.
+                        matte: headerCard.onCover ? "transparent" : Theme.palette.canvas
                         radius: Theme.radius.lg
                     }
 

@@ -14,7 +14,8 @@ T.MenuSeparator {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
-    padding: Theme.space.sm
+    // Inset like the rows' own text, so the line doesn't run wall to wall.
+    padding: Theme.space.md - Theme.space.xxs
     verticalPadding: Theme.space.xs
 
     contentItem: Rectangle {

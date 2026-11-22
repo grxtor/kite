@@ -202,7 +202,8 @@ Column {
             row: modelData
             host: root
             width: root.rowWidth
-            showDivider: index < root.rows.length - 1
+            // No hairline under the last row, nor above the picked one's lifted fill.
+            showDivider: index < root.rows.length - 1 && root.rows[index + 1].instanceId !== root.selectedId
         }
     }
     Component {
