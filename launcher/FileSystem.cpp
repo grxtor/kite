@@ -181,6 +181,17 @@ namespace FS
 	{
 		QString s_testTrashFolder;
 
+		/* Moves a file or a whole folder. QFile::rename is asked first; for a
+		 * folder QDir::rename is the call meant for it, and the MinGW build's
+		 * Qt would not move a world's folder with the former. */
+		bool movePath(const QString& from, const QString& to)
+		{
+			if (QFile::rename(from, to)) {
+				return true;
+			}
+			return QFileInfo(from).isDir() && QDir().rename(from, to);
+		}
+
 		bool trashIntoTestFolder(const QString& path, QString* pathInTrash)
 		{
 			const QFileInfo info(path);
@@ -193,7 +204,7 @@ namespace FS
 					s_testTrashFolder,
 					QStringLiteral("%1 %2").arg(info.fileName()).arg(n));
 			}
-			if (!QFile::rename(info.absoluteFilePath(), target)) {
+			if (!movePath(info.absoluteFilePath(), target)) {
 				return false;
 			}
 			if (pathInTrash) {
@@ -270,7 +281,7 @@ namespace FS
 					   << "-- something else is there now.";
 			return false;
 		}
-		if (!QFile::rename(item.trashPath, item.path)) {
+		if (!movePath(item.trashPath, item.path)) {
 			qWarning() << "Could not move" << item.trashPath << "back to"
 					   << item.path;
 			return false;
