@@ -48,6 +48,26 @@ Item {
     signal otherPlatformsRequested()
 
     property var openedPack: null
+    // The packs opened so far, by "<provider>/<projectId>": Back and Forward reopen one without its row.
+    property var visitedPacks: ({})
+    // Where the window is on this page, for the history: "" on the results, else the opened pack's key.
+    readonly property string packRoute: root.openedPack ? root.provider + "/" + root.openedPack.projectId : ""
+
+    function closePack() {
+        root.openedPack = null
+    }
+    // History: back to a pack that was open. False when it is no longer known.
+    function reopen(key) {
+        const entry = root.visitedPacks[key]
+        if (!entry)
+            return false
+        if (root.packRoute === key)
+            return true
+        if (entry.provider !== root.provider)
+            root.setProvider(entry.provider)
+        root.open(entry.pack)
+        return true
+    }
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
     readonly property int emptyStateWidth: 400
@@ -78,8 +98,27 @@ Item {
 
     function open(pack) {
         root.openedPack = pack
+        root.visitedPacks[root.provider + "/" + pack.projectId] = { provider: root.provider, pack: pack }
+        // An install a row started goes on showing on the pack's page.
+        var running = quickInstall.watcherFor(pack.projectId)
+        if (running && running.running)
+            detailPage.watcher = running
         if (root.active)
             root.active.loadDetail(pack.projectId)
+    }
+
+    // A Modrinth pack picked outside this page (Home's popular packs).
+    function openModrinth(pack) {
+        root.setProvider("modrinth")
+        root.open(pack)
+    }
+
+    DiscoverQuickInstall {
+        id: quickInstall
+        model: root.active
+        installer: root.activeInstaller
+        provider: root.provider
+        onFailed: (pack) => root.open(pack)
     }
 
     // The providers a search has been asked of, so "nothing found" never shows for a search that has not
@@ -284,11 +323,14 @@ Item {
                     width: root.contentWidth
                     spacing: Theme.space.md
 
+                    ListEntrance { id: entrance; view: resultsRepeater }
                     Repeater {
                         id: resultsRepeater
                         model: root.active
                         delegate: ModpackCard {
+                            id: packCard
                             width: content.width
+                            RiseIn { target: packCard; index: model.index; gate: entrance }
                             projectId: model.projectId
                             title: model.title
                             author: model.author
@@ -300,11 +342,21 @@ Item {
                             // Not every provider has a cover (ATLauncher).
                             galleryUrl: model.galleryUrl || ""
                             accentColor: model.accentColor
-                            onClicked: root.open({ projectId: projectId, title: title, author: author,
-                                                   description: description, logoUrl: logoUrl,
-                                                   downloads: downloads, updated: updated,
-                                                   categories: model.categories, galleryUrl: galleryUrl,
-                                                   accentColor: accentColor })
+                            readonly property var pack: ({ projectId: projectId, title: title, author: author,
+                                                           description: description, logoUrl: logoUrl,
+                                                           downloads: downloads, updated: updated,
+                                                           categories: model.categories, galleryUrl: galleryUrl,
+                                                           accentColor: accentColor })
+                            readonly property var install: quickInstall.watcherFor(projectId)
+                            installState: quickInstall.pendingId === projectId ? "pending"
+                                        : !install ? ""
+                                        : install.running ? "installing"
+                                        : install.succeeded ? "installed"
+                                        : install.failed ? "failed" : ""
+                            installError: install && install.failed ? (install.error || "") : ""
+                            installEnabled: quickInstall.pendingId.length === 0
+                            onInstallRequested: quickInstall.install(pack)
+                            onClicked: root.open(pack)
                         }
                     }
 
@@ -320,6 +372,9 @@ Item {
         }
 
         ModpackDetail {
+            id: detailPage
+            // The rows learn of an install started here too.
+            onWatcherChanged: if (watcher && root.openedPack) quickInstall.remember(root.openedPack.projectId, watcher)
             pack: root.openedPack || ({})
             detail: root.active ? root.active.detail : null
             model: root.active
@@ -328,9 +383,20 @@ Item {
             bodyFormat: root.active && root.active.bodyFormat ? root.active.bodyFormat : "markdown"
             contentX: root.contentX
             contentWidth: root.contentWidth
-            onBackRequested: root.openedPack = null
+            onBackRequested: root.closePack()
             onShowInstanceRequested: (id) => root.showInstanceRequested(id)
         }
+    }
+
+    // Esc leaves the pack's page for the results; the picture viewer and the pop-ups take it first.
+    Shortcut {
+        sequences: [StandardKey.Cancel]
+        enabled: root.shown && !!root.openedPack && !detailPage.viewerOpen
+        onActivated: root.closePack()
+    }
+    // Review snapshots (dev route "review=pack…"), once the pack's detail has loaded.
+    function review(name) {
+        detailPage.review(name)
     }
 
     ScrollFade {

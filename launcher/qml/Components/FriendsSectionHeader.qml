@@ -5,15 +5,15 @@ import QtQuick
 import Kite.Theme
 
 /*
- * A small caps caption over a group of people ("PLAYING — 2"). The caller gives the words already in capitals, so a
- * language's own rules for them (Turkish dotted İ) are the translator's.
+ * The caption over a group of people ("In game · 2"), in sentence case like every other heading.
  */
 Copy {
-    leftPadding: Theme.space.lg
+    leftPadding: Theme.space.xs
     topPadding: Theme.space.sm
-    bottomPadding: Theme.space.xs
+    bottomPadding: Theme.space.sm
     elide: Text.ElideRight
-    role: "overline"
-    tone: "tertiary"
+    role: "label"
+    tone: "secondary"
+    font.weight: Font.DemiBold
     Accessible.role: Accessible.Heading
 }

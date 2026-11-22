@@ -1006,6 +1006,8 @@ void InstanceList::scheduleCoverScan(const InstanceId& id,
 	const int generation = m_coverGeneration.value(id, 0);
 	const CoverDirs dirs = activeCoverDirs();
 	const int face = panoramaFaceFor(id);
+	InstancePtr scanned = getInstanceById(id);
+	const QString gameRoot = scanned ? scanned->gameRoot() : QString();
 	const QString panoramaKey = QStringLiteral("%1#%2").arg(version).arg(face);
 	const QString knownPanorama = m_panoramaCache.value(panoramaKey);
 
@@ -1050,14 +1052,24 @@ void InstanceList::scheduleCoverScan(const InstanceId& id,
 			});
 	watcher->setFuture(QtConcurrent::run(
 		QThreadPool::globalInstance(),
-		[dirs, customPath, platformPath, version, face, knownPanorama]() {
+		[dirs, customPath, platformPath, version, face, knownPanorama,
+		 gameRoot]() {
 			CoverScanResult result;
 			result.panorama = knownPanorama;
 			if (result.panorama.isEmpty() ||
 				!QFileInfo::exists(result.panorama)) {
 				result.panorama = panoramaPath(dirs, version, face);
 			}
-			result.info = pickCover(customPath, platformPath, result.panorama);
+			// Only when nothing is picked: a picked cover wins without a look
+			// at the folders.
+			const bool picked =
+				!customPath.isEmpty() && QFileInfo(customPath).isFile();
+			const QString shot = picked ? QString() : latestScreenshot(gameRoot);
+			const QString worldIcon = picked || !shot.isEmpty()
+										  ? QString()
+										  : latestWorldIcon(gameRoot);
+			result.info = pickCover(customPath, shot, worldIcon, platformPath,
+									result.panorama);
 			return result;
 		}));
 }
@@ -1128,13 +1140,61 @@ QString InstanceList::panoramaPath(const CoverDirs& dirs,
 	return QFileInfo(object).isFile() ? object : QString();
 }
 
+QString InstanceList::latestScreenshot(const QString& gameRoot)
+{
+	if (gameRoot.isEmpty()) {
+		return QString();
+	}
+	// Newest first; Minecraft names them by date, the time is what counts.
+	const QFileInfoList shots =
+		QDir(FS::PathCombine(gameRoot, "screenshots"))
+			.entryInfoList({"*.png", "*.jpg", "*.jpeg"}, QDir::Files,
+						   QDir::Time);
+	return shots.isEmpty() ? QString() : shots.first().absoluteFilePath();
+}
+
+QString InstanceList::latestWorldIcon(const QString& gameRoot)
+{
+	if (gameRoot.isEmpty()) {
+		return QString();
+	}
+	const QFileInfoList saves =
+		QDir(FS::PathCombine(gameRoot, "saves"))
+			.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+	QString newest;
+	QDateTime newestTime;
+	for (const QFileInfo& save : saves) {
+		const QFileInfo level(QDir(save.absoluteFilePath()).filePath("level.dat"));
+		const QFileInfo icon(QDir(save.absoluteFilePath()).filePath("icon.png"));
+		if (!level.isFile() || !icon.isFile()) {
+			continue;
+		}
+		const QDateTime played = level.lastModified();
+		if (newest.isEmpty() || played > newestTime) {
+			newest = icon.absoluteFilePath();
+			newestTime = played;
+		}
+	}
+	return newest;
+}
+
 InstanceList::CoverInfo InstanceList::pickCover(const QString& customPath,
+												const QString& screenshotPath,
+												const QString& worldIconPath,
 												const QString& platformPath,
 												const QString& panoramaPath)
 {
 	if (!customPath.isEmpty() && QFileInfo(customPath).isFile()) {
 		return {QUrl::fromLocalFile(customPath).toString(),
 				QStringLiteral("custom")};
+	}
+	if (!screenshotPath.isEmpty() && QFileInfo(screenshotPath).isFile()) {
+		return {QUrl::fromLocalFile(screenshotPath).toString(),
+				QStringLiteral("screenshot")};
+	}
+	if (!worldIconPath.isEmpty() && QFileInfo(worldIconPath).isFile()) {
+		return {QUrl::fromLocalFile(worldIconPath).toString(),
+				QStringLiteral("world")};
 	}
 	if (!platformPath.isEmpty() && QFileInfo(platformPath).isFile()) {
 		return {QUrl::fromLocalFile(platformPath).toString(),

@@ -8,8 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The project picked in ContentBrowserView: a compact header, three lines of description, then its versions (the
- * newest compatible one preselected) and Install. Shown beside the results only once something is picked.
+ * The project picked in ContentBrowserView: a compact header (with the way to its page on the provider's site),
+ * three lines of description, its gallery when it has one, then its versions (the newest compatible one
+ * preselected) and the panel's one Install. Shown beside the results only once something is picked.
  */
 BoxSurface {
     id: root
@@ -27,6 +28,12 @@ BoxSurface {
     readonly property int descriptionLinesExpanded: 12
     // Below this height the description gives its room to the versions; Install always stays in view.
     readonly property int roomForDescription: 420
+    // The gallery is the first to go when the panel is short.
+    readonly property int roomForGallery: 560
+    readonly property int galleryThumbWidth: 128
+    readonly property var gallery: project && project.gallery
+                                   ? Array.from(project.gallery).map((url) => ({ url: url, title: "" })) : []
+    readonly property bool viewerOpen: viewer.opened
 
     onProjectChanged: descriptionText.expanded = false
 
@@ -78,6 +85,13 @@ BoxSurface {
             }
             IconButton {
                 Layout.alignment: Qt.AlignTop
+                visible: !!root.project && (root.project.websiteUrl || "").length > 0
+                iconName: "external-link"
+                tip: qsTr("Open its page in the browser")
+                onClicked: ExternalLinks.open(root, root.project.websiteUrl)
+            }
+            IconButton {
+                Layout.alignment: Qt.AlignTop
                 iconName: "x"
                 tip: qsTr("Close")
                 onClicked: root.closeRequested()
@@ -102,6 +116,15 @@ BoxSurface {
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: descriptionText.expanded = !descriptionText.expanded
             }
+        }
+
+        GalleryStrip {
+            Layout.fillWidth: true
+            visible: root.gallery.length > 0 && root.height >= root.roomForGallery
+            thumbWidth: root.galleryThumbWidth
+            matte: root.color
+            images: visible ? root.gallery : []
+            onOpened: (index) => viewer.show(root.gallery, index)
         }
 
         RowLayout {
@@ -190,5 +213,10 @@ BoxSurface {
                 onClicked: root.owner.install()
             }
         }
+    }
+
+    GalleryViewer {
+        id: viewer
+        fallbackTitle: root.project ? root.project.title : ""
     }
 }

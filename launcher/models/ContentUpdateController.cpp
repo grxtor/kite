@@ -176,6 +176,54 @@ void ContentUpdateList::setAllChecked(bool checked)
 	}
 }
 
+QString ContentUpdateList::newVersionFor(const QString& key) const
+{
+	for (const Row& row : m_rows) {
+		const auto& u = row.update;
+		if (ModMetadataIndex::canonicalFileName(u.currentFileName) == key) {
+			return readableVersion(u.newVersionNumber, u.item.fileName);
+		}
+	}
+	return QString();
+}
+
+bool ContentUpdateList::checkOnly(const QString& key)
+{
+	int found = -1;
+	for (int row = 0; row < m_rows.size() && found < 0; ++row) {
+		if (ModMetadataIndex::canonicalFileName(
+				m_rows.at(row).update.currentFileName) == key) {
+			found = row;
+		}
+	}
+	if (found < 0) {
+		return false;
+	}
+	for (int row = 0; row < m_rows.size(); ++row) {
+		setChecked(row, row == found);
+	}
+	return true;
+}
+
+void ContentUpdateList::keepOnly(const QSet<QString>& keys)
+{
+	QList<Row> kept;
+	for (const Row& row : m_rows) {
+		if (keys.contains(ModMetadataIndex::canonicalFileName(
+				row.update.currentFileName))) {
+			kept.append(row);
+		}
+	}
+	if (kept.size() == m_rows.size()) {
+		return;
+	}
+	beginResetModel();
+	m_rows = kept;
+	endResetModel();
+	emit countChanged();
+	emit checkedChanged();
+}
+
 ContentUpdateController::ContentUpdateController(
 	MinecraftInstance* instance, InstanceContentController* lists,
 	QObject* parent)
@@ -443,8 +491,27 @@ QObject* ContentUpdateController::checkForUpdates(const QString& kind,
 
 	setLastError(QString());
 	m_updates->clear();
-	m_updatesKind = kind;
+	if (m_updatesFolder != folder) {
+		if (m_updatesFolder) {
+			disconnect(m_updatesFolder.get(), nullptr, this, nullptr);
+		}
+		/* A file removed after the check has nothing left to update. */
+		connect(folder.get(), &ModFolderModel::updateFinished, this, [this]() {
+			if (!m_updatesFolder || m_updates->count() == 0) {
+				return;
+			}
+			QSet<QString> keys;
+			for (size_t row = 0; row < m_updatesFolder->size(); ++row) {
+				keys.insert(ContentFilterModel::keyFor(m_updatesFolder->at(row)));
+			}
+			m_updates->keepOnly(keys);
+		});
+	}
 	m_updatesFolder = folder;
+	if (m_updatesKind != kind) {
+		m_updatesKind = kind;
+		emit updatesKindChanged();
+	}
 
 	auto* task = new ModUpdateCheckTask(index, mc, loader(), type);
 	m_check = task;

@@ -63,6 +63,9 @@ class LaunchTask : public Task
 	void setPid(qint64 pid)
 	{
 		m_pid = pid;
+		if (pid > 0) {
+			m_gameStarted = true;
+		}
 	}
 
 	qint64 pid()
@@ -81,6 +84,13 @@ class LaunchTask : public Task
 	QString playerProfile() const
 	{
 		return m_playerProfile;
+	}
+
+	/// Whether the game's process ever ran in this launch. A launch that fails
+	/// before that (a download, Java, a missing file) is no crash.
+	bool gameStarted() const
+	{
+		return m_gameStarted;
 	}
 
 	/// When this launch began (executeTask()); invalid before. Files the game
@@ -162,6 +172,7 @@ class LaunchTask : public Task
 	int currentStep = -1;
 	State state = NotStarted;
 	qint64 m_pid = -1;
+	bool m_gameStarted = false;
 	QString m_playerProfile;
 	QDateTime m_startedAt;
 

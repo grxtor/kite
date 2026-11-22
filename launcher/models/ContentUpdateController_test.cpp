@@ -92,6 +92,38 @@ class ContentUpdateControllerTest : public QObject
 		QCOMPARE(list.count(), 0);
 	}
 
+	void listKnowsWhichFilesHaveAnUpdate()
+	{
+		ContentUpdateList list;
+		auto sodium = update("Sodium", "sodium.jar", "modrinth");
+		sodium.newVersionNumber = "0.6.13";
+		/* A disabled file is found under its key, without ".disabled". */
+		auto lithium = update("Lithium", "lithium.jar.disabled", "modrinth");
+		list.setUpdates({sodium, lithium});
+
+		QCOMPARE(list.newVersionFor("sodium.jar"), QStringLiteral("0.6.13"));
+		/* No readable number: the new file's name stands in. */
+		QCOMPARE(list.newVersionFor("lithium.jar"), QStringLiteral("lithium-2.jar"));
+		QVERIFY(list.newVersionFor("iris.jar").isEmpty());
+
+		/* A row's own "Update" ticks that file alone. */
+		QVERIFY(list.checkOnly("sodium.jar"));
+		QCOMPARE(list.checkedCount(), 1);
+		QCOMPARE(list.checkedItems().first().fileName, QStringLiteral("sodium-2.jar"));
+		QVERIFY(!list.checkOnly("iris.jar"));
+		QCOMPARE(list.checkedCount(), 1);
+
+		/* A file removed since the check drops out; the others stay as they were. */
+		QSignalSpy counted(&list, &ContentUpdateList::countChanged);
+		list.keepOnly({QStringLiteral("sodium.jar"), QStringLiteral("iris.jar")});
+		QCOMPARE(counted.count(), 1);
+		QCOMPARE(list.count(), 1);
+		QCOMPARE(list.checkedCount(), 1);
+		QVERIFY(list.newVersionFor("lithium.jar").isEmpty());
+		list.keepOnly({QStringLiteral("sodium.jar")});
+		QCOMPARE(counted.count(), 1);
+	}
+
 	void changelogLinks()
 	{
 		const auto modrinth = update("Sodium", "sodium.jar", "modrinth");

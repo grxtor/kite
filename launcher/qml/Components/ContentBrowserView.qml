@@ -9,8 +9,10 @@ import Kite.Theme
 
 /*
  * Find mods, resource packs, shaders and data packs on Modrinth or CurseForge and install them, dependencies
- * included. Results start out matching the instance's Minecraft version and loader. Installs run side by
- * side: each project keeps its own progress.
+ * included. Results start out matching the instance's Minecraft version and loader, which a line under the
+ * toolbar says; Filters widens it. Installs run side by side, each project keeping its own progress; several
+ * ticked rows install one after another (ContentBatchInstall). Modpacks are not content of an instance: "Modpacks"
+ * leaves for Discover (modpacksRequested).
  */
 Item {
     id: root
@@ -19,6 +21,10 @@ Item {
     // InstanceDetails, for its loaderInstaller; without it the "Install a loader" notice has no button.
     property var details: null
     signal backRequested()
+    // "Modpacks": a pack becomes a new instance, so it is browsed in Discover, on this provider.
+    signal modpacksRequested(string provider)
+    // An install started here is over (ok), failed, or was called off in its review.
+    signal installSettled(string key, bool ok)
     property int selectedRow: -1
     property var selectedProject: null
     property int pickedVersion: -1
@@ -31,6 +37,10 @@ Item {
     readonly property int panelMinWidth: 300
     readonly property int panelMaxWidth: 440
     readonly property int busyFooterHeight: 64
+    // While the first page of a search loads: this many placeholder rows, as tall as a result (ContentResultRow's
+    // rowHeight).
+    readonly property int skeletonRows: 5
+    readonly property int skeletonRowHeight: 92
 
     // Every install started here, by project key. A plain JS object does not notify, so downloadsRevision is bumped
     // on every change.
@@ -78,11 +88,15 @@ Item {
             return
         root.installNote = ""
         var key = projectKey(root.selectedProject.title, root.selectedProject.author)
-        var review = root.browser.review(root.selectedRow, root.versions[root.pickedVersion].id)
-        if (!review) {
+        if (!root.startInstall(key, root.selectedRow, root.versions[root.pickedVersion].id))
             root.installNote = qsTr("This version cannot be installed here.")
-            return
-        }
+    }
+    // The one way an install starts: the review of `versionId` of the project at `row`, then its download, or the
+    // review dialog first when there is something to decide. False when that version cannot be installed here.
+    function startInstall(key, row, versionId) {
+        var review = versionId.length > 0 ? root.browser.review(row, versionId) : null
+        if (!review)
+            return false
         root.checking[key] = review
         root.downloadsRevision++
         var settle = function () {
@@ -97,13 +111,47 @@ Item {
         }
         review.stateChanged.connect(settle)
         settle()
+        return true
     }
     function track(key, watcher) {
-        if (!watcher)
+        if (!watcher) {
+            root.installSettled(key, false)
             return
+        }
         root.downloads[key] = watcher
-        watcher.runningChanged.connect(function () { root.downloadsRevision++ })
+        watcher.runningChanged.connect(function () {
+            root.downloadsRevision++
+            if (!watcher.running)
+                root.installSettled(key, watcher.succeeded)
+        })
         root.downloadsRevision++
+        if (!watcher.running)
+            root.installSettled(key, watcher.succeeded)
+    }
+
+    ContentBatchInstall {
+        id: batch
+        owner: root
+        browser: root.browser
+        onFinished: (installed, failed) => {
+            root.batchNote = failed > 0 ? qsTr("%1 could not be installed.").arg(failed) : ""
+        }
+    }
+    property string batchNote: ""
+
+    // What the search is held to, in words: "Fabric · 1.21.4", or what Filters widened it to.
+    readonly property string scopeText: {
+        if (!root.browser)
+            return ""
+        const version = root.browser.gameVersionFilter
+        const loaders = root.browser.loaderFilterAvailable
+            ? root.browser.loaderOptions.filter((l) => root.browser.loaderFilter.indexOf(l.id) >= 0).map((l) => l.label)
+            : []
+        const what = loaders.concat(version.length > 0 ? [version] : []).join(" · ")
+        if (what.length === 0)
+            return qsTr("Showing every version")
+        return version.length > 0 ? qsTr("Showing what fits %1").arg(what)
+                                  : qsTr("Showing what fits %1, any version").arg(what)
     }
 
     property var reviewQueue: []
@@ -139,6 +187,37 @@ Item {
     function review(name) {
         if (name === "browsepick")
             reviewPick.restart()
+        else if (name === "browseselect")
+            reviewSelect.restart()
+        else if (name === "browsesort")
+            reviewSort.restart()
+    }
+    // "browseselect" ticks the first rows that can be installed; "browsesort" opens the sort box.
+    Timer {
+        id: reviewSelect
+        interval: Theme.motion.slow
+        repeat: true
+        onTriggered: {
+            if (results.count < 4)
+                return
+            stop()
+            for (var i = 0; i < results.count && batch.selected.length < 3; ++i) {
+                const item = results.itemAtIndex(i)
+                if (item && item.tickable)
+                    batch.toggle(item.projectId, item.title, item.author)
+            }
+        }
+    }
+    Timer {
+        id: reviewSort
+        interval: Theme.motion.slow
+        repeat: true
+        onTriggered: {
+            if (results.count === 0)
+                return
+            stop()
+            sortBox.popup.open()
+        }
     }
     Timer {
         id: reviewPick
@@ -157,6 +236,9 @@ Item {
         if (!root.browser)
             return
         root.searched = true
+        root.batchNote = ""
+        batch.interrupt()
+        root.installWhenLoaded = false
         root.selectedRow = -1
         root.selectedProject = null
         root.browser.search()
@@ -168,7 +250,20 @@ Item {
     onVisibleChanged: searchIfFirstShown()
     onBrowserChanged: { root.searched = false; searchIfFirstShown() }
 
+    // "Install" on a result row: picks the project as a click does and installs the version the panel preselects,
+    // as soon as the versions are in.
+    property bool installWhenLoaded: false
+    function quickInstall(row, project) {
+        if (root.selectedRow !== row)
+            root.select(row, project)
+        if (root.pickedVersion >= 0)
+            root.install()
+        else
+            root.installWhenLoaded = true
+    }
+
     function select(row, project) {
+        root.installWhenLoaded = false
         root.installNote = ""
         root.selectedRow = row
         root.selectedProject = project
@@ -176,6 +271,7 @@ Item {
         root.browser.loadVersions(row)
     }
     function closeProject() {
+        root.installWhenLoaded = false
         root.installNote = ""
         root.selectedRow = -1
         root.selectedProject = null
@@ -192,6 +288,10 @@ Item {
     onVersionsChanged: {
         var compatible = root.versions.findIndex(v => v.isCompatible)
         root.pickedVersion = compatible >= 0 ? compatible : (root.versions.length > 0 ? 0 : -1)
+        if (root.installWhenLoaded && root.pickedVersion >= 0) {
+            root.installWhenLoaded = false
+            root.install()
+        }
     }
 
     Timer {
@@ -218,6 +318,7 @@ Item {
                 Accessible.role: Accessible.Heading
             }
             ChipGroup {
+                tabs: true
                 options: root.types
                 current: root.browser ? root.browser.contentType : "mods"
                 onActivated: (value) => {
@@ -226,6 +327,15 @@ Item {
                 }
             }
             Item { Layout.fillWidth: true }
+            Button {
+                flat: true
+                text: qsTr("Modpacks")
+                icon.source: Icons.url("external-link")
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: qsTr("Modpacks are installed as a new instance. Opens Discover.")
+                onClicked: root.modpacksRequested(root.browser ? root.browser.provider : "modrinth")
+            }
             BoxSurface {
                 visible: root.activeDownloads > 0
                 implicitWidth: downloadsRow.implicitWidth + Theme.space.md * 2
@@ -291,6 +401,7 @@ Item {
                 onTextChanged: if (text.length === 0) debounce.restart()
             }
             ComboBox {
+                id: sortBox
                 Layout.preferredWidth: root.sortWidth
                 visible: count > 0
                 model: root.browser && root.browser.sortOptions ? root.browser.sortOptions : []
@@ -311,6 +422,32 @@ Item {
                     x: filtersButton.width - width
                 }
             }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: -Theme.space.xs
+            spacing: Theme.space.md
+            Copy {
+                Layout.fillWidth: true
+                text: root.scopeText
+                elide: Text.ElideRight
+                role: "caption"
+                tone: "tertiary"
+            }
+            Copy {
+                visible: text.length > 0
+                text: root.batchNote
+                role: "caption"
+                tone: "danger"
+            }
+        }
+
+        ContentBrowseSelectionBar {
+            Layout.fillWidth: true
+            batch: batch
+            blockedReason: root.blockedReason
+            gap: Theme.space.md
         }
 
         RowLayout {
@@ -347,19 +484,46 @@ Item {
                         onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
                                              root.browser.fetchMore()
 
+                        // The row under the pointer, so its neighbour above can drop the hairline between them.
+                        property int hoveredRow: -1
+                        // Over the list at all: the rows' tick boxes show.
+                        HoverHandler { id: listHover }
+
+                        ListEntrance { id: entrance; view: results }
                         delegate: ContentResultRow {
+                            id: resultRow
                             owner: root
+                            batch: batch
+                            ticking: listHover.hovered || batch.selecting
+                            onHoveredChanged: {
+                                if (hovered)
+                                    results.hoveredRow = index
+                                else if (results.hoveredRow === index)
+                                    results.hoveredRow = -1
+                            }
+                            nextLifted: results.hoveredRow === index + 1 || root.selectedRow === index + 1
                             width: ListView.view.width
                             lastRow: index === ListView.view.count - 1
+                            RiseIn { target: resultRow; index: resultRow.index; gate: entrance }
                         }
 
                         footer: Item {
+                            id: loadingFoot
+                            readonly property bool searching: !!root.browser && root.browser.searching
+                            // Nothing to show yet: placeholder rows instead of a lone spinner.
+                            readonly property bool first: searching && results.count === 0
                             width: results.width
-                            height: root.browser && root.browser.searching ? root.busyFooterHeight : 0
+                            height: !searching ? 0 : first ? root.skeletonRows * root.skeletonRowHeight : root.busyFooterHeight
                             BusyIndicator {
                                 anchors.centerIn: parent
-                                running: !!root.browser && root.browser.searching
+                                running: loadingFoot.searching && !loadingFoot.first
                                 visible: running
+                            }
+                            ContentResultSkeleton {
+                                width: loadingFoot.width
+                                visible: loadingFoot.first
+                                rows: loadingFoot.first ? root.skeletonRows : 0
+                                rowHeight: root.skeletonRowHeight
                             }
                         }
                     }
@@ -384,6 +548,9 @@ Item {
                     title: root.browser && root.browser.error.length > 0 ? qsTr("Search failed") : qsTr("Nothing found")
                     body: root.browser && root.browser.error.length > 0 ? root.browser.error
                                                                          : qsTr("Try other words, fewer filters, or the other site.")
+                    actionText: root.browser && root.browser.error.length > 0 ? qsTr("Try again") : ""
+                    actionIcon: "refresh"
+                    onActionTriggered: root.browser.search()
                     MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
                 }
             }
@@ -403,6 +570,7 @@ Item {
                 // Full width throughout, pinned to the slot's right edge: the slot's growth reveals it instead of
                 // squeezing its text.
                 ContentProjectPanel {
+                    id: projectPanel
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     anchors.right: parent.right
@@ -418,6 +586,7 @@ Item {
     Shortcut {
         sequences: [StandardKey.Cancel]
         enabled: root.visible && !filterPopup.opened && !reviewDialog.visible && !searchField.activeFocus
+                 && !projectPanel.viewerOpen
         onActivated: root.selectedProject ? root.closeProject() : root.backRequested()
     }
 
@@ -425,7 +594,12 @@ Item {
         id: reviewDialog
         property string key: ""
         onInstallStarted: (watcher) => root.track(reviewDialog.key, watcher)
-        onClosed: Qt.callLater(root.showNextReview)
+        // Closed without installing: that install is over too.
+        onClosed: {
+            if (!reviewDialog.started)
+                root.installSettled(reviewDialog.key, false)
+            Qt.callLater(root.showNextReview)
+        }
     }
 
     LoaderInstallDialog {

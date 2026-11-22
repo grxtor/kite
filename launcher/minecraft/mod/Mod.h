@@ -27,6 +27,11 @@
 
 #include "ModDetails.h"
 
+namespace FS
+{
+	struct Trashed;
+}
+
 class Mod
 {
   public:
@@ -79,8 +84,9 @@ class Mod
 
 	bool enable(bool value);
 
-	// delete all the files of this mod
-	bool destroy();
+	// Moves this mod's file to the trash, or deletes it where there is none.
+	// @p trashed receives it only when it went to the trash.
+	bool destroy(QList<FS::Trashed>* trashed = nullptr);
 
 	// change the mod's filesystem path (used by mod lists for *MAGIC* purposes)
 	void repath(const QFileInfo& file);

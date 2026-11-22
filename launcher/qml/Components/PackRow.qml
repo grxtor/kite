@@ -30,6 +30,14 @@ Item {
     readonly property string homepage: model.homepage || ""
     readonly property string source: model.source || ""
     readonly property bool selected: owner.isSelected(key)
+    // The version the last update check found for this file; empty when it found none.
+    readonly property string newVersion: {
+        const found = owner.updates
+        if (!found)
+            return ""
+        found.count
+        return found.newVersionFor(row.key)
+    }
     readonly property bool expanded: owner.expandedKey === key
     // The last row draws no hairline under itself: the card's border ends it.
     property bool lastRow: false
@@ -53,6 +61,9 @@ Item {
     }
 
     height: header.height + (expanded ? details.implicitHeight + Theme.space.md : 0)
+    readonly property string authorsText: (model.authors || []).join(", ")
+    // The description's first line, for the row itself; the whole of it is in the details.
+    readonly property string summary: String(model.description || "").split("\n")[0].trim()
     readonly property string byline: {
         const authors = (model.authors || []).join(", ")
         return authors.length > 0 && source.length > 0 ? qsTr("%1 · %2").arg(authors).arg(source)
@@ -61,6 +72,7 @@ Item {
     clip: true
 
     StateFill {
+        id: rowFill
         anchors.fill: parent
         card: true
         rest: "transparent"
@@ -138,6 +150,9 @@ Item {
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled
                 source: row.iconUrl
                 glyph: owner.iconName
+                rounded: true
+                // The row's fill is see-through at rest, over the list's card.
+                matte: Qt.tint(Theme.palette.surface, rowFill.color)
             }
 
             Column {
@@ -145,17 +160,32 @@ Item {
                 Layout.minimumWidth: 0
                 spacing: Theme.space.xxs
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
-                Copy {
+                // Name, then who made it; under them what it does (or where it came from).
+                RowLayout {
                     width: parent.width
-                    text: row.name
-                    elide: Text.ElideRight
-                    role: "title"
-                    font.family: Theme.font.family
+                    spacing: Theme.space.sm
+                    Copy {
+                        Layout.maximumWidth: parent.width
+                        text: row.name
+                        elide: Text.ElideRight
+                        role: "title"
+                        font.family: Theme.font.family
+                    }
+                    Copy {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignBaseline
+                        visible: owner.showVersionColumn && row.authorsText.length > 0
+                        text: qsTr("by %1").arg(row.authorsText)
+                        elide: Text.ElideRight
+                        role: "label"
+                        tone: "tertiary"
+                    }
                 }
                 Copy {
                     width: parent.width
                     visible: text.length > 0
-                    text: owner.showVersionColumn ? row.byline
+                    text: owner.showVersionColumn ? (row.summary.length > 0 ? row.summary : row.source)
+                          : row.version && row.newVersion.length > 0 ? qsTr("%1 → %2").arg(row.version).arg(row.newVersion)
                           : (row.version ? String(row.version) : row.byline)
                     elide: Text.ElideRight
                     role: "label"
@@ -169,12 +199,33 @@ Item {
                 Layout.maximumWidth: owner.versionColumnWidth
                 spacing: Theme.space.xxs
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
-                Copy {
+                Row {
                     width: parent.width
-                    visible: text.length > 0
-                    text: row.version ? String(row.version) : ""
-                    elide: Text.ElideRight
-                    font.weight: Font.Medium
+                    // As tall as the version alone: the badge is taller and must not push the file name down.
+                    height: versionText.implicitHeight
+                    spacing: Theme.space.sm
+                    Copy {
+                        id: versionText
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, parent.width - (updateBadge.visible ? updateBadge.width + parent.spacing : 0))
+                        visible: text.length > 0
+                        text: row.version ? String(row.version) : ""
+                        elide: Text.ElideRight
+                        font.weight: Font.Medium
+                    }
+                    StatusBadge {
+                        id: updateBadge
+                        anchors.verticalCenter: parent.verticalCenter
+                        // An update found while the row is on screen pops in.
+                        readonly property bool shown: row.newVersion.length > 0
+                        visible: updateBadge.shown
+                        opacity: updateBadge.shown ? 1 : 0
+                        scale: updateBadge.shown ? 1 : Theme.motion.appearScale
+                        Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+                        Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+                        tone: "success"
+                        text: qsTr("→ %1").arg(row.newVersion)
+                    }
                 }
                 Copy {
                     width: parent.width
@@ -202,6 +253,22 @@ Item {
                     ToolTip.visible: badgeHover.hovered
                     ToolTip.delay: 400
                     ToolTip.text: row.problems.join("\n")
+                }
+            }
+
+            HoverReason {
+                visible: owner.updateSlotWidth > 0
+                reason: owner.unlocked ? "" : owner.lockedReason
+                Layout.preferredWidth: owner.updateSlotWidth - Theme.space.md
+                Layout.alignment: Qt.AlignVCenter
+                Button {
+                    anchors.right: parent.right
+                    visible: row.newVersion.length > 0
+                    enabled: owner.unlocked
+                    buttonSize: "sm"
+                    text: qsTr("Update")
+                    Accessible.name: qsTr("Update %1").arg(row.name)
+                    onClicked: owner.updateRequested(row.key)
                 }
             }
 

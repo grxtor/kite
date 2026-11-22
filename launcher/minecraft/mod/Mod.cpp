@@ -97,10 +97,10 @@ bool Mod::enable(bool value)
 	return true;
 }
 
-bool Mod::destroy()
+bool Mod::destroy(QList<FS::Trashed>* trashed)
 {
 	m_type = MOD_UNKNOWN;
-	return FS::deletePath(m_file.filePath());
+	return FS::trashOrDelete(m_file.filePath(), trashed);
 }
 
 const ModDetails& Mod::details() const

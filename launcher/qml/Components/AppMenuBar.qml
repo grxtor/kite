@@ -6,8 +6,8 @@ import QtQuick
 import QtQuick.Controls
 
 /*
- * The macOS menu bar for the QML shell: new instance and import, Settings, the Help links and "Check for updates"
- * where this build can update itself. Main.qml uses it as the window's menuBar only on macOS with the native menu
+ * The macOS menu bar for the QML shell: new instance and import, Settings (with its key, Command+comma), the Help
+ * links, the keyboard shortcuts sheet and "Check for updates" where this build can update itself. Main.qml uses it as the window's menuBar only on macOS with the native menu
  * bar setting on; every entry is a signal for Main.qml, which turns the bar off (`enabled`) while first-run setup
  * is on screen.
  */
@@ -22,6 +22,7 @@ MenuBar {
     signal newInstanceRequested(string mode)
     signal navigateRequested(string target)
     signal checkForUpdatesRequested()
+    signal shortcutsRequested()
 
     Menu {
         title: qsTr("File")
@@ -36,9 +37,13 @@ MenuBar {
         }
         MenuSeparator {}
         MenuItem {
-            // Moved into the application menu by macOS, as "Settings…".
-            text: qsTr("Settings…")
-            onTriggered: root.navigateRequested("settings")
+            // Moved into the application menu by macOS, as "Settings…". While the bar is shown the key is the
+            // item's own (and AppShortcuts leaves it alone); a hidden bar holds no key.
+            action: Action {
+                text: qsTr("Settings…")
+                shortcut: root.visible ? KeyMap.keys("settings")[0] : ""
+                onTriggered: root.navigateRequested("settings")
+            }
         }
     }
 
@@ -56,6 +61,10 @@ MenuBar {
             }
             onObjectAdded: (index, object) => helpMenu.insertItem(index, object)
             onObjectRemoved: (index, object) => helpMenu.removeItem(object)
+        }
+        MenuItem {
+            text: qsTr("Keyboard shortcuts")
+            onTriggered: root.shortcutsRequested()
         }
         MenuSeparator {}
         MenuEntry {

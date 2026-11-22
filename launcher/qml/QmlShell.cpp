@@ -20,10 +20,13 @@
 #include "qml/QmlShell.h"
 
 #include <algorithm>
+#include <memory>
 
 #include <QCoreApplication>
 #include <QCursor>
+#include <QDir>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QDebug>
 #include <QEvent>
 #include <QHostInfo>
@@ -46,6 +49,7 @@
 #endif
 
 #include "BaseInstance.h"
+#include "launch/LaunchFailure.h"
 #include "crashdoctor/CrashDoctorService.h"
 #include "minecraft/GraphicsBackend.h"
 #include "minecraft/MinecraftInstance.h"
@@ -82,6 +86,7 @@
 #include "friends/ShareCodesController.h"
 #include "servers/FeaturedServers.h"
 #include "servers/ServerPinger.h"
+#include "net/NetworkStatus.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -532,6 +537,18 @@ bool QmlShell::joinServer(const QString& id, const QString& address)
 	return starts;
 }
 
+bool QmlShell::joinWorld(const QString& id, const QString& folderName)
+{
+	if (folderName.isEmpty()) {
+		return false;
+	}
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	const bool starts = instance && instance->canLaunch();
+	watchPerformance(id);
+	emit joinWorldRequested(id, folderName);
+	return starts;
+}
+
 namespace
 {
 	using MinecraftInstances = QList<std::shared_ptr<MinecraftInstance>>;
@@ -952,6 +969,25 @@ void QmlShell::debugShowRequest(const QString& kind)
 				  } },
 			};
 			m_uiHost->runPluginModal(QStringLiteral("World Share"), document);
+		});
+	} else if (kind == QLatin1String("launchFailed") ||
+			   kind == QLatin1String("launchAccount")) {
+		// The notice of a launch that ended before the game ran
+		// (Application::showLaunchFailure()).
+		QTimer::singleShot(0, this, [this, kind]() {
+			if (!m_uiHost) {
+				return;
+			}
+			if (kind == QLatin1String("launchAccount")) {
+				LaunchFailure::present(
+					*m_uiHost, LaunchFailure::Kind::Account, QStringLiteral("Skyblock"),
+					QStringLiteral("Offline accounts need a Microsoft account that owns "
+								   "Minecraft to be signed in to Kite."));
+			} else {
+				LaunchFailure::present(
+					*m_uiHost, LaunchFailure::Kind::BeforeStart, QStringLiteral("Skyblock"),
+					QStringLiteral("Failed to download the game files: the network is unreachable."));
+			}
 		});
 	} else if (kind == QLatin1String("optionalMods")) {
 		QTimer::singleShot(0, this, [this]() {
@@ -1464,6 +1500,14 @@ QObject* QmlShell::serverPinger() const
 	return expose(m_serverPinger.get());
 }
 
+QObject* QmlShell::network() const
+{
+	if (!m_network) {
+		m_network = std::make_unique<NetworkStatus>();
+	}
+	return expose(m_network.get());
+}
+
 QObject* QmlShell::featuredServers() const
 {
 	if (!m_featuredServers) {
@@ -1506,6 +1550,25 @@ QObject* QmlShell::contentDrop(const QString& id)
 				 .first;
 	}
 	return expose(it->second.get());
+}
+
+QVariantMap QmlShell::sortDrop(const QStringList& urls) const
+{
+	return ContentDrop::sort(urls);
+}
+
+QVariantList QmlShell::dropTargets() const
+{
+	const auto all = minecraftInstances();
+	const QList<JoinChoice> choices = choicesOf(all);
+	QList<int> order;
+	for (int i = 0; i < choices.size(); ++i) {
+		order.append(i);
+	}
+	std::stable_sort(order.begin(), order.end(), [&choices](int a, int b) {
+		return playedBefore(choices.at(a), choices.at(b));
+	});
+	return joinCandidates(picked(all, order));
 }
 
 QObject* QmlShell::shortcutController(const QString& id)
@@ -1805,6 +1868,53 @@ void QmlShell::scheduleSnapshotIfRequested()
 	bool delayOk = false;
 	const int delay =
 		qEnvironmentVariableIntValue("KITE_QML_SNAPSHOT_DELAY", &delayOk);
+
+	/* Dev only, for looking at motion: KITE_QML_SNAPSHOT_FRAMES=<n> writes n
+	 * frames instead of one, KITE_QML_SNAPSHOT_INTERVAL ms apart (16 by
+	 * default), as <file>-<nn>-<ms>.png where <ms> is the time since the
+	 * first. KITE_QML_SNAPSHOT_THEN=<route> runs those route steps
+	 * (Main.qml's applyDevRoute()) right before the first frame, so the
+	 * sequence shows what they set off: a page change, a dialog opening. */
+	const int frames = qEnvironmentVariableIntValue("KITE_QML_SNAPSHOT_FRAMES");
+	if (frames > 1) {
+		bool intervalOk = false;
+		const int interval = qEnvironmentVariableIntValue(
+			"KITE_QML_SNAPSHOT_INTERVAL", &intervalOk);
+		QTimer::singleShot(delayOk ? delay : 750, this, [this, path, frames, interval, intervalOk]() {
+			const QString then = qEnvironmentVariable("KITE_QML_SNAPSHOT_THEN");
+			if (!then.isEmpty()) {
+				m_window->setProperty("devRoute", then);
+				QMetaObject::invokeMethod(m_window, "applyDevRoute");
+			}
+			const QFileInfo info(path);
+			const QString stem = info.dir().filePath(info.completeBaseName());
+			auto* timer = new QTimer(this);
+			auto clock = std::make_shared<QElapsedTimer>();
+			auto count = std::make_shared<int>(0);
+			timer->setInterval(intervalOk ? interval : 16);
+			connect(timer, &QTimer::timeout, this, [this, timer, clock, count, frames, stem]() {
+				if (!clock->isValid())
+					clock->start();
+				const qint64 at = clock->elapsed();
+				const QImage image = m_window->grabWindow();
+				const QString file = QStringLiteral("%1-%2-%3.png")
+					.arg(stem)
+					.arg(*count, 2, 10, QLatin1Char('0'))
+					.arg(at, 4, 10, QLatin1Char('0'));
+				const bool saved = !image.isNull() && image.save(file);
+				if (!saved)
+					qCritical() << "QML shell: could not write snapshot to" << file;
+				if (!saved || ++*count >= frames) {
+					timer->stop();
+					qInfo() << "QML shell:" << *count << "frames written to" << stem;
+					QCoreApplication::exit(saved ? 0 : 1);
+				}
+			});
+			timer->start();
+		});
+		return;
+	}
+
 	QTimer::singleShot(delayOk ? delay : 750, this, [this, path]() {
 		const QImage image = m_window->grabWindow();
 		const bool saved = !image.isNull() && image.save(path);

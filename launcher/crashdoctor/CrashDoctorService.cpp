@@ -154,6 +154,18 @@ void CrashDoctorService::onFinished(LaunchTask* task, const QString& instanceId)
 	if (!instance || task->isAborting()) {
 		return;
 	}
+	// The game never started (a download, Java, a missing file): no crash and
+	// no clean run either. Only a cause the rules know ("Java 21 isn't
+	// installed", with its fix) is worth the window; the rest is the
+	// launcher's "Couldn't start" notice (Application::showLaunchFailure()).
+	if (!task->wasSuccessful() && !task->gameStarted()) {
+		const CrashDoctor::Snapshot snapshot = CrashDoctor::snapshot(*instance, task);
+		// Without this launch's log the last run's latest.log would be read.
+		if (!snapshot.liveLog.isEmpty()) {
+			run(snapshot, true, true);
+		}
+		return;
+	}
 	if (!instance->hasCrashed()) {
 		keepStreak(*instance, false);
 		followUp()->ranClean(instanceId);
@@ -174,7 +186,7 @@ void CrashDoctorService::analyseFiles(MinecraftInstance& instance, bool fresh)
 	run(CrashDoctor::snapshot(instance, nullptr), fresh);
 }
 
-void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh)
+void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh, bool knownOnly)
 {
 	const QString id = snapshot.instanceId;
 	m_busy.insert(id);
@@ -183,7 +195,12 @@ void CrashDoctorService::run(const CrashDoctor::Snapshot& snapshot, bool fresh)
 	if (!m_debugOs.isEmpty()) {
 		read.facts.os = m_debugOs;
 	}
-	analyseAsync(read, [this, id, fresh](const CrashDoctor::Report& report) {
+	analyseAsync(read, [this, id, fresh, knownOnly](const CrashDoctor::Report& report) {
+		if (knownOnly && report.causes.isEmpty()) {
+			m_busy.remove(id);
+			emit busyChanged(id);
+			return;
+		}
 		m_reports.insert(id, report);
 		m_busy.remove(id);
 		emit busyChanged(id);

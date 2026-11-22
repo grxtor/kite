@@ -24,14 +24,17 @@ Grid {
     readonly property int sideBySideMinWidth: 760
     // Not the children's `visible`, which follows this item's own.
     readonly property bool hasContent: setup.shown || newsList.hasNews
-    readonly property bool sideBySide: setup.shown && newsList.hasNews && root.width >= root.sideBySideMinWidth
+    // The checklist as a slim row takes the page's width; only its box shares a line with the news.
+    readonly property bool sideBySide: setup.shown && !setup.slim && newsList.hasNews
+                                       && root.width >= root.sideBySideMinWidth
 
     columns: root.sideBySide ? 2 : 1
     spacing: Theme.space.xl
 
     GettingStartedCard {
         id: setup
-        width: root.sideBySide ? root.setupWidth : Math.min(root.width, root.setupWidth)
+        width: root.sideBySide ? root.setupWidth : root.width
+        wide: !root.sideBySide
         visible: setup.shown
         hasInstances: root.hasInstances
         signedIn: root.signedIn

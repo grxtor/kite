@@ -51,8 +51,9 @@ Menu {
         root.open()
     }
 
-    x: root.anchorRight - root.width
-    y: root.anchorBottom + Theme.space.xs
+    x: Math.round(root.anchorRight - root.width)
+    // Under the whole row, not over its second line: the ⋯ sits mid-row, a little above the row's foot.
+    y: root.anchorBottom + Theme.space.md
 
     MenuEntry {
         visible: root.canMessage
@@ -72,16 +73,19 @@ Menu {
         icon.source: Icons.url("undo")
         onTriggered: root.controller.cancelInvite(root.personUuid)
     }
+    // The two that take someone away stand apart from the rest, in the danger colour.
     MenuDivider {
-        visible: root.canRemove && (!!root.here || !!root.sentInvite)
+        visible: root.canMessage || (root.canRemove && (!!root.here || !!root.sentInvite))
     }
     MenuEntry {
         visible: root.canRemove
+        danger: true
         text: qsTr("Remove friend…")
-        icon.source: Icons.url("x")
+        icon.source: Icons.url("user-minus")
         onTriggered: root.removeRequested(root.personUuid, root.personName)
     }
     MenuItem {
+        danger: true
         text: qsTr("Block…")
         icon.source: Icons.url("ban")
         onTriggered: root.blockRequested(root.personUuid, root.personName, root.canRemove)

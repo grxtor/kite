@@ -9,7 +9,8 @@ import Kite.Theme
  * One person in a list (Friends page, Home's side panel, right-edge panel): head with presence dot, name, a quiet
  * line; whatever goes inside lands on the right, in `trailing`. `presence`: "online", "playing", "offline" or ""
  * (not a friend yet). `detailTone`: "primary", "secondary" or "faint". `detailServer`: the line names a server, so
- * its favicon (`detailIcon`, a server glyph until it answers) leads it.
+ * its favicon (`detailIcon`, a server glyph until it answers) leads it. In a FriendsListCard the row sits on the
+ * card (`surface`) under a hairline (`divider`). A right-click asks for the person's menu.
  */
 Item {
     id: root
@@ -27,9 +28,15 @@ Item {
     readonly property bool hovered: hoverHandler.hovered
     default property alias trailing: trailingRow.data
 
-    signal clicked()
+    // What the row lies on, for the ring round the presence dot.
+    property color surface: Theme.palette.canvas
+    // A hairline over the row: the second row on of a card.
+    property bool divider: false
 
-    readonly property color fill: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : Theme.palette.canvas
+    signal clicked()
+    signal menuRequested()
+
+    readonly property color fill: root.hovered || root.visualFocus ? Theme.palette.surfaceHover : root.surface
     readonly property int headSize: root.compact ? 32 : 40
     // The room the head takes before the text starts: compact rows keep a Theme.control.height tile so names
     // line up with Recent worlds; the right-edge panel uses the head's own width.
@@ -57,6 +64,22 @@ Item {
         enabled: root.interactive
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.clicked()
+    }
+
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: root.menuRequested()
+    }
+
+    Rectangle {
+        visible: root.divider
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: Theme.space.lg
+        anchors.rightMargin: Theme.space.lg
+        y: -1
+        height: 1
+        color: Theme.palette.divider
     }
 
     StateFill {
@@ -116,7 +139,7 @@ Item {
         Row {
             id: trailingRow
             Layout.alignment: Qt.AlignVCenter
-            spacing: Theme.space.xs
+            spacing: root.compact ? Theme.space.xs : Theme.space.sm
         }
     }
 }

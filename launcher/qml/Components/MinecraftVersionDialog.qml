@@ -106,6 +106,9 @@ AppDialog {
                 body: root.versions && root.versions.error.length > 0
                       ? root.versions.error
                       : qsTr("Try turning on snapshots or old versions.")
+                actionText: root.versions && root.versions.error.length > 0 ? qsTr("Try again") : ""
+                actionIcon: "refresh"
+                onActionTriggered: root.versions.reload()
                 MeshIcon { iconName: "cube"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
             }
         }

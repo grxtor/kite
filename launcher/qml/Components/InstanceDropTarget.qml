@@ -18,6 +18,16 @@ DropArea {
 
     keys: ["text/uri-list"]
     enabled: root.instanceId.length > 0
+    // The window's own overlay stands back while a tile has the drag (Main.qml dropTile).
+    onContainsDragChanged: {
+        const window = Window.window
+        if (!window || window.dropTile === undefined)
+            return
+        if (root.containsDrag)
+            window.dropTile = root
+        else if (window.dropTile === root)
+            window.dropTile = null
+    }
     onDropped: (drop) => {
         const window = Window.window
         if (!drop.hasUrls || !window || typeof window.dropOnInstance !== "function")

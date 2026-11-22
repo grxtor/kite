@@ -71,9 +71,10 @@ Item {
                 Item { Layout.fillWidth: true }
             ]
 
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 enabled: root.controller && root.controller.ready
                 onClicked: root.openFolderRequested(root.controller ? root.controller.directory : "")
             }
@@ -81,6 +82,7 @@ Item {
                 reason: root.lockedReason
                 Button {
                     enabled: root.unlocked && root.controller && root.controller.ready
+                    highlighted: true
                     text: qsTr("Add from file…")
                     icon.source: Icons.url("plus")
                     onClicked: fileDialog.open()
@@ -104,9 +106,11 @@ Item {
             model: root.controller ? root.controller.model : null
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: list }
             delegate: TabListRow {
                 id: row
                 required property int index
+                RiseIn { target: row; index: row.index; gate: entrance }
                 required property var model
                 readonly property string name: model.name
                 readonly property var version: model.version
@@ -149,6 +153,11 @@ Item {
                         text: qsTr("Remove…")
                         icon.source: Icons.url("trash")
                         onTriggered: {
+                            // To the trash with an Undo: no question. Without a trash it is permanent, so ask.
+                            if (root.details.trash.available) {
+                                root.remove(row.index)
+                                return
+                            }
                             confirm.row = row.index
                             confirm.text = qsTr("Remove “%1” from this world? The file is deleted.").arg(row.name)
                             confirm.open()
@@ -171,8 +180,19 @@ Item {
         property int row: -1
         title: qsTr("Remove data pack")
         confirmText: qsTr("Remove")
-        onConfirmed: if (root.controller) root.controller.remove(row)
+        onConfirmed: root.remove(row)
     }
+
+    function remove(row) {
+        if (!root.controller)
+            return
+        if (root.controller.remove(row))
+            toast.showDeleted(qsTr("Data pack removed."), root.details.trash)
+        else
+            toast.show(qsTr("The data pack could not be removed. Is the game running?"), "danger")
+    }
+
+    Toast { id: toast }
 
     EmptyState {
         anchors.centerIn: parent
@@ -189,6 +209,10 @@ Item {
         visible: picker.count > 0 && list.count === 0
         title: qsTr("No data packs")
         body: qsTr("Data packs change this world's recipes, loot and more. Add a .zip to get started.")
+        actionText: qsTr("Add from file…")
+        actionIcon: "plus"
+        actionEnabled: root.unlocked && !!root.controller && root.controller.ready
+        onActionTriggered: fileDialog.open()
         MeshIcon { iconName: "package"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 

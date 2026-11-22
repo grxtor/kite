@@ -106,8 +106,10 @@ class ModFolderModel : public QAbstractListModel
 	/** Adds the given mod at the given index (custom ordering only). */
 	bool installMod(const QString& filename);
 
-	/// Deletes all the selected mods
-	bool deleteMods(const QModelIndexList& indexes);
+	/// Moves the selected mods to the trash, or deletes them where there is
+	/// none. @p trashed receives what went to the trash, sidecars included.
+	bool deleteMods(const QModelIndexList& indexes,
+					QList<FS::Trashed>* trashed = nullptr);
 
 	/// Enable or disable listed mods
 	bool setModStatus(const QModelIndexList& indexes, ModStatusAction action);

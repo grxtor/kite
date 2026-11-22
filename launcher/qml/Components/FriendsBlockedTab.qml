@@ -6,17 +6,22 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The Friends page's "Blocked" tab: people who can neither send you a request nor see when you are online, each with
- * an Unblock that waits for its answer (FriendsPending).
+ * The Friends page's "Blocked" tab: people who can neither send you a request nor see when you are online, in one
+ * card, each with an Unblock that waits for its answer (FriendsPending). `query` is the page's search.
  */
 Item {
     id: root
 
     // FriendsController, or null.
     property var controller: null
+    property FriendsState friendsState: FriendsState { controller: root.controller }
     property bool actionsEnabled: true
+    property string query
 
-    readonly property var blocked: root.controller ? root.controller.blocked : []
+    signal clearRequested()
+
+    readonly property var all: root.controller ? root.controller.blocked : []
+    readonly property var blocked: root.friendsState.named(root.all, root.query)
 
     FriendsPending {
         id: pending
@@ -24,13 +29,17 @@ Item {
         actions: ["unblock"]
     }
 
+    function enter() { list.enter() }
+
     FriendsListScroll {
         id: list
         anchors.fill: parent
         controller: root.controller
         count: root.blocked.length
+        total: root.all.length
+        query: root.query
         actionsEnabled: root.actionsEnabled
-        spacing: Theme.space.xxs
+        onClearRequested: root.clearRequested()
         emptyState: EmptyState {
             upperThird: true
             title: qsTr("No one is blocked")
@@ -40,24 +49,37 @@ Item {
 
         FriendsSectionHeader {
             width: parent.width
-            text: qsTr("BLOCKED — %1").arg(root.blocked.length)
+            text: qsTr("Blocked · %1").arg(root.blocked.length)
         }
-        Repeater {
-            model: root.blocked
-            delegate: FriendRow {
-                id: row
-                required property var modelData
-                width: list.width
-                face: modelData.face
-                name: modelData.name
+        FriendsListCard {
+            id: card
+            width: parent.width
 
-                Button {
-                    buttonSize: "sm"
-                    enabled: !pending.has(row.modelData.uuid)
-                    text: qsTr("Unblock")
-                    onClicked: pending.send(row.modelData.uuid, () => root.controller.unblock(row.modelData.uuid))
+            ListEntrance { id: entrance; view: rows; watchModel: false }
+            Repeater {
+                id: rows
+                model: root.blocked
+                delegate: FriendRow {
+                    id: row
+                    required property var modelData
+                    required property int index
+                    width: card.rowWidth
+                    surface: card.color
+                    divider: row.index > 0
+                    face: modelData.face
+                    name: modelData.name
+                    detail: qsTr("Can't send you requests or see you online")
+                    detailTone: "faint"
+                    RiseIn { target: row; index: row.index; gate: entrance }
+
+                    Button {
+                        buttonSize: "sm"
+                        enabled: !pending.has(row.modelData.uuid)
+                        text: qsTr("Unblock")
+                        Accessible.name: qsTr("Unblock %1").arg(row.modelData.name)
+                        onClicked: pending.send(row.modelData.uuid, () => root.controller.unblock(row.modelData.uuid))
+                    }
                 }
-                Item { width: Theme.control.heightSm; height: 1 }
             }
         }
     }

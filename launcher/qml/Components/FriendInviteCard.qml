@@ -9,7 +9,8 @@ import Kite.Theme
 /*
  * A friend's invite to a server, as Discord shows a call: their head, "LadyAgnes invited you", the server's favicon
  * and whole name, how long the invite lasts (counting down), a × that dismisses it and Join. It only says
- * what was asked for; FriendsWaiting joins (FriendJoinFlow.joinInvite()) or dismisses.
+ * what was asked for; Join is a line of its own in the panel and sits in the card's row where there is room for it
+ * (the Friends page). FriendsWaiting joins (FriendJoinFlow.joinInvite()) or dismisses.
  */
 Rectangle {
     id: root
@@ -33,6 +34,9 @@ Rectangle {
     signal dismissRequested()
 
     readonly property int headSize: 32
+    // From here on Join fits beside the words.
+    readonly property int wideWidth: 480
+    readonly property bool wide: root.width >= root.wideWidth
 
     implicitHeight: column.implicitHeight + Theme.space.md * 2
     radius: Theme.radius.md
@@ -106,8 +110,12 @@ Rectangle {
                     font.features: ({ "tnum": 1 })
                 }
             }
+            JoinButton {
+                Layout.alignment: Qt.AlignVCenter
+                visible: root.wide
+            }
             IconButton {
-                Layout.alignment: Qt.AlignTop
+                Layout.alignment: root.wide ? Qt.AlignVCenter : Qt.AlignTop
                 size: Theme.control.heightSm
                 iconName: "x"
                 tip: qsTr("Dismiss")
@@ -116,19 +124,23 @@ Rectangle {
             }
         }
 
-        Button {
-            id: join
+        JoinButton {
             Layout.fillWidth: true
-            buttonSize: "sm"
-            enabled: root.actionsEnabled
-            text: qsTr("Join")
-            icon.source: Icons.url("play")
-            Accessible.name: qsTr("Join %1").arg(root.place.name || root.invite.host)
-            // Worked out as the pointer arrives, so it is never an old answer.
-            ToolTip.visible: join.hovered
-            ToolTip.delay: 500
-            ToolTip.text: join.hovered && root.joinFlow ? root.joinFlow.inviteTip(root.invite) : ""
-            onClicked: root.joinRequested()
+            visible: !root.wide
         }
+    }
+
+    component JoinButton: Button {
+        id: join
+        buttonSize: "sm"
+        enabled: root.actionsEnabled
+        text: qsTr("Join")
+        icon.source: Icons.url("play")
+        Accessible.name: qsTr("Join %1").arg(root.place.name || root.invite.host)
+        // Worked out as the pointer arrives, so it is never an old answer.
+        ToolTip.visible: join.hovered
+        ToolTip.delay: 500
+        ToolTip.text: join.hovered && root.joinFlow ? root.joinFlow.inviteTip(root.invite) : ""
+        onClicked: root.joinRequested()
     }
 }

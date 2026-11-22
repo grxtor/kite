@@ -25,20 +25,16 @@ IconButton {
     checked: root.open
     Accessible.description: root.onlineCount > 0 ? qsTr("%1 online").arg(root.onlineCount) : ""
 
-    CountPill {
-        x: root.width - width + Theme.space.xs
-        y: root.height - height + Theme.space.xs
-        count: root.onlineCount
-        tone: "success"
-        ringColor: root.surround
-    }
+    // One pill at a time on the lower corner, so the glyph stays readable: waiting requests while the panel is
+    // hidden (they need an answer), otherwise how many friends are online.
+    readonly property bool showsRequests: !root.open && root.requestCount > 0
 
     CountPill {
         x: root.width - width + Theme.space.xs
-        y: -Theme.space.xs
-        visible: !root.open && root.requestCount > 0
-        count: root.requestCount
-        tone: "accent"
+        y: root.height - height + Theme.space.xs
+        visible: root.showsRequests ? root.requestCount > 0 : root.onlineCount > 0
+        count: root.showsRequests ? root.requestCount : root.onlineCount
+        tone: root.showsRequests ? "accent" : "success"
         ringColor: root.surround
     }
 }

@@ -10,7 +10,9 @@ import Kite.Theme
 /*
  * The bar ContentTab shows over its list while rows are ticked: how many, tick or untick all, and what can be done
  * with them. Enable, Disable and Remove are off while the game holds the files (with the reason on hover); Export
- * always works. Its ⋯ menu checks just these for updates or forgets where they came from.
+ * always works. Its ⋯ menu checks just these for updates or forgets where they came from. It opens and closes
+ * (`open`) by growing to its height and fading over Theme.motion.normal, so the list under it moves instead of
+ * jumping; `gap` is the host layout's spacing, which it hands back while closed.
  */
 BoxSurface {
     id: root
@@ -21,6 +23,18 @@ BoxSurface {
     property string lockedReason: ""
 
     property bool updatable: false
+
+    property bool open: false
+    property real gap: 0
+    // 0 closed, 1 open.
+    property real reveal: root.open ? 1 : 0
+    Behavior on reveal { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+
+    visible: root.reveal > 0
+    opacity: root.reveal
+    clip: true
+    Layout.preferredHeight: root.implicitHeight * root.reveal
+    Layout.bottomMargin: -root.gap * (1 - root.reveal)
 
     signal enableRequested(bool enabled)
     signal removeRequested()
@@ -40,7 +54,11 @@ BoxSurface {
     color: Theme.palette.surfaceRaised
 
     RowLayout {
-        anchors.fill: parent
+        // Its own full height whatever the bar is at, so the buttons are uncovered, not squeezed.
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: root.implicitHeight
         anchors.leftMargin: root.list ? root.list.rowPadding : Theme.space.lg
         anchors.rightMargin: Theme.space.sm
         spacing: Theme.space.sm

@@ -94,9 +94,15 @@ class ScreenshotListModel : public QAbstractListModel
 	/* Whether @p fileName has a png/jpg/jpeg extension (any case). */
 	static bool isImageFile(const QString& fileName);
 
+	/* Re-reads the folder now instead of waiting for the watcher. */
+	void refresh();
+
   signals:
 	void directoryChanged();
 	void countChanged();
+	/* remove() moved @p path to the trash, where it now is @p trashPath. Not
+	 * sent for a file that was deleted outright. */
+	void trashed(const QString& path, const QString& trashPath);
 
   private slots:
 	void onWatcherDirectoryChanged(const QString& path);

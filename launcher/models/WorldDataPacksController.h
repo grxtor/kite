@@ -21,6 +21,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointer>
 #include <QSortFilterProxyModel>
 #include <QString>
 #include <memory>
@@ -28,6 +29,7 @@
 class MinecraftInstance;
 class WorldList;
 class DataPackFolderModel;
+class TrashUndo;
 
 /*
  * QML-facing data pack manager for one world's saves/<world>/datapacks folder.
@@ -69,7 +71,9 @@ class WorldDataPacksController : public QObject
 	/// Rebuilds the model unless it already shows world @p row; a no-op for an out-of-range row.
 	Q_INVOKABLE void openForWorld(int row);
 	Q_INVOKABLE void setEnabled(int row, bool enabled);
-	Q_INVOKABLE void remove(int row);
+	/// To the trash where there is one (InstanceDetails.trash), else for good.
+	Q_INVOKABLE bool remove(int row);
+	void setTrashUndo(TrashUndo* trash);
 	/// @p fileUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE bool install(const QString& fileUrlOrPath);
 
@@ -88,4 +92,5 @@ class WorldDataPacksController : public QObject
 	QString m_worldName;
 	std::unique_ptr<DataPackFolderModel> m_model;
 	std::unique_ptr<QSortFilterProxyModel> m_sorted;
+	QPointer<TrashUndo> m_trash;
 };

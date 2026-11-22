@@ -39,6 +39,7 @@ ApplicationWindow {
         onNewInstanceRequested: (mode) => root.openNewInstance(mode)
         onNavigateRequested: (target) => root.navigate(target)
         onCheckForUpdatesRequested: root.call("checkForUpdates")
+        onShortcutsRequested: root.dialog(shortcutsLoader).open()
     }
 
     property string selectedId: ""
@@ -55,17 +56,18 @@ ApplicationWindow {
         root.selectedId = id
         root.page = "instance"
     }
-    // Home opens an instance on its settings, the page people want there.
-    function openInstanceSettings(id) {
-        root.openInstance(id)
-        if (instancePage)
-            instancePage.tab = "settings"
-    }
 
     Binding {
         target: LauncherStore
         property: "iconRevision"
         value: root.shellValue("iconRevision", 0)
+    }
+    // The app's one "is there a network" flag (NetworkStatus): the offline notice and the server strip read it.
+    readonly property var network: root.shellValue("network")
+    Binding {
+        target: LauncherStore
+        property: "online"
+        value: !root.network || root.network.online !== false
     }
 
     Component.onCompleted: {
@@ -87,8 +89,8 @@ ApplicationWindow {
             if (look === "stage" || look === "calm" || look === "night" || look === "classic")
                 Theme.look = look
             // A window too narrow for the panel overrides the saved choice for this session only.
-            root.friendsPanelOpen = SettingsStore.bool("FriendsPanelOpen")
-                                    && root.width >= root.friendsPanelMinWindow
+            // The panel opens over the page and closes again when done with, so it never starts open.
+            root.friendsPanelOpen = false
             root.friendsPanelExpanded = SettingsStore.bool("FriendsPanelExpanded")
             root.friendsPanelWidth = SettingsStore.number("FriendsPanelWidth")
             root.sidebarWidth = SettingsStore.number("UiSidebarWidth")
@@ -106,6 +108,16 @@ ApplicationWindow {
     property string devJoinInvite: ""
     property string devInviteSend: ""
     property var devShareSteps: []
+    // friendsdemo=<scenario>[:<dir of heads>]: made-up friends (FriendsDevController), nothing sent anywhere.
+    property string devFriendsDemo: ""
+    Loader {
+        id: devFriends
+        active: root.devFriendsDemo.length > 0
+        sourceComponent: FriendsDevController {
+            scenario: root.devFriendsDemo.split(":")[0]
+            faceDir: root.devFriendsDemo.split(":").slice(1).join(":")
+        }
+    }
     Connections {
         target: root.devInviteSend.length > 0 ? root.friendsController : null
         function onChanged() {
@@ -152,6 +164,9 @@ ApplicationWindow {
                 Theme.scheme = value
             else if (key === "look")
                 Theme.look = value
+            // motion=playful|calm|off, for this run only (the setting is not written).
+            else if (key === "motion")
+                Theme.motionStyle = value
             else if (key === "size") {
                 var wh = value.split("x")
                 root.width = parseInt(wh[0])
@@ -181,6 +196,8 @@ ApplicationWindow {
                 root.openImport(value)
             else if (key === "friends")
                 Qt.callLater(root.openFriends, "friends")
+            else if (key === "friendsdemo")
+                root.devFriendsDemo = value
             // friendsTab: "requests" or "blocked".
             else if (key === "friendsTab")
                 Qt.callLater(root.openFriends, value)
@@ -217,6 +234,10 @@ ApplicationWindow {
                 Qt.callLater(homePage.openInstanceMenu, value)
             else if (key === "groupmenu")
                 Qt.callLater(homePage.openGroupMenu, value)
+            // The library on Home: libgroup=<group> picks that filter chip ("-" the ungrouped one),
+            // libsearch=<words> searches, libview=list|grid, libfocus=<n> gives card n the keyboard focus.
+            else if (key.startsWith("lib"))
+                Qt.callLater(homePage.reviewLibrary, key, value)
             else if (key === "duplicate")
                 Qt.callLater(homePage.duplicateInstance, value)
             // share=<id>: "Share as code" for that instance.
@@ -253,14 +274,30 @@ ApplicationWindow {
             else if (key === "perfdialog")
                 Qt.callLater(instancePage.review, "perfdialog")
             // review=versionmore|newcomponent|otherlogs|logfind|shotselect|shotrename
+            else if (key === "review" && value.indexOf("pack") === 0)
+                devPackReview.name = value
+            // modpacks: the instance page's Add content "Modpacks" link, after instance=<id>.
+            else if (key === "modpacks")
+                Qt.callLater(root.browseModpacks, "modrinth")
             else if (key === "review")
                 Qt.callLater(instancePage.review, value)
-            // ask=pickAccount|busySkip: questions only a real launch asks.
+            // ask=pickAccount|busySkip|launchFailed|launchAccount: questions only a real launch asks.
             else if (key === "ask")
                 root.call("debugShowRequest", value)
             // updates=idle|pending|pendingGame|managed: Settings > Updates with a stand-in updater.
             else if (key === "updates")
                 root.call("debugUpdateState", value)
+            // shortcuts: the keyboard shortcuts sheet. network=offline|online: as if the connection dropped.
+            // accountstate=expired|errored|gone[,<state of the other accounts>]: accounts that cannot play online.
+            else if (key === "shortcuts")
+                root.dialog(shortcutsLoader).open()
+            else if (key === "network")
+                root.network.debugSetReachability(value)
+            else if (key === "accountstate")
+                root.accountsController.debugSetStates(value)
+            // accountcapes: the default account as a signed-in Microsoft account with stand-in capes.
+            else if (key === "accountcapes")
+                Qt.callLater(function() { if (root.accountsPage) root.accountsPage.debugShowCapes() })
             // sidebar=collapsed is the rail, anything else the labelled sidebar. Both are saved.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
@@ -316,10 +353,32 @@ ApplicationWindow {
             }
         }
     }
+    // review=pack…: once the opened pack's detail has loaded.
+    Timer {
+        id: devPackReview
+        property string name: ""
+        interval: 300
+        repeat: true
+        running: name.length > 0
+        onTriggered: {
+            const detail = discoverPage && discoverPage.active ? discoverPage.active.detail : null
+            if (!discoverPage || !discoverPage.openedPack || !detail || detail.loading)
+                return
+            stop()
+            discoverPage.review(name)
+            name = ""
+        }
+    }
     Timer {
         id: devDetail
         interval: 3500
+        // Again until the search has answered: a slow reply would leave the snapshot on the results.
+        repeat: true
         onTriggered: {
+            interval = 500
+            if (!discoverPage || !discoverPage.active || discoverPage.active.count === 0)
+                return
+            stop()
             var parts = root.devRoute.match(/detail=(\d+)/)
             discoverPage.openResult(parts ? parseInt(parts[1]) : 0)
         }
@@ -338,8 +397,8 @@ ApplicationWindow {
         SettingsStore.setValue("UiSidebarWidth", width)
     }
 
-    // Null where this build has no friends.
-    readonly property var friendsController: root.shellValue("friends")
+    // Null where this build has no friends. The dev route's stand-in (friendsdemo=) takes its place.
+    readonly property var friendsController: devFriends.item || root.shellValue("friends")
     readonly property var shareCodes: root.shellValue("shareCodes")
     // A window narrower than friendsPanelMinWindow starts without the panel and
     // leaves the FriendsPanelOpen setting alone; the toggle still opens it.
@@ -348,7 +407,12 @@ ApplicationWindow {
     property bool friendsPanelOpen: false
     property bool friendsPanelExpanded: false
     property int friendsPanelWidth: 320
-    readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
+    // On the Friends page the panel would only repeat the page (its heads, its requests bell, its add button),
+    // so there it shows for one thing the page has not got: a conversation, opened out, for as long as one is open.
+    readonly property bool friendChatOpen: !!root.friendsController && !!root.friendsController.chat
+                                           && root.friendsController.chat.openUuid.length > 0
+    readonly property bool friendsPanelShown: !!root.friendsController
+                                              && (root.page === "friends" ? root.friendChatOpen : root.friendsPanelOpen)
     // Where friends play, shared by every friends view; their servers are pinged while one of them is on screen.
     readonly property FriendPlaces friendPlaces: FriendPlaces {
         pinger: root.serverPinger
@@ -357,6 +421,7 @@ ApplicationWindow {
         invites: root.friendsController ? root.friendsController.invites : []
         active: Format.friendsPhase(root.friendsController) === "ready"
                 && (root.friendsPanelShown || root.page === "friends" || root.page === "home")
+                && !devFriends.item
     }
     function setFriendsPanelOpen(open) {
         root.friendsPanelOpen = open
@@ -368,7 +433,9 @@ ApplicationWindow {
     }
     // The conversation with @p uuid in the friends panel, opened (and opened out) for it.
     function openFriendChat(uuid) {
-        root.setFriendsPanelOpen(true)
+        // From the Friends page it shows for the conversation alone and the saved choice is left as it is.
+        if (root.page !== "friends")
+            root.setFriendsPanelOpen(true)
         friendsPanel.openChat(uuid)
     }
     function setFriendsPanelWidth(width) {
@@ -425,6 +492,7 @@ ApplicationWindow {
      * Cross-page links. Targets are paths, whole or split in two
      * (navigate("settings", "java") is navigate("settings/java")):
      *   "home", "discover", "accounts"
+     *   "discover/<provider>/<projectId>": a modpack's page, if it was opened before (history)
      *   "friends" or "friends/<tab>"
      *   "settings" or "settings/<section>"
      *   "instance/<id>" or "instance/<id>/<tab>"
@@ -436,8 +504,15 @@ ApplicationWindow {
                 ? String(page) : page + "/" + sub
         var parts = path.split("/")
         switch (parts[0]) {
-        case "home":
         case "discover":
+            root.page = "discover"
+            if (parts.length < 3) {
+                if (discoverPage)
+                    discoverPage.closePack()
+                return true
+            }
+            return !!discoverPage && discoverPage.reopen(parts.slice(1).join("/"))
+        case "home":
         case "accounts":
             root.page = parts[0]
             return true
@@ -574,7 +649,7 @@ ApplicationWindow {
     // First-run setup covers the window: the shortcuts and the menu bar wait.
     readonly property bool onboarding: !!onboardingLoader.item && onboardingLoader.item.active === true
     Shortcut {
-        sequences: [StandardKey.Find]
+        sequences: KeyMap.keys("find")
         enabled: root.page !== "instance" && !root.onboarding
         onActivated: {
             if (root.page === "home") {
@@ -666,14 +741,31 @@ ApplicationWindow {
     function askDelete(id, name) {
         var deleteDialog = root.dialog(deleteLoader)
         deleteDialog.targetId = id
-        deleteDialog.text = qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
+        var library = root.shell.library
+        deleteDialog.toTrash = !!library && library.trashAvailable
+        deleteDialog.text = deleteDialog.toTrash
+            ? qsTr("Move \u201c%1\u201d to the trash? Its folder goes with it: worlds, mods, screenshots.").arg(name)
+            : qsTr("Delete \u201c%1\u201d? Its folder \u2014 worlds, mods, screenshots \u2014 is removed for good.").arg(name)
         deleteDialog.open()
     }
 
     Shortcut {
-        sequences: [StandardKey.New]
+        sequences: KeyMap.keys("new")
         enabled: !root.onboarding
         onActivated: root.openNewInstance()
+    }
+
+    // Where the window is, as a navigate() path; NavHistory keeps the pages visited for Back and Forward.
+    readonly property string route: root.page === "instance"
+            ? "instance/" + root.openedInstanceId + (instancePage ? "/" + instancePage.tab : "")
+            : root.page === "settings" && settingsPage ? "settings/" + settingsPage.section
+            : root.page === "friends" && friendsPage ? "friends/" + friendsPage.tab
+            : root.page === "discover" && discoverPage && discoverPage.packRoute.length > 0
+              ? "discover/" + discoverPage.packRoute : root.page
+    NavHistory {
+        id: history
+        route: root.route
+        go: root.navigate
     }
 
     ContentDropFlow {
@@ -681,6 +773,16 @@ ApplicationWindow {
         onNotify: (text, tone) => toast.show(text, tone)
         onImportRequested: (source) => root.openImport(source)
     }
+    // A drop on a page that is no instance's: import, or add to an instance it asks for.
+    LooseDropFlow {
+        id: looseDrop
+        shell: root.shell
+        contentFlow: dropFlow
+        onNotify: (text, tone) => toast.show(text, tone)
+        onImportRequested: (source) => root.openImport(source)
+    }
+    // The library or sidebar tile a file drag is over (InstanceDropTarget): it takes the drop, not the page.
+    property Item dropTile: null
 
     function dropUrls(urls) {
         const list = []
@@ -695,8 +797,8 @@ ApplicationWindow {
     }
 
     // Files and links dropped on the window. On an instance's page they are added to it by what they are (mods,
-    // packs, worlds; ContentDrop); anywhere else a zip, .mrpack or link opens import. Declared first, so
-    // NewInstanceDialog's and the library's drop areas above it keep their drops.
+    // packs, worlds; ContentDrop); anywhere else LooseDropFlow imports a modpack or asks which instance takes the
+    // files. Declared first, so NewInstanceDialog's and the library's drop areas above it keep their drops.
     DropArea {
         id: windowDrop
         anchors.fill: parent
@@ -707,13 +809,18 @@ ApplicationWindow {
         // What the drag in progress holds, for the overlay (ContentDrop.preview()).
         property var rows: []
         property string unknown: ""
+        // What the overlay says off an instance's page (LooseDropFlow.read()); "" for its own "Drop to add".
+        property string title: ""
+        property string iconName: "download"
         // Dev route "dragover": the overlay stays up without a real drag.
         property bool previewing: false
 
         function show(paths) {
-            const found = windowDrop.onInstance ? root.openedDetails.drop.preview(paths) : ({ rows: [], unknown: "" })
+            const found = windowDrop.onInstance ? root.openedDetails.drop.preview(paths) : looseDrop.read(paths)
             windowDrop.rows = found.rows
             windowDrop.unknown = found.unknown
+            windowDrop.title = found.title || ""
+            windowDrop.iconName = found.iconName || "download"
         }
         function preview(paths) {
             windowDrop.show(paths)
@@ -724,6 +831,8 @@ ApplicationWindow {
             windowDrop.previewing = false
             if (windowDrop.onInstance)
                 dropFlow.handle(root.openedDetails.drop, paths, instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
+            else
+                looseDrop.drop(paths)
         }
 
         onEntered: (drag) => windowDrop.show(drag.hasUrls ? root.dropUrls(drag.urls) : [])
@@ -736,7 +845,7 @@ ApplicationWindow {
                 dropFlow.handle(root.openedDetails.drop, urls,
                                 instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
             else
-                root.openImport(urls[0])
+                looseDrop.drop(urls)
         }
     }
 
@@ -812,7 +921,6 @@ ApplicationWindow {
         // Leaves the page area's least width and, with friends, the panel's
         // narrowest opened-out width, so dragging never squeezes either.
         roomWidth: root.width - friendsPanel.minPageWidth
-                   - (root.friendsController ? friendsPanel.minExpandedWidth : 0)
         onWidthCommitted: (labelledWidth) => root.setSidebarWidth(labelledWidth)
         items: root.navItems
         footerItems: [
@@ -825,10 +933,8 @@ ApplicationWindow {
                    : root.page === "friends" ? "" : "home"
         currentInstanceId: root.page === "instance" ? root.openedInstanceId : ""
         recentModel: root.recentModel
-        pickOnTap: root.page === "home"
         onItemActivated: (id) => root.page = id
-        onRecentSelectRequested: (id) => root.selectedId = id
-        onRecentActivated: (id) => root.page === "home" ? root.openInstanceSettings(id) : root.openInstance(id)
+        onRecentActivated: (id) => root.openInstance(id)
         onRecentPlayRequested: (id) => root.launch(id)
         onNewInstanceRequested: root.openNewInstance()
 
@@ -837,7 +943,37 @@ ApplicationWindow {
         accountAvatarSource: root.shellValue("accountFace", "")
         accountsController: root.accountsController
         onOpenAccountsRequested: root.page = "accounts"
+        onShortcutsRequested: root.dialog(shortcutsLoader).open()
     }
+
+    // Discover's way back up: the instance whose "Add content" sent the user here for modpacks, then Discover
+    // itself while a pack's page is open.
+    readonly property var discoverPack: root.discoverPage ? root.discoverPage.openedPack : null
+    property var discoverOrigin: null
+    readonly property var discoverTrail: {
+        const steps = []
+        if (root.discoverOrigin)
+            steps.push({ label: root.discoverOrigin.name, go: root.returnToAddContent })
+        if (root.discoverPack)
+            steps.push({ label: qsTr("Discover"), go: () => root.discoverPage.closePack() })
+        return steps
+    }
+    function browseModpacks(provider) {
+        const origin = { id: root.openedInstanceId, name: root.openedName }
+        root.page = "discover"
+        root.discoverOrigin = origin
+        if (root.discoverPage) {
+            root.discoverPage.closePack()
+            root.discoverPage.setProvider(provider)
+        }
+    }
+    function returnToAddContent() {
+        const origin = root.discoverOrigin
+        if (origin && root.navigate("instance/" + origin.id))
+            instancePage.tab = "browse"
+    }
+    // Only Discover reached from an instance leads back to it.
+    onPageChanged: if (root.page !== "discover") root.discoverOrigin = null
 
     // The open instance's name, read from the instance page model's row.
     property string openedName: ""
@@ -860,7 +996,7 @@ ApplicationWindow {
         leftReserve: Math.max(0, root.windowControlsInset - sidebar.width)
         sideMargin: root.pageSideMargin
         title: root.page === "settings" ? qsTr("Settings")
-             : root.page === "discover" ? qsTr("Discover")
+             : root.page === "discover" ? (root.discoverPack ? (root.discoverPack.title || "") : qsTr("Discover"))
              : root.page === "accounts" ? qsTr("Accounts")
              : root.page === "friends" ? qsTr("Friends")
              : root.page === "instance" ? (instancePage && instancePage.browsing ? qsTr("Add content") : root.openedName)
@@ -870,16 +1006,19 @@ ApplicationWindow {
                 : root.page === "accounts" ? "user"
                 : root.page === "friends" ? "users"
                 : "home"
-        trail: root.page !== "instance" ? []
+        trail: root.page === "discover" ? root.discoverTrail.map((step) => step.label)
+             : root.page !== "instance" ? []
              : instancePage && instancePage.browsing ? [qsTr("Home"), root.openedName] : [qsTr("Home")]
         onTrailActivated: (index) => {
-            if (index === 0)
+            if (root.page === "discover")
+                root.discoverTrail[index].go()
+            else if (index === 0)
                 root.page = "home"
             else
                 instancePage.leaveBrowse()
         }
-        // The title keeps to the page's column; the toggle stands over the panel.
-        rightReserve: friendsPanel.width
+        // The friends panel opens over the page, so the bar keeps its whole width.
+        rightReserve: 0
         // Home only: the big servers to join in one click, against the right of the page's column.
         middle: [
             QuickJoinBar {
@@ -899,7 +1038,8 @@ ApplicationWindow {
         ]
         trailing: [
             FriendsPanelToggle {
-                visible: !!root.friendsController
+                // Not on the Friends page, where the panel is not the user's to show or hide.
+                visible: !!root.friendsController && root.page !== "friends"
                 open: root.friendsPanelOpen
                 // Counts only while the list is ready.
                 onlineCount: Format.friendsPhase(root.friendsController) === "ready"
@@ -912,20 +1052,68 @@ ApplicationWindow {
         ]
     }
 
+    // The friends panel lies over the page instead of pushing it aside: the page keeps its width, so nothing
+    // on it reflows. A press anywhere else, or Esc, closes it (not on the Friends page, where it holds a
+    // conversation next to the lists).
+    readonly property bool friendsPanelDismissable: root.friendsPanelShown && root.page !== "friends"
+    MouseArea {
+        id: friendsPanelDismiss
+        z: 19
+        anchors.left: parent.left
+        anchors.right: friendsPanel.left
+        anchors.top: topBar.bottom
+        anchors.bottom: parent.bottom
+        visible: root.friendsPanelDismissable
+        acceptedButtons: Qt.AllButtons
+        onPressed: root.setFriendsPanelOpen(false)
+        onWheel: (wheel) => wheel.accepted = true
+        Accessible.ignored: true
+
+        Rectangle {
+            anchors.fill: parent
+            color: Theme.palette.scrim
+            opacity: root.friendsPanelDismissable ? 0.5 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        }
+    }
+    Shortcut {
+        sequences: [StandardKey.Cancel]
+        enabled: root.friendsPanelDismissable
+        onActivated: root.setFriendsPanelOpen(false)
+    }
+    // An opaque ground and the shadow of a surface lying over the page.
+    Rectangle {
+        z: 19
+        x: friendsPanel.x
+        y: friendsPanel.y
+        width: friendsPanel.width
+        height: friendsPanel.height
+        visible: friendsPanel.width > 0
+        color: Theme.palette.canvas
+
+        Shadow {
+            radius: 0
+            level: Theme.elevation.lg
+        }
+    }
+
     FriendsSidePanel {
         id: friendsPanel
+        z: 20
         anchors.right: parent.right
         anchors.top: topBar.bottom
         anchors.bottom: parent.bottom
         open: root.friendsPanelShown
-        expanded: root.friendsPanelExpanded
+        // Always opened out: the narrow strip belonged to a panel that stood beside the page.
+        expanded: true
         expandedWidth: root.friendsPanelWidth
         roomWidth: root.width - sidebar.width
         controller: root.friendsController
         places: root.friendPlaces
         joinFlow: friendJoin
         myFace: root.shellValue("accountFace", "")
-        onExpandedRequested: (expanded) => root.setFriendsPanelExpanded(expanded)
+        // Folding it away closes it.
+        onExpandedRequested: (expanded) => expanded ? root.setFriendsPanelExpanded(true) : root.setFriendsPanelOpen(false)
         onWidthCommitted: (panelWidth) => root.setFriendsPanelWidth(panelWidth)
         onFriendsRequested: (tab) => root.openFriends(tab)
         onNavigateRequested: (target) => root.navigate(target)
@@ -937,7 +1125,7 @@ ApplicationWindow {
     Item {
         id: panel
         anchors.left: sidebar.right
-        anchors.right: friendsPanel.left
+        anchors.right: parent.right
         anchors.top: topBar.bottom
         anchors.bottom: playDock.visible ? playDock.top : parent.bottom
         clip: true
@@ -960,8 +1148,16 @@ ApplicationWindow {
             anchors.bottomMargin: panel.overhangBottom > 0 ? 0 : 1
             spacing: 0
 
-            // Fades the old page out, swaps StackLayout's currentIndex at the
-            // invisible midpoint, then fades the new page in.
+            OfflineNotice {
+                Layout.fillWidth: true
+                network: root.network
+                sideMargin: root.pageSideMargin
+                onStillOffline: toast.show(qsTr("Still no connection."))
+            }
+
+            // Fades the old page out over `fast`, swaps StackLayout's currentIndex
+            // at the invisible midpoint, then fades the new page in over `normal`
+            // while it rises `shift` px into place over `slow`.
             Item {
                 id: pageHost
                 Layout.fillWidth: true
@@ -990,7 +1186,7 @@ ApplicationWindow {
                     }
                     ParallelAnimation {
                         NumberAnimation { target: pageHost; property: "opacity"; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
-                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.space.sm; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.motion.shift; to: 0; duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
                     }
                 }
 
@@ -999,7 +1195,23 @@ ApplicationWindow {
                     function onPageChanged() {
                         pageTransition.nextIndex = pageHost.pageOrder.indexOf(root.page)
                         pageTransition.restart()
+                        if (root.page === "instance")
+                            openGuard.restart()
                     }
+                }
+
+                // One click opens an instance; the second click of a habitual double click would land on its page
+                // (Play included), so presses there are swallowed for a double-click interval after it opens, and
+                // never for less than the page takes to come in.
+                Timer {
+                    id: openGuard
+                    interval: Math.max(Qt.styleHints.mouseDoubleClickInterval, Theme.motion.fast + Theme.motion.slow)
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    z: 1
+                    enabled: openGuard.running
+                    acceptedButtons: Qt.AllButtons
                 }
 
                 // Under the pages, so anything a page draws covers it.
@@ -1038,7 +1250,7 @@ ApplicationWindow {
 
                         onLaunchRequested: (id) => root.launch(id)
                         onStopRequested: (id) => root.call("killInstance", id)
-                        onOpenInstanceRequested: (id) => root.openInstanceSettings(id)
+                        onOpenInstanceRequested: (id) => root.openInstance(id)
                         onSelectRequested: (id) => root.selectedId = id
                         onSignInRequested: root.page = "accounts"
                         onFolderRequested: (id) => root.call("openInstanceFolder", id)
@@ -1052,6 +1264,16 @@ ApplicationWindow {
                         }
                         onCreateRequested: root.openNewInstance()
                         onDiscoverRequested: root.page = "discover"
+                        modpackModel: root.shellValue("modpackModel")
+                        modpackInstaller: function (projectId, versionId, name, group) {
+                            return root.shell.installModpack(projectId, versionId, name, group)
+                        }
+                        suggestionsEnabled: !root.onboarding
+                        onPackRequested: (pack) => {
+                            root.page = "discover"
+                            if (root.discoverPage)
+                                root.discoverPage.openModrinth(pack)
+                        }
                     }
 
                     PageSlot {
@@ -1112,6 +1334,7 @@ ApplicationWindow {
                                 accountsController: root.accountsController
                                 onOpenAccountsRequested: root.page = "accounts"
                                 onBackRequested: root.page = "home"
+                                onModpacksRequested: (provider) => root.browseModpacks(provider)
                                 onOpenInstanceRequested: (id) => root.openInstance(id)
                                 onPlayRequested: (id) => root.launch(id)
                                 onStopRequested: (id) => root.call("killInstance", id)
@@ -1183,7 +1406,7 @@ ApplicationWindow {
         id: playDock
         surround: root.shellColor
         anchors.left: sidebar.right
-        anchors.right: friendsPanel.left
+        anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: implicitHeight
         sideMargin: root.pageSideMargin
@@ -1283,8 +1506,9 @@ ApplicationWindow {
         active: false
         sourceComponent: ConfirmDialog {
             property string targetId
+            property bool toTrash: false
             title: qsTr("Delete instance")
-            confirmText: qsTr("Delete instance")
+            confirmText: toTrash ? qsTr("Move to trash") : qsTr("Delete instance")
             onConfirmed: {
                 if (root.shell.deleteInstance(targetId)) {
                     if (root.selectedId === targetId)
@@ -1367,13 +1591,40 @@ ApplicationWindow {
         }
     }
 
-    // Over the page while files are dragged across an instance's page.
+    // Over the page while files are dragged across it; gives way to a tile that takes the drop itself.
     DropOverlay {
         anchors.fill: panel
         radius: root.panelRadius
-        visible: (windowDrop.containsDrag || windowDrop.previewing) && windowDrop.onInstance
+        visible: (windowDrop.containsDrag && !root.dropTile) || windowDrop.previewing
         rows: windowDrop.rows
         unknown: windowDrop.unknown
+        heading: windowDrop.title
+        iconName: windowDrop.iconName
+    }
+
+    Loader {
+        id: shortcutsLoader
+        active: false
+        sourceComponent: ShortcutsDialog {}
+    }
+
+    // Keys and the mouse's back/forward buttons (KeyMap); Play is the play bar's own, and never Stop.
+    AppShortcuts {
+        anchors.fill: parent
+        active: !root.onboarding && !(root.uiHost && root.uiHost.busy)
+        settingsInMenu: root.nativeMenuBar
+        onTriggered: (action) => {
+            if (action === "back")
+                history.back()
+            else if (action === "forward")
+                history.forward()
+            else if (action === "help")
+                root.dialog(shortcutsLoader).open()
+            else if (action !== "play")
+                root.navigate(action)
+            else if (!playDock.dockRunning)
+                playDock.tryLaunch()
+        }
     }
 
     Toast {

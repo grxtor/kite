@@ -75,6 +75,12 @@ class ContentDrop : public QObject
 	/// them ("" for none). Reads, never changes.
 	Q_INVOKABLE QVariantMap preview(const QStringList& urls) const;
 
+	/// The same for a drop that has no instance yet (Home, Discover), sorted
+	/// into what it would do: {rows, unknown} as preview(), plus `content`
+	/// (the urls an instance can take: mods, packs, worlds, project links) and
+	/// `imports` (modpack files and other web links, for Import). Reads only.
+	static QVariantMap sort(const QStringList& urls);
+
 	/// Reads a drop and keeps it for commit(); replaces any earlier one.
 	Q_INVOKABLE QVariantMap prepare(const QStringList& urls);
 	/// The folder name (saves/<folder>) data packs go into.

@@ -38,7 +38,7 @@ Item {
 
     transform: Translate {
         y: shape.lifted ? -Theme.space.xxs : 0
-        Behavior on y { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+        Behavior on y { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
     }
 
     // One copy of the outline, `grow` outside the shape (its parent's

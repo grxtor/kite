@@ -8,9 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The instance's screenshots as a grid of thumbnails, newest first. Ticking a
- * hovered tile selects it; once anything is selected, clicking a tile toggles
- * it. Upload goes to Imgur (a link, or an album for several) and is left out
+ * The instance's screenshots as a grid of thumbnails, newest first. Clicking a
+ * tile opens it large (ScreenshotViewer). Ticking a hovered tile selects it;
+ * once anything is selected, clicking a tile toggles it. Upload goes to Imgur (a link, or an album for several) and is left out
  * of builds without an Imgur client id.
  */
 Item {
@@ -53,10 +53,13 @@ Item {
     // Set by the Upload actions, so only this tab reacts to the result.
     property alias uploading: linkToast.pending
 
-    // For the "review=<name>" dev route: everything selected, or the first picture's rename.
+    // For the "review=<name>" dev route: everything selected, the second picture in the viewer, or the first
+    // picture's rename.
     function review(name) {
         if (name === "shotselect") {
             root.selectAll()
+        } else if (name === "shotview" && root.model && root.model.count > 0) {
+            viewer.show(Math.min(1, root.model.count - 1))
         } else if (name === "shotrename" && root.model && root.model.count > 0) {
             const path = root.model.pathAt(0)
             renamePrompt.path = path
@@ -118,8 +121,29 @@ Item {
         root.uploader.upload(paths)
     }
 
+    readonly property var trash: root.details ? root.details.trash : null
+    // One screenshot on its way to the trash goes at once: the toast's Undo is the way back. Several, or any number
+    // where there is no trash and the delete is permanent, are confirmed first.
+    function askRemove(paths) {
+        var toTrash = !!root.trash && root.trash.available
+        if (toTrash && paths.length === 1) {
+            root.removeAll(paths)
+            return
+        }
+        deleteConfirm.paths = paths
+        deleteConfirm.confirmText = toTrash ? qsTr("Move to trash") : qsTr("Delete")
+        if (toTrash)
+            deleteConfirm.text = qsTr("Move %1 screenshots to the trash?").arg(paths.length)
+        else
+            deleteConfirm.text = paths.length === 1 ? qsTr("Delete this screenshot? It cannot be recovered.")
+                                                    : qsTr("Delete %1 screenshots? They cannot be recovered.").arg(paths.length)
+        deleteConfirm.open()
+    }
+
     // Moves @p paths to the trash, last row first so earlier rows keep their numbers.
     function removeAll(paths) {
+        if (root.trash)
+            root.trash.begin()
         var rows = []
         for (var i = 0; i < paths.length; ++i) {
             var row = root.rowOf(paths[i])
@@ -133,8 +157,11 @@ Item {
                 failed++
         }
         root.clearSelection()
+        var removed = rows.length - failed
         if (failed > 0)
             toast.show(qsTr("Some screenshots could not be deleted."), "danger")
+        else if (removed > 0)
+            toast.showDeleted(removed === 1 ? qsTr("Screenshot deleted.") : qsTr("%1 screenshots deleted.").arg(removed), root.trash)
     }
 
     function copyImage(row) {
@@ -173,7 +200,7 @@ Item {
         id: linkToast
         uploader: root.uploader
         clipboardItem: clipboard
-        toastItem: toast
+        toastItem: root.toast
         manyText: qsTr("Album link copied to your clipboard.")
     }
 
@@ -189,6 +216,8 @@ Item {
 
         TabToolbar {
             Layout.fillWidth: true
+            // Nothing to select or open yet: the empty state carries the folder button.
+            visible: !!root.model && root.model.count > 0
 
             leading: Copy {
                 visible: root.selectedCount > 0
@@ -220,13 +249,7 @@ Item {
                 visible: root.selectedCount > 0
                 text: qsTr("Delete")
                 icon.source: Icons.url("trash")
-                onClicked: {
-                    deleteConfirm.paths = Object.keys(root.selected)
-                    deleteConfirm.text = deleteConfirm.paths.length === 1
-                        ? qsTr("Move this screenshot to the trash?")
-                        : qsTr("Move %1 screenshots to the trash?").arg(deleteConfirm.paths.length)
-                    deleteConfirm.open()
-                }
+                onClicked: root.askRemove(Object.keys(root.selected))
             }
             Button {
                 visible: root.selectedCount === 0 && root.coverSource.length > 0 && !root.coverListed
@@ -234,9 +257,10 @@ Item {
                 flat: true
                 onClicked: root.coverCleared()
             }
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 onClicked: root.openFolderRequested(root.directory)
             }
         }
@@ -258,9 +282,11 @@ Item {
             cellHeight: tileHeight + root.captionHeight + root.gap
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: grid }
             delegate: Item {
                 id: cell
                 required property int index
+                RiseIn { target: cell; index: cell.index; gate: entrance }
                 required property string name
                 required property string path
                 required property string url
@@ -336,7 +362,7 @@ Item {
                             if (root.selectedCount > 0)
                                 root.toggleSelected(cell.path)
                             else
-                                Qt.openUrlExternally(cell.url)
+                                viewer.show(cell.index)
                         }
                     }
 
@@ -375,6 +401,11 @@ Item {
                     id: tileMenu
                     MenuItem {
                         text: qsTr("Open")
+                        icon.source: Icons.url("image")
+                        onTriggered: viewer.show(cell.index)
+                    }
+                    MenuItem {
+                        text: qsTr("Open in another app")
                         icon.source: Icons.url("external-link")
                         onTriggered: Qt.openUrlExternally(cell.url)
                     }
@@ -412,16 +443,7 @@ Item {
                     MenuItem {
                         text: root.selectedCount > 1 && cell.picked ? qsTr("Delete selected…") : qsTr("Delete")
                         icon.source: Icons.url("trash")
-                        onTriggered: {
-                            var paths = root.targets(cell.path)
-                            if (paths.length > 1) {
-                                deleteConfirm.paths = paths
-                                deleteConfirm.text = qsTr("Move %1 screenshots to the trash?").arg(paths.length)
-                                deleteConfirm.open()
-                            } else {
-                                root.removeAll(paths)
-                            }
-                        }
+                        onTriggered: root.askRemove(root.targets(cell.path))
                     }
                 }
 
@@ -499,7 +521,14 @@ Item {
 
     ClipboardText { id: clipboard }
 
-    Toast { id: toast }
+    // While the viewer is open it covers this tab, so it says what happened itself.
+    Toast { id: tabToast }
+    readonly property var toast: viewer.opened ? viewer.toast : tabToast
+
+    ScreenshotViewer {
+        id: viewer
+        owner: root
+    }
 
     EmptyState {
         anchors.centerIn: parent
@@ -507,6 +536,9 @@ Item {
         visible: !root.model || root.model.count === 0
         title: qsTr("No screenshots yet")
         body: qsTr("Press F2 in game; they will show up here.")
+        actionText: qsTr("Open screenshots folder")
+        actionIcon: "folder"
+        onActionTriggered: root.openFolderRequested(root.directory)
         MeshIcon { iconName: "image"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

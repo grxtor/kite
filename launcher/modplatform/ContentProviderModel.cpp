@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "core/LauncherContext.h"
+#include "minecraft/mod/InstalledContentKeys.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "net/Download.h"
 
@@ -101,6 +102,21 @@ QVariant ContentProviderModel::data(const QModelIndex& index, int role) const
 		case AuthorRole:
 			return project.author;
 
+		case DownloadsRole:
+			return double(project.downloads);
+
+		case UpdatedRole:
+			return project.dateModified;
+
+		case CategoriesRole:
+			return QStringList(project.categories.mid(0, maxRowCategories));
+
+		case WebsiteUrlRole:
+			return project.websiteUrl;
+
+		case GalleryRole:
+			return project.gallery;
+
 		default:
 			break;
 	}
@@ -118,6 +134,11 @@ QHash<int, QByteArray> ContentProviderModel::roleNames() const
 	roles.insert(LogoKeyRole, "logoKey");
 	roles.insert(LogoUrlRole, "logoUrl");
 	roles.insert(AuthorRole, "author");
+	roles.insert(DownloadsRole, "downloads");
+	roles.insert(UpdatedRole, "updated");
+	roles.insert(CategoriesRole, "categories");
+	roles.insert(WebsiteUrlRole, "websiteUrl");
+	roles.insert(GalleryRole, "gallery");
 	return roles;
 }
 
@@ -567,10 +588,29 @@ void ContentProviderModel::setInstalledIndex(
 	std::shared_ptr<ModMetadataIndex> index)
 {
 	m_installedIndex = std::move(index);
-	for (auto& project : m_projects) {
-		applyInstalledState(project);
-	}
+	refreshInstalledState();
+}
 
+void ContentProviderModel::setInstalledKeys(const QSet<QString>& keys)
+{
+	if (m_installedKeys == keys) {
+		return;
+	}
+	m_installedKeys = keys;
+	refreshInstalledState();
+}
+
+void ContentProviderModel::refreshInstalledState()
+{
+	bool changed = false;
+	for (auto& project : m_projects) {
+		const bool was = project.installed;
+		applyInstalledState(project);
+		changed = changed || was != project.installed;
+	}
+	if (!changed) {
+		return;
+	}
 	if (m_hideInstalled) {
 		rebuildVisibleRows();
 		return;
@@ -578,17 +618,32 @@ void ContentProviderModel::setInstalledIndex(
 	emitRowStateChanged();
 }
 
+void ContentProviderModel::loadSearchReplyForTest(const QByteArray& bytes)
+{
+	int totalHits = -1;
+	beginResetModel();
+	m_projects = parseSearchResponse(bytes, totalHits);
+	m_visibleRows.clear();
+	for (int i = 0; i < m_projects.size(); ++i) {
+		auto& project = m_projects[i];
+		project.normalizedName = ModMetadataIndex::normalizeName(project.name);
+		applyInstalledState(project);
+		if (passesRowFilter(project)) {
+			m_visibleRows.append(i);
+		}
+	}
+	endResetModel();
+}
+
 void ContentProviderModel::applyInstalledState(
 	ModPlatform::IndexedProject& project) const
 {
 	project.installed = false;
-	if (!m_installedIndex) {
-		return;
-	}
 
 	/* The exact project first, then the name key, which also catches the
-	 * same mod installed from the other site. */
-	if (!project.projectId.isEmpty()) {
+	 * same mod installed from the other site; last what the folder holds
+	 * without a sidecar, by the jar's own id, name or file name. */
+	if (m_installedIndex && !project.projectId.isEmpty()) {
 		const auto byProject =
 			m_installedIndex->findByPlatformProject(m_api.id(),
 													project.projectId);
@@ -598,11 +653,15 @@ void ContentProviderModel::applyInstalledState(
 		}
 	}
 
-	if (!project.normalizedName.isEmpty()) {
-		project.installed =
-			m_installedIndex->findByNormalizedName(project.normalizedName)
-				.isValid();
+	if (m_installedIndex && !project.normalizedName.isEmpty() &&
+		m_installedIndex->findByNormalizedName(project.normalizedName)
+			.isValid()) {
+		project.installed = true;
+		return;
 	}
+
+	project.installed = InstalledContentKeys::contains(
+		m_installedKeys, project.slug, project.name);
 }
 
 void ContentProviderModel::emitRowStateChanged()

@@ -79,7 +79,7 @@ class StagedStep : public LaunchStep
 	}
 };
 
-// A step that fails on its own, like a game that crashed.
+// A step that fails before the game runs, like a download with no network.
 class FailingStep : public LaunchStep
 {
 	Q_OBJECT
@@ -90,6 +90,24 @@ class FailingStep : public LaunchStep
   protected:
 	void executeTask() override
 	{
+		emitFailed(QStringLiteral("Couldn't download the game files."));
+	}
+};
+
+// The game's process started (it has a pid) and then exited badly, the way
+// GameProcessStep reports a crash.
+class CrashingGameStep : public LaunchStep
+{
+	Q_OBJECT
+
+  public:
+	using LaunchStep::LaunchStep;
+
+  protected:
+	void executeTask() override
+	{
+		m_parent->setPid(4242);
+		m_parent->setPid(-1);
 		emitFailed(QStringLiteral("Game crashed."));
 	}
 };
@@ -206,15 +224,55 @@ class LaunchTaskTest : public QObject
 	}
 
 	// The crash flag Home reads ("Crashed last time").
-	void failedLaunchIsACrash()
+	void gameThatExitedBadlyIsACrash()
 	{
 		InstanceFixture fixture;
 		auto task = LaunchTask::create(fixture.instance);
-		task->appendStep(shared_qobject_ptr<LaunchStep>(new FailingStep(task.get())));
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new SilentStep(task.get())));
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new CrashingGameStep(task.get())));
 		task->start();
 		QTRY_VERIFY(task->isFinished());
 		QVERIFY(!task->wasSuccessful());
+		QVERIFY(task->gameStarted());
 		QVERIFY(fixture.instance->hasCrashed());
+	}
+
+	// A launch that fails before the game's process starts (a download, Java)
+	// is no crash: no "Crashed last time", no crash window.
+	void failureBeforeTheGameStartsIsNoCrash()
+	{
+		InstanceFixture fixture;
+		// The flag of an older crash goes too: this launch says nothing new
+		// about the game.
+		fixture.instance->setCrashed(true);
+		auto task = LaunchTask::create(fixture.instance);
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new SilentStep(task.get())));
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new FailingStep(task.get())));
+		QSignalSpy failedSpy(task.get(), &Task::failed);
+		task->start();
+		QTRY_VERIFY(task->isFinished());
+		QVERIFY(!task->wasSuccessful());
+		QVERIFY(!task->gameStarted());
+		QVERIFY(!task->isAborting());
+		QVERIFY(!fixture.instance->hasCrashed());
+		// The failing step's own reason is what the player gets to read.
+		QCOMPARE(failedSpy.size(), 1);
+		QCOMPARE(failedSpy.first().first().toString(),
+				 QStringLiteral("Couldn't download the game files."));
+	}
+
+	void gameStartedOnlyOnceThereIsAProcess()
+	{
+		InstanceFixture fixture;
+		auto task = LaunchTask::create(fixture.instance);
+		QVERIFY(!task->gameStarted());
+		task->setPid(-1);
+		QVERIFY(!task->gameStarted());
+		task->setPid(4242);
+		QVERIFY(task->gameStarted());
+		// It stays said after the process is gone.
+		task->setPid(-1);
+		QVERIFY(task->gameStarted());
 	}
 
 	void stoppedGameIsNoCrash()
@@ -227,6 +285,23 @@ class LaunchTaskTest : public QObject
 		QVERIFY(task->abort());
 		QTRY_VERIFY(task->isFinished());
 		QVERIFY(!task->wasSuccessful());
+		QVERIFY(!fixture.instance->hasCrashed());
+	}
+
+	// Cancel while the launch still prepares: no process yet, so nothing to
+	// warn about (LaunchController::abort() asks only once gameStarted()).
+	void cancelledBeforeTheGameStarts()
+	{
+		InstanceFixture fixture;
+		auto task = LaunchTask::create(fixture.instance);
+		task->appendStep(shared_qobject_ptr<LaunchStep>(new RunningStep(task.get())));
+		task->start();
+		QTRY_VERIFY(task->isRunning());
+		QVERIFY(task->canAbort());
+		QVERIFY(!task->gameStarted());
+		QVERIFY(task->abort());
+		QTRY_VERIFY(task->isFinished());
+		QVERIFY(task->isAborting());
 		QVERIFY(!fixture.instance->hasCrashed());
 	}
 

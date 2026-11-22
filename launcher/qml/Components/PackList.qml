@@ -52,10 +52,17 @@ Item {
     readonly property int detailsIndent: rowPadding + checkSize + Theme.space.md + thumbSize + Theme.space.md
 
     property bool updatable: false
+    // ContentUpdateList: what the last "Check for updates" found for this kind, or null. A row with an update
+    // shows the new version and an Update button; every row then keeps room for the button.
+    property var updates: null
+    readonly property int updateCount: updates ? updates.count : 0
+    readonly property int updateSlotWidth: updateCount > 0 ? updateMeasure.implicitWidth + Theme.space.md : 0
+    signal updateRequested(string key)
 
     signal openFolderRequested(string path)
     signal changeVersionRequested(string key)
     signal resetMetadataRequested(string key, string name)
+    signal removeRequested(string key, string name)
 
     function isSelected(key) {
         return root.selectedKeys.indexOf(key) >= 0
@@ -96,10 +103,9 @@ Item {
         root.anchorKey = ""
     }
 
+    // ContentTab removes it: at once when it goes to the trash, after a question when it does not.
     function confirmRemove(key, name) {
-        confirm.key = key
-        confirm.text = qsTr("Remove “%1” from this instance? The file is deleted.").arg(name)
-        confirm.open()
+        root.removeRequested(key, name)
     }
 
     onKindChanged: {
@@ -181,7 +187,7 @@ Item {
                     font.weight: Font.DemiBold
                 }
                 Copy {
-                    Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth
+                    Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth + root.updateSlotWidth
                     horizontalAlignment: Text.AlignRight
                     text: qsTr("Actions")
                     role: "label"
@@ -206,10 +212,21 @@ Item {
             // Overlays the rows' right edge instead of reserving a gutter.
             ScrollBar.vertical: ScrollBar {}
 
+            // A removed file fades out and the rows under it close the gap.
+            remove: Transition {
+                NumberAnimation { property: "opacity"; to: 0; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+            }
+            displaced: Transition {
+                NumberAnimation { property: "y"; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+            }
+
+            ListEntrance { id: entrance; view: list }
             delegate: PackRow {
+                id: packRow
                 owner: root
                 width: ListView.view.width
                 lastRow: index === ListView.view.count - 1
+                RiseIn { target: packRow; index: packRow.index; gate: entrance }
             }
         }
 
@@ -226,6 +243,7 @@ Item {
 
     StatusBadge { id: problemMeasure; visible: false; text: qsTr("Problem") }
     StatusBadge { id: warningMeasure; visible: false; text: qsTr("Warning") }
+    Button { id: updateMeasure; visible: false; buttonSize: "sm"; text: qsTr("Update") }
 
     // A search that matches nothing (ContentTab shows its own empty state for an empty folder).
     EmptyState {
@@ -236,18 +254,5 @@ Item {
         title: qsTr("No matches")
         body: root.model ? qsTr("Nothing here matches “%1”.").arg(root.model.filterText) : ""
         MeshIcon { iconName: "search"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
-    }
-
-    ConfirmDialog {
-        id: confirm
-        property string key: ""
-        title: qsTr("Remove")
-        confirmText: qsTr("Remove")
-        onConfirmed: {
-            if (root.controller)
-                root.controller.remove(root.kind, [key])
-            if (root.isSelected(key))
-                root.toggle(key)
-        }
     }
 }

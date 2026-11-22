@@ -122,27 +122,8 @@ Column {
         onObjectRemoved: Qt.callLater(root.readFresh)
     }
 
-    // One tap sequence for every row, not one per delegate: the rows are rebuilt whenever the data of any of them
-    // changes, which would reset a sequence under way. The first tap picks, two open, three launch.
-    property string tappedId: ""
-    function tap(id) {
-        if (id !== root.tappedId)
-            taps.finish()
-        root.tappedId = id
-        taps.tap()
-    }
-    TapSequence {
-        id: taps
-        onSingle: root.selectRequested(root.tappedId)
-        onTwice: root.openRequested(root.tappedId)
-        onThrice: {
-            for (var i = 0; i < root.rows.length; ++i) {
-                var row = root.rows[i]
-                if (row.instanceId === root.tappedId && row.canLaunch && !row.isRunning)
-                    root.launchRequested(row.instanceId)
-            }
-        }
-    }
+    // The rows feed their taps here: a tap opens the instance's page. Only Play launches.
+    function tap(id) { root.openRequested(id) }
 
     visible: root.rows.length > 0
     spacing: root.titleGap
@@ -157,7 +138,10 @@ Column {
         columnSpacing: root.gap
         rowSpacing: root.gap
 
+        // The rows are a list rebuilt whenever one of them changes, so only an empty list filling is an entrance.
+        ListEntrance { id: entrance; view: rowRepeater; watchModel: false }
         Repeater {
+            id: rowRepeater
             model: root.rows
             delegate: root.look === "stage" ? stageCard
                     : root.look === "calm" ? calmRow
@@ -170,6 +154,8 @@ Column {
         HomeJumpCard {
             id: row
             required property var modelData
+            required property int index
+            RiseIn { target: row; index: row.index; gate: entrance }
             width: root.rowWidth
             instanceId: modelData.instanceId
             name: modelData.name
@@ -197,7 +183,10 @@ Column {
     Component {
         id: stageCard
         HomeStageCard {
+            id: stage
             required property var modelData
+            required property int index
+            RiseIn { target: stage; index: stage.index; gate: entrance }
             row: modelData
             host: root
             width: root.rowWidth
@@ -206,18 +195,24 @@ Column {
     Component {
         id: calmRow
         HomeCalmRow {
+            id: calm
             required property var modelData
             required property int index
+            RiseIn { target: calm; index: calm.index; gate: entrance }
             row: modelData
             host: root
             width: root.rowWidth
-            showDivider: index < root.rows.length - 1
+            // No hairline under the last row, nor above the picked one's lifted fill.
+            showDivider: index < root.rows.length - 1 && root.rows[index + 1].instanceId !== root.selectedId
         }
     }
     Component {
         id: nightRow
         HomeNightRow {
+            id: night
             required property var modelData
+            required property int index
+            RiseIn { target: night; index: night.index; gate: entrance }
             row: modelData
             host: root
             width: root.rowWidth

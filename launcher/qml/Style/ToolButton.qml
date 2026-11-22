@@ -7,9 +7,8 @@ import QtQuick.Templates as T
 import Kite.Theme
 
 // A toolbar/icon button: transparent with only the hover/press overlay, and a
-// soft accent-tinted fill when checked, so a toggled tool reads as "on"
-// without the primary Button's full accent fill, which is for committing
-// actions.
+// neutral hoverOverlay fill under a textPrimary glyph when checked, so a
+// toggled tool reads as "on" without tinting a panel with the accent.
 T.ToolButton {
     id: control
 
@@ -25,12 +24,18 @@ T.ToolButton {
     icon.height: Theme.icon.md
     icon.color: contentColor
 
+    // Pressed, the button's face gives a little and comes back on release. The face, not the control: a menu
+    // hung from the control follows its transform, and slid over by a pixel as the control grew back.
+    property real pressFactor: control.down ? Theme.motion.pressScale : 1
+    Behavior on pressFactor { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+
     readonly property color contentColor: !control.enabled
         ? Theme.palette.textDisabled
-        : (control.checked || control.highlighted) ? Theme.palette.accentText : Theme.palette.textPrimary
+        : Theme.palette.textPrimary
 
     // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
     contentItem: IconText {
+        scale: control.pressFactor
         spacing: control.spacing
         mirrored: control.mirrored
         display: control.display
@@ -49,10 +54,11 @@ T.ToolButton {
     }
 
     background: Rectangle {
+        scale: control.pressFactor
         implicitWidth: Theme.control.height
         implicitHeight: Theme.control.height
-        radius: Theme.radius.md
-        color: (control.checked || control.highlighted) ? Theme.palette.accentSubtle : "transparent"
+        radius: Theme.radius.sm
+        color: (control.checked || control.highlighted) ? Theme.palette.hoverOverlay : "transparent"
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Rectangle {

@@ -32,11 +32,12 @@ Column {
     readonly property FriendsState friendsState: FriendsState { controller: root.controller }
     // Whether the section has anything to show; the panel hides without it. Friends off is a choice, and a
     // missing Microsoft account is already said by the "Set up Kite" card.
-    readonly property bool shown: root.friendsState.phase !== "off"
-                                  && !(root.friendsState.phase === "noAccount" && root.setupShowsSignIn)
+    // Home only speaks up when a friend is in a game, with the way to join them. Everything else about friends
+    // (who is online, requests, adding, connection trouble) lives on the Friends page and the top bar's button.
+    readonly property bool shown: root.friendsState.showsLists && root.around.length > 0
                                   && !(root.controller && root.controller.refused)
     readonly property int maxRows: 5
-    readonly property var around: root.friendsState.groups.playing.concat(root.friendsState.groups.online)
+    readonly property var around: root.friendsState.groups.playing
 
     spacing: Theme.space.sm
 

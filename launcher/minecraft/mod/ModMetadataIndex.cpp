@@ -71,7 +71,8 @@ QString ModMetadataIndex::sidecarPath(const QString& sidecarName) const
 }
 
 bool ModMetadataIndex::dropSidecarOwnedBy(const QString& sidecarName,
-										  const QString& canonicalName) const
+										  const QString& canonicalName,
+										  QList<FS::Trashed>* trashed) const
 {
 	if (sidecarName.isEmpty()) {
 		return false;
@@ -100,6 +101,9 @@ bool ModMetadataIndex::dropSidecarOwnedBy(const QString& sidecarName,
 	if (canonicalFileName(owner.fileName) != canonicalName) {
 		// Belongs to another file of the same project: leave it.
 		return false;
+	}
+	if (trashed) {
+		return FS::trashOrDelete(path, trashed);
 	}
 	if (!QFile::remove(path)) {
 		qWarning() << "ModMetadataIndex: failed to delete sidecar" << path;
@@ -369,7 +373,8 @@ bool ModMetadataIndex::put(const Entry& entry)
 	return true;
 }
 
-bool ModMetadataIndex::remove(const QString& fileName)
+bool ModMetadataIndex::remove(const QString& fileName,
+							  QList<FS::Trashed>* trashed)
 {
 	const QString canon = canonicalFileName(fileName);
 	QString name;
@@ -381,7 +386,7 @@ bool ModMetadataIndex::remove(const QString& fileName)
 	}
 
 	if (!name.isEmpty()) {
-		return dropSidecarOwnedBy(name, canon);
+		return dropSidecarOwnedBy(name, canon, trashed);
 	}
 
 	// Nothing recorded, so the index was probably never loaded: try the names
@@ -398,7 +403,7 @@ bool ModMetadataIndex::remove(const QString& fileName)
 	candidates << canon + QStringLiteral(".json");
 
 	for (const QString& candidate : candidates) {
-		if (dropSidecarOwnedBy(candidate, canon)) {
+		if (dropSidecarOwnedBy(candidate, canon, trashed)) {
 			return true;
 		}
 	}

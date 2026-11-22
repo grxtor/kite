@@ -33,6 +33,7 @@
 #include "news/NewsChecker.h"
 #include "notifications/NotificationChecker.h"
 #include "core/InstancePathProblems.h"
+#include "crashdoctor/CrashDoctorService.h"
 #include "modbridge/ModBridge.h"
 
 #include <QWindow>
@@ -878,7 +879,11 @@ void Application::initSettings()
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);
 	m_settings->registerSetting("UiSidebarWidth", 240);
+	// Before UiMotionStyle; read once more to carry "on" over as "off"
+	// (SettingsStore.resolveMotionStyle), never written again.
 	m_settings->registerSetting("UiReduceMotion", false);
+	// playful, calm or off; empty until the user picks one.
+	m_settings->registerSetting("UiMotionStyle", QString());
 
 	/* Screen-top menu bar (macOS only; elsewhere carried but unused). The
 	 * second key is the original name, kept so existing configs still read. */
@@ -1002,7 +1007,8 @@ void Application::initSettings()
 	m_settings->registerSetting("BackgroundCat", QString("kitteh"));
 
 	m_settings->registerSetting("InstSortMode", "Name");
-	m_settings->registerSetting("InstGrouped", true);
+	// Off: the library is one grid, its groups a filter over it.
+	m_settings->registerSetting("InstGrouped", false);
 
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
 	// Crash reports to Kite's server (crashdoctor/CrashFollowUp): asked every
@@ -1872,12 +1878,22 @@ void Application::controllerSucceeded()
 
 void Application::controllerFailed(const QString& error)
 {
-	Q_UNUSED(error);
 	auto controller = qobject_cast<LaunchController*>(QObject::sender());
 	if (!controller)
 		return;
 	auto id = controller->id();
 	auto& extras = m_instanceExtras[id];
+
+	// Read before the controller goes: what to tell the player, and the same
+	// launch again for "Try again".
+	const InstancePtr instance = controller->instance();
+	const LaunchFailure::Kind kind = controller->failureKind();
+	const LaunchMode mode = controller->demoMode()
+								? LaunchMode::Demo
+								: controller->online() ? LaunchMode::Normal
+													   : LaunchMode::Offline;
+	const auto serverToJoin = controller->serverToJoin();
+	const auto accountToUse = controller->accountToUse();
 
 	extras.controller.reset();
 	subRunningInstance();
@@ -1885,7 +1901,64 @@ void Application::controllerFailed(const QString& error)
 	if (shouldExitNow()) {
 		m_status = Status::Failed;
 		QCoreApplication::exit(1);
+		return;
 	}
+	showLaunchFailure(instance, kind, error,
+					  [this, instance, mode, serverToJoin, accountToUse] {
+						  launch(instance, mode, serverToJoin, accountToUse);
+					  });
+}
+
+void Application::showLaunchFailure(InstancePtr instance,
+									LaunchFailure::Kind kind,
+									const QString& reason,
+									std::function<void()> retry)
+{
+	if (!instance || kind == LaunchFailure::Kind::Quiet) {
+		return;
+	}
+	const auto tell = [this, instance, kind, reason, retry] {
+		switch (LaunchFailure::present(*uiHost(), kind, instance->name(),
+									   reason)) {
+			case LaunchFailure::Action::SignIn:
+				navigateQmlShell(QStringLiteral("accounts"));
+				break;
+			case LaunchFailure::Action::Retry:
+				retry();
+				break;
+			case LaunchFailure::Action::ShowLog:
+				showInstanceLog(instance);
+				break;
+			case LaunchFailure::Action::None:
+				break;
+		}
+	};
+	/* Queued: the failed launch is still unwinding here, and the dialog
+	 * blocks. By then the crash doctor has begun reading a launch that failed
+	 * before the game started (LaunchTask's finished() comes after its
+	 * failed()); if it finds a cause it knows, its window speaks instead. */
+	QMetaObject::invokeMethod(
+		this,
+		[this, instance, kind, tell] {
+			auto* doctor = CrashDoctorService::instance();
+			const QString id = instance->id();
+			if (kind != LaunchFailure::Kind::BeforeStart || !doctor->busy(id)) {
+				tell();
+				return;
+			}
+			auto once = std::make_shared<QMetaObject::Connection>();
+			*once = connect(doctor, &CrashDoctorService::busyChanged, this,
+							[doctor, id, once, tell](const QString& done) {
+								if (done != id || doctor->busy(id)) {
+									return;
+								}
+								QObject::disconnect(*once);
+								if (!doctor->report(id)) {
+									tell();
+								}
+							});
+		},
+		Qt::QueuedConnection);
 }
 
 bool Application::ensureQmlShell()
@@ -2008,6 +2081,14 @@ bool Application::ensureQmlShell()
 					launch(inst, LaunchMode::Normal,
 						   std::make_shared<MinecraftServerTarget>(
 							   MinecraftServerTarget::parse(address, false)));
+				}
+			});
+	connect(m_qmlShell.get(), &QmlShell::joinWorldRequested, this,
+			[this](const QString& id, const QString& folderName) {
+				if (auto inst = instances()->getInstanceById(id)) {
+					launch(inst, LaunchMode::Normal,
+						   std::make_shared<MinecraftServerTarget>(
+							   MinecraftServerTarget::parse(folderName, true)));
 				}
 			});
 	connect(m_qmlShell.get(), &QmlShell::folderRequested, this,

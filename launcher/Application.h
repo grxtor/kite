@@ -34,6 +34,7 @@
 
 #include "Logging.h"
 
+#include "launch/LaunchFailure.h"
 #include "minecraft/launch/MinecraftServerTarget.h"
 #include "core/LauncherContext.h"
 
@@ -225,6 +226,10 @@ class Application : public QApplication, public LauncherContext
 
 	void addRunningInstance();
 	void subRunningInstance();
+	/// Tells the player why @p instance did not start and does what they
+	/// pick: sign in, or @p retry, or the log.
+	void showLaunchFailure(InstancePtr instance, LaunchFailure::Kind kind,
+						   const QString& reason, std::function<void()> retry);
 	/* Keeps the updater from replacing Kite while a game started from it
 	 * runs. */
 	void tellUpdaterAboutGames();

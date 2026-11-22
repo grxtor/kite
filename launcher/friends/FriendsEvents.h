@@ -46,6 +46,13 @@ namespace FriendsEvents
 	/// friend.status, friend.request, friend.accepted and friend.removed.
 	Outcome apply(FriendsApi::FriendsSnapshot& snapshot, const QJsonObject& frame);
 
+	/// What an answered action of ours does to the lists, so a row does not wait for the next read:
+	/// "accept" and "decline" take @p person out of the incoming requests, "cancelRequest" out of the
+	/// outgoing, "removeFriend" out of the friends, "block" out of all three; "sendRequest" adds them
+	/// to the outgoing (a name is needed). False if nothing changed. A new friend comes with the read.
+	bool settle(FriendsApi::FriendsSnapshot& snapshot, const QString& action,
+				const FriendsApi::Person& person);
+
 	/// @p uuid's unread count set to @p count; false if not a friend or unchanged.
 	bool setUnread(FriendsApi::FriendsSnapshot& snapshot, const QString& uuid, int count);
 	/// One more unread message from @p uuid; false if not a friend.

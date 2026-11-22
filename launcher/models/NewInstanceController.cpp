@@ -20,6 +20,7 @@
 
 #include "NewInstanceController.h"
 
+#include <QDebug>
 #include <QFileInfo>
 #include <QPointer>
 #include <QUrl>
@@ -148,6 +149,15 @@ void VersionListLoadingProxy::startLoadIfNeeded()
 	}
 }
 
+void VersionListLoadingProxy::reload()
+{
+	if (m_loading) {
+		return;
+	}
+	setError(QString());
+	startLoadIfNeeded();
+}
+
 void VersionListLoadingProxy::setSourceModel(QAbstractItemModel* sourceModel)
 {
 	/* Roles first: the base class starts filtering as soon as it has a model. */
@@ -272,6 +282,23 @@ QString composeSuggestedInstanceName(const QString& minecraftVersion,
 		name += QLatin1Char(' ') + info->brandName;
 	}
 	return name;
+}
+
+bool resolveCreationLoader(const QString& loader, const QString& loaderVersion,
+						   QString* uid, QString* version)
+{
+	uid->clear();
+	version->clear();
+	if (loader.isEmpty()) {
+		return true;
+	}
+	const QString loaderUid = loaderComponentUid(loader);
+	if (loaderUid.isEmpty() || loaderVersion.isEmpty()) {
+		return false;
+	}
+	*uid = loaderUid;
+	*version = loaderVersion;
+	return true;
 }
 
 QString suggestedImportName(const QString& source)
@@ -459,11 +486,15 @@ QObject* NewInstanceController::create(const QString& name,
 		return nullptr;
 	}
 
+	/* A chosen loader without a version must not quietly become vanilla. */
 	QString loaderUid;
 	QString loaderVersion;
-	if (!m_loader.isEmpty() && !m_selectedLoaderVersion.isEmpty()) {
-		loaderUid = loaderComponentUid(m_loader);
-		loaderVersion = m_selectedLoaderVersion;
+	if (!resolveCreationLoader(m_loader, m_selectedLoaderVersion, &loaderUid,
+							   &loaderVersion)) {
+		qWarning() << "Not creating an instance: loader" << m_loader
+				   << "has no version selected for Minecraft"
+				   << m_selectedMinecraftVersion;
+		return nullptr;
 	}
 
 	auto* creationTask =
@@ -533,11 +564,12 @@ QObject* NewInstanceController::importFrom(const QString& source,
 	importTask->setName(name);
 	importTask->setGroup(group);
 	importTask->setIcon(iconKey);
-	importTask->setTargetDir(LAUNCHER->instances()->primaryDir());
 
-	Task* wrapped = LAUNCHER->instances()->wrapInstanceTask(importTask);
-	auto* watcher = new TaskWatcher(Task::Ptr(wrapped), this);
-	watcher->setTitle(name.isEmpty() ? trimmed : name);
-	wrapped->start();
+	/* Through startInstanceCreation() so the watcher learns the new id and the
+	 * dialog can open the instance; an update of an existing one leaves it empty. */
+	TaskWatcher* watcher = startInstanceCreation(importTask, this);
+	if (name.isEmpty()) {
+		watcher->setTitle(trimmed);
+	}
 	return watcher;
 }

@@ -63,6 +63,7 @@ StateFill {
             Layout.preferredWidth: implicitWidth
             Layout.preferredHeight: implicitHeight
             matte: root.color
+            rounded: true
             opacity: root.dimmed ? Theme.opacity.disabled : 1
         }
 

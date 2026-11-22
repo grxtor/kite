@@ -7,8 +7,8 @@ import Kite.Theme
 
 /*
  * One big server in a line: its live favicon (a server glyph until it answers), name, a dot that says whether it
- * answers with the players online after it ("Offline" when it does not), and the heads of friends playing there.
- * The quick-join bar's entries and its ⋯ menu rows both show it.
+ * answers with the players online after it ("Offline" when it does not, a dash while this machine is offline), and
+ * the heads of friends playing there. The quick-join bar's entries and its ⋯ menu rows both show it.
  */
 Row {
     id: root
@@ -27,7 +27,9 @@ Row {
     readonly property bool live: root.serverState === "online"
     readonly property string favicon: root.live && root.status.favicon ? root.status.favicon : ""
     readonly property string players: root.live ? Format.playerCount(root.status.online) : ""
-    readonly property string countText: root.serverState === "offline" ? qsTr("Offline") : root.players
+    // With no connection here nothing answers, which says nothing about the server: a dash, not "Offline".
+    readonly property string countText: root.serverState !== "offline" ? root.players
+                                        : LauncherStore.online ? qsTr("Offline") : "\u2013"
 
     spacing: Theme.space.sm
 

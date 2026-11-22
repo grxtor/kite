@@ -23,6 +23,13 @@ Item {
     // ComponentTools: the actions behind "More" and a row's "Edit JSON".
     readonly property var tools: root.details ? root.details.componentTools : null
     readonly property string lockedReason: root.locked ? qsTr("The game is running. Components can be changed once it closes.") : ""
+    readonly property bool hasLoader: !!root.details && !!root.details.content && root.details.content.hasModLoader
+    readonly property bool canChange: !root.locked && !!root.components && !root.components.busy
+    readonly property bool canInstallLoader: root.canChange && !!root.installer
+    function openLoaderInstall() {
+        loaderInstallDialog.preselectUid = ""
+        loaderInstallDialog.open()
+    }
     // The TaskWatcher of "Download all files", while it runs and after it fails.
     property var downloadWatcher: null
     readonly property bool downloading: !!root.downloadWatcher && root.downloadWatcher.running
@@ -44,10 +51,13 @@ Item {
         TabToolbar {
             Layout.fillWidth: true
 
+            // One filled action, last: "Install loader" while the instance has none (what a modded setup
+            // needs first), "Change Minecraft version" once it has. The other one is the outlined button.
             Button {
-                enabled: !root.locked && !!root.components && !root.components.busy
-                text: qsTr("Change Minecraft version")
-                onClicked: minecraftVersionDialog.open()
+                enabled: root.hasLoader ? root.canInstallLoader : root.canChange
+                text: root.hasLoader ? qsTr("Install loader") : qsTr("Change Minecraft version")
+                icon.source: root.hasLoader ? Icons.url("download") : ""
+                onClicked: root.hasLoader ? root.openLoaderInstall() : minecraftVersionDialog.open()
             }
             // "More ▾": mirrored so the chevron follows the label.
             HoverReason {
@@ -62,13 +72,11 @@ Item {
                 }
             }
             Button {
-                enabled: !root.locked && !!root.installer && !!root.components && !root.components.busy
-                text: qsTr("Install loader")
-                icon.source: Icons.url("download")
-                onClicked: {
-                    loaderInstallDialog.preselectUid = ""
-                    loaderInstallDialog.open()
-                }
+                highlighted: true
+                enabled: root.hasLoader ? root.canChange : root.canInstallLoader
+                text: root.hasLoader ? qsTr("Change Minecraft version") : qsTr("Install loader")
+                icon.source: root.hasLoader ? "" : Icons.url("download")
+                onClicked: root.hasLoader ? minecraftVersionDialog.open() : root.openLoaderInstall()
             }
         }
 

@@ -216,6 +216,34 @@ class ContentBrowserTest : public QObject
 		QCOMPARE(mod.versionType, QString("beta"));
 	}
 
+	/* What "Install" on a row, or a batch install, picks: the newest version that
+	 * fits the instance, else the newest of all. */
+	void test_PickVersionId()
+	{
+		ModPlatform::ContentVersion oldFit;
+		oldFit.versionId = "old-fit";
+		oldFit.gameVersions = {"1.21.4"};
+		oldFit.loaders = {"fabric"};
+		oldFit.datePublished = "2026-01-01T00:00:00Z";
+		ModPlatform::ContentVersion newFit = oldFit;
+		newFit.versionId = "new-fit";
+		newFit.datePublished = "2026-03-01T00:00:00Z";
+		ModPlatform::ContentVersion newest;
+		newest.versionId = "newest-other";
+		newest.gameVersions = {"26.3"};
+		newest.loaders = {"fabric"};
+		newest.datePublished = "2026-06-01T00:00:00Z";
+
+		QCOMPARE(ContentBrowser::pickVersionId({oldFit, newest, newFit},
+												"1.21.4", "fabric"),
+				 QString("new-fit"));
+		QCOMPARE(ContentBrowser::pickVersionId({oldFit, newest, newFit},
+												"1.19.2", "forge"),
+				 QString("newest-other"));
+		QCOMPARE(ContentBrowser::pickVersionId({}, "1.21.4", "fabric"),
+				 QString());
+	}
+
 	void test_CategoryLabel()
 	{
 		QCOMPARE(ContentBrowser::categoryLabel("game-mechanics"),

@@ -9,7 +9,7 @@ qt_add_library(Kite_qml_components STATIC)
 # Must run before qt_add_qml_module, or these register as ordinary types and
 # every "import Kite.Components" gets its own private instance (see
 # Theme/CMakeLists.txt).
-set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml ExternalLinks.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml ExternalLinks.qml KeyMap.qml AccountStates.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(Kite_qml_components
     URI Kite.Components
@@ -27,6 +27,9 @@ qt_add_qml_module(Kite_qml_components
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml
+        InstanceDrag.qml
+        GroupMenu.qml
+        GroupDialogs.qml
         LinkButton.qml
         ExternalLinks.qml
         ExternalLinkDialog.qml
@@ -42,6 +45,7 @@ qt_add_qml_module(Kite_qml_components
         Format.qml
         SettingsPage.qml
         DiscoverPage.qml
+        DiscoverQuickInstall.qml
         ModpackCard.qml
         ModpackDetail.qml
         Skeleton.qml
@@ -83,6 +87,13 @@ qt_add_qml_module(Kite_qml_components
         ModHealthDialog.qml
         ContentFilterPopup.qml
         NoticeBar.qml
+        OfflineNotice.qml
+        KeyMap.qml
+        KeyCap.qml
+        ShortcutsDialog.qml
+        AppShortcuts.qml
+        NavHistory.qml
+        AccountStates.qml
         ReviewRow.qml
         VersionRow.qml
         UpdateReviewDialog.qml
@@ -103,7 +114,9 @@ qt_add_qml_module(Kite_qml_components
         DropOverlay.qml
         InstanceDropTarget.qml
         ContentDropFlow.qml
+        LooseDropFlow.qml
         ScreenshotsTab.qml
+        ScreenshotViewer.qml
         LogTab.qml
         CrashCauseMenu.qml
         CrashCauseView.qml
@@ -120,6 +133,9 @@ qt_add_qml_module(Kite_qml_components
         ClipboardText.qml
         TabScroll.qml
         TabStrip.qml
+        TabUnderline.qml
+        RiseIn.qml
+        ListEntrance.qml
         TabToolbar.qml
         TabListRow.qml
         RowThumb.qml
@@ -134,6 +150,9 @@ qt_add_qml_module(Kite_qml_components
         FiltersButton.qml
         FriendJoinButton.qml
         FriendsRetry.qml
+        FriendsDevController.qml
+        FriendsListCard.qml
+        FriendsAddField.qml
         FriendsState.qml
         FriendPlaces.qml
         ServerFavicon.qml
@@ -145,6 +164,7 @@ qt_add_qml_module(Kite_qml_components
         GroupHeading.qml
         HomeWorldList.qml
         InstanceArt.qml
+        InstanceBanner.qml
         InstanceSurface.qml
         TapSequence.qml
         JavaInstallList.qml
@@ -158,6 +178,12 @@ qt_add_qml_module(Kite_qml_components
         UploadLinkToast.qml
         DialogHeader.qml
         AccountsPage.qml
+        AccountsHeader.qml
+        AccountHeroCard.qml
+        AccountCapePicker.qml
+        AccountCapeChange.qml
+        AccountSignInDialog.qml
+        OfflineAccountDialog.qml
         AccountRow.qml
         SkinCapeEditor.qml
         SkinTile.qml
@@ -217,6 +243,8 @@ qt_add_qml_module(Kite_qml_components
         HomeNews.qml
         GettingStartedCard.qml
         LibrarySections.qml
+        LibraryGroupChips.qml
+        LibraryKeys.qml
         InstanceMenu.qml
         HomeSidePanel.qml
         HomeFriends.qml
@@ -272,6 +300,8 @@ qt_add_qml_module(Kite_qml_components
         PanelNote.qml
         CopyName.qml
         HomeEmptyState.qml
+        PopularModpacks.qml
+        ModpackTile.qml
         HomeSectionTitle.qml
         HomeHero.qml
         HomeHeroFacts.qml
@@ -316,12 +346,25 @@ qt_add_qml_module(Kite_qml_components
         RemoteRichText.qml
         PlayerHead.qml
         ViewModeToggle.qml
+        SegmentedChoice.qml
+        SegmentSlider.qml
         WindowDragBand.qml
         ChipGroup.qml
         InstanceNotesTab.qml
         LegacyUpgradeNotice.qml
         ContentResultRow.qml
         ContentProjectPanel.qml
+        ContentResultMeta.qml
+        ContentResultSkeleton.qml
+        ContentBatchInstall.qml
+        ContentBrowseSelectionBar.qml
+        GalleryStrip.qml
+        GalleryViewer.qml
+        ModpackDetailHeader.qml
+        ModpackDetailSidebar.qml
+        ModpackVersionList.qml
+        ModpackContentsList.qml
+        ModpackGalleryGrid.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg
@@ -351,6 +394,7 @@ qt_add_qml_module(Kite_qml_components
         icons/hourglass.svg
         icons/image.svg
         icons/info.svg
+        icons/keyboard.svg
         icons/layers.svg
         icons/library.svg
         icons/list.svg
@@ -377,6 +421,7 @@ qt_add_qml_module(Kite_qml_components
         icons/trash.svg
         icons/undo.svg
         icons/user.svg
+        icons/user-minus.svg
         icons/user-plus.svg
         icons/users.svg
         icons/x.svg

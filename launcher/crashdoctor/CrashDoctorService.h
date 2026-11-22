@@ -37,8 +37,8 @@ class MinecraftInstance;
 
 /*
  * The crash doctor for the whole launcher: watches every launch, and when one
- * ends in a crash (a failed launch that was not a Kill, or a run that left a
- * crash report) analyses it on a worker thread and keeps the report until the
+ * ends in a crash (a game that exited badly and was not a Kill, or a run that
+ * left a crash report) analyses it on a worker thread and keeps the report until the
  * instance launches again. The catalog is the embedded one, replaced by the
  * meta server's copy when that one is valid and not older (asked once a run).
  * A crash nothing knew is kept and read again with newer rules, and sent to
@@ -101,7 +101,9 @@ class CrashDoctorService : public QObject
 	void loadCatalog();
 	void refreshCatalog();
 	void onFinished(LaunchTask* task, const QString& instanceId);
-	void run(const CrashDoctor::Snapshot& snapshot, bool fresh);
+	/// @p knownOnly: a report with no known cause is dropped, as if nothing
+	/// was read (a launch that failed before the game started).
+	void run(const CrashDoctor::Snapshot& snapshot, bool fresh, bool knownOnly = false);
 	void analyseAsync(const CrashDoctor::Snapshot& snapshot,
 					  std::function<void(const CrashDoctor::Report&)> done);
 	void keepSolved(const CrashDoctor::Report& report);

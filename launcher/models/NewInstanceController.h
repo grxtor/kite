@@ -62,6 +62,8 @@ class VersionListLoadingProxy : public QSortFilterProxyModel
 	QString firstVersionId() const;
 
 	void setSourceModel(QAbstractItemModel* sourceModel) override;
+	/// Starts the load again after a failure; does nothing while loading or loaded.
+	Q_INVOKABLE void reload();
 
   signals:
 	void loadingChanged();
@@ -173,6 +175,13 @@ QString composeSuggestedInstanceName(const QString& minecraftVersion,
  * rewritten. Empty if there is none. */
 QString suggestedImportName(const QString& source);
 
+/* The loader component uid and version create() hands InstanceCreationTask.
+ * True for vanilla (@p loader "", both outputs empty) and for a known loader
+ * with a version. False when a loader is chosen but has no version or is
+ * unknown: create() then refuses rather than make a loader-less instance. */
+bool resolveCreationLoader(const QString& loader, const QString& loaderVersion,
+						   QString* uid, QString* version);
+
 class InstanceTask;
 class TaskWatcher;
 
@@ -242,7 +251,8 @@ class NewInstanceController : public QObject
 	Q_INVOKABLE void selectLoaderVersion(const QString& version);
 	Q_INVOKABLE QString suggestedName() const;
 	/* Builds and starts the creation task; returns a TaskWatcher parented to this
-	 * controller. Null if no Minecraft version is selected or the index lacks it.
+	 * controller. Null if no Minecraft version is selected or the index lacks it,
+	 * or if a loader is chosen without a version (see resolveCreationLoader()).
 	 * @p gameFiles false skips pre-downloading the game's files (they come with
 	 * the first launch). */
 	Q_INVOKABLE QObject* create(const QString& name, const QString& group,

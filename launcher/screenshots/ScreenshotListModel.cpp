@@ -123,6 +123,12 @@ void ScreenshotListModel::setDirectory(const QString& directory)
 	refreshNow();
 }
 
+void ScreenshotListModel::refresh()
+{
+	m_refreshTimer.stop();
+	refreshNow();
+}
+
 bool ScreenshotListModel::remove(int row)
 {
 	if (row < 0 || row >= m_entries.size()) {
@@ -135,6 +141,9 @@ bool ScreenshotListModel::remove(int row)
 	if (FS::trash(path, &pathInTrash)) {
 		qDebug() << "Screenshot" << path << "moved to trash at"
 				 << pathInTrash;
+		if (!pathInTrash.isEmpty()) {
+			emit trashed(path, pathInTrash);
+		}
 	} else if (FS::deletePath(path)) {
 		qDebug() << "Screenshot" << path
 				 << "deleted outright (no trash available)";

@@ -146,6 +146,73 @@
     </message>
 </context>
 <context>
+    <name>AccountCapeChange</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountCapeChange.qml" line="+35"/>
+        <location line="+8"/>
+        <source>The cape could not be changed.</source>
+        <translation>Pelerin değiştirilemedi.</translation>
+    </message>
+</context>
+<context>
+    <name>AccountCapePicker</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountCapePicker.qml" line="+33"/>
+        <source>Cape</source>
+        <translation>Pelerin</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>No cape</source>
+        <translation>Pelerin yok</translation>
+    </message>
+</context>
+<context>
+    <name>AccountHeroCard</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountHeroCard.qml" line="+108"/>
+        <source>Microsoft account</source>
+        <translation>Microsoft hesabı</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Offline account</source>
+        <translation>Çevrimdışı hesap</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>Plays offline. Online-mode servers and your own skin need a Microsoft account.</source>
+        <translation>Çevrimdışı oynar. Çevrimiçi modlu sunucular ve kendi skinin için Microsoft hesabı gerekir.</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Make default</source>
+        <translation>Varsayılan yap</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <location line="+28"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location line="-21"/>
+        <source>Change skin</source>
+        <translation>Skin değiştir</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <location line="+20"/>
+        <source>Remove account…</source>
+        <translation>Hesabı kaldır…</translation>
+    </message>
+    <message>
+        <location line="-12"/>
+        <source>More</source>
+        <translation>Daha fazla</translation>
+    </message>
+</context>
+<context>
     <name>AccountList</name>
     <message>
         <location filename="../launcher/minecraft/auth/AccountList.cpp" line="+317"/>
@@ -160,13 +227,14 @@
         <translation>Çevrimdışı</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../launcher/qml/Components/AccountsPage.qml" line="+135"/>
+        <location filename="../launcher/minecraft/auth/AccountList.cpp" line="+3"/>
         <source>Online</source>
         <comment>Account status</comment>
         <translation>Çevrimiçi</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location filename="../launcher/minecraft/auth/AccountList.cpp" line="+4"/>
         <source>Signing in…</source>
         <comment>Account status</comment>
         <translation>Giriş yapılıyor…</translation>
@@ -190,7 +258,7 @@
         <translation>Kayıp</translation>
     </message>
     <message>
-        <location line="+127"/>
+        <location line="+130"/>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
@@ -233,19 +301,25 @@
 <context>
     <name>AccountRow</name>
     <message>
-        <location filename="../launcher/qml/Components/AccountRow.qml" line="+85"/>
-        <source>Microsoft</source>
-        <translation>Microsoft</translation>
+        <location filename="../launcher/qml/Components/AccountRow.qml" line="+98"/>
+        <source>Microsoft account</source>
+        <translation>Microsoft hesabı</translation>
     </message>
     <message>
         <location line="+0"/>
-        <source>Offline</source>
-        <translation>Çevrimdışı</translation>
+        <source>Offline account</source>
+        <translation>Çevrimdışı hesap</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <source>Use this account</source>
-        <translation>Bu hesabı kullan</translation>
+        <location line="+32"/>
+        <location line="+29"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location line="-22"/>
+        <source>Make default</source>
+        <translation>Varsayılan yap</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -253,19 +327,80 @@
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>Skin and cape</source>
-        <translation>Skin ve pelerin</translation>
+        <location line="+9"/>
+        <source>Change skin</source>
+        <translation>Skin değiştir</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Remove account…</source>
+        <translation>Hesabı kaldır…</translation>
+    </message>
+</context>
+<context>
+    <name>AccountSignInDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountSignInDialog.qml" line="+26"/>
+        <source>Sign in with Microsoft</source>
+        <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Signed in. You&apos;re ready to play.</source>
+        <translation>Giriş yapıldı. Oynamaya hazırsın.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sign-in failed.</source>
+        <translation>Giriş başarısız.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Continue in your browser…</source>
+        <translation>Tarayıcıda devam et…</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>A browser window opened on Microsoft&apos;s sign-in page. Sign in there; this window updates by itself.</source>
+        <translation>Microsoft&apos;un giriş sayfası tarayıcıda açıldı. Orada giriş yap; bu pencere kendiliğinden güncellenir.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Done</source>
+        <translation>Bitti</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Open browser again</source>
+        <translation>Tarayıcıyı yeniden aç</translation>
     </message>
     <message>
         <location line="+7"/>
-        <source>Sign in again</source>
-        <translation>Yeniden giriş yap</translation>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+</context>
+<context>
+    <name>AccountStates</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountStates.qml" line="+25"/>
+        <source>Your sign-in has expired. Sign in again to play online.</source>
+        <translation>Girişinin süresi doldu. Çevrimiçi oynamak için yeniden giriş yap.</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Remove account…</source>
-        <translation>Hesabı kaldır…</translation>
+        <location line="+1"/>
+        <source>Kite could not check this account. Sign in again to play online.</source>
+        <translation>Kite bu hesabı doğrulayamadı. Çevrimiçi oynamak için yeniden giriş yap.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This account no longer exists. Remove it or use another account.</source>
+        <translation>Bu hesap artık yok. Hesabı kaldır ya da başka bir hesap kullan.</translation>
     </message>
 </context>
 <context>
@@ -314,7 +449,7 @@
 <context>
     <name>AccountsController</name>
     <message>
-        <location filename="../launcher/models/AccountsController.cpp" line="+274"/>
+        <location filename="../launcher/models/AccountsController.cpp" line="+348"/>
         <source>Skin images must be 64x64 or 64x32 pixel PNG files.</source>
         <translation>Skin görselleri 64x64 veya 64x32 piksellik PNG dosyaları olmalı.</translation>
     </message>
@@ -338,113 +473,57 @@
     </message>
 </context>
 <context>
-    <name>AccountsPage</name>
+    <name>AccountsHeader</name>
     <message>
-        <location filename="../launcher/qml/Components/AccountsPage.qml" line="+46"/>
-        <source>Demo</source>
-        <translation>Demo</translation>
-    </message>
-    <message>
-        <location line="+86"/>
-        <location line="+8"/>
-        <source>The cape could not be changed.</source>
-        <translation>Pelerin değiştirilemedi.</translation>
-    </message>
-    <message>
-        <location line="+24"/>
-        <source>Games launch with the default account.</source>
-        <translation>Oyunlar varsayılan hesapla başlar.</translation>
-    </message>
-    <message>
-        <location line="+280"/>
-        <location line="+80"/>
-        <source>Sign in with Microsoft</source>
-        <translation>Microsoft ile giriş yap</translation>
-    </message>
-    <message>
-        <location line="-66"/>
-        <location line="+17"/>
-        <source>Add offline account</source>
-        <translation>Çevrimdışı hesap ekle</translation>
-    </message>
-    <message>
-        <location line="-206"/>
+        <location filename="../launcher/qml/Components/AccountsHeader.qml" line="+31"/>
         <source>Default account</source>
         <translation>Varsayılan hesap</translation>
     </message>
     <message>
-        <location line="-1"/>
-        <source>%1  ·  %2</source>
-        <translation>%1  ·  %2</translation>
+        <location line="+6"/>
+        <source>Games launch with the default account.</source>
+        <translation>Oyunlar varsayılan hesapla başlar.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Suggested default</source>
-        <translation>Önerilen varsayılan</translation>
+        <source>No default account chosen yet.</source>
+        <translation>Henüz varsayılan hesap seçilmedi.</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Microsoft</source>
-        <translation>Microsoft</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Offline</source>
-        <translation>Çevrimdışı</translation>
-    </message>
-    <message>
-        <location line="+15"/>
-        <source>Offline only: online-mode servers and custom skins need a Microsoft account.</source>
-        <translation>Yalnızca çevrimdışı: çevrimiçi modlu sunucular ve özel skinler için Microsoft hesabı gerekir.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>Use this account</source>
-        <translation>Bu hesabı kullan</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Skin and cape</source>
-        <translation>Skin ve pelerin</translation>
+        <location line="+11"/>
+        <source>Add account</source>
+        <translation>Hesap ekle</translation>
     </message>
     <message>
         <location line="+7"/>
-        <source>More</source>
-        <translation>Daha fazla</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Sign in again</source>
-        <translation>Yeniden giriş yap</translation>
+        <source>Microsoft account</source>
+        <translation>Microsoft hesabı</translation>
     </message>
     <message>
         <location line="+5"/>
-        <source>Remove account…</source>
-        <translation>Hesabı kaldır…</translation>
+        <source>Offline account</source>
+        <translation>Çevrimdışı hesap</translation>
+    </message>
+</context>
+<context>
+    <name>AccountsPage</name>
+    <message>
+        <location filename="../launcher/qml/Components/AccountsPage.qml" line="-88"/>
+        <source>Demo</source>
+        <translation>Demo</translation>
     </message>
     <message>
-        <location line="+4"/>
-        <location line="+90"/>
+        <location line="+109"/>
         <source>Remove “%1” from Kite? You can sign in again at any time.</source>
         <translation>“%1” Kite&apos;tan kaldırılsın mı? İstediğin zaman yeniden giriş yapabilirsin.</translation>
     </message>
     <message>
-        <location line="-73"/>
-        <source>Cape</source>
-        <translation>Pelerin</translation>
-    </message>
-    <message>
-        <location line="+20"/>
-        <source>No cape</source>
-        <translation>Pelerin yok</translation>
-    </message>
-    <message>
-        <location line="+37"/>
+        <location line="+58"/>
         <source>Other accounts</source>
         <translation>Diğer hesaplar</translation>
     </message>
     <message>
-        <location line="+38"/>
+        <location line="+44"/>
         <source>No accounts yet</source>
         <translation>Henüz hesap yok</translation>
     </message>
@@ -454,7 +533,12 @@
         <translation>Çevrimiçi oynamaya başlamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+1"/>
+        <source>Sign in with Microsoft</source>
+        <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>Remove account</source>
         <translation>Hesabı kaldır</translation>
     </message>
@@ -462,77 +546,6 @@
         <location line="+1"/>
         <source>Remove</source>
         <translation>Kaldır</translation>
-    </message>
-    <message>
-        <location line="+30"/>
-        <source>The name shown in game. Offline accounts cannot join online-mode servers.</source>
-        <translation>Oyunda görünen ad. Çevrimdışı hesaplar çevrimiçi modlu sunuculara katılamaz.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Username</source>
-        <translation>Kullanıcı adı</translation>
-    </message>
-    <message>
-        <location line="-333"/>
-        <location line="+304"/>
-        <source>Add account</source>
-        <translation>Hesap ekle</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Offline accounts need a Microsoft account that owns the game first, and a name no other offline account uses.</source>
-        <translation>Çevrimdışı hesap için önce oyuna sahip bir Microsoft hesabı gerekir; ayrıca başka hiçbir çevrimdışı hesabın kullanmadığı bir ad seçmelisin.</translation>
-    </message>
-    <message>
-        <location line="+111"/>
-        <source>Cancel</source>
-        <translation>İptal</translation>
-    </message>
-    <message>
-        <location line="-45"/>
-        <source>Signed in. You&apos;re ready to play.</source>
-        <translation>Giriş yapıldı. Oynamaya hazırsın.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Sign-in failed.</source>
-        <translation>Giriş başarısız.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Continue in your browser…</source>
-        <translation>Tarayıcıda devam et…</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>A browser window opened on Microsoft&apos;s sign-in page. Sign in there; this window updates by itself.</source>
-        <translation>Microsoft&apos;un giriş sayfası tarayıcıda açıldı. Orada giriş yap; bu pencere kendiliğinden güncellenir.</translation>
-    </message>
-    <message>
-        <location line="+15"/>
-        <source>Done</source>
-        <translation>Bitti</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Try again</source>
-        <translation>Tekrar dene</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Open browser again</source>
-        <translation>Tarayıcıyı yeniden aç</translation>
-    </message>
-    <message>
-        <location line="-409"/>
-        <source>Microsoft account</source>
-        <translation>Microsoft hesabı</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Offline account</source>
-        <translation>Çevrimdışı hesap</translation>
     </message>
 </context>
 <context>
@@ -551,7 +564,7 @@
 <context>
     <name>AppMenuBar</name>
     <message>
-        <location filename="../launcher/qml/Components/AppMenuBar.qml" line="+27"/>
+        <location filename="../launcher/qml/Components/AppMenuBar.qml" line="+28"/>
         <source>File</source>
         <translation>Dosya</translation>
     </message>
@@ -566,17 +579,17 @@
         <translation>Kurulumu içe aktar…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+8"/>
         <source>Settings…</source>
         <translation>Ayarlar…</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+9"/>
         <source>Help</source>
         <translation>Yardım</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+20"/>
         <source>Check for updates…</source>
         <translation>Güncellemeleri denetle…</translation>
     </message>
@@ -585,11 +598,16 @@
         <source>About Kite</source>
         <translation>Kite hakkında</translation>
     </message>
+    <message>
+        <location line="-11"/>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+    </message>
 </context>
 <context>
     <name>Application</name>
     <message>
-        <location filename="../launcher/Application.cpp" line="+1565"/>
+        <location filename="../launcher/Application.cpp" line="+1571"/>
         <source>Backup Restoring</source>
         <translation>Yedek geri yükleniyor</translation>
     </message>
@@ -692,7 +710,7 @@ Ayrıntılar şu güncelleme günlüğünde:
         <translation>Güncelleme tamamlandı</translation>
     </message>
     <message>
-        <location line="+193"/>
+        <location line="+268"/>
         <source>Kite could not start</source>
         <translation>Kite başlatılamadı</translation>
     </message>
@@ -814,7 +832,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>BackupController</name>
     <message>
-        <location filename="../launcher/models/BackupController.cpp" line="+292"/>
+        <location filename="../launcher/models/BackupController.cpp" line="+307"/>
         <source>Creating backup…</source>
         <translation>Yedek oluşturuluyor…</translation>
     </message>
@@ -834,7 +852,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Geri yükle</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+24"/>
         <source>Deleting backup…</source>
         <translation>Yedek siliniyor…</translation>
     </message>
@@ -844,7 +862,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+22"/>
         <source>Exporting backup…</source>
         <translation>Yedek dışa aktarılıyor…</translation>
     </message>
@@ -867,7 +885,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>BackupJobTask</name>
     <message>
-        <location line="-167"/>
+        <location line="-190"/>
         <source>The operation failed. See the launcher log for details.</source>
         <translation>İşlem başarısız oldu. Ayrıntılar için başlatıcı günlüğüne bak.</translation>
     </message>
@@ -908,30 +926,31 @@ Ayrıntılar günlük dosyasında:
         <translation>Bu kurulumun mevcut içeriği “%1” yedeğiyle değiştirilsin mi? Bu işlem geri alınamaz.</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+20"/>
         <source>Import…</source>
         <translation>İçe aktar…</translation>
     </message>
     <message>
-        <location line="+6"/>
-        <location line="+125"/>
+        <location line="+7"/>
+        <location line="+124"/>
+        <location line="+9"/>
         <source>Create backup</source>
         <translation>Yedek oluştur</translation>
     </message>
     <message>
-        <location line="-116"/>
+        <location line="-124"/>
         <source>The game is running. Backups can be restored once it has closed.</source>
         <translation>Oyun çalışıyor. Yedekler oyun kapandıktan sonra geri yüklenebilir.</translation>
     </message>
     <message>
         <location line="+10"/>
-        <location line="+49"/>
-        <location line="+75"/>
+        <location line="+51"/>
+        <location line="+81"/>
         <source>Restore</source>
         <translation>Geri yükle</translation>
     </message>
     <message>
-        <location line="-124"/>
+        <location line="-132"/>
         <location line="+11"/>
         <source>Working…</source>
         <translation>Çalışıyor…</translation>
@@ -942,13 +961,13 @@ Ayrıntılar günlük dosyasında:
         <translation>Başarısız.</translation>
     </message>
     <message>
-        <location line="+42"/>
-        <location line="+80"/>
+        <location line="+44"/>
+        <location line="+86"/>
         <source>Close the game before restoring a backup.</source>
         <translation>Yedeği geri yüklemeden önce oyunu kapat.</translation>
     </message>
     <message>
-        <location line="-73"/>
+        <location line="-79"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -963,7 +982,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Sil…</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Delete the backup “%1”? This cannot be undone.</source>
         <translation>“%1” yedeği silinsin mi? Bu işlem geri alınamaz.</translation>
     </message>
@@ -978,7 +997,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Yedek, bu kurulumun dünyaları ve modlarıyla birlikte tamamının zip dosyasıdır; sonradan geri yükleyebilirsin.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+11"/>
         <source>Optional label</source>
         <translation>İsteğe bağlı etiket</translation>
     </message>
@@ -998,7 +1017,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Yedeği geri yükle</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+17"/>
         <source>Delete backup</source>
         <translation>Yedeği sil</translation>
     </message>
@@ -1008,7 +1027,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+24"/>
         <source>Import backup</source>
         <translation>Yedeği içe aktar</translation>
     </message>
@@ -1027,6 +1046,21 @@ Ayrıntılar günlük dosyasında:
         <location line="+10"/>
         <source>Export backup</source>
         <translation>Yedeği dışa aktar</translation>
+    </message>
+    <message>
+        <location line="-102"/>
+        <source>Move the backup “%1” to the trash?</source>
+        <translation>“%1” yedeği çöp kutusuna taşınsın mı?</translation>
+    </message>
+    <message>
+        <location line="+67"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Backup deleted.</source>
+        <translation>Yedek silindi.</translation>
     </message>
 </context>
 <context>
@@ -1266,7 +1300,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ComponentUpdateTask</name>
     <message>
-        <location filename="../launcher/qml/Components/VersionTab.qml" line="+32"/>
+        <location filename="../launcher/qml/Components/VersionTab.qml" line="+39"/>
         <location filename="../launcher/minecraft/ComponentUpdateTask.cpp" line="+504"/>
         <source>Instance has unresolved dependencies while loading/checking for launch.</source>
         <translation>Kurulumun, yüklenirken veya başlatma için denetlenirken çözülmemiş bağımlılıkları var.</translation>
@@ -1331,9 +1365,42 @@ Ayrıntılar günlük dosyasında:
     </message>
 </context>
 <context>
+    <name>ContentBrowseSelectionBar</name>
+    <message>
+        <location filename="../launcher/qml/Components/ContentBrowseSelectionBar.qml" line="+58"/>
+        <source>Installing %1 of %2: %3</source>
+        <translation>%1 / %2 yükleniyor: %3</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Installing…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 selected</source>
+        <translation>%1 seçili</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Stop the rest</source>
+        <translation>Kalanları durdur</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Install (%1)</source>
+        <translation>Yükle (%1)</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Clear selection</source>
+        <translation>Seçimi temizle</translation>
+    </message>
+</context>
+<context>
     <name>ContentBrowser</name>
     <message>
-        <location filename="../launcher/models/ContentBrowser.cpp" line="+337"/>
+        <location filename="../launcher/models/ContentBrowser.cpp" line="+389"/>
         <source>This build has no CurseForge API key configured, so CurseForge cannot be searched.</source>
         <translation>Bu sürümde CurseForge API anahtarı ayarlanmamış, bu yüzden CurseForge&apos;da arama yapılamıyor.</translation>
     </message>
@@ -1341,7 +1408,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentBrowserView</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentBrowserView.qml" line="+71"/>
+        <location filename="../launcher/qml/Components/ContentBrowserView.qml" line="+81"/>
         <source>The game is running. Mods can be installed once it closes.</source>
         <translation>Oyun çalışıyor. Modlar oyun kapandıktan sonra yüklenebilir.</translation>
     </message>
@@ -1351,12 +1418,32 @@ Ayrıntılar günlük dosyasında:
         <translation>Bu kurulumun ortak veri paketi klasörü kapalı.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+10"/>
         <source>This version cannot be installed here.</source>
         <translation>Bu sürüm buraya yüklenemez.</translation>
     </message>
     <message>
         <location line="+45"/>
+        <source>%1 could not be installed.</source>
+        <translation>%1 içerik yüklenemedi.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Showing every version</source>
+        <translation>Tüm sürümler gösteriliyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Showing what fits %1</source>
+        <translation>%1 için uygun olanlar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Showing what fits %1, any version</source>
+        <translation>%1 için uygun olanlar, tüm sürümler</translation>
+    </message>
+    <message>
+        <location line="+22"/>
         <source>Mods</source>
         <translation>Modlar</translation>
     </message>
@@ -1376,12 +1463,22 @@ Ayrıntılar günlük dosyasında:
         <translation>Veri paketleri</translation>
     </message>
     <message>
-        <location line="+85"/>
+        <location line="+137"/>
         <source>Add content</source>
         <translation>İçerik ekle</translation>
     </message>
+    <message>
+        <location line="+16"/>
+        <source>Modpacks</source>
+        <translation>Mod paketleri</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Modpacks are installed as a new instance. Opens Discover.</source>
+        <translation>Mod paketleri yeni bir kurulum olarak yüklenir. Keşfet&apos;i açar.</translation>
+    </message>
     <message numerus="yes">
-        <location line="+31"/>
+        <location line="+21"/>
         <source>%n installing</source>
         <translation>
             <numerusform>%n yükleniyor</numerusform>
@@ -1408,12 +1505,12 @@ Ayrıntılar günlük dosyasında:
         <translation>Ara: %1</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>Sort by</source>
         <translation>Sıralama</translation>
     </message>
     <message>
-        <location line="+85"/>
+        <location line="+138"/>
         <source>Search failed</source>
         <translation>Arama başarısız</translation>
     </message>
@@ -1427,6 +1524,11 @@ Ayrıntılar günlük dosyasında:
         <source>Try other words, fewer filters, or the other site.</source>
         <translation>Başka sözcükler, daha az filtre ya da diğer siteyi dene.</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
 </context>
 <context>
     <name>ContentDownloadTask</name>
@@ -1439,7 +1541,7 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentDrop</name>
     <message>
-        <location filename="../launcher/models/ContentDrop.cpp" line="+355"/>
+        <location filename="../launcher/models/ContentDrop.cpp" line="+376"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -1692,17 +1794,22 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentProjectPanel</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentProjectPanel.qml" line="+73"/>
+        <location filename="../launcher/qml/Components/ContentProjectPanel.qml" line="+80"/>
         <source>by %1</source>
         <translation>Yapımcı: %1</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
+        <source>Open its page in the browser</source>
+        <translation>Sayfasını tarayıcıda aç</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+38"/>
         <source>Versions</source>
         <translation>Sürümler</translation>
     </message>
@@ -1752,22 +1859,28 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>ContentResultRow</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentResultRow.qml" line="+128"/>
+        <location filename="../launcher/qml/Components/ContentResultRow.qml" line="+125"/>
+        <source>Select %1</source>
+        <translation>%1 seç</translation>
+    </message>
+    <message>
+        <location line="+49"/>
         <source>by %1</source>
         <translation>Yapımcı: %1</translation>
     </message>
     <message>
         <location line="+8"/>
+        <location line="+35"/>
         <source>Installing…</source>
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-34"/>
         <source>Checking what it needs…</source>
         <translation>İhtiyaçları denetleniyor…</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+23"/>
         <source>Failed</source>
         <translation>Başarısız</translation>
     </message>
@@ -1776,11 +1889,26 @@ Ayrıntılar günlük dosyasında:
         <source>Installed</source>
         <translation>Yüklendi</translation>
     </message>
+    <message>
+        <location line="+12"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Install %1</source>
+        <translation>%1 yükle</translation>
+    </message>
+    <message>
+        <location line="-2"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
 </context>
 <context>
     <name>ContentSelectionBar</name>
     <message>
-        <location filename="../launcher/qml/Components/ContentSelectionBar.qml" line="+55"/>
+        <location filename="../launcher/qml/Components/ContentSelectionBar.qml" line="+73"/>
         <source>Select all</source>
         <translation>Tümünü seç</translation>
     </message>
@@ -1958,7 +2086,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Oyun çalışıyor. %1, oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+77"/>
+        <location line="+81"/>
         <location line="+5"/>
         <source>Kite Performance could not be set up for this instance.</source>
         <translation>Kite Performans bu kurulum için ayarlanamadı.</translation>
@@ -1984,30 +2112,28 @@ Ayrıntılar günlük dosyasında:
         <translation>%1 %2 eklendi.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+28"/>
         <source>Remove this file from the instance? It is deleted.</source>
         <translation>Bu dosya kurulumdan kaldırılsın mı? Dosya silinir.</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-3"/>
         <source>Remove %1 %2 from this instance? The files are deleted.</source>
         <translation>%1 %2 bu kurulumdan kaldırılsın mı? Dosyalar silinir.</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+70"/>
         <source>Search %1</source>
         <translation>%1 ara</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <location line="+26"/>
-        <location line="+46"/>
+        <location line="+9"/>
+        <location line="+85"/>
         <source>Check for updates</source>
         <translation>Güncellemeleri denetle</translation>
     </message>
     <message>
-        <location line="-66"/>
-        <location line="+32"/>
+        <location line="-52"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
@@ -2017,7 +2143,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+19"/>
         <source>Add from file…</source>
         <translation>Dosyadan ekle…</translation>
     </message>
@@ -2027,7 +2153,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Yapılandırma klasörünü aç</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+22"/>
         <source>Verify dependencies</source>
         <translation>Bağımlılıkları doğrula</translation>
     </message>
@@ -2042,13 +2168,12 @@ Ayrıntılar günlük dosyasında:
         <translation>Listeyi dışa aktar…</translation>
     </message>
     <message>
-        <location line="-77"/>
-        <location line="+102"/>
+        <location line="-52"/>
         <source>Add-ons</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+63"/>
         <source>Add content</source>
         <translation>İçerik ekle</translation>
     </message>
@@ -2078,7 +2203,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Göster</translation>
     </message>
     <message>
-        <location line="+79"/>
+        <location line="+83"/>
         <source>No content</source>
         <translation>İçerik yok</translation>
     </message>
@@ -2109,18 +2234,19 @@ Ayrıntılar günlük dosyasında:
         <translation>Paket dosyaları (*.zip)</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="-325"/>
+        <location line="+333"/>
         <location line="+1"/>
         <source>Remove</source>
         <translation>Kaldır</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="-316"/>
         <source>Some files could not be removed. Is the game running?</source>
         <translation>Bazı dosyalar kaldırılamadı. Oyun çalışıyor olabilir mi?</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+322"/>
         <source>Install a mod loader?</source>
         <translation>Mod yükleyici yüklensin mi?</translation>
     </message>
@@ -2144,11 +2270,56 @@ Ayrıntılar günlük dosyasında:
         <source>List copied.</source>
         <translation>Liste kopyalandı.</translation>
     </message>
+    <message>
+        <location line="-446"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Move %1 %2 to the trash?</source>
+        <translation>%1 %2 çöp kutusuna taşınsın mı?</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Remove “%1” from this instance? The file is deleted.</source>
+        <translation>“%1” bu kurulumdan kaldırılsın mı? Dosya silinir.</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>“%1” removed.</source>
+        <translation>“%1” kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>File removed.</source>
+        <translation>Dosya kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 %2 removed.</source>
+        <translation>%1 %2 kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+65"/>
+        <source>1 update found. Check again</source>
+        <translation>1 güncelleme bulundu. Yeniden denetle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 updates found. Check again</source>
+        <translation>%1 güncelleme bulundu. Yeniden denetle</translation>
+    </message>
+    <message>
+        <location line="+73"/>
+        <source>Update all (%1)</source>
+        <translation>Hepsini güncelle (%1)</translation>
+    </message>
 </context>
 <context>
     <name>ContentUpdateController</name>
     <message>
-        <location filename="../launcher/models/ContentUpdateController.cpp" line="+405"/>
+        <location filename="../launcher/models/ContentUpdateController.cpp" line="+453"/>
         <source>Already checking for updates.</source>
         <translation>Güncellemeler zaten denetleniyor.</translation>
     </message>
@@ -2159,25 +2330,25 @@ Ayrıntılar günlük dosyasında:
     </message>
     <message>
         <location line="+4"/>
-        <location line="+246"/>
+        <location line="+265"/>
         <source>The game is running. Check again once it has closed.</source>
         <translation>Oyun çalışıyor. Kapandıktan sonra tekrar denetle.</translation>
     </message>
     <message>
-        <location line="-241"/>
-        <location line="+246"/>
+        <location line="-260"/>
+        <location line="+265"/>
         <location line="+32"/>
         <location line="+30"/>
         <source>This instance has no Minecraft version set.</source>
         <translation>Bu kurulumda Minecraft sürümü ayarlanmamış.</translation>
     </message>
     <message>
-        <location line="-290"/>
+        <location line="-309"/>
         <source>None of these were installed from Modrinth or CurseForge, so there is nothing to check. Files added from Add content can be checked.</source>
         <translation>Bunların hiçbiri Modrinth veya CurseForge&apos;dan yüklenmemiş, bu yüzden denetlenecek bir şey yok. İçerik ekle bölümünden eklenen dosyalar denetlenebilir.</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+33"/>
         <source>Checking for updates</source>
         <translation>Güncellemeler denetleniyor</translation>
     </message>
@@ -2279,7 +2450,7 @@ Ayrıntılar günlük dosyasında:
         <translation>İhtiyaçları denetleniyor…</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+47"/>
         <location line="+14"/>
         <source>Installed the missing dependencies.</source>
         <translation>Eksik bağımlılıklar yüklendi.</translation>
@@ -3067,17 +3238,18 @@ Ayrıntılar günlük dosyasında:
         <translation>Dünya</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+20"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
         <location line="+9"/>
+        <location line="+126"/>
         <source>Add from file…</source>
         <translation>Dosyadan ekle…</translation>
     </message>
     <message>
-        <location line="+41"/>
+        <location line="-83"/>
         <source>Enable %1</source>
         <translation>%1 etkinleştir</translation>
     </message>
@@ -3102,7 +3274,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Kaldır…</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+9"/>
         <source>Remove “%1” from this world? The file is deleted.</source>
         <translation>“%1” bu dünyadan kaldırılsın mı? Dosya silinir.</translation>
     </message>
@@ -3117,7 +3289,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Kaldır</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+19"/>
         <source>No worlds yet</source>
         <translation>Henüz dünya yok</translation>
     </message>
@@ -3137,7 +3309,7 @@ Ayrıntılar günlük dosyasında:
         <translation>Veri paketleri bu dünyanın tariflerini, ganimetini ve daha fazlasını değiştirir. Başlamak için bir .zip ekle.</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+10"/>
         <source>Add data pack</source>
         <translation>Veri paketi ekle</translation>
     </message>
@@ -3150,6 +3322,16 @@ Ayrıntılar günlük dosyasında:
         <location line="+0"/>
         <source>All files (*)</source>
         <translation>Tüm dosyalar (*)</translation>
+    </message>
+    <message>
+        <location line="-32"/>
+        <source>Data pack removed.</source>
+        <translation>Veri paketi kaldırıldı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The data pack could not be removed. Is the game running?</source>
+        <translation>Veri paketi kaldırılamadı. Oyun çalışıyor olabilir mi?</translation>
     </message>
 </context>
 <context>
@@ -3187,12 +3369,12 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>DiscoverPage</name>
     <message>
-        <location filename="../launcher/qml/Components/DiscoverPage.qml" line="+66"/>
+        <location filename="../launcher/qml/Components/DiscoverPage.qml" line="+86"/>
         <source>Any loader</source>
         <translation>Herhangi bir yükleyici</translation>
     </message>
     <message>
-        <location line="+96"/>
+        <location line="+115"/>
         <source>Browse modpacks on</source>
         <translation>Mod paketlerine göz atma kaynağı</translation>
     </message>
@@ -3222,7 +3404,7 @@ Ayrıntılar günlük dosyasında:
         <translation>CurseForge, FTB, ATLauncher veya Technic&apos;ten dışa aktarılmış bir paketi içe aktar</translation>
     </message>
     <message>
-        <location line="+91"/>
+        <location line="+118"/>
         <source>Couldn&apos;t reach %1</source>
         <translation>%1 erişilemedi</translation>
     </message>
@@ -3260,12 +3442,12 @@ Ayrıntılar günlük dosyasında:
 <context>
     <name>DropOverlay</name>
     <message>
-        <location filename="../launcher/qml/Components/DropOverlay.qml" line="+24"/>
+        <location filename="../launcher/qml/Components/DropOverlay.qml" line="+26"/>
         <source>Drop to add</source>
         <translation>Eklemek için bırak</translation>
     </message>
     <message>
-        <location line="+86"/>
+        <location line="+88"/>
         <source>→ you will pick a world</source>
         <translation>→ bir dünya seçeceksin</translation>
     </message>
@@ -3994,7 +4176,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bu sürümde CurseForge API anahtarı yok, bu yüzden CurseForge&apos;da arama yapılamıyor.</translation>
     </message>
     <message>
-        <location line="+303"/>
+        <location line="+320"/>
         <source>This build has no CurseForge API key.</source>
         <translation>Bu sürümde CurseForge API anahtarı yok.</translation>
     </message>
@@ -4273,12 +4455,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendChatComposer</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendChatComposer.qml" line="+85"/>
+        <location filename="../launcher/qml/Components/FriendChatComposer.qml" line="+99"/>
         <source>You are sending messages too fast. Wait %1 s.</source>
         <translation>Çok hızlı mesaj gönderiyorsun. %1 sn bekle.</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+46"/>
         <location line="+1"/>
         <source>Message %1</source>
         <translation>%1 ile mesajlaş</translation>
@@ -4348,7 +4530,7 @@ Lütfen tekrar dene.</translation>
         <translation>Eski mesajlar yükleniyor…</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+67"/>
         <source>Loading messages…</source>
         <translation>Mesajlar yükleniyor…</translation>
     </message>
@@ -4417,7 +4599,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendChatView</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendChatView.qml" line="+102"/>
+        <location filename="../launcher/qml/Components/FriendChatView.qml" line="+103"/>
         <source>%1 is not on your friends list any more, so you can&apos;t message them.</source>
         <translation>%1 artık arkadaş listende değil, bu yüzden mesaj gönderemezsin.</translation>
     </message>
@@ -4468,7 +4650,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendInviteCard</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendInviteCard.qml" line="+42"/>
+        <location filename="../launcher/qml/Components/FriendInviteCard.qml" line="+46"/>
         <source>%1 invited you to %2</source>
         <translation>%1 seni %2 sunucusuna davet etti</translation>
     </message>
@@ -4478,12 +4660,12 @@ Lütfen tekrar dene.</translation>
         <translation>%1 seni davet etti</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+40"/>
         <source>Dismiss</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+16"/>
         <source>Join</source>
         <translation>Katıl</translation>
     </message>
@@ -4682,7 +4864,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendPersonMenu</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+59"/>
+        <location filename="../launcher/qml/Components/FriendPersonMenu.qml" line="+60"/>
         <source>Message</source>
         <translation>Mesaj gönder</translation>
     </message>
@@ -4697,12 +4879,12 @@ Lütfen tekrar dene.</translation>
         <translation>Daveti geri al</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+11"/>
         <source>Remove friend…</source>
         <translation>Arkadaşlıktan çıkar…</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Block…</source>
         <translation>Engelle…</translation>
     </message>
@@ -4814,7 +4996,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendRow</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendRow.qml" line="+46"/>
+        <location filename="../launcher/qml/Components/FriendRow.qml" line="+53"/>
         <source>%1, %2</source>
         <translation>%1, %2</translation>
     </message>
@@ -4833,19 +5015,47 @@ Lütfen tekrar dene.</translation>
     </message>
 </context>
 <context>
-    <name>FriendsBlockedTab</name>
+    <name>FriendsAddField</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsBlockedTab.qml" line="+43"/>
-        <source>BLOCKED — %1</source>
-        <translation>ENGELLENENLER — %1</translation>
+        <location filename="../launcher/qml/Components/FriendsAddField.qml" line="+29"/>
+        <source>A Minecraft name has 1 to 16 letters, numbers or underscores.</source>
+        <translation>Minecraft adı 1 ile 16 arasında harf, rakam ya da alt çizgiden oluşur.</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+1"/>
+        <source>That is your own name.</source>
+        <translation>Bu senin kendi adın.</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Add a friend by name</source>
+        <translation>Adıyla arkadaş ekle</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Minecraft name of the friend to add</source>
+        <translation>Eklenecek arkadaşın Minecraft adı</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>Sending…</source>
+        <translation>Gönderiliyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsBlockedTab</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsBlockedTab.qml" line="+78"/>
         <source>Unblock</source>
         <translation>Engeli kaldır</translation>
     </message>
     <message>
-        <location line="-21"/>
+        <location line="-33"/>
         <source>No one is blocked</source>
         <translation>Engellenen kimse yok</translation>
     </message>
@@ -4853,6 +5063,21 @@ Lütfen tekrar dene.</translation>
         <location line="+1"/>
         <source>Someone you block cannot send you requests or see when you are online. They are not told.</source>
         <translation>Engellediğin kişi sana istek gönderemez ve senin çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Blocked · %1</source>
+        <translation>Engellenen · %1</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Can&apos;t send you requests or see you online</source>
+        <translation>Sana istek gönderemez, çevrimiçi olduğunu göremez</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Unblock %1</source>
+        <translation>%1 engelini kaldır</translation>
     </message>
 </context>
 <context>
@@ -4927,7 +5152,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsController</name>
     <message>
-        <location filename="../launcher/friends/FriendsActions.cpp" line="+64"/>
+        <location filename="../launcher/friends/FriendsActions.cpp" line="+65"/>
         <location filename="../launcher/friends/FriendsInviteActions.cpp" line="+260"/>
         <location filename="../launcher/friends/FriendsRealtime.cpp" line="+63"/>
         <source>Friends is turned off</source>
@@ -4944,7 +5169,7 @@ Lütfen tekrar dene.</translation>
         <translation>bu oyuncu</translation>
     </message>
     <message>
-        <location line="+45"/>
+        <location line="+88"/>
         <source>No Kite player is called %1. Ask them to get Kite at kiteclient.com.</source>
         <translation>%1 adında bir Kite oyuncusu yok. Kite&apos;ı kiteclient.com adresinden indirmesini iste.</translation>
     </message>
@@ -4979,13 +5204,13 @@ Lütfen tekrar dene.</translation>
         <translation>Bu senin kendi adın</translation>
     </message>
     <message>
-        <location line="+14"/>
-        <location line="+24"/>
+        <location line="+16"/>
+        <location line="+29"/>
         <source>%1 is now your friend</source>
         <translation>%1 artık arkadaşın</translation>
     </message>
     <message>
-        <location line="-21"/>
+        <location line="-25"/>
         <source>Friend request sent to %1</source>
         <translation>%1 kişisine arkadaşlık isteği gönderildi</translation>
     </message>
@@ -4995,24 +5220,24 @@ Lütfen tekrar dene.</translation>
         <translation>%1 kişisine zaten istek gönderdin</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+20"/>
+        <location line="+21"/>
         <location line="+18"/>
-        <location line="+15"/>
         <source>That friend request is gone</source>
         <translation>Bu arkadaşlık isteği artık yok</translation>
     </message>
     <message>
-        <location line="-17"/>
+        <location line="-20"/>
         <source>Request declined</source>
         <translation>İstek reddedildi</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+18"/>
         <source>Request cancelled</source>
         <translation>İstek iptal edildi</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+19"/>
         <source>%1 is no longer your friend</source>
         <translation>%1 artık arkadaşın değil</translation>
     </message>
@@ -5023,7 +5248,7 @@ Lütfen tekrar dene.</translation>
         <translation>%1 arkadaşın değil</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+52"/>
         <source>%1 is blocked</source>
         <translation>%1 engellendi</translation>
     </message>
@@ -5033,7 +5258,7 @@ Lütfen tekrar dene.</translation>
         <translation>Bu adda bir Kite oyuncusu yok</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+19"/>
         <source>%1 is unblocked</source>
         <translation>%1 kişisinin engeli kaldırıldı</translation>
     </message>
@@ -5295,23 +5520,54 @@ Lütfen tekrar dene.</translation>
         <source>Your friends need Kite too. Add them by their Minecraft name.</source>
         <translation>Arkadaşlarının da Kite kullanması gerekir. Onları Minecraft adıyla ekle.</translation>
     </message>
+    <message>
+        <location line="+2"/>
+        <source>Add a friend</source>
+        <translation>Arkadaş ekle</translation>
+    </message>
 </context>
 <context>
     <name>FriendsFriendsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+47"/>
-        <source>IN GAME — %1</source>
-        <translation>OYUNDA — %1</translation>
+        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+65"/>
+        <source>In game · %1</source>
+        <translation>Oyunda · %1</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>IN KITE — %1</source>
-        <translation>KITE&apos;TA — %1</translation>
+        <location line="+11"/>
+        <source>In Kite · %1</source>
+        <translation>Kite&apos;ta · %1</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>OFFLINE — %1</source>
-        <translation>ÇEVRİMDIŞI — %1</translation>
+        <location line="+9"/>
+        <source>Offline · %1</source>
+        <translation>Çevrimdışı · %1</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsGroup</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsGroup.qml" line="+67"/>
+        <source>Message</source>
+        <translation>Mesaj gönder</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message %1</source>
+        <translation>%1 ile mesajlaş</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsListScroll</name>
+    <message>
+        <location filename="../launcher/qml/Components/FriendsListScroll.qml" line="+78"/>
+        <source>No one called “%1”</source>
+        <translation>“%1” adında kimse yok</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Clear search</source>
+        <translation>Aramayı temizle</translation>
     </message>
 </context>
 <context>
@@ -5372,7 +5628,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsPage</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPage.qml" line="+107"/>
+        <location filename="../launcher/qml/Components/FriendsPage.qml" line="+117"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
@@ -5386,11 +5642,26 @@ Lütfen tekrar dene.</translation>
         <source>Blocked</source>
         <translation>Engellenenler</translation>
     </message>
+    <message>
+        <location line="+17"/>
+        <source>Search requests</source>
+        <translation>İstek ara</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Search blocked people</source>
+        <translation>Engellenen ara</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Search friends</source>
+        <translation>Arkadaş ara</translation>
+    </message>
 </context>
 <context>
     <name>FriendsPageState</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPageState.qml" line="+37"/>
+        <location filename="../launcher/qml/Components/FriendsPageState.qml" line="+47"/>
         <source>Connecting…</source>
         <translation>Bağlanıyor…</translation>
     </message>
@@ -5405,7 +5676,7 @@ Lütfen tekrar dene.</translation>
         <translation>Arkadaşlık için giriş yap</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>Can&apos;t connect</source>
         <translation>Bağlanılamadı</translation>
     </message>
@@ -5415,7 +5686,7 @@ Lütfen tekrar dene.</translation>
         <translation>Arkadaşlarının hangi sunucuda olduğunu gör, izin verirlerse yanlarına katıl. Arkadaşlık kapalıyken Kite hiçbir şey göndermez.</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+5"/>
         <source>Friends could not connect.</source>
         <translation>Arkadaşlık sunucusuna bağlanılamadı.</translation>
     </message>
@@ -5439,26 +5710,21 @@ Lütfen tekrar dene.</translation>
         <source>Trying…</source>
         <translation>Deneniyor…</translation>
     </message>
+    <message>
+        <location line="-10"/>
+        <source>You&apos;re offline</source>
+        <translation>Çevrimdışısın</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Friends comes back when your connection does.</source>
+        <translation>Bağlantın gelince Arkadaşlar da geri gelir.</translation>
+    </message>
 </context>
 <context>
     <name>FriendsPanelFull</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+107"/>
-        <source>IN GAME — %1</source>
-        <translation>OYUNDA — %1</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>IN KITE — %1</source>
-        <translation>KITE&apos;TA — %1</translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <source>OFFLINE — %1</source>
-        <translation>ÇEVRİMDIŞI — %1</translation>
-    </message>
-    <message>
-        <location line="+17"/>
+        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+156"/>
         <source>Add friends who use Kite to see where they play.</source>
         <translation>Kite kullanan arkadaşlarını ekle, nerede oynadıklarını gör.</translation>
     </message>
@@ -5466,6 +5732,21 @@ Lütfen tekrar dene.</translation>
         <location line="+4"/>
         <source>Add a friend</source>
         <translation>Arkadaş ekle</translation>
+    </message>
+    <message>
+        <location line="-50"/>
+        <source>In game · %1</source>
+        <translation>Oyunda · %1</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>In Kite · %1</source>
+        <translation>Kite&apos;ta · %1</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Offline · %1</source>
+        <translation>Çevrimdışı · %1</translation>
     </message>
 </context>
 <context>
@@ -5560,17 +5841,12 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsRequestsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsRequestsTab.qml" line="+60"/>
+        <location filename="../launcher/qml/Components/FriendsRequestsTab.qml" line="+80"/>
         <source>Wants to be your friend</source>
         <translation>Seninle arkadaş olmak istiyor</translation>
     </message>
     <message>
-        <location line="-10"/>
-        <source>INCOMING — %1</source>
-        <translation>GELEN — %1</translation>
-    </message>
-    <message>
-        <location line="+15"/>
+        <location line="+7"/>
         <source>Accept</source>
         <translation>Kabul et</translation>
     </message>
@@ -5580,22 +5856,7 @@ Lütfen tekrar dene.</translation>
         <translation>Reddet</translation>
     </message>
     <message>
-        <location line="+21"/>
-        <source>SENT — %1</source>
-        <translation>GÖNDERİLEN — %1</translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>Request sent</source>
-        <translation>İstek gönderildi</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Cancel</source>
-        <translation>İptal</translation>
-    </message>
-    <message>
-        <location line="-73"/>
+        <location line="-45"/>
         <source>No friend requests</source>
         <translation>Arkadaşlık isteği yok</translation>
     </message>
@@ -5604,11 +5865,46 @@ Lütfen tekrar dene.</translation>
         <source>Requests you get, and requests you send, wait here until they are answered.</source>
         <translation>Aldığın ve gönderdiğin istekler yanıtlanana kadar burada bekler.</translation>
     </message>
+    <message>
+        <location line="+10"/>
+        <source>Incoming · %1</source>
+        <translation>Gelen · %1</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Accept %1</source>
+        <translation>%1 isteğini kabul et</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Decline %1</source>
+        <translation>%1 isteğini reddet</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>Sent · %1</source>
+        <translation>Gönderilen · %1</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Waiting for their answer</source>
+        <translation>Cevabı bekleniyor</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Cancel request</source>
+        <translation>İsteği iptal et</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Cancel the request to %1</source>
+        <translation>%1 adlı kişiye gönderdiğin isteği iptal et</translation>
+    </message>
 </context>
 <context>
     <name>FriendsSelfCard</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsSelfCard.qml" line="+43"/>
+        <location filename="../launcher/qml/Components/FriendsSelfCard.qml" line="+40"/>
         <source>Invisible</source>
         <translation>Görünmez</translation>
     </message>
@@ -5653,30 +5949,20 @@ Lütfen tekrar dene.</translation>
         <translation>Çevrimiçi · arkadaşların seni görebilir</translation>
     </message>
     <message>
-        <location line="+85"/>
-        <source>Add a friend by name</source>
-        <translation>Adıyla arkadaş ekle</translation>
+        <location line="+61"/>
+        <source>Privacy</source>
+        <translation>Gizlilik</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Minecraft name of the friend to add</source>
-        <translation>Eklenecek arkadaşın Minecraft adı</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Add</source>
-        <translation>Ekle</translation>
-    </message>
-    <message>
-        <location line="+9"/>
-        <source>A Minecraft name has 1 to 16 letters, numbers or underscores.</source>
-        <translation>Minecraft adı 1 ile 16 arasında harf, rakam ya da alt çizgiden oluşur.</translation>
+        <location line="+2"/>
+        <source>Friends privacy settings</source>
+        <translation>Arkadaşlar gizlilik ayarları</translation>
     </message>
 </context>
 <context>
     <name>FriendsStaleBar</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsStaleBar.qml" line="+18"/>
+        <location filename="../launcher/qml/Components/FriendsStaleBar.qml" line="+19"/>
         <source>Can&apos;t update friends right now. Showing them as of %1.</source>
         <translation>Arkadaşlar şu an güncellenemiyor. %1 itibarıyla gösteriliyor.</translation>
     </message>
@@ -5740,6 +6026,29 @@ Lütfen tekrar dene.</translation>
         <location line="+76"/>
         <source>This modpack is not in the loaded list.</source>
         <translation>Bu mod paketi yüklenen listede yok.</translation>
+    </message>
+</context>
+<context>
+    <name>GalleryStrip</name>
+    <message>
+        <location filename="../launcher/qml/Components/GalleryStrip.qml" line="+68"/>
+        <source>Picture %1</source>
+        <translation>Görsel %1</translation>
+    </message>
+    <message>
+        <location line="+38"/>
+        <source>Previous</source>
+        <translation>Önceki</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Next</source>
+        <translation>Sonraki</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>%1 / %2</source>
+        <translation>%1 / %2</translation>
     </message>
 </context>
 <context>
@@ -6019,7 +6328,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>GameType</name>
     <message>
-        <location filename="../launcher/qml/Components/WorldsTab.qml" line="+69"/>
+        <location filename="../launcher/qml/Components/WorldsTab.qml" line="+82"/>
         <location filename="../launcher/minecraft/World.cpp" line="+64"/>
         <source>Survival</source>
         <translation>Hayatta Kalma</translation>
@@ -6069,25 +6378,67 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>GettingStartedCard</name>
     <message>
-        <location filename="../launcher/qml/Components/GettingStartedCard.qml" line="+43"/>
+        <location filename="../launcher/qml/Components/GettingStartedCard.qml" line="+82"/>
         <source>Done</source>
         <translation>Bitti</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+45"/>
         <source>Set up Kite</source>
         <translation>Kite&apos;ı kur</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="-98"/>
         <source>Sign in with Microsoft</source>
         <translation>Microsoft ile giriş yap</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Sign in</source>
+        <translation>Giriş yap</translation>
+    </message>
+</context>
+<context>
+    <name>GroupDialogs</name>
+    <message>
+        <location filename="../launcher/qml/Components/GroupDialogs.qml" line="+29"/>
+        <source>Delete the group “%1”? Its instances stay in your library, without a group.</source>
+        <translation>“%1” grubu silinsin mi? Kurulumları kütüphanende, grupsuz olarak kalır.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Rename group</source>
+        <translation>Grubu yeniden adlandır</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Rename</source>
+        <translation>Yeniden adlandır</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <location line="+1"/>
+        <source>Delete group</source>
+        <translation>Grubu sil</translation>
+    </message>
+</context>
+<context>
+    <name>GroupMenu</name>
+    <message>
+        <location filename="../launcher/qml/Components/GroupMenu.qml" line="+22"/>
+        <source>Rename group…</source>
+        <translation>Grubu yeniden adlandır…</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Delete group…</source>
+        <translation>Grubu sil…</translation>
     </message>
 </context>
 <context>
     <name>HomeCalmRow</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeCalmRow.qml" line="+116"/>
+        <location filename="../launcher/qml/Components/HomeCalmRow.qml" line="+120"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -6095,7 +6446,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeContinuePlaying</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeContinuePlaying.qml" line="+152"/>
+        <location filename="../launcher/qml/Components/HomeContinuePlaying.qml" line="+133"/>
         <source>Continue playing</source>
         <translation>Oynamaya devam et</translation>
     </message>
@@ -6103,7 +6454,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeEmptyState</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeEmptyState.qml" line="+22"/>
+        <location filename="../launcher/qml/Components/HomeEmptyState.qml" line="+34"/>
         <source>No instances yet</source>
         <translation>Henüz kurulum yok</translation>
     </message>
@@ -6126,7 +6477,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeFriends</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeFriends.qml" line="+55"/>
+        <location filename="../launcher/qml/Components/HomeFriends.qml" line="+56"/>
         <source>Friends</source>
         <translation>Arkadaşlar</translation>
     </message>
@@ -6285,7 +6636,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomeJumpCard</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+165"/>
+        <location filename="../launcher/qml/Components/HomeJumpCard.qml" line="+164"/>
         <source>New</source>
         <translation>Yeni</translation>
     </message>
@@ -6308,14 +6659,24 @@ Lütfen tekrar dene.</translation>
         <translation>Kurulumları sırala: %1</translation>
     </message>
     <message>
-        <location line="+27"/>
-        <source>Group instances</source>
-        <translation>Kurulumları grupla</translation>
-    </message>
-    <message>
-        <location line="+13"/>
+        <location line="+55"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
+    </message>
+    <message>
+        <location line="-27"/>
+        <source>Group by</source>
+        <translation>Gruplama</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>None</source>
+        <translation>Yok</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Group</source>
+        <translation>Grup</translation>
     </message>
 </context>
 <context>
@@ -6337,7 +6698,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../launcher/qml/Components/HomePage.qml" line="+215"/>
+        <location filename="../launcher/qml/Components/HomePage.qml" line="+228"/>
         <source>Library</source>
         <translation>Kütüphane</translation>
     </message>
@@ -6357,20 +6718,20 @@ Lütfen tekrar dene.</translation>
         <translation>“%1” ile eşleşen kurulum yok</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Check the spelling, or search for part of the name.</source>
-        <translation>Yazımı denetle ya da adın bir kısmını ara.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>Clear search</source>
         <translation>Aramayı temizle</translation>
+    </message>
+    <message>
+        <location line="-1"/>
+        <source>Check the spelling, or search by name, group, version or loader.</source>
+        <translation>Yazımı denetle ya da ad, grup, sürüm veya yükleyiciyle ara.</translation>
     </message>
 </context>
 <context>
     <name>HomeRowPlay</name>
     <message>
-        <location filename="../launcher/qml/Components/HomeRowPlay.qml" line="+38"/>
+        <location filename="../launcher/qml/Components/HomeRowPlay.qml" line="+60"/>
         <source>Stop</source>
         <translation>Durdur</translation>
     </message>
@@ -6514,28 +6875,18 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceCard</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+71"/>
-        <location line="+81"/>
+        <location filename="../launcher/qml/Components/InstanceCard.qml" line="+74"/>
+        <location line="+95"/>
         <source>Running</source>
         <translation>Çalışıyor</translation>
     </message>
     <message>
-        <location line="+33"/>
-        <source>Stop</source>
-        <translation>Durdur</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Play</source>
-        <translation>Oyna</translation>
-    </message>
-    <message>
-        <location line="+16"/>
+        <location line="+50"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="-39"/>
+        <location line="-40"/>
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
@@ -6543,7 +6894,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceContentController</name>
     <message>
-        <location filename="../launcher/models/InstanceContentController.cpp" line="+575"/>
+        <location filename="../launcher/models/InstanceContentController.cpp" line="+630"/>
         <source>No file was chosen.</source>
         <translation>Hiç dosya seçilmedi.</translation>
     </message>
@@ -6582,7 +6933,7 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>InstanceDetails</name>
     <message>
-        <location filename="../launcher/models/InstanceDetails.cpp" line="+297"/>
+        <location filename="../launcher/models/InstanceDetails.cpp" line="+319"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>
     </message>
@@ -6592,7 +6943,7 @@ Lütfen tekrar dene.</translation>
         <translation>Dünyayı kopyala</translation>
     </message>
     <message>
-        <location line="+149"/>
+        <location line="+151"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -6602,7 +6953,7 @@ Lütfen tekrar dene.</translation>
         <translation>Dünya ekle</translation>
     </message>
     <message>
-        <location line="+68"/>
+        <location line="+86"/>
         <source>That world is no longer in the list.</source>
         <translation>Bu dünya artık listede yok.</translation>
     </message>
@@ -7012,7 +7363,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>%1 kurulumu</translation>
     </message>
     <message>
-        <location line="+1644"/>
+        <location line="+1704"/>
         <source>Could not remove a file the updated pack no longer includes: %1</source>
         <translation>Güncellenen paketin artık içermediği bir dosya kaldırılamadı: %1</translation>
     </message>
@@ -7020,7 +7371,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstanceListRow</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+66"/>
+        <location filename="../launcher/qml/Components/InstanceListRow.qml" line="+69"/>
         <source>Running</source>
         <translation>Çalışıyor</translation>
     </message>
@@ -7053,22 +7404,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Aç</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
-        <location line="+6"/>
-        <source>Open .minecraft folder</source>
-        <translation>.minecraft klasörünü aç</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Open mods folder</source>
-        <translation>Mod klasörünü aç</translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location line="+25"/>
         <source>Rename…</source>
         <translation>Yeniden adlandır…</translation>
     </message>
@@ -7083,12 +7424,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Grubu değiştir…</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Duplicate…</source>
         <translation>Kopyala…</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+18"/>
         <source>Export…</source>
         <translation>Dışa aktar…</translation>
     </message>
@@ -7098,14 +7439,39 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Kod olarak paylaş…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+7"/>
         <source>Create shortcut…</source>
         <translation>Kısayol oluştur…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+7"/>
         <source>Delete…</source>
         <translation>Sil…</translation>
+    </message>
+    <message>
+        <location line="-76"/>
+        <source>Instance folder</source>
+        <translation>Kurulum klasörü</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>.minecraft folder</source>
+        <translation>.minecraft klasörü</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Mods folder</source>
+        <translation>Mod klasörü</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Edit</source>
+        <translation>Düzenle</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Share</source>
+        <translation>Paylaş</translation>
     </message>
 </context>
 <context>
@@ -7124,7 +7490,7 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
 <context>
     <name>InstancePage</name>
     <message>
-        <location filename="../launcher/qml/Components/InstancePage.qml" line="+157"/>
+        <location filename="../launcher/qml/Components/InstancePage.qml" line="+163"/>
         <source>Content</source>
         <translation>İçerik</translation>
     </message>
@@ -7185,12 +7551,12 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
     </message>
     <message>
         <location line="+4"/>
-        <location line="+323"/>
+        <location line="+368"/>
         <source>Plugins</source>
         <translation>Eklentiler</translation>
     </message>
     <message>
-        <location line="-201"/>
+        <location line="-227"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -7205,47 +7571,37 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>%1, %2%</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+46"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+181"/>
+        <location line="+192"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
-        <location line="+6"/>
-        <source>Open .minecraft folder</source>
-        <translation>.minecraft klasörünü aç</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Open mods folder</source>
-        <translation>Mod klasörünü aç</translation>
-    </message>
-    <message>
-        <location line="+9"/>
+        <location line="+33"/>
         <source>Rename…</source>
         <translation>Yeniden adlandır…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>Change icon…</source>
         <translation>Simgeyi değiştir…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>Change group…</source>
         <translation>Grubu değiştir…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+7"/>
         <source>Duplicate…</source>
         <translation>Kopyala…</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+17"/>
         <source>Export…</source>
         <translation>Dışa aktar…</translation>
     </message>
@@ -7255,20 +7611,50 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <translation>Kod olarak paylaş…</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+7"/>
         <source>Create shortcut…</source>
         <translation>Kısayol oluştur…</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Delete…</source>
         <translation>Sil…</translation>
+    </message>
+    <message>
+        <location line="-305"/>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location line="+218"/>
+        <source>Instance folder</source>
+        <translation>Kurulum klasörü</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>.minecraft folder</source>
+        <translation>.minecraft klasörü</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Mods folder</source>
+        <translation>Mod klasörü</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Edit</source>
+        <translation>Düzenle</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Share</source>
+        <translation>Paylaş</translation>
     </message>
 </context>
 <context>
     <name>InstanceSection</name>
     <message>
-        <location filename="../launcher/qml/Components/InstanceSection.qml" line="+155"/>
+        <location filename="../launcher/qml/Components/InstanceSection.qml" line="+83"/>
         <source>Collapsed</source>
         <translation>Daraltıldı</translation>
     </message>
@@ -7281,16 +7667,6 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <location line="+58"/>
         <source>Group options</source>
         <translation>Grup seçenekleri</translation>
-    </message>
-    <message>
-        <location line="+45"/>
-        <source>Rename group…</source>
-        <translation>Grubu yeniden adlandır…</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Delete group…</source>
-        <translation>Grubu sil…</translation>
     </message>
 </context>
 <context>
@@ -7983,6 +8359,194 @@ Kurulumu başlattığında indirilecekler.</translation>
     </message>
 </context>
 <context>
+    <name>KeyMap</name>
+    <message>
+        <location filename="../launcher/qml/Components/KeyMap.qml" line="+25"/>
+        <source>Navigation</source>
+        <translation>Gezinme</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Library</source>
+        <translation>Kütüphane</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Instance</source>
+        <translation>Kurulum</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Log</source>
+        <translation>Günlük</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Chat</source>
+        <translation>Sohbet</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Back</source>
+        <translation>Geri</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Forward</source>
+        <translation>İleri</translation>
+    </message>
+    <message>
+        <location line="-1"/>
+        <source>Mouse back button</source>
+        <translation>Farenin geri tuşu</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Mouse forward button</source>
+        <translation>Farenin ileri tuşu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Go to Home</source>
+        <translation>Ana sayfaya git</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Go to Discover</source>
+        <translation>Keşfet&apos;e git</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Settings</source>
+        <translation>Ayarlar</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Close a dialog or menu</source>
+        <translation>Pencereyi veya menüyü kapat</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Search the library</source>
+        <translation>Kütüphanede ara</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New instance</source>
+        <translation>Yeni kurulum</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Play the selected instance</source>
+        <translation>Seçili kurulumu oyna</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Move between instances</source>
+        <translation>Kurulumlar arasında gez</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Open the instance</source>
+        <translation>Kurulumu aç</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Select the instance</source>
+        <translation>Kurulumu seç</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Open the instance&apos;s menu</source>
+        <translation>Kurulumun menüsünü aç</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Play this instance</source>
+        <translation>Bu kurulumu oyna</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Clear the selection, leave Add content</source>
+        <translation>Seçimi temizle, İçerik ekle&apos;den çık</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Find in the log</source>
+        <translation>Günlükte bul</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Next match</source>
+        <translation>Sonraki eşleşme</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Previous match</source>
+        <translation>Önceki eşleşme</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Send the message</source>
+        <translation>Mesajı gönder</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New line</source>
+        <translation>Yeni satır</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Close the conversation</source>
+        <translation>Sohbeti kapat</translation>
+    </message>
+    <message>
+        <location line="+34"/>
+        <source>Ctrl</source>
+        <translation>Ctrl</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Alt</source>
+        <translation>Alt</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Shift</source>
+        <translation>Shift</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Return</source>
+        <translation>Return</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Enter</source>
+        <translation>Enter</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Space</source>
+        <translation>Boşluk</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Esc</source>
+        <translation>Esc</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Menu</source>
+        <translation>Menü</translation>
+    </message>
+</context>
+<context>
     <name>KiteExternalUpdater</name>
     <message>
         <location filename="../launcher/updater/KiteExternalUpdater.cpp" line="+207"/>
@@ -8175,7 +8739,7 @@ flatpak update %1</translation>
         <translation>JVM bağımsız değişkenleri uyarısı</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+27"/>
         <source>No Accounts</source>
         <translation>Hesap yok</translation>
     </message>
@@ -8185,17 +8749,19 @@ flatpak update %1</translation>
         <translation>Minecraft oynamak için en az bir Microsoft hesabıyla giriş yapmış olman gerekir. Hesap eklemek için hesap yöneticisini şimdi açalım mı?</translation>
     </message>
     <message>
-        <location line="+191"/>
+        <location line="+197"/>
         <source>Play Demo</source>
         <translation>Demo oyna</translation>
     </message>
     <message>
         <location line="+1"/>
+        <location line="+72"/>
+        <location line="+14"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
-        <location line="-160"/>
+        <location line="-252"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -8205,12 +8771,12 @@ flatpak update %1</translation>
         <translation>Varsayılan hesap ayarlanmamış. Oynamak için birini seç.</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+19"/>
         <source>No account selected for launch.</source>
         <translation>Başlatmak için seçili hesap yok.</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>Offline accounts need a Microsoft account that owns Minecraft to be signed in to Kite.</source>
         <translation>Çevrimdışı hesaplar için Kite&apos;ta Minecraft&apos;a sahip bir Microsoft hesabıyla giriş yapılmış olmalı.</translation>
     </message>
@@ -8224,7 +8790,7 @@ This could be caused by a password change.</source>
 Bunun sebebi bir parola değişikliği olabilir.</translation>
     </message>
     <message>
-        <location line="+72"/>
+        <location line="+74"/>
         <source>Player name</source>
         <translation>Oyuncu adı</translation>
     </message>
@@ -8234,7 +8800,7 @@ Bunun sebebi bir parola değişikliği olabilir.</translation>
         <translation>Çevrimdışı mod oyuncu adını seç.</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+27"/>
         <source>Received undetermined session status during login.</source>
         <translation>Girişte belirsiz bir oturum durumu alındı.</translation>
     </message>
@@ -8255,12 +8821,12 @@ Oynamak için önce oyunu satın alman gerekir.
 Demoyu oynamak ister misin?</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>Launch cancelled - account does not own Minecraft.</source>
         <translation>Başlatma iptal edildi - hesap Minecraft&apos;a sahip değil.</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+32"/>
         <source>Refreshing account…</source>
         <translation>Hesap yenileniyor…</translation>
     </message>
@@ -8275,34 +8841,34 @@ Demoyu oynamak ister misin?</translation>
         <translation>Hesabın süresi dolmuş, elle yeniden giriş yapılması gerekiyor.</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+4"/>
         <source>Account refresh failed</source>
         <translation>Hesap yenilenemedi</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+10"/>
         <source>The account no longer exists on the servers. It may have been migrated, in which case please add the new account you migrated this one to.</source>
         <translation>Hesap artık sunucularda yok. Başka bir hesaba taşınmış olabilir; öyleyse taşıdığın yeni hesabı ekle.</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+4"/>
         <source>Account gone</source>
         <translation>Hesap kayıp</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+11"/>
         <source>Failed to launch.</source>
         <translation>Başlatılamadı.</translation>
     </message>
     <message>
         <location line="+9"/>
-        <location line="+145"/>
+        <location line="+146"/>
         <source>Error!</source>
         <translation>Hata!</translation>
     </message>
     <message>
-        <location line="-144"/>
-        <location line="+2"/>
+        <location line="-145"/>
+        <location line="+3"/>
         <source>Couldn&apos;t load the instance profile.</source>
         <translation>Kurulum profili yüklenemedi.</translation>
     </message>
@@ -8341,7 +8907,7 @@ Demoyu oynamak ister misin?</translation>
         <translation>Profil oluşturucu başlatılamadı: %1</translation>
     </message>
     <message>
-        <location line="+59"/>
+        <location line="+65"/>
         <source>Already stopping</source>
         <translation>Zaten durduruluyor</translation>
     </message>
@@ -8351,7 +8917,7 @@ Demoyu oynamak ister misin?</translation>
         <translation>Kite bu kurulumu zaten kapatıyor. Birkaç saniye bekle; oyun yanıt vermezse otomatik olarak zorla kapatılır.</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+12"/>
         <source>Can&apos;t kill Minecraft</source>
         <translation>Minecraft zorla kapatılamıyor</translation>
     </message>
@@ -8361,7 +8927,7 @@ Demoyu oynamak ister misin?</translation>
         <translation>Bu kurulum, başlatma sürecinin kesilemeyen bir noktasında. Lütfen biraz sonra tekrar dene.</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+11"/>
         <source>Kill Minecraft?</source>
         <translation>Minecraft zorla kapatılsın mı?</translation>
     </message>
@@ -8369,6 +8935,80 @@ Demoyu oynamak ister misin?</translation>
         <location line="+1"/>
         <source>This can cause the instance to get corrupted and should only be used if Minecraft is frozen for some reason</source>
         <translation>Bu, kurulumun bozulmasına yol açabilir; yalnızca Minecraft herhangi bir sebeple donduysa kullan.</translation>
+    </message>
+    <message>
+        <location line="-295"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Open Accounts</source>
+        <translation>Hesaplar&apos;ı aç</translation>
+    </message>
+    <message>
+        <location line="+262"/>
+        <source>Can&apos;t cancel right now</source>
+        <translation>Şu an iptal edilemiyor</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Kite is in the middle of a step that can&apos;t be stopped. Try again in a moment.</source>
+        <translation>Kite şu an durdurulamayan bir adımın ortasında. Birazdan tekrar dene.</translation>
+    </message>
+</context>
+<context>
+    <name>LaunchFailure</name>
+    <message>
+        <location filename="../launcher/launch/LaunchFailure.cpp" line="+34"/>
+        <source>Sign in to play</source>
+        <translation>Oynamak için giriş yap</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 wasn&apos;t started because the account can&apos;t be used to play yet. Sign in on the Accounts page, then press Play again.</source>
+        <translation>%1 başlatılmadı çünkü bu hesapla henüz oynanamıyor. Hesaplar sayfasından giriş yap, sonra tekrar Oyna&apos;ya bas.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Sign in</source>
+        <translation>Giriş yap</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Couldn&apos;t sign in</source>
+        <translation>Giriş yapılamadı</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 wasn&apos;t started because Kite couldn&apos;t check your account. Check your internet connection and try again.</source>
+        <translation>%1 başlatılmadı çünkü Kite hesabını kontrol edemedi. İnternet bağlantına bakıp tekrar dene.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <location line="+9"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="-4"/>
+        <source>Couldn&apos;t start %1</source>
+        <translation>%1 başlatılamadı</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The game didn&apos;t open: Kite ran into a problem while getting it ready.</source>
+        <translation>Oyun açılmadı: Kite oyunu hazırlarken bir sorun çıktı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Show log</source>
+        <translation>Günlüğü göster</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Reason: %1</source>
+        <translation>Sebep: %1</translation>
     </message>
 </context>
 <context>
@@ -8404,7 +9044,7 @@ Demoyu oynamak ister misin?</translation>
         <translation>Kite Performans</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+12"/>
         <source>Profiler</source>
         <translation>Profil oluşturucu</translation>
     </message>
@@ -8539,32 +9179,29 @@ Neden:
     </message>
 </context>
 <context>
-    <name>LibrarySections</name>
+    <name>LibraryGroupChips</name>
     <message>
-        <location filename="../launcher/qml/Components/LibrarySections.qml" line="+139"/>
+        <location filename="../launcher/qml/Components/LibraryGroupChips.qml" line="+46"/>
+        <source>All</source>
+        <translation>Tümü</translation>
+    </message>
+    <message>
+        <location line="+4"/>
         <source>Ungrouped</source>
         <translation>Grupsuz</translation>
     </message>
     <message>
-        <location line="+22"/>
-        <source>Delete the group “%1”? Its instances stay in your library, without a group.</source>
-        <translation>“%1” grubu silinsin mi? Kurulumları kütüphanende, grupsuz olarak kalır.</translation>
+        <location line="+41"/>
+        <source>Group options</source>
+        <translation>Grup seçenekleri</translation>
     </message>
+</context>
+<context>
+    <name>LibrarySections</name>
     <message>
-        <location line="+78"/>
-        <source>Rename group</source>
-        <translation>Grubu yeniden adlandır</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Rename</source>
-        <translation>Yeniden adlandır</translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <location line="+1"/>
-        <source>Delete group</source>
-        <translation>Grubu sil</translation>
+        <location filename="../launcher/qml/Components/LibrarySections.qml" line="+155"/>
+        <source>Ungrouped</source>
+        <translation>Grupsuz</translation>
     </message>
 </context>
 <context>
@@ -8841,6 +9478,60 @@ Neden:
     </message>
 </context>
 <context>
+    <name>LooseDropFlow</name>
+    <message>
+        <location filename="../launcher/qml/Components/LooseDropFlow.qml" line="+45"/>
+        <source>Drop to add to %1</source>
+        <translation>%1 kurulumuna eklemek için bırak</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Drop to add to…</source>
+        <translation>Bir kuruluma eklemek için bırak…</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Drop to import as a new instance</source>
+        <translation>Yeni kurulum olarak içe aktarmak için bırak</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Create an instance first</source>
+        <translation>Önce bir kurulum oluştur</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <location line="+30"/>
+        <source>Nothing here to add</source>
+        <translation>Burada eklenecek bir şey yok</translation>
+    </message>
+    <message>
+        <location line="-12"/>
+        <source>Create an instance first, then drop these on it.</source>
+        <translation>Önce bir kurulum oluştur, sonra bunları onun üstüne bırak.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Importing the first pack. 1 other was skipped.</source>
+        <translation>İlk paket içe aktarılıyor. Diğer 1 paket atlandı.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Importing the first pack. %1 others were skipped.</source>
+        <translation>İlk paket içe aktarılıyor. Diğer %1 paket atlandı.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Add to which instance?</source>
+        <translation>Hangi kuruluma eklensin?</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+</context>
+<context>
     <name>MSAStep</name>
     <message>
         <location filename="../launcher/minecraft/auth/steps/MSAStep.cpp" line="+36"/>
@@ -8891,12 +9582,12 @@ Neden:
 <context>
     <name>Main</name>
     <message>
-        <location filename="../launcher/qml/Main.qml" line="+417"/>
+        <location filename="../launcher/qml/Main.qml" line="+484"/>
         <source>Another instance is still being set up. Try again once it is in your library.</source>
         <translation>Başka bir kurulum hâlâ hazırlanıyor. Kütüphanene gelince tekrar dene.</translation>
     </message>
     <message>
-        <location line="+58"/>
+        <location line="+66"/>
         <source>Sign in with the Microsoft account that owns Minecraft to play.</source>
         <translation>Oynamak için Minecraft&apos;a sahip Microsoft hesabıyla giriş yap.</translation>
     </message>
@@ -8911,27 +9602,28 @@ Neden:
         <translation>Modları göster</translation>
     </message>
     <message>
-        <location line="+47"/>
+        <location line="+51"/>
         <source>Delete “%1”? Its folder — worlds, mods, screenshots — is removed for good.</source>
         <translation>“%1” silinsin mi? Klasörü (dünyalar, modlar, ekran görüntüleri) tamamen kaldırılır.</translation>
     </message>
     <message>
-        <location line="+126"/>
-        <location line="+72"/>
-        <location line="+7"/>
+        <location line="+156"/>
+        <location line="+99"/>
+        <location line="+8"/>
         <location line="+0"/>
         <source>Home</source>
         <translation>Ana sayfa</translation>
     </message>
     <message>
-        <location line="-78"/>
-        <location line="+67"/>
+        <location line="-106"/>
+        <location line="+53"/>
+        <location line="+41"/>
         <source>Discover</source>
         <translation>Keşfet</translation>
     </message>
     <message>
-        <location line="-44"/>
-        <location line="+43"/>
+        <location line="-72"/>
+        <location line="+71"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
@@ -8951,7 +9643,7 @@ Neden:
         <translation>İçerik ekle</translation>
     </message>
     <message>
-        <location line="+387"/>
+        <location line="+474"/>
         <source>Rename instance</source>
         <translation>Kurulumu yeniden adlandır</translation>
     </message>
@@ -8986,7 +9678,7 @@ Neden:
         <translation>Taşı</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+15"/>
         <location line="+1"/>
         <source>Delete instance</source>
         <translation>Kurulumu sil</translation>
@@ -9016,6 +9708,21 @@ Neden:
         <location line="+6"/>
         <source>The instance could not be deleted. Is it running, or are its files in use?</source>
         <translation>Kurulum silinemedi. Çalışıyor olabilir mi ya da dosyaları kullanımda mı?</translation>
+    </message>
+    <message>
+        <location line="-785"/>
+        <source>Move “%1” to the trash? Its folder goes with it: worlds, mods, screenshots.</source>
+        <translation>“%1” çöp kutusuna taşınsın mı? Klasörü de onunla gider: dünyalar, modlar, ekran görüntüleri.</translation>
+    </message>
+    <message>
+        <location line="+764"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="-356"/>
+        <source>Still no connection.</source>
+        <translation>Hâlâ bağlantı yok.</translation>
     </message>
 </context>
 <context>
@@ -10245,11 +10952,16 @@ Kurulumun değişmedi.</translation>
         <source>Change</source>
         <translation>Değiştir</translation>
     </message>
+    <message>
+        <location line="+83"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
 </context>
 <context>
     <name>ModFolderModel</name>
     <message>
-        <location filename="../launcher/minecraft/mod/ModFolderModel.cpp" line="+419"/>
+        <location filename="../launcher/minecraft/mod/ModFolderModel.cpp" line="+430"/>
         <source>Folder</source>
         <translation>Klasör</translation>
     </message>
@@ -10590,7 +11302,7 @@ Kurulumun değişmedi.</translation>
 <context>
     <name>ModpackCard</name>
     <message>
-        <location filename="../launcher/qml/Components/ModpackCard.qml" line="+165"/>
+        <location filename="../launcher/qml/Components/ModpackCard.qml" line="+171"/>
         <source>by %1</source>
         <translation>Yapımcı: %1</translation>
     </message>
@@ -10604,53 +11316,51 @@ Kurulumun değişmedi.</translation>
         <source>Updated %1</source>
         <translation>Güncellendi: %1</translation>
     </message>
-</context>
-<context>
-    <name>ModpackDetail</name>
     <message>
-        <location filename="../launcher/qml/Components/ModpackDetail.qml" line="+171"/>
-        <source>Back to results</source>
-        <translation>Sonuçlara dön</translation>
-    </message>
-    <message>
-        <location line="+70"/>
-        <source>by %1</source>
-        <translation>Yapımcı: %1</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>%1 downloads</source>
-        <translation>%1 indirme</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>%1 followers</source>
-        <translation>%1 takipçi</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Updated %1</source>
-        <translation>Güncellendi: %1</translation>
-    </message>
-    <message>
-        <location line="+42"/>
-        <location line="+90"/>
+        <location line="+21"/>
         <source>Installing…</source>
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-90"/>
-        <location line="+45"/>
+        <location line="+1"/>
+        <source>Installed</source>
+        <translation>Yüklü</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+0"/>
         <source>Install</source>
         <translation>Yükle</translation>
     </message>
     <message>
-        <location line="-36"/>
-        <source>Show in library</source>
-        <translation>Kütüphanede göster</translation>
+        <location line="+2"/>
+        <source>Install %1</source>
+        <translation>%1 paketini yükle</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackContentsList</name>
+    <message numerus="yes">
+        <location filename="../launcher/qml/Components/ModpackContentsList.qml" line="+30"/>
+        <source>%n projects in %1</source>
+        <translation>
+            <numerusform>%1 sürümünde %n proje</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>ModpackDetail</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModpackDetail.qml" line="+61"/>
+        <source>Contents</source>
+        <translation>İçerik</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+96"/>
         <source>The install failed: %1</source>
         <translation>Yükleme başarısız: %1</translation>
     </message>
@@ -10660,7 +11370,84 @@ Kurulumun değişmedi.</translation>
         <translation>Yükleme başarısız.</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+63"/>
+        <source>This pack has no description.</source>
+        <translation>Bu paketin açıklaması yok.</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>This version does not list what it holds.</source>
+        <translation>Bu sürüm içinde ne olduğunu listelemiyor.</translation>
+    </message>
+    <message>
+        <location line="-195"/>
+        <source>Versions</source>
+        <translation>Sürümler</translation>
+    </message>
+    <message>
+        <location line="-2"/>
+        <source>Gallery</source>
+        <translation>Galeri</translation>
+    </message>
+    <message>
+        <location line="-2"/>
+        <source>Description</source>
+        <translation>Açıklama</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackDetailHeader</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModpackDetailHeader.qml" line="+118"/>
+        <source>by %1</source>
+        <translation>Yapımcı: %1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 downloads</source>
+        <translation>%1 indirme</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Updated %1</source>
+        <translation>Güncellendi: %1</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackDetailSidebar</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModpackDetailSidebar.qml" line="+28"/>
+        <source>Project page</source>
+        <translation>Proje sayfası</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Source code</source>
+        <translation>Kaynak kodu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Issue tracker</source>
+        <translation>Hata bildirimleri</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Wiki</source>
+        <translation>Wiki</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Discord</source>
+        <translation>Discord</translation>
+    </message>
+    <message>
+        <location line="+58"/>
+        <location line="+76"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
+    <message>
+        <location line="-71"/>
         <location line="+9"/>
         <source>Version</source>
         <translation>Sürüm</translation>
@@ -10676,18 +11463,24 @@ Kurulumun değişmedi.</translation>
         <translation>Sürüm bulunamadı</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+13"/>
         <location line="+6"/>
         <source>Instance name</source>
         <translation>Kurulum adı</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+12"/>
         <source>Installed</source>
         <translation>Yüklendi</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+1"/>
+        <location line="+30"/>
+        <source>Installing…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="-29"/>
         <source>Install failed</source>
         <translation>Yükleme başarısız</translation>
     </message>
@@ -10697,7 +11490,17 @@ Kurulumun değişmedi.</translation>
         <translation>“%1” kütüphanende.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+13"/>
+        <source>Show in library</source>
+        <translation>Kütüphanede göster</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Compatibility</source>
         <translation>Uyumluluk</translation>
     </message>
@@ -10717,7 +11520,12 @@ Kurulumun değişmedi.</translation>
         <translation>Yükleyiciler</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+35"/>
+        <source>Links</source>
+        <translation>Bağlantılar</translation>
+    </message>
+    <message>
+        <location line="+22"/>
         <source>Details</source>
         <translation>Ayrıntılar</translation>
     </message>
@@ -10738,18 +11546,57 @@ Kurulumun değişmedi.</translation>
     </message>
     <message>
         <location line="+7"/>
-        <source>Versions</source>
-        <translation>Sürümler</translation>
+        <source>License</source>
+        <translation>Lisans</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackGalleryGrid</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModpackGalleryGrid.qml" line="+41"/>
+        <source>Picture %1</source>
+        <translation>Görsel %1</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackTile</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModpackTile.qml" line="+110"/>
+        <source>by %1</source>
+        <translation>Yapımcı: %1</translation>
     </message>
     <message>
-        <location line="+20"/>
-        <source>Gallery</source>
-        <translation>Galeri</translation>
+        <location line="+45"/>
+        <source>Installing…</source>
+        <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="+53"/>
-        <source>Description</source>
-        <translation>Açıklama</translation>
+        <location line="+1"/>
+        <source>Installed</source>
+        <translation>Yüklendi</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Install %1</source>
+        <translation>%1 yükle</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackVersionList</name>
+    <message>
+        <location filename="../launcher/qml/Components/ModpackVersionList.qml" line="+47"/>
+        <source>Version %1</source>
+        <translation>Sürüm %1</translation>
     </message>
 </context>
 <context>
@@ -10922,7 +11769,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>NewInstanceDialog</name>
     <message>
-        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+63"/>
+        <location filename="../launcher/qml/Components/NewInstanceDialog.qml" line="+79"/>
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
@@ -10937,7 +11784,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Minecraft %1</translation>
     </message>
     <message>
-        <location line="+117"/>
+        <location line="+128"/>
         <source>Release</source>
         <translation>Kararlı sürüm</translation>
     </message>
@@ -10967,20 +11814,20 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Yeni kurulum</translation>
     </message>
     <message>
-        <location line="+73"/>
-        <location line="+510"/>
-        <location line="+29"/>
+        <location line="+79"/>
+        <location line="+544"/>
+        <location line="+28"/>
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
     <message>
-        <location line="-538"/>
-        <location line="+523"/>
+        <location line="-571"/>
+        <location line="+556"/>
         <source>Import</source>
         <translation>İçe aktar</translation>
     </message>
     <message>
-        <location line="-522"/>
+        <location line="-555"/>
         <source>Share code</source>
         <translation>Paylaşım kodu</translation>
     </message>
@@ -11020,7 +11867,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Tür</translation>
     </message>
     <message>
-        <location line="+61"/>
+        <location line="+82"/>
         <source>Minecraft version</source>
         <translation>Minecraft sürümü</translation>
     </message>
@@ -11045,18 +11892,18 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Önerilen</translation>
     </message>
     <message>
-        <location line="-125"/>
+        <location line="-146"/>
         <source>Loading…</source>
         <translation>Yükleniyor…</translation>
     </message>
     <message>
-        <location line="-399"/>
+        <location line="-428"/>
         <source>Pick a Minecraft version.</source>
         <translation>Bir Minecraft sürümü seç.</translation>
     </message>
     <message>
-        <location line="+1"/>
         <location line="+2"/>
+        <location line="+13"/>
         <location line="+3"/>
         <source>Give the instance a name.</source>
         <translation>Kuruluma bir ad ver.</translation>
@@ -11072,12 +11919,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Bir mod paketi dosyası seç ya da bağlantı yapıştır.</translation>
     </message>
     <message>
-        <location line="+395"/>
+        <location line="+413"/>
         <source>None for this version</source>
         <translation>Bu sürüm için yok</translation>
     </message>
     <message>
-        <location line="+247"/>
+        <location line="+280"/>
         <source>Drop a .zip or .mrpack file here</source>
         <translation>Buraya bir .zip veya .mrpack dosyası bırak</translation>
     </message>
@@ -11127,22 +11974,68 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Kurulum oluşturulamadı.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <location line="+46"/>
+        <location line="-630"/>
+        <location line="+677"/>
         <source>Importing…</source>
         <translation>İçe aktarılıyor…</translation>
     </message>
     <message>
-        <location line="-46"/>
-        <location line="+32"/>
-        <location line="+29"/>
+        <location line="-677"/>
+        <location line="+664"/>
+        <location line="+28"/>
         <source>Creating…</source>
         <translation>Oluşturuluyor…</translation>
     </message>
     <message>
-        <location line="-38"/>
+        <location line="-37"/>
         <source>Cancel</source>
         <translation>İptal</translation>
+    </message>
+    <message>
+        <location line="-810"/>
+        <source>Loading %1 versions…</source>
+        <translation>%1 sürümleri yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Couldn&apos;t load %1 versions. Try again, or pick another type.</source>
+        <translation>%1 sürümleri yüklenemedi. Tekrar dene ya da başka bir tür seç.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 isn&apos;t available for Minecraft %2. Pick another version or type.</source>
+        <translation>%1, Minecraft %2 için yok. Başka bir sürüm ya da tür seç.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Pick a %1 version.</source>
+        <translation>Bir %1 sürümü seç.</translation>
+    </message>
+    <message>
+        <location line="+144"/>
+        <source>Couldn&apos;t start creating the instance. Check the version and type, then try again.</source>
+        <translation>Kurulum oluşturma başlatılamadı. Sürümü ve türü kontrol edip tekrar dene.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Installing %1 %2 · %3</source>
+        <translation>%1 %2 kuruluyor · %3</translation>
+    </message>
+    <message>
+        <location line="+264"/>
+        <source>Couldn&apos;t load</source>
+        <translation>Yüklenemedi</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Couldn&apos;t load the %1 versions: %2</source>
+        <translation>%1 sürümleri yüklenemedi: %2</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <location line="+174"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
     </message>
 </context>
 <context>
@@ -11202,6 +12095,47 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="+35"/>
         <source>Unknown Author</source>
         <translation>Bilinmeyen yazar</translation>
+    </message>
+</context>
+<context>
+    <name>OfflineAccountDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineAccountDialog.qml" line="+18"/>
+        <source>Add offline account</source>
+        <translation>Çevrimdışı hesap ekle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Add account</source>
+        <translation>Hesap ekle</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Offline accounts need a Microsoft account that owns the game first, and a name no other offline account uses.</source>
+        <translation>Çevrimdışı hesap için önce oyuna sahip bir Microsoft hesabı gerekir; ayrıca başka hiçbir çevrimdışı hesabın kullanmadığı bir ad seçmelisin.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>The name shown in game. Offline accounts cannot join online-mode servers.</source>
+        <translation>Oyunda görünen ad. Çevrimdışı hesaplar çevrimiçi modlu sunuculara katılamaz.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Username</source>
+        <translation>Kullanıcı adı</translation>
+    </message>
+</context>
+<context>
+    <name>OfflineNotice</name>
+    <message>
+        <location filename="../launcher/qml/Components/OfflineNotice.qml" line="+39"/>
+        <source>You&apos;re offline. Installed instances still play; Discover and downloads need a connection.</source>
+        <translation>Çevrimdışısın. Yüklü kurulumlarını yine oynayabilirsin; Keşfet ve indirmeler için bağlantı gerek.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
     </message>
 </context>
 <context>
@@ -11511,12 +12445,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>dosya</translation>
     </message>
     <message>
-        <location line="+73"/>
-        <source>Remove “%1” from this instance? The file is deleted.</source>
-        <translation>“%1” bu kurulumdan kaldırılsın mı? Dosya silinir.</translation>
-    </message>
-    <message>
-        <location line="+59"/>
+        <location line="+138"/>
         <source>Select all</source>
         <translation>Tümünü seç</translation>
     </message>
@@ -11536,7 +12465,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>İşlemler</translation>
     </message>
     <message>
-        <location line="+41"/>
+        <location line="+52"/>
         <source>Problem</source>
         <translation>Sorun</translation>
     </message>
@@ -11546,7 +12475,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Uyarı</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>No matches</source>
         <translation>Eşleşme yok</translation>
     </message>
@@ -11556,10 +12485,9 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>“%1” ile eşleşen bir şey yok.</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <location line="+1"/>
-        <source>Remove</source>
-        <translation>Kaldır</translation>
+        <location line="-9"/>
+        <source>Update</source>
+        <translation>Güncelle</translation>
     </message>
 </context>
 <context>
@@ -11639,17 +12567,17 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PackRow</name>
     <message>
-        <location filename="../launcher/qml/Components/PackRow.qml" line="+58"/>
+        <location filename="../launcher/qml/Components/PackRow.qml" line="+69"/>
         <source>%1 · %2</source>
         <translation>%1 · %2</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+71"/>
         <source>Select %1</source>
         <translation>%1 seç</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+109"/>
         <source>Problem</source>
         <translation>Sorun</translation>
     </message>
@@ -11659,7 +12587,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Uyarı</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+32"/>
         <source>Enable %1</source>
         <translation>%1 etkinleştir</translation>
     </message>
@@ -11674,7 +12602,12 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Açıklama yok.</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="-132"/>
+        <source>by %1</source>
+        <translation>Yapımcı: %1</translation>
+    </message>
+    <message>
+        <location line="+169"/>
         <source>Authors</source>
         <translation>Yapımcılar</translation>
     </message>
@@ -11757,6 +12690,26 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="+7"/>
         <source>Remove…</source>
         <translation>Kaldır…</translation>
+    </message>
+    <message>
+        <location line="-258"/>
+        <source>%1 → %2</source>
+        <translation>%1 → %2</translation>
+    </message>
+    <message>
+        <location line="+39"/>
+        <source>→ %1</source>
+        <translation>→ %1</translation>
+    </message>
+    <message>
+        <location line="+42"/>
+        <source>Update</source>
+        <translation>Güncelle</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Update %1</source>
+        <translation>Güncelle: %1</translation>
     </message>
 </context>
 <context>
@@ -11927,17 +12880,20 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>PlayButton</name>
     <message>
-        <location filename="../launcher/qml/Components/PlayButton.qml" line="+30"/>
+        <location filename="../launcher/qml/Components/PlayButton.qml" line="+31"/>
+        <location line="+68"/>
         <source>Starting…</source>
         <translation>Başlıyor…</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-68"/>
+        <location line="+68"/>
         <source>Stop</source>
         <translation>Durdur</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-68"/>
+        <location line="+68"/>
         <source>Play</source>
         <translation>Oyna</translation>
     </message>
@@ -12115,6 +13071,14 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
     </message>
 </context>
 <context>
+    <name>PopularModpacks</name>
+    <message>
+        <location filename="../launcher/qml/Components/PopularModpacks.qml" line="+68"/>
+        <source>Popular modpacks</source>
+        <translation>Popüler mod paketleri</translation>
+    </message>
+</context>
+<context>
     <name>PostLaunchCommand</name>
     <message>
         <location filename="../launcher/launch/steps/PostLaunchCommand.cpp" line="+39"/>
@@ -12246,14 +13210,14 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>ProfileButton</name>
     <message>
-        <location filename="../launcher/qml/Components/ProfileButton.qml" line="+46"/>
+        <location filename="../launcher/qml/Components/ProfileButton.qml" line="+59"/>
         <source>Account menu: %1</source>
         <translation>Hesap menüsü: %1</translation>
     </message>
     <message>
         <location line="+0"/>
-        <location line="+7"/>
-        <location line="+44"/>
+        <location line="+9"/>
+        <location line="+58"/>
         <source>Sign in</source>
         <translation>Giriş yap</translation>
     </message>
@@ -12261,7 +13225,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
 <context>
     <name>ProfileMenu</name>
     <message>
-        <location filename="../launcher/qml/Components/ProfileMenu.qml" line="+110"/>
+        <location filename="../launcher/qml/Components/ProfileMenu.qml" line="+117"/>
         <source>Microsoft account</source>
         <translation>Microsoft hesabı</translation>
     </message>
@@ -12271,7 +13235,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Çevrimdışı hesap</translation>
     </message>
     <message>
-        <location line="+60"/>
+        <location line="+89"/>
         <source>Skin and cape</source>
         <translation>Skin ve pelerin</translation>
     </message>
@@ -12286,7 +13250,7 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <translation>Hesap ekle</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+20"/>
         <location line="+11"/>
         <location line="+2"/>
         <source>Sign out</source>
@@ -12296,6 +13260,21 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="-1"/>
         <source>Sign out of “%1”? You can sign in again at any time.</source>
         <translation>“%1” hesabından çıkış yapılsın mı? İstediğin zaman yeniden giriş yapabilirsin.</translation>
+    </message>
+    <message>
+        <location line="-109"/>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Open Accounts</source>
+        <translation>Hesaplar&apos;ı aç</translation>
+    </message>
+    <message>
+        <location line="+87"/>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
     </message>
 </context>
 <context>
@@ -13109,7 +14088,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
 <context>
     <name>QmlShell</name>
     <message>
-        <location filename="../launcher/qml/QmlShell.cpp" line="+484"/>
+        <location filename="../launcher/qml/QmlShell.cpp" line="+489"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -13119,7 +14098,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>%1 · Kite Performans</translation>
     </message>
     <message>
-        <location line="+419"/>
+        <location line="+431"/>
         <source>Choose an account</source>
         <translation>Bir hesap seç</translation>
     </message>
@@ -13129,7 +14108,7 @@ Ya kurulum sorunsuz çalıştı ya da çökme henüz ErrorOracle&apos;ın kural 
         <translation>Varsayılan hesap ayarlanmamış. Oynamak için birini seç.</translation>
     </message>
     <message>
-        <location line="+89"/>
+        <location line="+108"/>
         <source>Refreshing account…</source>
         <translation>Hesap yenileniyor…</translation>
     </message>
@@ -13305,7 +14284,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>QuickJoinSummary</name>
     <message>
-        <location filename="../launcher/qml/Components/QuickJoinSummary.qml" line="+30"/>
+        <location filename="../launcher/qml/Components/QuickJoinSummary.qml" line="+32"/>
         <source>Offline</source>
         <translation>Çevrimdışı</translation>
     </message>
@@ -13326,7 +14305,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
 <context>
     <name>RecentItem</name>
     <message>
-        <location filename="../launcher/qml/Components/RecentItem.qml" line="+153"/>
+        <location filename="../launcher/qml/Components/RecentItem.qml" line="+155"/>
         <source>Play</source>
         <translation>Oyna</translation>
     </message>
@@ -13438,6 +14417,74 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
     </message>
 </context>
 <context>
+    <name>ScreenshotViewer</name>
+    <message>
+        <location filename="../launcher/qml/Components/ScreenshotViewer.qml" line="+105"/>
+        <source>%1 of %2</source>
+        <translation>%1 / %2</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+    <message>
+        <location line="+77"/>
+        <source>Previous</source>
+        <translation>Önceki</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Next</source>
+        <translation>Sonraki</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Remove cover</source>
+        <translation>Kapağı kaldır</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Set as cover</source>
+        <translation>Kapak yap</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Cover set.</source>
+        <translation>Kapak ayarlandı.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Show in folder</source>
+        <translation>Klasörde göster</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Uploading…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Upload to Imgur</source>
+        <translation>Imgur&apos;a yükle</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Open in browser</source>
+        <translation>Tarayıcıda aç</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Delete</source>
+        <translation>Sil</translation>
+    </message>
+</context>
+<context>
     <name>ScreenshotsTab</name>
     <message>
         <location filename="../launcher/qml/Components/ScreenshotsTab.qml" line="+47"/>
@@ -13445,22 +14492,22 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>%1, %2</translation>
     </message>
     <message>
-        <location line="+90"/>
+        <location line="+115"/>
         <source>Some screenshots could not be deleted.</source>
         <translation>Bazı ekran görüntüleri silinemedi.</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+42"/>
         <source>Album link copied to your clipboard.</source>
         <translation>Albüm bağlantısı panoya kopyalandı.</translation>
     </message>
     <message>
-        <location line="+200"/>
+        <location line="+199"/>
         <source>Open</source>
         <translation>Aç</translation>
     </message>
     <message>
-        <location line="-182"/>
+        <location line="-179"/>
         <source>%1 selected</source>
         <translation>%1 seçili</translation>
     </message>
@@ -13485,35 +14532,30 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Yükle</translation>
     </message>
     <message>
-        <location line="+6"/>
-        <location line="+192"/>
+        <location line="-110"/>
+        <location line="+116"/>
+        <location line="+194"/>
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location line="-187"/>
-        <source>Move this screenshot to the trash?</source>
-        <translation>Bu ekran görüntüsü çöp kutusuna taşınsın mı?</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <location line="+192"/>
+        <location line="-308"/>
         <source>Move %1 screenshots to the trash?</source>
         <translation>%1 ekran görüntüsü çöp kutusuna taşınsın mı?</translation>
     </message>
     <message>
-        <location line="-181"/>
+        <location line="+127"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
-        <location line="+82"/>
-        <location line="+62"/>
+        <location line="+83"/>
+        <location line="+67"/>
         <source>Copy image</source>
         <translation>Görüntüyü kopyala</translation>
     </message>
     <message>
-        <location line="-240"/>
+        <location line="-244"/>
         <source>Image copied.</source>
         <translation>Görüntü kopyalandı.</translation>
     </message>
@@ -13523,7 +14565,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Görüntü kopyalanamadı.</translation>
     </message>
     <message>
-        <location line="+184"/>
+        <location line="+183"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -13533,7 +14575,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>%1 seç</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+29"/>
         <source>Rename…</source>
         <translation>Yeniden adlandır…</translation>
     </message>
@@ -13553,12 +14595,13 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Seçilenleri sil…</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="+54"/>
         <source>Delete screenshots</source>
         <translation>Ekran görüntülerini sil</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-364"/>
+        <location line="+365"/>
         <source>Move to trash</source>
         <translation>Çöp kutusuna taşı</translation>
     </message>
@@ -13578,7 +14621,7 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Bu ad kullanılamaz ya da başka bir ekran görüntüsü zaten bu adı taşıyor.</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+20"/>
         <source>No screenshots yet</source>
         <translation>Henüz ekran görüntüsü yok</translation>
     </message>
@@ -13588,20 +14631,50 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <translation>Oyunda F2&apos;ye bas; burada görünürler.</translation>
     </message>
     <message>
-        <location line="-110"/>
+        <location line="-108"/>
         <source>Set as cover</source>
         <translation>Kapak yap</translation>
     </message>
     <message>
-        <location line="-166"/>
-        <location line="+166"/>
+        <location line="-174"/>
+        <location line="+174"/>
         <source>Remove cover</source>
         <translation>Kapağı kaldır</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+48"/>
         <source>Cover</source>
         <translation>Kapak</translation>
+    </message>
+    <message>
+        <location line="+61"/>
+        <source>Open screenshots folder</source>
+        <translation>Ekran görüntüleri klasörünü aç</translation>
+    </message>
+    <message>
+        <location line="-401"/>
+        <source>Delete this screenshot? It cannot be recovered.</source>
+        <translation>Bu ekran görüntüsü silinsin mi? Geri getirilemez.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Delete %1 screenshots? They cannot be recovered.</source>
+        <translation>%1 ekran görüntüsü silinsin mi? Geri getirilemezler.</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>Screenshot deleted.</source>
+        <translation>Ekran görüntüsü silindi.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 screenshots deleted.</source>
+        <translation>%1 ekran görüntüsü silindi.</translation>
+    </message>
+    <message>
+        <location line="+244"/>
+        <source>Open in another app</source>
+        <translation>Başka uygulamada aç</translation>
     </message>
 </context>
 <context>
@@ -13812,19 +14885,20 @@ Currently installed version: %1</source>
         <translation>Yenile</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
         <location line="+8"/>
-        <location line="+187"/>
+        <location line="+189"/>
         <location line="+1"/>
+        <location line="+94"/>
         <source>Add server</source>
         <translation>Sunucu ekle</translation>
     </message>
     <message>
-        <location line="-148"/>
+        <location line="-242"/>
         <location line="+190"/>
         <source>Minecraft Server</source>
         <translation>Minecraft Sunucusu</translation>
@@ -14170,21 +15244,18 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+5"/>
+        <location line="+2"/>
+        <location line="+6"/>
         <source>Motion</source>
         <translation>Hareket</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Reduce motion</source>
-        <translation>Hareketi azalt</translation>
+        <location line="-5"/>
+        <source>How the launcher moves. Playful bounces a little, Calm is short and quiet, Off turns animation off.</source>
+        <translation>Başlatıcının nasıl hareket ettiği. Oyuncu biraz zıplar, Sakin kısa ve sessizdir, Kapalı animasyonu kapatır.</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Turns off decorative animation across the launcher.</source>
-        <translation>Başlatıcıdaki süsleme amaçlı animasyonları kapatır.</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+11"/>
         <source>Cat picture</source>
         <translation>Kedi resmi</translation>
     </message>
@@ -15216,6 +16287,21 @@ Currently installed version: %1</source>
         <source>Time played</source>
         <translation>Oynama süresi</translation>
     </message>
+    <message>
+        <location line="+12"/>
+        <source>Playful</source>
+        <translation>Oyuncu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Calm</source>
+        <translation>Sakin</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
 </context>
 <context>
     <name>SettingsUpdatesSection</name>
@@ -15690,6 +16776,19 @@ Currently installed version: %1</source>
     </message>
 </context>
 <context>
+    <name>ShortcutsDialog</name>
+    <message>
+        <location filename="../launcher/qml/Components/ShortcutsDialog.qml" line="+17"/>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+</context>
+<context>
     <name>SidebarNav</name>
     <message>
         <location filename="../launcher/qml/Components/SidebarNav.qml" line="+17"/>
@@ -15702,7 +16801,7 @@ Currently installed version: %1</source>
         <translation>Kenar çubuğunu daralt</translation>
     </message>
     <message>
-        <location line="+301"/>
+        <location line="+292"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
     </message>
@@ -16079,7 +17178,7 @@ Currently installed version: %1</source>
 <context>
     <name>SpeedUpButton</name>
     <message>
-        <location filename="../launcher/qml/Components/SpeedUpButton.qml" line="+20"/>
+        <location filename="../launcher/qml/Components/SpeedUpButton.qml" line="+21"/>
         <source>Kite Performance</source>
         <translation>Kite Performans</translation>
     </message>
@@ -16089,7 +17188,7 @@ Currently installed version: %1</source>
         <translation>Hızlandır</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+19"/>
         <source>On</source>
         <translation>Açık</translation>
     </message>
@@ -16105,12 +17204,12 @@ Currently installed version: %1</source>
 <context>
     <name>TabStrip</name>
     <message>
-        <location filename="../launcher/qml/Components/TabStrip.qml" line="+90"/>
+        <location filename="../launcher/qml/Components/TabStrip.qml" line="+91"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="+112"/>
+        <location line="+133"/>
         <source>%1, more tabs</source>
         <translation>%1, diğer sekmeler</translation>
     </message>
@@ -16120,7 +17219,7 @@ Currently installed version: %1</source>
         <translation>Diğer sekmeler</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+37"/>
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
@@ -16316,6 +17415,24 @@ inheritsFrom eksik</translation>
         <location line="+2"/>
         <source>The date and time this texture pack was last changed (or added).</source>
         <translation>Doku paketinin en son değiştirildiği (veya eklendiği) tarih ve saat.</translation>
+    </message>
+</context>
+<context>
+    <name>Toast</name>
+    <message>
+        <location filename="../launcher/qml/Components/Toast.qml" line="+38"/>
+        <source>Undo</source>
+        <translation>Geri al</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Not everything could be put back. What is missing is still in the trash.</source>
+        <translation>Her şey geri konulamadı. Eksik olanlar hâlâ çöp kutusunda.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>%1 The trash was not available, so this cannot be undone.</source>
+        <translation>%1 Çöp kutusu kullanılamadı, bu yüzden geri alınamaz.</translation>
     </message>
 </context>
 <context>
@@ -16583,12 +17700,12 @@ inheritsFrom eksik</translation>
         <translation>Mevcut Java sürümü %1, Java %2 gereksinimini karşılamıyor.</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+26"/>
         <source>Found installed Java %1 at: %2</source>
         <translation>Yüklü Java %1 bulundu: %2</translation>
     </message>
     <message>
-        <location line="+235"/>
+        <location line="+236"/>
         <source>Using the installed Java %1 at %2 instead.</source>
         <translation>Bunun yerine %2 konumundaki yüklü Java %1 kullanılıyor.</translation>
     </message>
@@ -16598,12 +17715,12 @@ inheritsFrom eksik</translation>
         <translation>Java yolu şuna ayarlandı: %1</translation>
     </message>
     <message>
-        <location line="-225"/>
+        <location line="-226"/>
         <source>Java %1 is required but not installed. Automatic Java download is disabled.</source>
         <translation>Java %1 gerekli ama yüklü değil. Otomatik Java indirme kapalı.</translation>
     </message>
     <message>
-        <location line="-68"/>
+        <location line="-69"/>
         <source>Choosing the Java for this version again.</source>
         <translation>Bu sürüm için Java yeniden seçiliyor.</translation>
     </message>
@@ -16613,7 +17730,7 @@ inheritsFrom eksik</translation>
         <translation>Ayarlı bir Java yok. Java %1 aranıyor.</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+28"/>
         <source>This version has no native libraries for %1. Install an x86_64 Java %2 to play it.</source>
         <translation>Bu sürümün %1 için yerel kütüphaneleri yok. Oynamak için x86_64 bir Java %2 yükle.</translation>
     </message>
@@ -16623,7 +17740,7 @@ inheritsFrom eksik</translation>
         <translation>Yüklü Java %1 bulunamadı. İndiriliyor...</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Java %1 is required but not installed. Please install it manually.</source>
         <translation>Java %1 gerekli ama yüklü değil. Lütfen elle yükle.</translation>
     </message>
@@ -16707,6 +17824,16 @@ inheritsFrom eksik</translation>
         <source>Could not start the Java at %1.</source>
         <translation>%1 konumundaki Java başlatılamadı.</translation>
     </message>
+    <message>
+        <location line="-274"/>
+        <source>Looking for Java %1</source>
+        <translation>Java %1 aranıyor</translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>Downloading Java %1</source>
+        <translation>Java %1 indiriliyor</translation>
+    </message>
 </context>
 <context>
     <name>VersionRange</name>
@@ -16762,33 +17889,35 @@ inheritsFrom eksik</translation>
 <context>
     <name>VersionTab</name>
     <message>
-        <location filename="../launcher/qml/Components/VersionTab.qml" line="-7"/>
+        <location filename="../launcher/qml/Components/VersionTab.qml" line="-14"/>
         <source>The game is running. Components can be changed once it closes.</source>
         <translation>Oyun çalışıyor. Bileşenler oyun kapandıktan sonra değiştirilebilir.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+18"/>
         <source>Some of this instance&apos;s version files could not be checked. Check your connection, then reload.</source>
         <translation>Bu kurulumun bazı sürüm dosyaları denetlenemedi. Bağlantını denetle, sonra yeniden yükle.</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+15"/>
+        <location line="+19"/>
         <source>Change Minecraft version</source>
         <translation>Minecraft sürümünü değiştir</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <location line="+195"/>
+        <location line="-8"/>
+        <location line="+193"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
     <message>
-        <location line="-188"/>
+        <location line="-204"/>
+        <location line="+19"/>
         <source>Install loader</source>
         <translation>Yükleyici yükle</translation>
     </message>
     <message>
-        <location line="+21"/>
+        <location line="+18"/>
         <source>Downloading game files…</source>
         <translation>Oyun dosyaları indiriliyor…</translation>
     </message>
@@ -16958,12 +18087,12 @@ inheritsFrom eksik</translation>
 <context>
     <name>ViewModeToggle</name>
     <message>
-        <location filename="../launcher/qml/Components/ViewModeToggle.qml" line="+23"/>
+        <location filename="../launcher/qml/Components/ViewModeToggle.qml" line="+32"/>
         <source>View</source>
         <translation>Görünüm</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="-10"/>
         <source>Grid view</source>
         <translation>Izgara görünümü</translation>
     </message>
@@ -16984,7 +18113,7 @@ inheritsFrom eksik</translation>
 <context>
     <name>WorldList</name>
     <message>
-        <location filename="../launcher/minecraft/WorldList.cpp" line="+241"/>
+        <location filename="../launcher/minecraft/WorldList.cpp" line="+311"/>
         <source>Name</source>
         <translation>Ad</translation>
     </message>
@@ -17028,24 +18157,24 @@ inheritsFrom eksik</translation>
     <name>WorldsTab</name>
     <message>
         <location filename="../launcher/qml/Components/WorldsTab.qml" line="-38"/>
-        <location line="+240"/>
+        <location line="+278"/>
         <source>Copying world…</source>
         <translation>Dünya kopyalanıyor…</translation>
     </message>
     <message>
-        <location line="-239"/>
-        <location line="+240"/>
+        <location line="-277"/>
+        <location line="+278"/>
         <source>The world could not be copied.</source>
         <translation>Dünya kopyalanamadı.</translation>
     </message>
     <message>
-        <location line="-239"/>
-        <location line="+240"/>
+        <location line="-277"/>
+        <location line="+278"/>
         <source>World copied.</source>
         <translation>Dünya kopyalandı.</translation>
     </message>
     <message>
-        <location line="-217"/>
+        <location line="-255"/>
         <source>Adding world…</source>
         <translation>Dünya ekleniyor…</translation>
     </message>
@@ -17070,28 +18199,29 @@ inheritsFrom eksik</translation>
         <translation>Bu bir Minecraft dünyası değil. İçinde dünya olan bir .zip seç.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+27"/>
         <source>Refresh</source>
         <translation>Yenile</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Open folder</source>
         <translation>Klasörü aç</translation>
     </message>
     <message>
         <location line="+6"/>
-        <location line="+204"/>
+        <location line="+233"/>
+        <location line="+24"/>
         <source>Add world</source>
         <translation>Dünya ekle</translation>
     </message>
     <message>
-        <location line="-148"/>
+        <location line="-196"/>
         <source>Day %1</source>
         <translation>%1. gün</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+29"/>
         <source>More</source>
         <translation>Daha fazla</translation>
     </message>
@@ -17141,18 +18271,18 @@ inheritsFrom eksik</translation>
         <translation>Sil…</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Delete the world “%1”? It cannot be recovered from the launcher.</source>
         <translation>“%1” dünyası silinsin mi? Başlatıcıdan geri alınamaz.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+21"/>
         <location line="+1"/>
         <source>Delete world</source>
         <translation>Dünyayı sil</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+14"/>
         <source>Rename world</source>
         <translation>Dünyayı yeniden adlandır</translation>
     </message>
@@ -17211,6 +18341,46 @@ inheritsFrom eksik</translation>
         <location line="+1"/>
         <source>Worlds you create in single player show up here. You can also add one from a .zip.</source>
         <translation>Tek oyunculu modda oluşturduğun dünyalar burada görünür. Bir .zip&apos;ten de ekleyebilirsin.</translation>
+    </message>
+    <message>
+        <location line="-104"/>
+        <source>Move the world “%1” to the trash?</source>
+        <translation>“%1” dünyası çöp kutusuna taşınsın mı?</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Move to trash</source>
+        <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>World deleted.</source>
+        <translation>Dünya silindi.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The world could not be deleted. Are its files in use?</source>
+        <translation>Dünya silinemedi. Dosyaları kullanımda olabilir mi?</translation>
+    </message>
+    <message>
+        <location line="-260"/>
+        <source>The game is already running.</source>
+        <translation>Oyun zaten açık.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This Minecraft version cannot open a world from the launcher. It works from 1.20 on.</source>
+        <translation>Bu Minecraft sürümünde dünya başlatıcıdan açılamıyor. 1.20 ve sonrasında çalışır.</translation>
+    </message>
+    <message>
+        <location line="+47"/>
+        <source>Hardcore</source>
+        <translation>Zorlu</translation>
+    </message>
+    <message>
+        <location line="+112"/>
+        <source>Play this world</source>
+        <translation>Bu dünyayı oyna</translation>
     </message>
 </context>
 <context>

@@ -78,7 +78,17 @@ Item {
                 tone: "tertiary"
             }
         }
+        // A message that arrives while the newest are in view rises in; the history, older pages and rows
+        // scrolled back to are simply there.
+        property bool settled: false
+        Component.onCompleted: Qt.callLater(() => list.settled = true)
+        readonly property QtObject arrivals: QtObject {
+            function admit() { return list.settled && root.loaded && list.atBottom }
+        }
         delegate: FriendChatMessage {
+            id: message
+            required property int index
+            RiseIn { target: message; when: message.index === 0; gate: list.arrivals }
             width: list.width
             friendName: root.name
             friendFace: root.friend.face || ""
@@ -104,6 +114,8 @@ Item {
                     Qt.callLater(list.positionViewAtBeginning)
             }
             function onModelReset() {
+                list.settled = false
+                Qt.callLater(() => list.settled = true)
                 list.atBottom = true
                 Qt.callLater(list.positionViewAtBeginning)
             }

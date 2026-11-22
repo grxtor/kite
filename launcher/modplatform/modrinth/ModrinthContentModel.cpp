@@ -28,6 +28,7 @@
 
 #include "HoeDown.h"
 #include "Json.h"
+#include "modplatform/VersionPicker.h"
 #include "modplatform/modrinth/ModrinthApi.h"
 
 namespace
@@ -56,6 +57,41 @@ namespace
 
 			if (!project.slug.isEmpty()) {
 				project.websiteUrl = ModrinthApi::siteProjectUrl(project.slug);
+			}
+
+			project.downloads =
+				qint64(obj.value(QStringLiteral("downloads")).toDouble());
+			project.dateModified = Json::ensureString(obj, "date_modified", "");
+			if (project.dateModified.isEmpty()) {
+				project.dateModified = Json::ensureString(obj, "updated", "");
+			}
+			/* "display_categories" is the curated set for a card; "categories"
+			 * also lists the loaders, which are not a subject. */
+			QJsonArray categories = Json::ensureArray(obj, "display_categories");
+			if (categories.isEmpty()) {
+				categories = Json::ensureArray(obj, "categories");
+			}
+			for (const auto& categoryRaw : categories) {
+				const QString name = categoryRaw.toString();
+				if (name.isEmpty() || ModPlatform::isKnownLoaderName(name)) {
+					continue;
+				}
+				project.categories.append(name);
+			}
+			/* A search hit lists bare URLs; /project/{id} lists objects. */
+			const QString featured =
+				Json::ensureString(obj, "featured_gallery", "");
+			if (!featured.isEmpty()) {
+				project.gallery.append(featured);
+			}
+			for (const auto& imageRaw : Json::ensureArray(obj, "gallery")) {
+				const QString url =
+					imageRaw.isObject()
+						? Json::ensureString(imageRaw.toObject(), "url", "")
+						: imageRaw.toString();
+				if (!url.isEmpty() && !project.gallery.contains(url)) {
+					project.gallery.append(url);
+				}
 			}
 		} catch (const JSONValidationError& e) {
 			qWarning() << "Error loading Modrinth project:" << e.cause();

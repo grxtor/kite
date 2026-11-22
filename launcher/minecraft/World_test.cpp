@@ -21,16 +21,20 @@
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
+#include <QSignalSpy>
 #include <optional>
 
+#include "FileSystem.h"
 #include "GZip.h"
 #include "minecraft/World.h"
+#include "minecraft/WorldList.h"
 
 // Minimal big-endian NBT writer, so the tests can build level.dat files
 // without depending on how the launcher serializes them.
 namespace
 {
 	const quint8 TAG_END = 0;
+	const quint8 TAG_BYTE = 1;
 	const quint8 TAG_INT = 3;
 	const quint8 TAG_LONG = 4;
 	const quint8 TAG_STRING = 8;
@@ -106,6 +110,9 @@ namespace
 		// Added in 1.9, so its absence marks a genuinely old world
 		bool dataVersion = false;
 		qint32 dataVersionValue = 0;
+		bool hardcore = false;
+		// The Version compound's Name ("1.21.4"); absent before 1.9
+		QByteArray versionName;
 	};
 
 	QByteArray makeLevelDat(const LevelDatSpec& spec)
@@ -127,6 +134,16 @@ namespace
 		}
 		if (spec.dataVersion) {
 			putIntTag(dataPayload, "DataVersion", spec.dataVersionValue);
+		}
+		if (spec.hardcore) {
+			putTagHeader(dataPayload, TAG_BYTE, "hardcore");
+			putU8(dataPayload, 1);
+		}
+		if (!spec.versionName.isEmpty()) {
+			putTagHeader(dataPayload, TAG_COMPOUND, "Version");
+			putIntTag(dataPayload, "Id", 4189);
+			putStringTag(dataPayload, "Name", spec.versionName);
+			putU8(dataPayload, TAG_END);
 		}
 		if (spec.worldGenSettingsSeed) {
 			putTagHeader(dataPayload, TAG_COMPOUND, "WorldGenSettings");
@@ -233,6 +250,87 @@ class WorldTest : public QObject
   private slots:
 
 	// Minecraft 1.16 and newer: Data -> WorldGenSettings -> seed
+	void test_ReadsHardcoreAndTheVersionLastSavedIn()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		auto worldPath = QDir(tempDir.path()).absoluteFilePath("hard");
+
+		LevelDatSpec spec;
+		spec.hardcore = true;
+		spec.versionName = "1.21.4";
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+
+		World world{QFileInfo(worldPath)};
+		QVERIFY(world.isValid());
+		QVERIFY(world.hardcore());
+		QCOMPARE(world.gameVersion(), QString("1.21.4"));
+	}
+
+	// A world from before 1.9 has neither tag.
+	void test_OldWorldIsNotHardcoreAndHasNoVersion()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		auto worldPath = QDir(tempDir.path()).absoluteFilePath("old");
+		QVERIFY(writeWorld(worldPath, makeLevelDat(LevelDatSpec())));
+
+		World world{QFileInfo(worldPath)};
+		QVERIFY(world.isValid());
+		QVERIFY(!world.hardcore());
+		QVERIFY(world.gameVersion().isEmpty());
+	}
+
+	void test_SizeOnDiskCountsEveryFileUnderTheWorld()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		QDir dir(tempDir.path());
+		QVERIFY(dir.mkpath("w/region"));
+		const auto put = [&dir](const QString& name, int bytes) {
+			QFile file(dir.absoluteFilePath(name));
+			return file.open(QIODevice::WriteOnly) &&
+				   file.write(QByteArray(bytes, 'x')) == bytes;
+		};
+		QVERIFY(put("w/level.dat", 100));
+		QVERIFY(put("w/region/r.0.0.mca", 4096));
+		QCOMPARE(WorldList::sizeOnDisk(dir.absoluteFilePath("w")),
+				 qint64(4196));
+		QCOMPARE(WorldList::sizeOnDisk(dir.absoluteFilePath("w/level.dat")),
+				 qint64(100));
+		QCOMPARE(WorldList::sizeOnDisk(dir.absoluteFilePath("gone")),
+				 qint64(0));
+	}
+
+	// The list reports no size until it is measured, then the folder's bytes,
+	// with the mode's flag and version beside it.
+	void test_ListReportsHardcoreVersionAndSize()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		auto worldPath = QDir(tempDir.path()).absoluteFilePath("listed");
+		LevelDatSpec spec;
+		spec.hardcore = true;
+		spec.versionName = "1.20.1";
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+
+		WorldList list(tempDir.path());
+		QSignalSpy changed(&list, &QAbstractItemModel::dataChanged);
+		QVERIFY(list.update());
+		QCOMPARE(list.rowCount(), 1);
+		const QModelIndex row = list.index(0);
+		QCOMPARE(list.data(row, WorldList::HardcoreRole).toBool(), true);
+		QCOMPARE(list.data(row, WorldList::GameVersionRole).toString(),
+				 QString("1.20.1"));
+		QVERIFY(!list.data(row, WorldList::SizeRole).isValid());
+
+		QVERIFY(changed.wait(5000));
+		QCOMPARE(list.data(row, WorldList::SizeRole).toLongLong(),
+				 WorldList::sizeOnDisk(worldPath));
+		QVERIFY(list.data(row, WorldList::SizeRole).toLongLong() > 0);
+		QVERIFY(list.roleNames().values().contains("size"));
+	}
+
 	void test_ReadSeedFromWorldGenSettings()
 	{
 		QTemporaryDir tempDir;
@@ -621,6 +719,64 @@ class WorldTest : public QObject
 						   valid + QByteArray(65 * 1024 * 1024, '\0')));
 		World huge{QFileInfo(hugePath)};
 		QCOMPARE(huge.seed(), Q_INT64_C(0));
+	}
+
+	// A deleted world goes to the trash and comes back whole.
+	void test_DeleteGoesToTrashAndComesBack()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		// Never the real trash: a folder of the test's own stands in.
+		FS::setTrashFolderForTests(tempDir.filePath("trash"));
+		const QString saves = tempDir.filePath("saves");
+		const QString worldPath = QDir(saves).absoluteFilePath("keep me");
+
+		LevelDatSpec spec;
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+		QVERIFY(writeWorldGenSettings(worldPath, makeWorldGenSettings(42)));
+
+		WorldList list(saves);
+		QVERIFY(list.update());
+		QCOMPARE(list.size(), size_t(1));
+
+		QList<FS::Trashed> trashed;
+		QVERIFY(list.deleteWorld(0, &trashed));
+		QCOMPARE(list.size(), size_t(0));
+		QVERIFY(!QFileInfo::exists(worldPath));
+		QCOMPARE(trashed.size(), 1);
+		QCOMPARE(trashed.first().path, worldPath);
+		QVERIFY(QFileInfo::exists(trashed.first().trashPath + "/level.dat"));
+
+		QVERIFY(FS::restoreTrashed(trashed.first()));
+		QVERIFY(list.update());
+		QCOMPARE(list.size(), size_t(1));
+		QCOMPARE(list[0].name(), QString("Test World"));
+		QVERIFY(QFileInfo::exists(
+			worldPath + "/data/minecraft/world_gen_settings.dat"));
+
+		FS::setTrashFolderForTests(QString());
+	}
+
+	// Something new at the old path is not overwritten by the restore.
+	void test_RestoreDoesNotOverwrite()
+	{
+		QTemporaryDir tempDir;
+		QVERIFY(tempDir.isValid());
+		FS::setTrashFolderForTests(tempDir.filePath("trash"));
+		const QString worldPath = tempDir.filePath("saves/world");
+
+		LevelDatSpec spec;
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+		World world{QFileInfo(worldPath)};
+		QList<FS::Trashed> trashed;
+		QVERIFY(world.destroy(&trashed));
+		QCOMPARE(trashed.size(), 1);
+
+		QVERIFY(writeWorld(worldPath, makeLevelDat(spec)));
+		QVERIFY(!FS::restoreTrashed(trashed.first()));
+		QVERIFY(QFileInfo::exists(trashed.first().trashPath));
+
+		FS::setTrashFolderForTests(QString());
 	}
 };
 

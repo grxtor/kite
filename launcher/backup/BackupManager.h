@@ -24,6 +24,11 @@
 #include <QDateTime>
 #include <functional>
 
+namespace FS
+{
+	struct Trashed;
+}
+
 /* Instance backup snapshots (create, restore, export, import, delete) as
  * zip archives in `<instanceRoot>/.backups/`. The timestamp and optional
  * label are in the file name, so a copied or hand-restored directory still
@@ -75,7 +80,10 @@ class BackupManager
 	bool exportBackup(const BackupEntry& entry, const QString& destPath);
 	BackupEntry importBackup(const QString& srcZipPath,
 							 const QString& label = {});
-	bool deleteBackup(const BackupEntry& entry);
+	/* To the trash, or deleted where there is none; @p trashed receives the
+	 * archive only when it went to the trash. */
+	bool deleteBackup(const BackupEntry& entry,
+					  QList<FS::Trashed>* trashed = nullptr);
 
   private:
 	bool ensureBackupDir();

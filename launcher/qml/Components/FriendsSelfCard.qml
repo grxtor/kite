@@ -7,10 +7,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * You, at the top of the Friends page: head and name (a click copies it), what friends can see of you (a big
- * server by its name and favicon, as in your friends' rows), and where to add someone by Minecraft name. A request
- * is on its way until FriendsController says how it went (actionFinished); the name stays in the field until it is
- * accepted.
+ * You, at the top of the Friends page: head and name (a click copies it) over what friends can see of you (a big
+ * server by its name and favicon, as in your friends' rows), and at the end the way to the Friends settings, where
+ * that is decided.
  */
 Rectangle {
     id: root
@@ -23,10 +22,8 @@ Rectangle {
     // Main.qml's FriendPlaces.
     property FriendPlaces places: FriendPlaces {}
 
-    readonly property string typedName: nameField.text.trim()
-    // Minecraft's own rule for a name.
-    readonly property bool nameValid: /^[A-Za-z0-9_]{1,16}$/.test(root.typedName)
-    property bool sending: false
+    signal settingsRequested()
+
     // "friends", "everyone" or "invisible".
     readonly property string visibility: root.controller ? String(root.controller.settings.visibility || "friends") : "friends"
     // What friends see of you: playing, worldType, host, serverHidden, joinable.
@@ -49,31 +46,16 @@ Rectangle {
         : root.playing ? qsTr("Playing")
         : root.visibility === "everyone" ? qsTr("Online · anyone with your name can see you")
         : qsTr("Online · friends can see you")
-    readonly property int sideBySideWidth: 640
-    readonly property int addFieldWidth: 232
     // As big as in a friend's card, so you and they look alike.
     readonly property int headSize: 48
 
-    function focusField() {
-        nameField.forceActiveFocus()
-    }
-    function submit() {
-        if (!root.nameValid || !root.controller || root.sending || !root.online)
-            return
-        root.sending = true
-        root.controller.sendRequest(root.typedName)
-    }
-
-    implicitHeight: layout.implicitHeight + Theme.space.lg * 2
+    implicitHeight: layout.implicitHeight
     color: "transparent"
 
-    GridLayout {
+    RowLayout {
         id: layout
         anchors.fill: parent
-        anchors.margins: Theme.space.lg
-        columns: root.width >= root.sideBySideWidth ? 2 : 1
-        columnSpacing: Theme.space.xl
-        rowSpacing: Theme.space.md
+        spacing: Theme.space.md
 
         RowLayout {
             Layout.fillWidth: true
@@ -121,57 +103,13 @@ Rectangle {
             }
         }
 
-        ColumnLayout {
-            Layout.fillWidth: root.width < root.sideBySideWidth
-            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-            spacing: Theme.space.xs
-
-            RowLayout {
-                spacing: Theme.space.sm
-
-                TextField {
-                    id: nameField
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: root.addFieldWidth
-                    placeholderText: qsTr("Add a friend by name")
-                    maximumLength: 16
-                    selectByMouse: true
-                    Accessible.name: qsTr("Minecraft name of the friend to add")
-                    onAccepted: root.submit()
-                }
-                Button {
-                    highlighted: true
-                    enabled: root.nameValid && !root.sending && root.online
-                    text: qsTr("Add")
-                    icon.source: Icons.url("plus")
-                    onClicked: root.submit()
-                }
-            }
-            Copy {
-                Layout.fillWidth: true
-                Layout.preferredWidth: root.addFieldWidth
-                visible: root.typedName.length > 0 && !root.nameValid
-                text: qsTr("A Minecraft name has 1 to 16 letters, numbers or underscores.")
-                wrapMode: Text.Wrap
-                role: "caption"
-                tone: "danger"
-            }
-        }
-    }
-
-    Connections {
-        target: root.controller
-        function onActionFinished(action, ok, message) {
-            if (action !== "sendRequest")
-                return
-            root.sending = false
-            if (ok)
-                nameField.clear()
-        }
-        // Friends turned off and on while a request was out: its answer is dropped, so it is not waited for.
-        function onChanged() {
-            if (root.sending && root.controller.state !== "ready")
-                root.sending = false
+        Button {
+            Layout.alignment: Qt.AlignVCenter
+            flat: true
+            text: qsTr("Privacy")
+            icon.source: Icons.url("settings")
+            Accessible.name: qsTr("Friends privacy settings")
+            onClicked: root.settingsRequested()
         }
     }
 }

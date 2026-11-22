@@ -60,7 +60,8 @@ Column {
                 Layout.alignment: Qt.AlignVCenter
                 text: root.title
                 elide: Text.ElideRight
-                role: "overline"
+                role: "label"
+                font.weight: Font.DemiBold
                 color: header.ink
                 Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
             }

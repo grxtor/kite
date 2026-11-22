@@ -32,6 +32,20 @@ GlassSurface {
         hideTimer.restart()
     }
 
+    // After a delete: @p trash is the page's TrashUndo. "Undo" is offered only for what went to the trash.
+    function showDeleted(message, trash) {
+        if (trash && trash.canUndo) {
+            root.show(message, "success", qsTr("Undo"), function () {
+                if (!trash.undo())
+                    root.show(qsTr("Not everything could be put back. What is missing is still in the trash."), "danger")
+            })
+        } else if (trash && trash.available) {
+            root.show(qsTr("%1 The trash was not available, so this cannot be undone.").arg(message), "warning")
+        } else {
+            root.show(message, "success")
+        }
+    }
+
     function hide() {
         hideTimer.stop()
         root.shown = false
@@ -49,11 +63,18 @@ GlassSurface {
     visible: opacity > 0
     z: 1000
 
+    // In: up `rise` px with the pop easing and a fade over `slow`. Out: the quick way, over `fast`.
     transform: Translate {
-        y: root.shown ? 0 : Theme.space.md + root.height * 0.15
-        Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        y: root.shown ? 0 : Theme.motion.rise
+        Behavior on y {
+            NumberAnimation {
+                duration: root.shown ? Theme.motion.slow : Theme.motion.fast
+                easing.type: root.shown ? Theme.motion.popEasing : Theme.motion.easing
+                easing.overshoot: Theme.motion.popOvershoot
+            }
+        }
     }
-    Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+    Behavior on opacity { NumberAnimation { duration: root.shown ? Theme.motion.slow : Theme.motion.fast; easing.type: Theme.motion.easing } }
 
     Accessible.role: Accessible.AlertMessage
     Accessible.name: label.text

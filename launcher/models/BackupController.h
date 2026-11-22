@@ -21,6 +21,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointer>
 #include <QString>
 #include <memory>
 
@@ -28,6 +29,7 @@
 #include "backup/BackupManager.h"
 
 class QAbstractListModel;
+class TrashUndo;
 
 /*
  * QML-facing instance backups. Create, restore, export, import and delete
@@ -44,6 +46,8 @@ class BackupController : public QObject
 	Q_PROPERTY(QObject* model READ model CONSTANT)
 	/// The condition restoreBackup() refuses on, exposed so the tab can warn before the click.
 	Q_PROPERTY(bool running READ running NOTIFY runningChanged)
+	/// What the last deleteBackup() sent to the trash (TrashUndo), for the tab's Undo.
+	Q_PROPERTY(QObject* trash READ trash CONSTANT)
 
   public:
 	explicit BackupController(InstancePtr instance, QObject* parent = nullptr);
@@ -51,6 +55,8 @@ class BackupController : public QObject
 
 	QObject* model() const;
 	bool running() const;
+	QObject* trash() const;
+	void setTrashUndo(TrashUndo* trash);
 
 	/// Whether a create, restore, delete, export or import of this instance is
 	/// still running, even one started from a page that has since been left.
@@ -64,6 +70,7 @@ class BackupController : public QObject
 	/// Null if @p row is out of range, the instance is running (restoring would
 	/// fight a live process for the files) or another job is running.
 	Q_INVOKABLE QObject* restoreBackup(int row);
+	/// To the trash where there is one (see `trash`), else for good.
 	Q_INVOKABLE QObject* deleteBackup(int row);
 	/// @p destUrlOrPath: a file:// URL or a local path.
 	Q_INVOKABLE QObject* exportBackup(int row, const QString& destUrlOrPath);
@@ -79,4 +86,5 @@ class BackupController : public QObject
 	BackupManager m_manager;
 	std::unique_ptr<QAbstractListModel> m_model;
 	QList<BackupEntry> m_entries;
+	QPointer<TrashUndo> m_trash;
 };

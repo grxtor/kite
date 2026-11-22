@@ -24,9 +24,20 @@ T.Dialog {
     padding: Theme.space.xl
     spacing: Theme.space.lg
 
+    // Fades in, grows from popScale and rises `dialogRise` px into place,
+    // settling with the pop easing; the fade never overshoots. The rise
+    // is a Translate on the popup's own item (what contentItem, header and
+    // footer sit in), not `y`, which the centring owns.
+    Translate { id: rise }
+    onAboutToShow: {
+        const frame = control.contentItem ? control.contentItem.parent : null
+        if (frame && frame.transform.length === 0)
+            frame.transform = [rise]
+    }
     enter: Transition {
-        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-        NumberAnimation { property: "scale"; from: 0.96; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.slow; easing.type: Theme.motion.easing }
+        NumberAnimation { property: "scale"; from: Theme.motion.popScale; to: 1.0; duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
+        NumberAnimation { target: rise; property: "y"; from: Theme.motion.dialogRise; to: 0; duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }

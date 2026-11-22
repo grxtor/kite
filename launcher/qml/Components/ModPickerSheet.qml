@@ -189,6 +189,7 @@ AppDialog {
 
         // The raised fill is the card's one surface; On is a bare check on it, the accent ring is the focus.
         background: StateFill {
+            id: cardFill
             card: true
             rest: Theme.palette.surfaceRaised
             hovered: card.hovered
@@ -207,7 +208,8 @@ AppDialog {
                     Layout.preferredWidth: Theme.control.height
                     Layout.preferredHeight: Theme.control.height
                     source: card.modelData.icon || ""
-                    matte: Theme.palette.surfaceRaised
+                    rounded: true
+                    matte: cardFill.color
                 }
                 Item { Layout.fillWidth: true }
                 MeshIcon {

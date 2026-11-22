@@ -160,6 +160,12 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: root.sectionIndex
+            // Not a hard swap: the section's content comes in.
+            onCurrentIndexChanged: {
+                const page = sectionStack.children[sectionStack.currentIndex]
+                if (page && page.enter)
+                    page.enter()
+            }
 
             SettingsGeneralSection {
                 onOpenPathRequested: (path) => root.openPathRequested(path)

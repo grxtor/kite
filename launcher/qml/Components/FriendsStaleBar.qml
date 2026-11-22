@@ -6,7 +6,8 @@ import QtQuick.Controls
 
 /*
  * The bar over a friends list when a poll failed after the lists were read: they stay, and this says they may be out
- * of date, with the time they were read when `updatedAt` is given (the panel is too narrow for it).
+ * of date, with the time they were read when `updatedAt` is given (the panel is too narrow for it). It tries again
+ * by itself when the machine's connection comes back.
  */
 NoticeBar {
     id: root
@@ -23,6 +24,15 @@ NoticeBar {
     FriendsRetry {
         id: retry
         controller: root.controller
+    }
+
+    // The connection is back: no need to wait for the minute's poll or a press.
+    Connections {
+        target: LauncherStore
+        function onOnlineChanged() {
+            if (LauncherStore.online && root.visible)
+                retry.run()
+        }
     }
 
     HoverHandler { id: hover }

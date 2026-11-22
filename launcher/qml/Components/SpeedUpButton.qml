@@ -10,7 +10,8 @@ import Kite.Theme
  * The Mods toolbar's Kite Performance button. Off, it reads "Speed up" and a
  * click turns the mode on; on, it reads "Kite Performance" with an On badge and
  * a click opens the mode's settings. The owner acts on clicked() either way.
- * Icon-only, it drops the badge and says the same in its tooltip.
+ * Icon-only, it drops the badge: the bolt turns the badge's green while the
+ * mode is on, and the tooltip says the same in words.
  */
 Button {
     id: root
@@ -19,8 +20,12 @@ Button {
 
     text: root.on ? qsTr("Kite Performance") : qsTr("Speed up")
     icon.source: Icons.url("zap")
+    icon.color: root.on && root.display === AbstractButton.IconOnly && root.enabled
+                ? Theme.tone("success").ink : root.contentColor
     readonly property bool badged: root.on && root.display !== AbstractButton.IconOnly
-    rightPadding: root.horizontalPadding + (root.badged ? badge.width + root.spacing : 0)
+    // Icon-only it is a square like its neighbours; the badge's room is only for the labelled button.
+    rightPadding: root.display === AbstractButton.IconOnly ? Theme.space.sm
+                : root.horizontalPadding + (root.badged ? badge.width + root.spacing : 0)
     ToolTip.visible: hovered && root.display === AbstractButton.IconOnly
     ToolTip.delay: 400
     ToolTip.text: root.on ? root.text + " \u00b7 " + badge.text : root.text

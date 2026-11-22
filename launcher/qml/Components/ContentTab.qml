@@ -76,6 +76,10 @@ Item {
     readonly property bool updatable: !!root.content && !!root.content.updater
                                       && root.content.updater.supportsUpdates(root.kind)
     readonly property int count: root.listModel ? root.listModel.totalCount : 0
+    // What the last update check found for the kind on show (ContentUpdateList), kept until it is applied.
+    readonly property var knownUpdates: root.updatable && root.content.updater.updatesKind === root.kind
+                                        ? root.content.updater.updates : null
+    readonly property int updateCount: root.knownUpdates ? root.knownUpdates.count : 0
 
     function showKind(kind) {
         if (root.kinds.some((k) => k.value === kind))
@@ -211,13 +215,43 @@ Item {
         if (root.content)
             root.content.setEnabled(root.kind, packList.selectedKeys, enabled)
     }
+    readonly property var trash: root.details ? root.details.trash : null
     function bulkRemove() {
-        const keys = packList.selectedKeys
+        root.askRemove(packList.selectedKeys, "")
+    }
+    // One file on its way to the trash is removed at once: the toast's Undo is the way back. Several files, or any
+    // number where there is no trash and the removal is permanent, are confirmed first.
+    function askRemove(keys, name) {
+        const toTrash = !!root.trash && root.trash.available
+        if (toTrash && keys.length === 1) {
+            root.removeKeys(keys, name)
+            return
+        }
         bulkConfirm.keys = keys
-        bulkConfirm.text = keys.length === 1
-            ? qsTr("Remove this file from the instance? It is deleted.")
-            : qsTr("Remove %1 %2 from this instance? The files are deleted.").arg(keys.length).arg(root.current.noun)
+        bulkConfirm.name = name
+        bulkConfirm.confirmText = toTrash ? qsTr("Move to trash") : qsTr("Remove")
+        if (toTrash)
+            bulkConfirm.text = qsTr("Move %1 %2 to the trash?").arg(keys.length).arg(root.current.noun)
+        else if (keys.length > 1)
+            bulkConfirm.text = qsTr("Remove %1 %2 from this instance? The files are deleted.").arg(keys.length).arg(root.current.noun)
+        else
+            bulkConfirm.text = name.length > 0 ? qsTr("Remove “%1” from this instance? The file is deleted.").arg(name)
+                                               : qsTr("Remove this file from the instance? It is deleted.")
         bulkConfirm.open()
+    }
+    // @p name is set for a row's own "Remove", which leaves the other ticks alone.
+    function removeKeys(keys, name) {
+        const removed = root.content ? root.content.remove(root.kind, keys) : 0
+        if (name.length === 0)
+            packList.clearSelection()
+        else if (packList.isSelected(keys[0]))
+            packList.toggle(keys[0])
+        if (removed < keys.length)
+            toast.show(qsTr("Some files could not be removed. Is the game running?"), "danger")
+        else if (keys.length === 1)
+            toast.showDeleted(name.length > 0 ? qsTr("“%1” removed.").arg(name) : qsTr("File removed."), root.trash)
+        else
+            toast.showDeleted(qsTr("%1 %2 removed.").arg(removed).arg(root.current.noun), root.trash)
     }
     function exportList(keys) {
         exportDialog.keys = keys
@@ -236,24 +270,20 @@ Item {
             rowSpacing: Theme.space.md
             columns: oneRow ? 2 : 1
 
-            readonly property int searchMinWidth: 200
+            // Narrow enough that the Mods toolbar, with its Kite Performance bolt, stays one row at a 1000 px window.
+            readonly property int searchMinWidth: 152
             readonly property bool showKinds: root.kinds.length > 1
             readonly property int kindsWidth: showKinds ? kindChips.implicitWidth + columnSpacing : 0
             readonly property int gap: Theme.space.sm
             readonly property int updatesIconWidth: root.updatable ? Theme.control.height + gap : 0
-            readonly property int bundlesWidth: root.kind === "mods"
-                                                ? (root.speedUpOffered ? speedUpMeasure.implicitWidth + gap : 0)
-                                                  + addonsMeasure.implicitWidth + gap : 0
-            readonly property int actionsWidth: folderMeasure.implicitWidth + moreButton.implicitWidth
-                                                + addButton.implicitWidth + bundlesWidth + gap * 3
+            readonly property bool showSpeedUp: root.kind === "mods" && root.speedUpOffered
+            readonly property int speedUpWidth: showSpeedUp ? Theme.control.height + gap : 0
+            readonly property int actionsWidth: speedUpWidth + Theme.control.height + moreButton.implicitWidth
+                                                + addButton.implicitWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's contents never feed back into.
             readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
-            readonly property real actionsRowWidth: oneRow ? root.width - kindsWidth : root.width
-            readonly property bool compact: actionsRowWidth < searchMinWidth + updatesIconWidth + actionsWidth
-            readonly property bool updatesLabelFits: actionsRowWidth >= searchMinWidth + updatesMeasure.implicitWidth
-                                                                        + gap + actionsWidth
 
-            ChipGroup {
+            SegmentedChoice {
                 id: kindChips
                 visible: toolbar.showKinds
                 Layout.row: toolbar.oneRow ? 0 : 1
@@ -276,48 +306,45 @@ Item {
                     placeholderText: qsTr("Search %1").arg(root.current.noun)
                 }
 
-                // Only measured, so what they take does not change with what is shown.
-                Button {
-                    id: updatesMeasure
-                    visible: false
-                    text: qsTr("Check for updates")
-                    icon.source: Icons.url("refresh")
-                }
-                Button {
-                    id: folderMeasure
-                    visible: false
-                    text: qsTr("Open folder")
-                    icon.source: Icons.url("folder")
-                }
-                SpeedUpButton {
-                    id: speedUpMeasure
-                    visible: false
-                    on: root.performance
-                }
-                Button {
-                    id: addonsMeasure
-                    visible: false
-                    text: qsTr("Add-ons")
-                    icon.source: Icons.url("puzzle")
-                }
                 HoverReason {
                     visible: root.updatable
                     reason: root.lockedReason
                     Button {
                         enabled: root.unlocked && root.count > 0 && !root.flowsBusy
-                        display: toolbar.updatesLabelFits ? AbstractButton.TextBesideIcon : AbstractButton.IconOnly
+                        display: AbstractButton.IconOnly
                         text: qsTr("Check for updates")
                         icon.source: Icons.url("refresh")
                         ToolTip.visible: hovered && display === AbstractButton.IconOnly
                         ToolTip.delay: 400
-                        ToolTip.text: text
+                        ToolTip.text: root.updateCount === 1 ? qsTr("1 update found. Check again")
+                                      : root.updateCount > 1 ? qsTr("%1 updates found. Check again").arg(root.updateCount)
+                                      : text
                         onClicked: root.withLoader(() => flows.checkUpdates([]))
+
+                        CountPill {
+                            x: parent.width - width + Theme.space.xs
+                            y: -Theme.space.xs
+                            count: root.updateCount
+                            tone: "success"
+                        }
+                    }
+                }
+
+                // Kite Performance, Mods only: a bolt, green while the mode is on.
+                HoverReason {
+                    visible: toolbar.showSpeedUp
+                    reason: root.lockedReason
+                    SpeedUpButton {
+                        enabled: root.unlocked && !root.flowsBusy
+                        display: AbstractButton.IconOnly
+                        on: root.performance
+                        onClicked: root.speedUp()
                     }
                 }
 
                 Button {
                     id: folderButton
-                    display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+                    display: AbstractButton.IconOnly
                     text: qsTr("Open folder")
                     icon.source: Icons.url("folder")
                     ToolTip.visible: hovered && display === AbstractButton.IconOnly
@@ -336,6 +363,17 @@ Item {
 
                     Menu {
                         id: moreMenu
+                        // The add-on bundles live here, so the toolbar keeps one filled action.
+                        MenuEntry {
+                            visible: root.kind === "mods"
+                            enabled: root.unlocked && !root.flowsBusy
+                            text: qsTr("Add-ons")
+                            icon.source: Icons.url("puzzle")
+                            onTriggered: root.openBundles(false)
+                        }
+                        MenuDivider {
+                            visible: root.kind === "mods"
+                        }
                         MenuItem {
                             enabled: root.unlocked
                             text: qsTr("Add from file…")
@@ -349,6 +387,13 @@ Item {
                             onTriggered: root.openFolderRequested(root.content ? root.content.configsDir : "")
                         }
                         MenuSeparator {}
+                        MenuEntry {
+                            visible: root.updateCount > 0
+                            enabled: root.unlocked && !root.flowsBusy
+                            text: qsTr("Update all (%1)").arg(root.updateCount)
+                            icon.source: Icons.url("download")
+                            onTriggered: flows.reviewUpdates("")
+                        }
                         MenuEntry {
                             visible: root.updatable
                             enabled: root.unlocked && root.count > 0 && !root.flowsBusy
@@ -381,36 +426,10 @@ Item {
                     }
                 }
 
-                HoverReason {
-                    visible: root.kind === "mods" && root.speedUpOffered
-                    reason: root.lockedReason
-                    SpeedUpButton {
-                        id: speedUpButton
-                        on: root.performance
-                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                        enabled: root.unlocked && !root.flowsBusy
-                        onClicked: root.speedUp()
-                    }
-                }
-                HoverReason {
-                    visible: root.kind === "mods"
-                    reason: root.lockedReason
-                    Button {
-                        id: addonsButton
-                        enabled: root.unlocked && !root.flowsBusy
-                        display: toolbar.compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-                        text: qsTr("Add-ons")
-                        icon.source: Icons.url("puzzle")
-                        ToolTip.visible: hovered && display === AbstractButton.IconOnly
-                        ToolTip.delay: 400
-                        ToolTip.text: text
-                        onClicked: root.openBundles(false)
-                    }
-                }
-
                 // Browsing works while the game runs; installing then waits.
                 Button {
                     id: addButton
+                    highlighted: true
                     text: qsTr("Add content")
                     icon.source: Icons.url("plus")
                     onClicked: root.browse()
@@ -447,7 +466,8 @@ Item {
 
         ContentSelectionBar {
             Layout.fillWidth: true
-            visible: packList.selecting
+            open: packList.selecting
+            gap: Theme.space.md
             list: packList
             listModel: root.listModel
             unlocked: root.unlocked
@@ -473,8 +493,11 @@ Item {
             noun: root.current.noun
             onOpenFolderRequested: (path) => root.openFolderRequested(path)
             updatable: root.updatable
+            updates: root.knownUpdates
+            onUpdateRequested: (key) => flows.reviewUpdates(key)
             onChangeVersionRequested: (key) => root.withLoader(() => flows.changeVersion(key))
             onResetMetadataRequested: (key, name) => flows.resetMetadata([key], name)
+            onRemoveRequested: (key, name) => root.askRemove([key], name)
         }
     }
 
@@ -538,14 +561,10 @@ Item {
     ConfirmDialog {
         id: bulkConfirm
         property var keys: []
+        property string name: ""
         title: qsTr("Remove")
         confirmText: qsTr("Remove")
-        onConfirmed: {
-            const removed = root.content ? root.content.remove(root.kind, keys) : 0
-            packList.clearSelection()
-            if (removed < keys.length)
-                toast.show(qsTr("Some files could not be removed. Is the game running?"), "danger")
-        }
+        onConfirmed: root.removeKeys(keys, name)
     }
 
     ConfirmDialog {

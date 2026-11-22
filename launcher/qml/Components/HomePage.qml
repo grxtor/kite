@@ -38,6 +38,10 @@ Item {
     property var exportControllerFor: null
     property var shareCodes: null
     property var shortcutControllerFor: null
+    // Discover's Modrinth model and installer: the empty library suggests its popular packs.
+    property var modpackModel: null
+    property var modpackInstaller: null
+    property bool suggestionsEnabled: true
 
     signal launchRequested(string id)
     signal stopRequested(string id)
@@ -45,6 +49,7 @@ Item {
     signal openInstanceWorldsRequested(string id)
     signal createRequested()
     signal discoverRequested()
+    signal packRequested(var pack)
     signal signInRequested()
     // tab: "friends", "requests" or "add".
     signal friendsRequested(string tab)
@@ -72,6 +77,14 @@ Item {
     function duplicateInstance(id) { sections.duplicateInstance(id) }
     function shareInstance(id, name) { sections.shareInstance(id, name) }
     function focusSearch() { toolbar.focusSearch() }
+    function reviewLibrary(key, value) {
+        if (key === "libsearch")
+            toolbar.searchText = value
+        else if (key === "libview")
+            root.viewMode = value
+        else
+            sections.review(key, value)
+    }
 
     // What the hero shows with nothing picked: the last played instance, else the first.
     readonly property string defaultHeroId: root.recentModel && root.recentModel.firstId ? root.recentModel.firstId
@@ -272,7 +285,7 @@ Item {
                         anchors.centerIn: parent
                         width: Math.min(parent.width, root.emptyStateWidth)
                         title: qsTr("No instances match “%1”").arg(root.searchText)
-                        body: qsTr("Check the spelling, or search for part of the name.")
+                        body: qsTr("Check the spelling, or search by name, group, version or loader.")
                         actionText: qsTr("Clear search")
                         actionIcon: "x"
                         onActionTriggered: toolbar.searchText = ""
@@ -298,12 +311,16 @@ Item {
     }
 
     HomeEmptyState {
-        x: Math.round((root.mainWidth - width) / 2)
+        x: root.contentX
         anchors.verticalCenter: parent.verticalCenter
-        width: Math.min(root.mainWidth - root.pagePadding * 2, root.emptyStateWidth)
+        width: root.contentWidth
         visible: !root.hasLibrary
+        modpackModel: root.modpackModel
+        modpackInstaller: root.modpackInstaller
+        suggestionsActive: root.suggestionsEnabled && root.StackLayout.isCurrentItem
         onCreateRequested: root.createRequested()
         onDiscoverRequested: root.discoverRequested()
+        onPackRequested: (pack) => root.packRequested(pack)
     }
 
     HomeSidePanel {

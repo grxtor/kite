@@ -48,90 +48,18 @@ Column {
 
     readonly property string dragKey: "kite/instance"
 
+    // Arrow keys, Home and End on a card: (section, index, event) -> moves the focus (LibrarySections.navigate).
+    property var navigator: null
+    readonly property int itemCount: contentLoader.item ? contentLoader.item.cards.count : 0
+    function cardAt(index) {
+        return contentLoader.item ? contentLoader.item.cards.itemAt(index) : null
+    }
+
     function openGroupMenu() {
         groupMenu.popup(groupMenuButton, groupMenuButton.width - groupMenu.width, groupMenuButton.height)
     }
     // Under the page Flickable's own threshold, so a drag on a card is claimed before the page scrolls.
     readonly property int dragThreshold: Theme.space.sm
-
-    component InstanceDrag: Item {
-        id: dragSource
-        // An inline component does not see the file's ids.
-        required property Item section
-        property string instanceId
-        property string name
-        property string iconKey
-        anchors.fill: parent
-        // Under the card's content: on top, it took the ⋯ and Play clicks from the card's selection
-        // tap. Its handler still sees presses that start on them.
-        z: -1
-        enabled: dragSource.section.dragEnabled
-
-        DragHandler {
-            id: dragger
-            target: null
-            dragThreshold: dragSource.section.dragThreshold
-            // Takes the pointer from the card's taps and keeps it from the page's scrolling.
-            grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
-            onActiveChanged: {
-                if (active) {
-                    chipLoader.active = true
-                    chipLoader.item.Drag.start()
-                } else if (chipLoader.item) {
-                    chipLoader.item.Drag.drop()
-                    chipLoader.active = false
-                }
-                dragSource.section.dragActiveChanged(active)
-            }
-            onCentroidChanged: if (active) dragSource.section.dragMoved(centroid.scenePosition.y)
-        }
-
-        // Built only while a drag is on; the chip lives in the window overlay.
-        Loader {
-            id: chipLoader
-            active: false
-            sourceComponent: Component {
-                Rectangle {
-                    id: chip
-                    parent: Overlay.overlay
-                    readonly property string instanceId: dragSource.instanceId
-                    readonly property string group: dragSource.section.group
-                    x: dragger.centroid.scenePosition.x - width / 2
-                    y: dragger.centroid.scenePosition.y - height / 2
-                    width: chipRow.implicitWidth + Theme.space.md * 2
-                    height: Theme.control.height
-                    radius: Theme.radius.sm
-                    color: Theme.palette.surfaceOverlay
-                    border.width: 1
-                    border.color: Theme.palette.borderStrong
-                    Drag.keys: [dragSource.section.dragKey]
-                    Drag.hotSpot.x: width / 2
-                    Drag.hotSpot.y: height / 2
-
-                    Row {
-                        id: chipRow
-                        anchors.centerIn: parent
-                        spacing: Theme.space.sm
-                        Image {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: Theme.icon.md
-                            height: Theme.icon.md
-                            sourceSize.width: width * 2
-                            sourceSize.height: height * 2
-                            source: Icons.instanceIcon(dragSource.iconKey)
-                            smooth: true
-                            mipmap: true
-                        }
-                        Copy {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: dragSource.name
-                            font.weight: Font.Medium
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     readonly property int headerHeight: Theme.control.height
 
@@ -171,7 +99,7 @@ Column {
                     size: Theme.icon.md
                     rotation: root.collapsed ? -90 : 0
                     color: header.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                    Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+                    Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
 
@@ -252,18 +180,11 @@ Column {
         }
     }
 
-    Menu {
+    GroupMenu {
         id: groupMenu
-        MenuItem {
-            text: qsTr("Rename group\u2026")
-            icon.source: Icons.url("edit")
-            onTriggered: root.renameGroupRequested(root.group)
-        }
-        MenuItem {
-            text: qsTr("Delete group\u2026")
-            icon.source: Icons.url("trash")
-            onTriggered: root.deleteGroupRequested(root.group)
-        }
+        group: root.group
+        onRenameRequested: (group) => root.renameGroupRequested(group)
+        onDeleteRequested: (group) => root.deleteGroupRequested(group)
     }
 
     // Clipped to an animated height, not toggled by `visible`, so a fold reflows the sections below.
@@ -295,19 +216,29 @@ Column {
     Component {
         id: gridComponent
         Grid {
+            property alias cards: gridRepeater
             columns: root.columns
             columnSpacing: root.gutter
             rowSpacing: root.gutter
 
+            ListEntrance { id: gridEntrance; view: gridRepeater }
             Repeater {
+                id: gridRepeater
                 model: root.model
                 delegate: InstanceCard {
                     id: card
+                    required property int index
+                    RiseIn { target: card; index: card.index; gate: gridEntrance }
                     // The row itself, for the one role (packArt) InstanceCard does not require.
                     required property var model
                     width: root.cardWidth
                     packArt: card.model.packArt || ""
                     selected: root.selectedId === instanceId
+                    Keys.onPressed: (event) => {
+                        card.pointerFocus = false
+                        if (root.navigator)
+                            root.navigator(root, card.index, event)
+                    }
                     InstanceDrag {
                         section: root
                         instanceId: card.instanceId
@@ -330,18 +261,28 @@ Column {
     Component {
         id: listComponent
         Column {
+            property alias cards: listRepeater
             width: body.width
             spacing: Theme.space.sm
 
+            ListEntrance { id: listEntrance; view: listRepeater }
             Repeater {
+                id: listRepeater
                 model: root.model
                 delegate: InstanceListRow {
                     id: row
+                    required property int index
+                    RiseIn { target: row; index: row.index; gate: listEntrance }
                     // The row itself, for the one role (packArt) InstanceListRow does not require.
                     required property var model
                     width: body.width
                     packArt: row.model.packArt || ""
                     selected: root.selectedId === instanceId
+                    Keys.onPressed: (event) => {
+                        row.pointerFocus = false
+                        if (root.navigator)
+                            root.navigator(root, row.index, event)
+                    }
                     InstanceDrag {
                         section: root
                         instanceId: row.instanceId

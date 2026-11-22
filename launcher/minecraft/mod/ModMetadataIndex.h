@@ -27,6 +27,11 @@
 #include <QString>
 #include <QStringList>
 
+namespace FS
+{
+	struct Trashed;
+}
+
 // Persistent sidecar index recording how each managed file in a mods-like
 // folder was installed (platform, project, version, SHA-1, dependency flag,
 // install time).
@@ -113,8 +118,10 @@ class ModMetadataIndex
 	bool put(const Entry& entry);
 
 	// Removes the sidecar of `fileName`. Returns true if one existed and was
-	// deleted.
-	bool remove(const QString& fileName);
+	// deleted. With @p trashed the sidecar follows its file into the trash
+	// (and is appended there) so that undoing the removal brings it back.
+	bool remove(const QString& fileName,
+				QList<FS::Trashed>* trashed = nullptr);
 
 	// The absolute path of the sidecar that describes `fileName`, or empty. For
 	// callers that schedule a removal (a modpack update deletes dropped files
@@ -140,7 +147,8 @@ class ModMetadataIndex
 	// is named after the project, so two versions of one mod share a name, and
 	// removing one must not take the other's provenance.
 	bool dropSidecarOwnedBy(const QString& sidecarName,
-							const QString& canonicalName) const;
+							const QString& canonicalName,
+							QList<FS::Trashed>* trashed = nullptr) const;
 
 	// Legacy `.json` sidecars; read-only. Writing the entry again lands in a
 	// `.pw.toml` and removes the old file.

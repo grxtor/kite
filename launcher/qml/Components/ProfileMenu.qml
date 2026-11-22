@@ -11,6 +11,9 @@ import Kite.Theme
  * The account dropdown opened from ProfileButton: who is playing, a quick switch
  * to another signed-in account and sign-out. Anything longer (signing in,
  * offline accounts, skins) goes to the Accounts page (openAccountsRequested()).
+ * While the account cannot play online (`stateKey`) the menu says why under the
+ * name and starts with "Sign in again", or "Open Accounts" for one that is gone.
+ * The keyboard shortcuts sheet is reached from here too.
  */
 Popup {
     id: root
@@ -20,8 +23,12 @@ Popup {
     property string name: ""
     property string kind: ""
     property string avatarSource: ""
+    // "expired", "errored" or "gone" (AccountStates), else empty; stateError is the account's own reason.
+    property string stateKey: ""
+    property string stateError: ""
 
     signal openAccountsRequested()
+    signal shortcutsRequested()
 
     readonly property var accounts: root.controller ? root.controller.accounts : null
 
@@ -116,6 +123,35 @@ Popup {
             }
         }
 
+        Copy {
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.space.md
+            Layout.rightMargin: Theme.space.md
+            Layout.bottomMargin: Theme.space.sm
+            visible: root.stateKey.length > 0
+            text: root.stateError.length > 0 ? root.stateError : AccountStates.summary(root.stateKey)
+            role: "caption"
+            tone: AccountStates.tone(root.stateKey)
+            wrapMode: Text.Wrap
+            maximumLineCount: 3
+            elide: Text.ElideRight
+        }
+
+        ItemDelegate {
+            Layout.fillWidth: true
+            visible: root.stateKey.length > 0
+            hoverEnabled: true
+            text: AccountStates.canSignInAgain(root.stateKey) ? qsTr("Sign in again") : qsTr("Open Accounts")
+            icon.source: Icons.url(AccountStates.canSignInAgain(root.stateKey) ? "refresh" : "users")
+            onClicked: {
+                root.close()
+                if (AccountStates.canSignInAgain(root.stateKey) && root.controller)
+                    root.controller.refreshDefault()
+                else
+                    root.openAccountsRequested()
+            }
+        }
+
         MenuSeparator { Layout.fillWidth: true; visible: root.otherAccounts.length > 0 }
 
         Repeater {
@@ -185,6 +221,16 @@ Popup {
             text: qsTr("Add account")
             icon.source: Icons.url("plus")
             onClicked: { root.close(); root.openAccountsRequested() }
+        }
+
+        MenuSeparator { Layout.fillWidth: true }
+
+        ItemDelegate {
+            Layout.fillWidth: true
+            hoverEnabled: true
+            text: qsTr("Keyboard shortcuts")
+            icon.source: Icons.url("keyboard")
+            onClicked: { root.close(); root.shortcutsRequested() }
         }
 
         MenuSeparator { Layout.fillWidth: true }

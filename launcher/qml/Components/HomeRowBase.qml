@@ -5,10 +5,10 @@ import QtQuick
 import Kite.Theme
 
 /*
- * What every "Continue playing" row of the Sahne, Sade and Gece looks does the same: hover, clicks (the host tells one,
- * two and three apart: select, open, launch), right-click the menu, keyboard (Space selects, Return opens, menu key
- * opens the menu), focus ring. `host` is HomeContinuePlaying. Children go in over the tap handlers, so a Play inside
- * one gets first refusal on a press.
+ * What every "Continue playing" row of the Sahne, Sade and Gece looks does the same: hover, a click (the host opens
+ * the instance's page), right-click the menu, keyboard (Space selects, Return opens, menu key opens the menu), focus
+ * ring. `host` is HomeContinuePlaying. Children go in over the tap handlers, so a Play inside one gets first refusal
+ * on a press.
  */
 Item {
     id: root
@@ -18,6 +18,10 @@ Item {
     // are its; selectedId is the pick.
     required property Item host
     property int cornerRadius: Theme.radius.lg
+    // How far the row's content lifts under the pointer: Theme.motion.lift for a card, 0 for a flat row. The hover
+    // area itself stays put, so the edge never slides out from under the pointer.
+    property int lift: 0
+    default property alias content: liftBox.data
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool running: root.row.isRunning
     readonly property bool selected: root.host.selectedId === root.row.instanceId
@@ -47,6 +51,7 @@ Item {
 
     HoverHandler { id: hoverHandler }
     TapHandler {
+        id: leftTap
         acceptedButtons: Qt.LeftButton
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.host.tap(root.row.instanceId)
@@ -57,5 +62,17 @@ Item {
         onTapped: root.openMenu(null)
     }
 
-    FocusFrame { cornerRadius: root.cornerRadius; z: 1; visible: root.activeFocus }
+    Item {
+        id: liftBox
+        anchors.fill: parent
+        // Pressed, a card (one that lifts) gives a little.
+        scale: root.lift > 0 && leftTap.pressed ? Theme.motion.cardPressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+        transform: Translate {
+            y: !root.hovered || root.lift === 0 ? 0 : leftTap.pressed ? -1 : -root.lift
+            Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+        }
+
+        FocusFrame { cornerRadius: root.cornerRadius; z: 1; visible: root.activeFocus }
+    }
 }

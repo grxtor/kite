@@ -8,9 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * One modpack in Discover's results; the whole card opens the pack's page
- * (installing needs a version pick first, see ModpackDetail.qml). Every card
- * is the same height. `skeleton: true` swaps every field for a Skeleton
+ * One modpack in Discover's results; the whole card opens the pack's page,
+ * and "Install" under the numbers installs the version that page preselects
+ * (DiscoverQuickInstall.qml). Every card is the same height. `skeleton: true` swaps every field for a Skeleton
  * block, so the properties below have defaults instead of being `required`.
  */
 AbstractButton {
@@ -30,6 +30,12 @@ AbstractButton {
     // A colour, or undefined/null when the provider has none (CurseForge never does).
     property var accentColor: undefined
     property bool skeleton: false
+    // The row's own install: "" (not started), "pending" (looking up the version), "installing",
+    // "installed" or "failed" (`installError` says why).
+    property string installState: ""
+    property string installError: ""
+    property bool installEnabled: true
+    signal installRequested()
 
     readonly property int logoSize: Theme.control.heightLg * 2
     readonly property int logoSourceSize: logoSize * 2
@@ -224,7 +230,7 @@ AbstractButton {
 
         ColumnLayout {
             Layout.preferredWidth: root.statsWidth
-            Layout.alignment: Qt.AlignTop
+            Layout.fillHeight: true
             spacing: Theme.space.xs
 
             Row {
@@ -268,6 +274,25 @@ AbstractButton {
                 width: root.statsWidth / 2
                 height: Theme.type.label.pixelSize
                 radius: Theme.radius.sm
+            }
+            Item { Layout.fillHeight: true }
+            Button {
+                id: installButton
+                readonly property bool busy: root.installState === "pending" || root.installState === "installing"
+                Layout.alignment: Qt.AlignRight
+                visible: !root.skeleton
+                enabled: root.installEnabled && !busy && root.installState !== "installed"
+                highlighted: root.hovered && enabled
+                buttonSize: "sm"
+                text: busy ? qsTr("Installing…")
+                    : root.installState === "installed" ? qsTr("Installed")
+                    : root.installState === "failed" ? qsTr("Try again") : qsTr("Install")
+                icon.source: Icons.url(root.installState === "installed" ? "check" : "download")
+                Accessible.name: qsTr("Install %1").arg(root.title)
+                ToolTip.visible: hovered && root.installState === "failed" && root.installError.length > 0
+                ToolTip.delay: 400
+                ToolTip.text: root.installError
+                onClicked: root.installRequested()
             }
         }
     }

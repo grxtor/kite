@@ -52,8 +52,34 @@ void ModrinthModpackDetail::reset(const QString& projectId)
 	setBody(QString());
 	setVersions(QVariantList());
 	setGallery(QVariantList());
+	setLinks(QVariantList());
+	setContents(QString(), QVariantList(), false);
 	setError(QString());
 	setLoading(true);
+}
+
+void ModrinthModpackDetail::setLinks(const QVariantList& links,
+									 const QString& license,
+									 const QString& licenseUrl)
+{
+	if (m_links == links && m_license == license &&
+		m_licenseUrl == licenseUrl) {
+		return;
+	}
+	m_links = links;
+	m_license = license;
+	m_licenseUrl = licenseUrl;
+	emit linksChanged();
+}
+
+void ModrinthModpackDetail::setContents(const QString& versionId,
+										const QVariantList& contents,
+										bool loading)
+{
+	m_contentsVersionId = versionId;
+	m_contents = contents;
+	m_contentsLoading = loading;
+	emit contentsChanged();
 }
 
 void ModrinthModpackDetail::setTitle(const QString& title)
@@ -132,6 +158,9 @@ ModrinthModpackModel::~ModrinthModpackModel()
 	}
 	if (m_versionsJob) {
 		m_versionsJob->abort();
+	}
+	if (m_contentsJob) {
+		m_contentsJob->abort();
 	}
 }
 
@@ -441,6 +470,12 @@ void ModrinthModpackModel::loadDetail(const QString& projectId)
 		m_versionsJob.reset();
 	}
 
+	if (m_contentsJob) {
+		m_contentsJob->abort();
+		m_contentsJob.reset();
+	}
+	m_versionDependencies.clear();
+
 	++m_detailGeneration;
 	const quint64 generation = m_detailGeneration;
 	m_bodyDone = false;
@@ -515,6 +550,9 @@ void ModrinthModpackModel::fetchDetailBody(const QString& projectId,
 							}
 							QVariantMap entry;
 							entry[QStringLiteral("url")] = url;
+							/* "url" is a reduced copy for a page; the viewer shows this one. */
+							entry[QStringLiteral("rawUrl")] =
+								Json::ensureString(imageObj, "raw_url", url);
 							entry[QStringLiteral("featured")] =
 								Json::ensureBoolean(imageObj, "featured", false);
 							entry[QStringLiteral("title")] =
@@ -528,6 +566,13 @@ void ModrinthModpackModel::fetchDetailBody(const QString& projectId,
 									   !b.toMap().value(QStringLiteral("featured")).toBool();
 							});
 						m_detail->setGallery(gallery);
+
+						const QJsonObject license =
+							Json::ensureObject(obj, "license");
+						m_detail->setLinks(
+							parseLinks(obj),
+							Json::ensureString(license, "name", QString()),
+							Json::ensureString(license, "url", QString()));
 					}
 				}
 				markDetailPartDone(generation, true);
@@ -565,8 +610,20 @@ void ModrinthModpackModel::fetchDetailVersions(const QString& projectId,
 				job->deleteLater();
 				if (generation == m_detailGeneration) {
 					m_versionsJob.reset();
-					m_detail->setVersions(
-						parseVersionsJson(*response, projectId));
+					m_versionDependencies =
+						parseVersionDependencies(*response);
+					QVariantList versions =
+						parseVersionsJson(*response, projectId);
+					for (QVariant& raw : versions) {
+						QVariantMap entry = raw.toMap();
+						entry[QStringLiteral("contentCount")] = int(
+							m_versionDependencies
+								.value(entry.value(QStringLiteral("id"))
+										   .toString())
+								.size());
+						raw = entry;
+					}
+					m_detail->setVersions(versions);
 				}
 				markDetailPartDone(generation, false);
 			});
@@ -579,6 +636,150 @@ void ModrinthModpackModel::fetchDetailVersions(const QString& projectId,
 				}
 				markDetailPartDone(generation, false);
 			});
+	job->start();
+}
+
+QVariantList ModrinthModpackModel::parseLinks(const QJsonObject& project)
+{
+	QVariantList links;
+	auto add = [&links](const QString& kind, const QString& url) {
+		if (url.isEmpty()) {
+			return;
+		}
+		QVariantMap entry;
+		entry[QStringLiteral("kind")] = kind;
+		entry[QStringLiteral("url")] = url;
+		links.append(entry);
+	};
+	const QString slug = Json::ensureString(project, "slug", QString());
+	if (!slug.isEmpty()) {
+		add(QStringLiteral("website"), ModrinthApi::siteModpackUrl(slug));
+	}
+	add(QStringLiteral("source"),
+		Json::ensureString(project, "source_url", QString()));
+	add(QStringLiteral("issues"),
+		Json::ensureString(project, "issues_url", QString()));
+	add(QStringLiteral("wiki"),
+		Json::ensureString(project, "wiki_url", QString()));
+	add(QStringLiteral("discord"),
+		Json::ensureString(project, "discord_url", QString()));
+	return links;
+}
+
+QHash<QString, QStringList>
+ModrinthModpackModel::parseVersionDependencies(const QByteArray& versionsBytes)
+{
+	QHash<QString, QStringList> result;
+	const QJsonDocument doc = QJsonDocument::fromJson(versionsBytes);
+	for (const auto& versionRaw : doc.array()) {
+		const QJsonObject version = versionRaw.toObject();
+		const QString id = Json::ensureString(version, "id", QString());
+		if (id.isEmpty()) {
+			continue;
+		}
+		QStringList projects;
+		for (const auto& depRaw : Json::ensureArray(version, "dependencies")) {
+			const QString project = Json::ensureString(
+				depRaw.toObject(), "project_id", QString());
+			if (!project.isEmpty() && !projects.contains(project)) {
+				projects.append(project);
+			}
+		}
+		if (!projects.isEmpty()) {
+			result.insert(id, projects);
+		}
+	}
+	return result;
+}
+
+QVariantList ModrinthModpackModel::parseContentsJson(const QByteArray& bytes)
+{
+	QVariantList contents;
+	const QJsonDocument doc = QJsonDocument::fromJson(bytes);
+	for (const auto& projectRaw : doc.array()) {
+		const QJsonObject project = projectRaw.toObject();
+		const QString title = Json::ensureString(project, "title", QString());
+		if (title.isEmpty()) {
+			continue;
+		}
+		const QString slug = Json::ensureString(project, "slug", QString());
+		QVariantMap entry;
+		entry[QStringLiteral("title")] = title;
+		entry[QStringLiteral("description")] =
+			Json::ensureString(project, "description", QString());
+		entry[QStringLiteral("iconUrl")] =
+			Json::ensureString(project, "icon_url", QString());
+		entry[QStringLiteral("kind")] =
+			Json::ensureString(project, "project_type", QString());
+		entry[QStringLiteral("url")] =
+			slug.isEmpty() ? QString() : ModrinthApi::siteProjectUrl(slug);
+		contents.append(entry);
+	}
+	std::stable_sort(contents.begin(), contents.end(),
+					 [](const QVariant& a, const QVariant& b) {
+						 return a.toMap()
+									.value(QStringLiteral("title"))
+									.toString()
+									.compare(b.toMap()
+												 .value(QStringLiteral("title"))
+												 .toString(),
+											 Qt::CaseInsensitive) < 0;
+					 });
+	return contents;
+}
+
+void ModrinthModpackModel::loadContents(const QString& versionId)
+{
+	if (versionId.isEmpty() || m_detail->contentsVersionId() == versionId) {
+		return;
+	}
+	if (m_contentsJob) {
+		m_contentsJob->abort();
+		m_contentsJob.reset();
+	}
+	const QStringList projects = m_versionDependencies.value(versionId);
+	if (projects.isEmpty()) {
+		m_detail->setContents(versionId, QVariantList(), false);
+		return;
+	}
+	m_detail->setContents(versionId, QVariantList(), true);
+
+	const quint64 generation = m_detailGeneration;
+	/* A big pack names hundreds of projects; asked in parts so no URL grows
+	 * past what a server takes. */
+	const int perRequest = 150;
+	auto responses = std::make_shared<QList<QByteArray>>();
+	responses->resize((projects.size() + perRequest - 1) / perRequest);
+	auto* job = new NetJob(
+		QStringLiteral("Modrinth::PackContents(%1)").arg(versionId),
+		LAUNCHER->network());
+	for (int part = 0; part < responses->size(); ++part) {
+		job->addNetAction(Net::Download::makeByteArray(
+			ModrinthApi::projectsUrl(projects.mid(part * perRequest, perRequest)),
+			&(*responses)[part]));
+	}
+	m_contentsJob = job;
+	auto finish = [this, job, responses, generation, versionId](bool ok) {
+		job->deleteLater();
+		if (generation != m_detailGeneration ||
+			m_detail->contentsVersionId() != versionId) {
+			return;
+		}
+		m_contentsJob.reset();
+		QVariantList contents;
+		if (ok) {
+			QJsonArray all;
+			for (const QByteArray& bytes : *responses) {
+				for (const auto& project : QJsonDocument::fromJson(bytes).array()) {
+					all.append(project);
+				}
+			}
+			contents = parseContentsJson(QJsonDocument(all).toJson());
+		}
+		m_detail->setContents(versionId, contents, false);
+	};
+	connect(job, &NetJob::succeeded, this, [finish] { finish(true); });
+	connect(job, &NetJob::failed, this, [finish](QString) { finish(false); });
 	job->start();
 }
 

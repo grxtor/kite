@@ -98,6 +98,7 @@ Item {
         anchors.bottom: parent.bottom
         chat: root.chat
         name: root.friend.name || ""
+        peer: root.uuid
         canSend: root.isFriend && root.connected
         reason: !root.isFriend ? qsTr("%1 is not on your friends list any more, so you can't message them.").arg(root.friend.name || "")
                                : qsTr("Messages can't be sent until Kite's friends server answers.")

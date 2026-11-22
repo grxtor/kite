@@ -177,8 +177,54 @@ namespace FS
 		return true;
 	}
 
+	namespace
+	{
+		QString s_testTrashFolder;
+
+		/* Moves a file or a whole folder. QFile::rename is asked first; for a
+		 * folder QDir::rename is the call meant for it, and the MinGW build's
+		 * Qt would not move a world's folder with the former. */
+		bool movePath(const QString& from, const QString& to)
+		{
+			if (QFile::rename(from, to)) {
+				return true;
+			}
+			return QFileInfo(from).isDir() && QDir().rename(from, to);
+		}
+
+		bool trashIntoTestFolder(const QString& path, QString* pathInTrash)
+		{
+			const QFileInfo info(path);
+			if (!info.exists() || !ensureFolderPathExists(s_testTrashFolder)) {
+				return false;
+			}
+			QString target = PathCombine(s_testTrashFolder, info.fileName());
+			for (int n = 2; QFileInfo::exists(target); ++n) {
+				target = PathCombine(
+					s_testTrashFolder,
+					QStringLiteral("%1 %2").arg(info.fileName()).arg(n));
+			}
+			if (!movePath(info.absoluteFilePath(), target)) {
+				return false;
+			}
+			if (pathInTrash) {
+				*pathInTrash = target;
+			}
+			return true;
+		}
+	} // namespace
+
+	void setTrashFolderForTests(const QString& folder)
+	{
+		s_testTrashFolder = folder;
+	}
+
 	bool canTrash()
 	{
+		if (!s_testTrashFolder.isEmpty()) {
+			return true;
+		}
+
 		/* Qt writes into the sandbox's own trash instead of asking the host
 		 * through the portal, so the folder would vanish with no way back. */
 		if (DesktopServices::isFlatpak()) {
@@ -205,7 +251,43 @@ namespace FS
 		if (!canTrash()) {
 			return false;
 		}
+		if (!s_testTrashFolder.isEmpty()) {
+			return trashIntoTestFolder(path, pathInTrash);
+		}
 		return QFile::moveToTrash(path, pathInTrash);
+	}
+
+	bool trashOrDelete(const QString& path, QList<Trashed>* trashed)
+	{
+		const QString absolute = QFileInfo(path).absoluteFilePath();
+		QString pathInTrash;
+		if (trash(absolute, &pathInTrash)) {
+			qDebug() << absolute << "moved to the trash at" << pathInTrash;
+			/* Without knowing where it landed there is nothing to move
+			 * back, so it is not offered for undo. */
+			if (trashed && !pathInTrash.isEmpty()) {
+				trashed->append({absolute, pathInTrash});
+			}
+			return true;
+		}
+		qDebug() << absolute << "is deleted outright (no trash to move it to)";
+		return deletePath(absolute);
+	}
+
+	bool restoreTrashed(const Trashed& item)
+	{
+		if (item.trashPath.isEmpty() || QFileInfo::exists(item.path)) {
+			qWarning() << "Not restoring" << item.path
+					   << "-- something else is there now.";
+			return false;
+		}
+		if (!movePath(item.trashPath, item.path)) {
+			qWarning() << "Could not move" << item.trashPath << "back to"
+					   << item.path;
+			return false;
+		}
+		qDebug() << "Restored" << item.path << "from" << item.trashPath;
+		return true;
 	}
 
 	bool overrideFolder(const QString& destination, const QString& source)

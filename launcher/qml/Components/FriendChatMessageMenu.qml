@@ -41,7 +41,7 @@ Menu {
         root.open()
     }
 
-    x: root.anchorRight - root.width
+    x: Math.round(root.anchorRight - root.width)
     y: root.anchorBottom + Theme.space.xs
 
     MenuEntry {

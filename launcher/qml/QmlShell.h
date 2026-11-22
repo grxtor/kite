@@ -58,6 +58,7 @@ class FeaturedServers;
 class FriendsController;
 class ShareCodesController;
 class ServerPinger;
+class NetworkStatus;
 class CatPackList;
 class RecentWorldsModel;
 class JavaInstallList;
@@ -146,6 +147,8 @@ class QmlShell : public QObject
 	Q_PROPERTY(QObject* shareCodes READ shareCodes CONSTANT)
 	/// Live status of Minecraft servers (ServerPinger), shared by every view.
 	Q_PROPERTY(QObject* serverPinger READ serverPinger CONSTANT)
+	/// Whether the machine has a connection (NetworkStatus `online`).
+	Q_PROPERTY(QObject* network READ network CONSTANT)
 	/// The big servers offered for one-click joining (FeaturedServers).
 	Q_PROPERTY(QObject* featuredServers READ featuredServers CONSTANT)
 	/// Distinct groups in use, derived like the library's section headers.
@@ -271,6 +274,12 @@ class QmlShell : public QObject
 	 * page. One is kept per instance so a download started by a drop outlives
 	 * the next one; null if @p id names no Minecraft instance. */
 	Q_INVOKABLE QObject* contentDrop(const QString& id);
+	/* What a drop that is on no instance holds (ContentDrop::sort()): {rows,
+	 * unknown, content, imports}. */
+	Q_INVOKABLE QVariantMap sortDrop(const QStringList& urls) const;
+	/* Every Minecraft instance a drop can be added to, most recently played
+	 * first; the maps of instancesForVersion(). */
+	Q_INVOKABLE QVariantList dropTargets() const;
 	QObject* accountsController() const;
 	QObject* newInstance() const;
 	QObject* javaController() const;
@@ -286,6 +295,7 @@ class QmlShell : public QObject
 	QObject* friends() const;
 	QObject* shareCodes() const;
 	QObject* serverPinger() const;
+	QObject* network() const;
 	QObject* featuredServers() const;
 
 	/* The actions below emit the matching *Requested() signal; Application
@@ -370,6 +380,10 @@ class QmlShell : public QObject
 	 * instance cannot start: a running or broken one only gets its Log or
 	 * edit page (Application::launch()). */
 	Q_INVOKABLE bool joinServer(const QString& id, const QString& address);
+	/* Launches straight into the single-player world in save folder
+	 * @p folderName (the game's quick play; a version without it starts at
+	 * the title screen). False as for joinServer(). */
+	Q_INVOKABLE bool joinWorld(const QString& id, const QString& folderName);
 	/* The Minecraft instances on exactly @p mcVersion, most recently played
 	 * first: [{id, name, iconKey, version, loader, lastLaunch, running,
 	 * canLaunch}]. Empty for an empty version. */
@@ -512,6 +526,7 @@ class QmlShell : public QObject
 	void crashAnalysed(const QString& id, const QString& cause, bool fresh);
 	void folderRequested(const QString& id);
 	void joinServerRequested(const QString& id, const QString& address);
+	void joinWorldRequested(const QString& id, const QString& folderName);
 
 	void importRequested(const QString& source);
 	void navigateRequested(const QString& target);
@@ -570,6 +585,7 @@ class QmlShell : public QObject
 	mutable std::unique_ptr<FriendsController> m_friends;
 	mutable std::unique_ptr<ShareCodesController> m_shareCodes;
 	mutable std::unique_ptr<ServerPinger> m_serverPinger;
+	mutable std::unique_ptr<NetworkStatus> m_network;
 	mutable std::unique_ptr<FeaturedServers> m_featuredServers;
 	/* Keyed by (anchor, anchorContext). Declared with the other cached models
 	 * so they are destroyed before the engine. */

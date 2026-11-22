@@ -24,22 +24,4 @@ Rectangle {
         level: glass.level || Theme.elevation.md
     }
 
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: 1
-        radius: Math.max(0, glass.radius - 1)
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.glass.sheen }
-            GradientStop { position: 0.5; color: "transparent" }
-        }
-    }
-
-    // Inset by the corner so the line never pokes past the rounding.
-    Rectangle {
-        x: Math.max(glass.radius, 1)
-        y: 1
-        width: glass.width - x * 2
-        height: 1
-        color: Theme.glass.highlight
-    }
 }

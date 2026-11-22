@@ -38,6 +38,19 @@ Item {
         updateDialog.show(watcher)
     }
 
+    // What the last check found, without checking again: the same review, with only the file @p key ticked, or
+    // every update for an empty key.
+    function reviewUpdates(key) {
+        const found = root.updater ? root.updater.updates : null
+        if (!found || found.count === 0)
+            return
+        if (key.length === 0)
+            found.setAllChecked(true)
+        else if (!found.checkOnly(key))
+            return
+        updateDialog.show(null)
+    }
+
     function changeVersion(key) {
         if (!root.updater)
             return

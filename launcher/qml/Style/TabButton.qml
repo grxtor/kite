@@ -6,9 +6,9 @@ import QtQuick
 import QtQuick.Templates as T
 import Kite.Theme
 
-// The active tab is a soft pill (accentSubtle behind an accentText label), the
-// rest plain text with a neutral hover overlay: the tab-strip grammar Theme.qml
-// documents.
+// Plain text: the active tab textPrimary, the rest textTertiary (textSecondary
+// under the pointer). The 2 px accent underline is TabBar's, one for the row.
+// No pill: the tab-strip grammar Theme.qml documents.
 T.TabButton {
     id: control
 
@@ -26,9 +26,9 @@ T.TabButton {
     icon.color: contentColor
 
     readonly property color contentColor: !control.enabled ? Theme.palette.textDisabled
-        : control.checked ? Theme.palette.accentText
-        : control.hovered || control.down ? Theme.palette.textPrimary
-        : Theme.palette.textSecondary
+        : control.checked ? Theme.palette.textPrimary
+        : control.hovered || control.down ? Theme.palette.textSecondary
+        : Theme.palette.textTertiary
 
     // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
     contentItem: IconText {
@@ -47,19 +47,13 @@ T.TabButton {
         font.pixelSize: Theme.type.body.pixelSize
         font.weight: control.checked ? Theme.type.bodyStrong.weight : Theme.type.label.weight
         color: control.contentColor
+        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
     }
 
     background: Rectangle {
         implicitHeight: Theme.control.heightSm + Theme.space.xxs
-        radius: Theme.radius.pill
-        color: control.checked ? Theme.palette.accentSubtle
-             : control.down ? Theme.palette.pressedOverlay
-             : control.hovered ? Theme.palette.hoverOverlay
-             : "transparent"
-
-        Behavior on color {
-            ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-        }
+        radius: Theme.radius.sm
+        color: "transparent"
 
         FocusRing {
             visible: control.visualFocus

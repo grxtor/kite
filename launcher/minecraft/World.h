@@ -23,6 +23,11 @@
 #include <QDateTime>
 #include <optional>
 
+namespace FS
+{
+	struct Trashed;
+}
+
 struct GameType {
 	GameType() = default;
 	GameType(std::optional<int> original);
@@ -75,6 +80,17 @@ class World
 	{
 		return m_randomSeed;
 	}
+	// level.dat's "hardcore" flag; a hardcore world's GameType is Survival.
+	bool hardcore() const
+	{
+		return m_hardcore;
+	}
+	// The game version the world was last saved in ("1.21.4"), from
+	// level.dat's Version compound (1.9 on). Empty for older worlds.
+	QString gameVersion() const
+	{
+		return m_gameVersion;
+	}
 	bool isValid() const
 	{
 		return is_valid;
@@ -87,8 +103,9 @@ class World
 	{
 		return m_containerFile;
 	}
-	// delete all the files of this world
-	bool destroy();
+	// Moves this world to the trash, or deletes it where there is none.
+	// @p trashed receives it only when it went to the trash.
+	bool destroy(QList<FS::Trashed>* trashed = nullptr);
 	// replace this world with a copy of the other
 	bool replace(World& with);
 	// change the world's filesystem path (used by world lists for *MAGIC*
@@ -119,5 +136,7 @@ class World
 	int64_t m_randomSeed = 0;
 	std::optional<int64_t> m_dayCount;
 	GameType m_gameType;
+	bool m_hardcore = false;
+	QString m_gameVersion;
 	bool is_valid = false;
 };

@@ -42,6 +42,114 @@ class ThemeTest : public QObject
 	Q_OBJECT
 
   private slots:
+	/* Every motion token resolves from the style: playful is the springy
+	 * default, calm is the earlier quiet set with no overshoot, off zeroes
+	 * every duration. An unknown style reads as playful. */
+	void motionTokensFollowTheStyle()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(QByteArrayLiteral(
+							   "import QtQuick\n"
+							   "import Kite.Theme\n"
+							   "QtObject {\n"
+							   "    property QtObject themeRef: Theme\n"
+							   "    property QtObject motion: Theme.motion\n"
+							   "    property int outCubic: Easing.OutCubic\n"
+							   "    property int outBack: Easing.OutBack\n"
+							   "    function tame(v, target, travel) { return Theme.motion.tame(v, target, travel) }\n"
+							   "}\n"),
+						   QUrl(QStringLiteral("inline")));
+		std::unique_ptr<QObject> root(component.create());
+		QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+		QObject* theme = root->property("themeRef").value<QObject*>();
+		QObject* motion = root->property("motion").value<QObject*>();
+		QVERIFY(theme != nullptr && motion != nullptr);
+		const int outCubic = root->property("outCubic").toInt();
+		const int outBack = root->property("outBack").toInt();
+		const auto integer = [motion](const char* name) { return motion->property(name).toInt(); };
+		const auto real = [motion](const char* name) { return motion->property(name).toDouble(); };
+
+		QCOMPARE(theme->property("motionStyle").toString(), QStringLiteral("playful"));
+		QCOMPARE(motion->property("style").toString(), QStringLiteral("playful"));
+		QCOMPARE(motion->property("reduced").toBool(), false);
+		QCOMPARE(integer("fast"), 140);
+		QCOMPARE(integer("normal"), 240);
+		QCOMPARE(integer("slow"), 400);
+		QCOMPARE(integer("press"), 100);
+		QCOMPARE(integer("pop"), 240);
+		QCOMPARE(integer("stagger"), 45);
+		QCOMPARE(integer("staggerRows"), 12);
+		QCOMPARE(integer("shift"), 18);
+		QCOMPARE(integer("rise"), 14);
+		QCOMPARE(integer("dialogRise"), 16);
+		QCOMPARE(integer("lift"), 6);
+		QCOMPARE(real("pressScale"), 0.93);
+		QCOMPARE(real("pressScaleLarge"), 0.95);
+		QCOMPARE(real("pressScaleLight"), 0.97);
+		QCOMPARE(real("cardPressScale"), 0.985);
+		QCOMPARE(real("popScale"), 0.88);
+		QCOMPARE(real("appearScale"), 0.7);
+		QCOMPARE(real("tickScale"), 0.5);
+		// Opacity and colour never overshoot; transforms do.
+		QCOMPARE(integer("easing"), outCubic);
+		QCOMPARE(integer("popEasing"), outBack);
+		QCOMPARE(real("popOvershoot"), 1.7);
+		QCOMPARE(real("knobOvershoot"), 2.0);
+
+		// A marker that came 300 px passes its row by slideOvershootMax at
+		// most; on the way there, and over a short hop, it is left alone.
+		const auto tame = [&root](double value, double target, double travel) {
+			QVariant result;
+			QMetaObject::invokeMethod(root.get(), "tame", Q_RETURN_ARG(QVariant, result),
+									  Q_ARG(QVariant, value), Q_ARG(QVariant, target), Q_ARG(QVariant, travel));
+			return result.toDouble();
+		};
+		const double cap = integer("slideOvershootMax");
+		QCOMPARE(tame(250, 300, 300), 250.0);
+		QVERIFY(tame(329, 300, 300) > 300.0);
+		QVERIFY(tame(329, 300, 300) <= 300.0 + cap);
+		QVERIFY(tame(-29, 0, -300) >= -cap);
+		QCOMPARE(tame(42, 40, 20), 42.0);
+
+		QVERIFY(theme->setProperty("motionStyle", QStringLiteral("calm")));
+		QCOMPARE(motion->property("style").toString(), QStringLiteral("calm"));
+		QCOMPARE(motion->property("reduced").toBool(), false);
+		QCOMPARE(integer("fast"), 120);
+		QCOMPARE(integer("normal"), 180);
+		QCOMPARE(integer("slow"), 260);
+		QCOMPARE(integer("press"), 80);
+		QCOMPARE(integer("pop"), 120);
+		QCOMPARE(integer("stagger"), 30);
+		QCOMPARE(integer("shift"), 10);
+		QCOMPARE(integer("rise"), 8);
+		QCOMPARE(integer("dialogRise"), 10);
+		QCOMPARE(integer("lift"), 3);
+		QCOMPARE(real("pressScale"), 0.97);
+		QCOMPARE(real("pressScaleLarge"), 0.97);
+		QCOMPARE(real("cardPressScale"), 1.0);
+		QCOMPARE(real("popScale"), 0.96);
+		QCOMPARE(real("appearScale"), 0.85);
+		QCOMPARE(real("tickScale"), 0.85);
+		QCOMPARE(integer("easing"), outCubic);
+		QCOMPARE(integer("popEasing"), outCubic);
+		QCOMPARE(real("popOvershoot"), 0.0);
+		QCOMPARE(real("knobOvershoot"), 0.0);
+		// Nothing overshoots, so nothing is tamed.
+		QCOMPARE(tame(330, 300, 300), 330.0);
+
+		QVERIFY(theme->setProperty("motionStyle", QStringLiteral("off")));
+		QCOMPARE(motion->property("reduced").toBool(), true);
+		for (const char* duration : {"fast", "normal", "slow", "press", "pop", "stagger", "pulse"})
+			QCOMPARE(integer(duration), 0);
+
+		QVERIFY(theme->setProperty("motionStyle", QStringLiteral("nonsense")));
+		QCOMPARE(motion->property("style").toString(), QStringLiteral("playful"));
+		QCOMPARE(motion->property("reduced").toBool(), false);
+		QCOMPARE(integer("slow"), 400);
+	}
+
 	void tokensAndModeSwitch()
 	{
 		QQmlEngine engine;
@@ -99,9 +207,10 @@ class ThemeTest : public QObject
 		QCOMPARE(root->property("controlHeight").toInt(), 40);
 		QCOMPARE(root->property("controlHeightLg").toInt(), 48);
 
-		// Motion runs at its token durations until the Reduce motion setting
-		// (Theme.reduceMotion, set by SettingsStore) zeroes them all, live.
-		QCOMPARE(root->property("motionFast").toInt(), 120);
+		// Motion starts in the playful style and runs at its token durations
+		// until the Motion setting (Theme.motionStyle, set by SettingsStore)
+		// is "off", which zeroes them all, live.
+		QCOMPARE(root->property("motionFast").toInt(), 140);
 		QCOMPARE(root->property("motionPulse").toInt(), 900);
 		QCOMPARE(root->property("motionReduced").toBool(), false);
 		QCOMPARE(root->property("iconMid").toInt(), 20);
@@ -129,12 +238,12 @@ class ThemeTest : public QObject
 		QCOMPARE(root->property("dangerSoft").value<QColor>(), dark.dangerSubtle);
 		QCOMPARE(root->property("unknownInk").value<QColor>(), dark.textSecondary);
 
-		QVERIFY(themeRef->setProperty("reduceMotion", true));
+		QVERIFY(themeRef->setProperty("motionStyle", QStringLiteral("off")));
 		QCOMPARE(root->property("motionFast").toInt(), 0);
 		QCOMPARE(root->property("motionPulse").toInt(), 0);
 		QCOMPARE(root->property("motionReduced").toBool(), true);
-		QVERIFY(themeRef->setProperty("reduceMotion", false));
-		QCOMPARE(root->property("motionFast").toInt(), 120);
+		QVERIFY(themeRef->setProperty("motionStyle", QStringLiteral("playful")));
+		QCOMPARE(root->property("motionFast").toInt(), 140);
 
 		// Switching mode replaces the whole theme as one unit: `changed` fires
 		// once per switch, not once per property.

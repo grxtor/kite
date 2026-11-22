@@ -17,7 +17,7 @@ Rectangle {
         tip: root.railed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
         rotation: root.railed ? 180 : 0
 
-        Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
         onClicked: root.setCollapsed(!SettingsStore.bool("UiSidebarCollapsed"))
     }
@@ -36,9 +36,6 @@ Rectangle {
     // a short window.
     property var recentModel: null
     property int recentLimit: 5
-    // On Home a recent tile picks the instance for the hero (one click), opens its page (two) or launches it
-    // (three); elsewhere one click opens the page.
-    property bool pickOnTap: false
 
     property string accountName: ""
     property string accountKind: ""
@@ -77,11 +74,11 @@ Rectangle {
     readonly property int brandGap: Theme.space.md
 
     signal itemActivated(string id)
-    signal recentSelectRequested(string id)
     signal recentActivated(string id)
     signal recentPlayRequested(string id)
     signal newInstanceRequested()
     signal openAccountsRequested()
+    signal shortcutsRequested()
     signal widthCommitted(int width)
 
     function openProfileMenu() { accountButton.openMenu() }
@@ -295,14 +292,8 @@ Rectangle {
                 selected: root.selectedNavItem === recentDelegate
                 // The selection's fill under this tile, only in the labelled sidebar.
                 surround: selected && !root.railed ? Theme.palette.surfaceRaised : root.surround
-                onClicked: root.pickOnTap ? taps.tap() : root.recentActivated(instanceId)
+                onClicked: root.recentActivated(instanceId)
                 Keys.onReturnPressed: root.recentActivated(instanceId)
-                TapSequence {
-                    id: taps
-                    onSingle: root.recentSelectRequested(recentDelegate.instanceId)
-                    onTwice: root.recentActivated(recentDelegate.instanceId)
-                    onThrice: if (!recentDelegate.isRunning) root.recentPlayRequested(recentDelegate.instanceId)
-                }
                 onPlayRequested: root.recentPlayRequested(instanceId)
             }
         }
@@ -371,7 +362,9 @@ Rectangle {
             kind: root.accountKind
             avatarSource: root.accountAvatarSource
             controller: root.accountsController
+            surround: root.surround
             onOpenAccountsRequested: root.openAccountsRequested()
+            onShortcutsRequested: root.shortcutsRequested()
         }
     }
 

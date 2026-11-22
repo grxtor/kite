@@ -26,12 +26,15 @@ HomeRowBase {
     cornerRadius: Theme.radius.md
 
     StateFill {
+        id: fill
         anchors.fill: parent
         anchors.leftMargin: -root.bleed
         anchors.rightMargin: -root.bleed
         radius: Theme.radius.md
         hovered: root.hovered
         active: root.selected
+        // The pick is a stronger neutral lift, not an accent slab.
+        activeFill: Theme.palette.pressedOverlay
     }
     Rectangle {
         anchors.left: parent.left
@@ -53,7 +56,8 @@ HomeRowBase {
             Layout.preferredHeight: root.tileSize
             row: root.row
             radius: Theme.radius.md - 2
-            surround: Theme.palette.canvas
+            // What is really behind the tile: the page under the row's own (translucent) fill.
+            surround: Qt.tint(Theme.palette.canvas, fill.color)
         }
 
         ColumnLayout {

@@ -375,7 +375,8 @@ bool ModFolderModel::setModStatus(const QModelIndexList& indexes,
 	return true;
 }
 
-bool ModFolderModel::deleteMods(const QModelIndexList& indexes)
+bool ModFolderModel::deleteMods(const QModelIndexList& indexes,
+								QList<FS::Trashed>* trashed)
 {
 	if (interaction_disabled) {
 		return false;
@@ -387,9 +388,19 @@ bool ModFolderModel::deleteMods(const QModelIndexList& indexes)
 	for (auto i : indexes) {
 		Mod& m = mods[i.row()];
 		const QString fileName = m.filename().fileName();
-		if (m.destroy()) {
+		QList<FS::Trashed> fileTrashed;
+		if (m.destroy(&fileTrashed)) {
 			if (m_metadata) {
-				m_metadata->remove(fileName);
+				/* The sidecar goes where its file went: it can only come back
+				 * if the file can. */
+				QList<FS::Trashed> sidecarTrashed;
+				m_metadata->remove(fileName, fileTrashed.isEmpty()
+												 ? nullptr
+												 : &sidecarTrashed);
+				fileTrashed.append(sidecarTrashed);
+			}
+			if (trashed) {
+				trashed->append(fileTrashed);
 			}
 		}
 	}

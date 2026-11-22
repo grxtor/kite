@@ -93,6 +93,8 @@ class FlameModpackModel : public QAbstractListModel
 		QStringList categories;
 		QStringList gameVersions;
 		QStringList screenshots;
+		/* {kind, url} as ModrinthModpackDetail::links. */
+		QVariantList links;
 		/* The file CurseForge features; featured in the version box. */
 		int mainFileId = 0;
 	};

@@ -81,6 +81,8 @@ AbstractButton {
             radius: Theme.radius.sm
             color: "transparent"
             lifted: control.hovered
+            scale: control.down ? Theme.motion.pressScale : 1
+            Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
             matte: !control.iconFills || !Theme.solidShell ? "transparent"
                  : Qt.tint(control.surround, control.compact ? "transparent"
                                             : control.down ? Theme.palette.pressedOverlay

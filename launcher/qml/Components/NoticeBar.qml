@@ -28,6 +28,14 @@ Rectangle {
     color: Theme.tone(root.tone).soft
     clip: true
 
+    // Appearing, it fades in; it never overshoots, and going it is simply gone.
+    onVisibleChanged: if (root.visible && !Theme.motion.reduced) appear.restart()
+    NumberAnimation {
+        id: appear
+        target: root; property: "opacity"; from: 0; to: 1
+        duration: Theme.motion.normal; easing.type: Theme.motion.easing
+    }
+
     LaunchProgressBar {
         anchors.left: parent.left
         anchors.right: parent.right

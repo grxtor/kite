@@ -10,9 +10,10 @@ import Kite.Theme
  * The launcher's one most important button: square and icon-only on a card,
  * wide with a label in the hero; turns into Stop (danger colour) while the
  * game runs. `hero` marks the bottom play bar's instance, which adds a burst
- * of pixel squares on click. Styled like the primary Style Button, but the
- * dark theme's light coral danger fill takes the canvas colour for its label
- * (white reads at 2.6:1); the top-right corner is cut tight (KiteShape).
+ * of pixel squares on click. The one button the accent fills (flat, no
+ * tint); Stop is the danger fill, whose light coral takes the canvas colour
+ * for its label in the dark theme (white reads at 2.6:1). The top-right
+ * corner is cut tight (KiteShape).
  */
 AbstractButton {
     id: control
@@ -32,6 +33,24 @@ AbstractButton {
     implicitHeight: size
     implicitWidth: round ? size : Math.max(size * 3, label.implicitWidth + Theme.icon.md + Theme.space.xl * 2 + Theme.space.sm)
     opacity: enabled || busy ? 1.0 : Theme.opacity.disabled
+    // Pressed, the button gives a little and comes back on release.
+    scale: control.down ? Theme.motion.pressScaleLarge : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+
+    // What the face shows ("play", "busy" or "stop"), a short fade behind the state: out, swap, in. The width
+    // follows the new label instead of jumping to it.
+    property string face: control.busy ? "busy" : control.running ? "stop" : "play"
+    Behavior on face {
+        SequentialAnimation {
+            NumberAnimation { target: faceRow; property: "opacity"; to: 0; duration: Theme.motion.press }
+            PropertyAction {}
+            NumberAnimation { target: faceRow; property: "opacity"; to: 1; duration: Theme.motion.fast }
+        }
+    }
+    Behavior on implicitWidth {
+        enabled: !control.round
+        NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+    }
 
     Accessible.name: text
 
@@ -44,18 +63,9 @@ AbstractButton {
 
     background: KiteShape {
         id: plate
-        radius: Theme.radius.md
+        radius: Theme.radius.play
         color: control.fill
         Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
-
-        KiteShape {
-            anchors.fill: parent
-            radius: plate.radius
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.10) }
-                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
-            }
-        }
 
         KiteShape {
             anchors.fill: parent
@@ -70,13 +80,14 @@ AbstractButton {
 
     contentItem: Item {
         Row {
+            id: faceRow
             anchors.centerIn: parent
             spacing: Theme.space.sm
 
             MeshIcon {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: !control.busy
-                iconName: control.running ? "stop" : "play"
+                visible: control.face !== "busy"
+                iconName: control.face === "stop" ? "stop" : "play"
                 size: control.round ? Math.round(control.size * 0.42) : Theme.icon.mid
                 color: control.ink
             }
@@ -85,7 +96,7 @@ AbstractButton {
                 id: label
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !control.round
-                text: control.text
+                text: control.face === "busy" ? qsTr("Starting…") : control.face === "stop" ? qsTr("Stop") : qsTr("Play")
                 role: "title"
                 color: control.ink
                 font.family: Theme.font.family

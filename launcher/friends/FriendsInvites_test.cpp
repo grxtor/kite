@@ -272,6 +272,27 @@ class FriendsInvitesTest : public QObject
 		QCOMPARE(controller.invites().size(), 1);
 		QCOMPARE(controller.invites().first().toMap().value("name").toString(), QStringLiteral("jeb_"));
 	}
+	/* An answered action shows in the lists before the read that follows it (settleAction(), settleBlocked()). */
+	void anAnsweredActionChangesTheListsAtOnce()
+	{
+		const QString kNotch = QStringLiteral("069a79f4-44e9-4726-a5be-fca90e38aaf5");
+		QTemporaryDir dir;
+		FriendsController controller(dir.path());
+		FriendsApi::FriendsSnapshot base;
+		base.friends.resize(1);
+		base.friends.first().uuid = kJeb;
+		controller.applySnapshot(base);
+		QSignalSpy changed(&controller, &FriendsController::changed);
+		controller.settleAction("sendRequest", kNotch, "Notch");
+		QCOMPARE(controller.outgoing().first().toMap().value("name").toString(), QStringLiteral("Notch"));
+		controller.settleAction("cancelRequest", kNotch);
+		controller.settleAction("removeFriend", kJeb);
+		QVERIFY(controller.outgoing().isEmpty() && controller.friends().isEmpty());
+		controller.settleBlocked(kJeb, QStringLiteral("jeb_"));
+		QCOMPARE(controller.blocked().size(), 1);
+		controller.settleBlocked(kJeb.toUpper(), QString());
+		QVERIFY(controller.blocked().isEmpty() && changed.size() == 5);
+	}
 };
 
 QTEST_GUILESS_MAIN(FriendsInvitesTest)

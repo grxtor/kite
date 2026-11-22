@@ -25,6 +25,19 @@ Item {
     signal openFolderRequested(string path)
     // Asks the instance page to switch to the Data packs tab at world `row`.
     signal dataPacksRequested(int row)
+    // "Play" on a row: start the game straight in the world in save folder `folderName`.
+    signal playRequested(string folderName)
+    // Set by the page while this instance's game runs or its launch prepares.
+    property bool running: false
+    // InstanceDetails.worldQuickPlay(); read again when the tab is shown (the version may have changed).
+    readonly property string quickPlay: {
+        root.visible
+        return root.details ? root.details.worldQuickPlay() : "unsupported"
+    }
+    // Why a world cannot be started from here right now; empty when it can.
+    readonly property string playBlocked: root.running ? qsTr("The game is already running.")
+        : root.quickPlay === "unsupported" ? qsTr("This Minecraft version cannot open a world from the launcher. It works from 1.20 on.")
+        : ""
 
     // The TaskWatcher of a copy or install in progress; both run off the GUI thread.
     property var watcher: null
@@ -68,6 +81,13 @@ Item {
     // are shown.
     readonly property var knownModes: [qsTranslate("GameType", "Survival"), qsTranslate("GameType", "Creative"),
                                        qsTranslate("GameType", "Adventure"), qsTranslate("GameType", "Spectator")]
+    // A hardcore world is Survival with a flag; the game calls the pair "Hardcore".
+    function modeText(mode, hardcore) {
+        return hardcore ? qsTr("Hardcore") : root.knownModes.indexOf(mode) >= 0 ? mode : ""
+    }
+    function sizeText(bytes) {
+        return bytes === undefined || bytes === null ? "" : Qt.locale().formattedDataSize(Number(bytes), 1)
+    }
 
     onDetailsChanged: root.watcher = null
 
@@ -84,13 +104,15 @@ Item {
                 tip: qsTr("Refresh")
                 onClicked: if (root.details) root.details.refreshWorlds()
             }
-            Button {
-                text: qsTr("Open folder")
-                icon.source: Icons.url("folder")
+            IconButton {
+                flat: false
+                iconName: "folder"
+                tip: qsTr("Open folder")
                 onClicked: root.openFolderRequested(root.details ? root.details.worldsDir : "")
             }
             Button {
                 enabled: !!root.details && !root.busy
+                highlighted: true
                 text: qsTr("Add world")
                 icon.source: Icons.url("plus")
                 onClicked: root.guarded(() => addDialog.open())
@@ -129,9 +151,11 @@ Item {
             model: root.details ? root.details.worlds : null
             ScrollBar.vertical: ScrollBar {}
 
+            ListEntrance { id: entrance; view: list }
             delegate: TabListRow {
                 id: cell
                 required property int index
+                RiseIn { target: cell; index: cell.index; gate: entrance }
                 required property string name
                 required property string folder
                 required property var gameMode
@@ -139,6 +163,9 @@ Item {
                 required property var iconFile
                 required property var dayCount
                 required property var seed
+                required property bool hardcore
+                required property string gameVersion
+                required property var size
 
                 readonly property string displayName: cell.name.length > 0 ? cell.name : cell.folderName
                 readonly property string folderName: String(cell.folder).split(/[\\/]/).pop()
@@ -146,9 +173,11 @@ Item {
 
                 width: list.width
                 title: cell.displayName
-                meta: [root.knownModes.indexOf(cell.mode) >= 0 ? cell.mode : "",
+                meta: [root.modeText(cell.mode, cell.hardcore),
                        cell.dayCount !== undefined && cell.dayCount !== null ? qsTr("Day %1").arg(cell.dayCount) : "",
-                       Format.lastPlayed(cell.lastPlayed ? Number(cell.lastPlayed) : 0)]
+                       Format.lastPlayed(cell.lastPlayed ? Number(cell.lastPlayed) : 0),
+                       root.sizeText(cell.size),
+                       cell.gameVersion]
                       .filter((part) => part.length > 0).join("  •  ")
                 // A neutral globe stands in for a missing icon: a landscape would pass for a real
                 // view of the world.
@@ -158,6 +187,18 @@ Item {
                 thumb.pixelArt: true
                 onMenuRequested: if (!root.busy) rowMenu.popup()
 
+                HoverReason {
+                    reason: root.playBlocked
+                    IconButton {
+                        flat: false
+                        // Outlined at rest, the filled primary under the pointer.
+                        highlighted: hovered && enabled
+                        enabled: root.playBlocked.length === 0 && !root.busy
+                        iconName: "play"
+                        tip: qsTr("Play this world")
+                        onClicked: root.playRequested(cell.folderName)
+                    }
+                }
                 IconButton {
                     id: moreButton
                     enabled: !root.busy
@@ -223,7 +264,9 @@ Item {
                             icon.source: Icons.url("trash")
                             onTriggered: root.guarded(() => {
                                 confirm.row = cell.index
-                                confirm.text = qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
+                                confirm.text = confirm.toTrash
+                                    ? qsTr("Move the world “%1” to the trash?").arg(cell.displayName)
+                                    : qsTr("Delete the world “%1”? It cannot be recovered from the launcher.").arg(cell.displayName)
                                 confirm.open()
                             })
                         }
@@ -243,9 +286,17 @@ Item {
     ConfirmDialog {
         id: confirm
         property int row: -1
+        readonly property bool toTrash: !!root.details && root.details.trash.available
         title: qsTr("Delete world")
-        confirmText: qsTr("Delete world")
-        onConfirmed: if (root.details) root.details.deleteWorld(row)
+        confirmText: toTrash ? qsTr("Move to trash") : qsTr("Delete world")
+        onConfirmed: {
+            if (!root.details)
+                return
+            if (root.details.deleteWorld(row))
+                toast.showDeleted(qsTr("World deleted."), root.details.trash)
+            else
+                toast.show(qsTr("The world could not be deleted. Are its files in use?"), "danger")
+        }
     }
 
     PromptDialog {
@@ -319,6 +370,10 @@ Item {
         visible: list.count === 0
         title: qsTr("No worlds yet")
         body: qsTr("Worlds you create in single player show up here. You can also add one from a .zip.")
+        actionText: qsTr("Add world")
+        actionIcon: "plus"
+        actionEnabled: !!root.details && !root.busy
+        onActionTriggered: root.guarded(() => addDialog.open())
         MeshIcon { iconName: "globe"; size: Theme.icon.xl; color: Theme.palette.textTertiary }
     }
 }

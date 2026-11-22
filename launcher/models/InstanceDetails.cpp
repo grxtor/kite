@@ -56,6 +56,7 @@
 #include "models/ScreenshotUploader.h"
 #include "models/ServersListModel.h"
 #include "models/SettingsAdapter.h"
+#include "models/TrashUndo.h"
 #include "models/WorldDataPacksController.h"
 #include "models/WorldCopyTask.h"
 #include "models/WorldTools.h"
@@ -84,6 +85,7 @@ namespace
 InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	: QObject(parent), m_instance(std::move(instance))
 {
+	m_trash = new TrashUndo(this);
 	if (!m_instance) {
 		return;
 	}
@@ -135,10 +137,21 @@ InstanceDetails::InstanceDetails(InstancePtr instance, QObject* parent)
 	}
 
 	m_backups = new BackupController(m_instance, this);
+	m_backups->setTrashUndo(m_trash);
 
 	// The folder may not exist yet; the model lists nothing until the page is reopened.
 	m_screenshots = std::make_unique<ScreenshotListModel>();
 	m_screenshots->setDirectory(screenshotsDir());
+	connect(m_screenshots.get(), &ScreenshotListModel::trashed, m_trash,
+			qOverload<const QString&, const QString&>(&TrashUndo::add));
+
+	// Whatever Undo put back shows up at once, not on the watchers' next turn.
+	connect(m_trash, &TrashUndo::restored, this, [this] {
+		if (m_worlds) {
+			m_worlds->update();
+		}
+		m_screenshots->refresh();
+	});
 
 	m_log = new InstanceLogBridge(m_instance, this);
 
@@ -263,12 +276,21 @@ QString InstanceDetails::screenshotsDir() const
 	return FS::PathCombine(m_instance->gameRoot(), "screenshots");
 }
 
-void InstanceDetails::deleteWorld(int row)
+QObject* InstanceDetails::trash() const
+{
+	return m_trash;
+}
+
+bool InstanceDetails::deleteWorld(int row)
 {
 	if (!m_worlds || row < 0 || static_cast<size_t>(row) >= m_worlds->size()) {
-		return;
+		return false;
 	}
-	m_worlds->deleteWorld(row);
+	m_trash->begin();
+	QList<FS::Trashed> trashed;
+	const bool deleted = m_worlds->deleteWorld(row, &trashed);
+	m_trash->add(trashed);
+	return deleted;
 }
 
 bool InstanceDetails::renameWorld(int row, const QString& name)
@@ -316,6 +338,7 @@ QObject* InstanceDetails::worldDataPacks() const
 	if (!m_worldDataPacks && m_mc) {
 		m_worldDataPacks = std::make_unique<WorldDataPacksController>(
 			m_mc, m_worlds.get(), const_cast<InstanceDetails*>(this));
+		m_worldDataPacks->setTrashUndo(m_trash);
 	}
 	return m_worldDataPacks.get();
 }
@@ -409,6 +432,7 @@ QObject* InstanceDetails::content() const
 	if (!m_content && m_mc) {
 		m_content = new InstanceContentController(
 			m_mc, const_cast<InstanceDetails*>(this));
+		m_content->setTrashUndo(m_trash);
 	}
 	return m_content;
 }
@@ -503,6 +527,24 @@ void InstanceDetails::refreshWorlds()
 	if (m_worlds) {
 		m_worlds->update();
 	}
+}
+
+QString InstanceDetails::worldQuickPlayFor(const QSet<QString>& traits)
+{
+	if (traits.contains(QStringLiteral("feature:is_quick_play_singleplayer"))) {
+		return QStringLiteral("supported");
+	}
+	/* MinecraftInstance::traits() says this while there is no profile. */
+	if (traits.contains(QStringLiteral("version-incomplete"))) {
+		return QStringLiteral("unknown");
+	}
+	return QStringLiteral("unsupported");
+}
+
+QString InstanceDetails::worldQuickPlay() const
+{
+	return m_mc ? worldQuickPlayFor(m_mc->traits())
+				: QStringLiteral("unsupported");
 }
 
 bool InstanceDetails::mceditConfigured() const

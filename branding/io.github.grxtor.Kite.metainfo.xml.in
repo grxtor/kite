@@ -34,6 +34,18 @@
     <memory>2048</memory>
   </recommends>
   <releases>
+    <release version="1.4.0" date="2026-11-22">
+      <description>
+        <p>A click opens an instance, deletes can be undone, and the whole client moves and reads better.</p>
+        <ul>
+          <li>Instances: a click opens the instance and only Play starts the game. A new instance never loses the loader you picked, and opens on its content when it is ready.</li>
+          <li>Safer: deleted worlds, mods, packs and backups go to the trash with Undo. A launch that fails before the game starts says why and offers Try again, instead of being reported as a crash.</li>
+          <li>Library: one grid with group filters, covers from your own screenshots, arrow keys, and a search that also finds versions and loaders.</li>
+          <li>Content: mods show their author, description and available updates; Add content installs several at once and knows what is already installed.</li>
+          <li>Look and feel: a new set of controls and menus, motion you can set to Playful, Calm or Off, keyboard shortcuts with a list on the ? key, and reworked Friends, Accounts and modpack pages.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.3.0" date="2026-11-04">
       <description>
         <p>Updates that install themselves, friends who can talk, and a crash doctor that learns.</p>

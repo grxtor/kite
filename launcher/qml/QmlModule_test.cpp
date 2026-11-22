@@ -666,6 +666,59 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("|1 unread message|3 unread messages|8 min left|1 min left|In game|success|tertiary"));
 	}
 
+	/* The Motion setting: a config from before it keeps "Reduce motion" as
+	 * Off, anything else starts Playful, and a choice wins over the old key.
+	 * Theme follows the stored style live. */
+	void motionStyleCarriesReduceMotionOver()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			import Kite.Theme
+			QtObject {
+				id: probe
+				property var stored: ({ UiMotionStyle: "", UiReduceMotion: false })
+				signal valueChanged()
+				function value(key) { return probe.stored[key] }
+				function setValue(key, value) {
+					var next = Object.assign({}, probe.stored)
+					next[key] = value
+					probe.stored = next
+					probe.valueChanged()
+				}
+				function resolved() {
+					return [SettingsStore.resolveMotionStyle("", true), SettingsStore.resolveMotionStyle("", false),
+							SettingsStore.resolveMotionStyle("calm", true), SettingsStore.resolveMotionStyle("playful", true),
+							SettingsStore.resolveMotionStyle("off", false), SettingsStore.resolveMotionStyle("bogus", false)].join("|")
+				}
+				function live() {
+					var seen = []
+					SettingsStore.adapter = probe
+					seen.push(Theme.motionStyle + ":" + Theme.motion.reduced)
+					// A config file reads booleans back as strings.
+					probe.setValue("UiReduceMotion", "true")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					probe.setValue("UiMotionStyle", "calm")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					probe.setValue("UiMotionStyle", "off")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					probe.setValue("UiMotionStyle", "playful")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					SettingsStore.adapter = null
+					return seen.join("|")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> probe(component.create());
+		QVERIFY2(probe, qPrintable(component.errorString()));
+		QCOMPARE(callString(probe.get(), "resolved"), QStringLiteral("off|playful|calm|playful|off|playful"));
+		QCOMPARE(callString(probe.get(), "live"),
+				 QStringLiteral("playful:false|off:0|calm:120|off:0|playful:140"));
+	}
+
 	/* A folder path counts as absolute with a Windows drive too, and becomes a
 	 * url the folder dialog can start from. */
 	void windowsDrivePathsAreAbsolute()
@@ -802,6 +855,61 @@ class QmlModuleTest : public QObject
 		QCOMPARE(callString(summary.get(), "words"),
 				 QStringLiteral("1 mod · 2 resource packs · 1 shader pack|No mods or packs|"
 								"Minecraft 1.21.4 · Fabric 0.16.10|Minecraft 1.21.4"));
+	}
+
+	/* "Install" on a Discover row waits for the pack's versions, installs
+	 * the featured one under the pack's title and keeps its watcher; a pack
+	 * without versions is reported instead. */
+	void discoverRowInstallTakesTheFeaturedVersion()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			DiscoverQuickInstall {
+				id: quick
+				provider: "modrinth"
+				property var calls: []
+				property int failures: 0
+				property QtObject fakeDetail: QtObject {
+					property string projectId: ""
+					property var versions: []
+					property bool loading: false
+				}
+				property QtObject fakeWatcher: QtObject { property bool running: true }
+				property QtObject fake: QtObject {
+					property QtObject detail: quick.fakeDetail
+					// As ModrinthModpackDetail::reset(): emptied before it says it is loading.
+					function loadDetail(id) {
+						quick.fakeDetail.projectId = id
+						quick.fakeDetail.versions = []
+						quick.fakeDetail.loading = true
+					}
+				}
+				model: fake
+				installer: function (projectId, versionId, name, group) {
+					calls.push(projectId + "/" + versionId + "/" + name)
+					return fakeWatcher
+				}
+				onFailed: failures++
+				function run() {
+					install({ projectId: "abc", title: "Pack" })
+					var waiting = pendingId
+					fakeDetail.versions = [{ id: "v2", featured: false }, { id: "v1", featured: true }]
+					fakeDetail.loading = false
+					var first = [waiting, calls.join(","), pendingId, watcherFor("abc") === fakeWatcher, failures]
+					install({ projectId: "none", title: "Empty" })
+					fakeDetail.loading = false
+					return first.concat([calls.length, failures, watcherFor("none") === null]).join("|")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> quick(component.create());
+		QVERIFY2(quick, qPrintable(component.errorString()));
+		QCOMPARE(callString(quick.get(), "run"),
+				 QStringLiteral("abc|abc/v1/Pack||true|0|1|1|true"));
 	}
 
 	/* A quick-join entry's tooltip says what a click does and what is

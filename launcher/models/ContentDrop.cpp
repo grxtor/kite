@@ -102,7 +102,17 @@ bool ContentDrop::changesAllowed(const QString& kind) const
 
 QVariantMap ContentDrop::preview(const QStringList& urls) const
 {
+	QVariantMap result = sort(urls);
+	result.remove(QStringLiteral("content"));
+	result.remove(QStringLiteral("imports"));
+	return result;
+}
+
+QVariantMap ContentDrop::sort(const QStringList& urls)
+{
 	DroppedContent::Counts counts;
+	QStringList content;
+	QStringList imports;
 	for (const QString& text : urls) {
 		if (isWebLink(text)) {
 			const auto link = DroppedContent::parseProjectLink(QUrl(text));
@@ -114,10 +124,19 @@ QVariantMap ContentDrop::preview(const QStringList& urls) const
 						   : link.contentType == kShaderPacks
 							   ? DroppedContent::Kind::ShaderPack
 							   : DroppedContent::Kind::DataPack);
+				content.append(text);
+			} else {
+				imports.append(text);
 			}
 			continue;
 		}
-		counts.add(DroppedContent::classify(text).kind);
+		const DroppedContent::Kind kind = DroppedContent::classify(text).kind;
+		counts.add(kind);
+		if (kind == DroppedContent::Kind::Modpack) {
+			imports.append(text);
+		} else if (kind != DroppedContent::Kind::Unknown) {
+			content.append(text);
+		}
 	}
 
 	QVariantList rows;
@@ -147,6 +166,8 @@ QVariantMap ContentDrop::preview(const QStringList& urls) const
 	result.insert(QStringLiteral("rows"), rows);
 	result.insert(QStringLiteral("unknown"),
 				  DroppedContent::describeUnknown(counts.unknown));
+	result.insert(QStringLiteral("content"), content);
+	result.insert(QStringLiteral("imports"), imports);
 	return result;
 }
 

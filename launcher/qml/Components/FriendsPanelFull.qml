@@ -31,6 +31,9 @@ Item {
     property bool playingOpen: true
     property bool onlineOpen: true
     property bool offlineOpen: false
+    // With no one online the offline friends are all there is to show, so they start unfolded.
+    readonly property bool nobodyAround: root.friendsState.groups.playing.length + root.friendsState.groups.online.length === 0
+    property bool offlineFoldedAlone: false
 
     // tab: "friends", "requests", "blocked" or "add".
     signal friendsRequested(string tab)
@@ -104,7 +107,7 @@ Item {
 
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("IN GAME — %1").arg(root.friendsState.groups.playing.length)
+                    title: qsTr("In game · %1").arg(root.friendsState.groups.playing.length)
                     places: root.places
                     friends: root.friendsState.groups.playing
                     expanded: root.playingOpen
@@ -117,7 +120,7 @@ Item {
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("IN KITE — %1").arg(root.friendsState.groups.online.length)
+                    title: qsTr("In Kite · %1").arg(root.friendsState.groups.online.length)
                     places: root.places
                     friends: root.friendsState.groups.online
                     expanded: root.onlineOpen
@@ -128,14 +131,19 @@ Item {
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("OFFLINE — %1").arg(root.friendsState.groups.offline.length)
+                    title: qsTr("Offline · %1").arg(root.friendsState.groups.offline.length)
                     places: root.places
                     friends: root.friendsState.groups.offline
-                    expanded: root.offlineOpen
+                    expanded: root.nobodyAround ? !root.offlineFoldedAlone : root.offlineOpen
                     menu: root.menu
                     stale: root.friendsState.stale
                     actionsEnabled: root.friendsState.connected
-                    onToggled: root.offlineOpen = !root.offlineOpen
+                    onToggled: {
+                        if (root.nobodyAround)
+                            root.offlineFoldedAlone = !root.offlineFoldedAlone
+                        else
+                            root.offlineOpen = !root.offlineOpen
+                    }
                 }
 
                 Column {

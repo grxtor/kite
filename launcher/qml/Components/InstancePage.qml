@@ -37,6 +37,8 @@ Item {
     }
 
     signal backRequested()
+    // Add content's "Modpacks": browse packs in Discover, on that provider.
+    signal modpacksRequested(string provider)
     // Open another instance (the Mods tab's new Kite Performance one).
     signal openInstanceRequested(string id)
     signal playRequested(string id)
@@ -96,7 +98,8 @@ Item {
             otherlogs: ["log", logTab], logfind: ["log", logTab],
             crashdetails: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
-            browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
+            shotview: ["screenshots", shotsTab],
+            browsepick: ["browse", browseView], browseselect: ["browse", browseView], browsesort: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
         }
         const owner = owners[name]
         if (!owner)
@@ -139,8 +142,11 @@ Item {
     // File name of the screenshot the instance's own cover was made from; "" when it has none.
     readonly property string coverSource: root.headerCard ? root.headerCard.coverSource : ""
     readonly property int headerIconSize: 64
+    // The header's height over a cover (InstanceBanner); without one it is as tall as its row.
+    readonly property int bannerHeight: 192
     readonly property int headerActionSize: Theme.control.heightLg
     property bool running: false
+    property bool launching: false
 
     readonly property var modsModel: details ? details.mods : null
     readonly property var worldsModel: details ? details.worlds : null
@@ -211,6 +217,11 @@ Item {
                 readonly property string iconKey: model.iconKey || ""
                 readonly property string group: model.group || ""
                 readonly property string coverSource: model.coverSource || ""
+                // Over the cover the words are light in both themes (Theme.media), as on Home's stage.
+                readonly property bool onCover: banner.shown
+                readonly property color ink: onCover ? Theme.media.text : Theme.palette.textPrimary
+                readonly property color inkSecondary: onCover ? Theme.media.textSecondary : Theme.palette.textSecondary
+                readonly property color inkFaint: onCover ? Theme.media.textFaint : Theme.palette.textTertiary
                 readonly property bool isRunning: !!model.isRunning
                 readonly property string launchStatus: model.launchStatus || ""
                 readonly property real launchProgress: model.launchProgress === undefined ? -1 : model.launchProgress
@@ -223,7 +234,7 @@ Item {
                 Layout.maximumWidth: Theme.layout.maxContentWidth
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: Theme.space.xs
-                implicitHeight: headerRow.implicitHeight
+                implicitHeight: onCover ? root.bannerHeight : headerRow.implicitHeight
                 visible: !root.browsing
                 Component.onDestruction: if (root.headerCard === headerCard) root.headerCard = null
 
@@ -243,6 +254,7 @@ Item {
                     root.running = isRunning
                 }
                 onIsRunningChanged: root.running = isRunning
+                onLaunchingChanged: root.launching = launching
 
                 component MetaItem: Row {
                     property string iconName
@@ -252,21 +264,32 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: parent.iconName
                         size: Theme.icon.sm
-                        color: Theme.palette.textTertiary
+                        color: headerCard.inkFaint
                     }
                     Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: parent.text
                         role: "label"
-                        tone: "secondary"
+                        color: headerCard.inkSecondary
                         font.weight: Font.Medium
                     }
+                }
+
+                InstanceBanner {
+                    id: banner
+                    anchors.fill: parent
+                    source: headerCard.model.coverImage || ""
+                    kind: headerCard.model.coverKind || ""
                 }
 
                 RowLayout {
                     id: headerRow
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.leftMargin: headerCard.onCover ? Theme.space.xl : 0
+                    anchors.rightMargin: headerCard.onCover ? Theme.space.xl : 0
+                    // Over a cover the row sits on the banner's lower edge, clear of its fade into the page.
+                    y: headerCard.onCover ? headerCard.height - banner.fadeHeight - height : 0
                     spacing: Theme.space.lg
 
                     HomeHeroTile {
@@ -276,7 +299,8 @@ Item {
                         iconKey: headerCard.iconKey.length > 0 ? headerCard.iconKey : "default"
                         instanceId: root.instanceId
                         packArt: headerCard.model.packArt || ""
-                        matte: Theme.palette.canvas
+                        // Over the cover no one colour lies behind the tile, so nothing can matte its corners.
+                        matte: headerCard.onCover ? "transparent" : Theme.palette.canvas
                         radius: Theme.radius.lg
                     }
 
@@ -291,6 +315,7 @@ Item {
                             text: headerCard.name
                             elide: Text.ElideRight
                             role: "display"
+                            color: headerCard.ink
                         }
 
                         Flow {
@@ -332,7 +357,7 @@ Item {
                                       : headerCard.launchStatus
                                 elide: Text.ElideRight
                                 role: "label"
-                                tone: "secondary"
+                                color: headerCard.inkSecondary
                             }
                             LaunchProgressBar {
                                 Layout.fillWidth: true
@@ -345,6 +370,22 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: Theme.space.sm
 
+                        // While the launch prepares, as on Home and the play bar. Over a cover the outlined
+                        // controls stand on a plate of the page's colour, which their ink is made for.
+                        Button {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: headerCard.launching
+                            buttonSize: "lg"
+                            text: qsTr("Cancel")
+                            onClicked: root.stopRequested(root.instanceId)
+                            Rectangle {
+                                anchors.fill: parent
+                                z: -1
+                                visible: headerCard.onCover
+                                radius: Theme.radius.sm
+                                color: Theme.palette.canvas
+                            }
+                        }
                         PlayButton {
                             round: false
                             size: root.headerActionSize
@@ -361,6 +402,13 @@ Item {
                             tip: qsTr("More")
                             Accessible.role: Accessible.ButtonMenu
                             onClicked: instanceMenu.visible ? instanceMenu.close() : headerCard.openMenu()
+                            Rectangle {
+                                anchors.fill: parent
+                                z: -1
+                                visible: headerCard.onCover
+                                radius: Theme.radius.sm
+                                color: Theme.palette.canvas
+                            }
                         }
                     }
                 }
@@ -407,6 +455,7 @@ Item {
                 browser: root.details ? root.details.contentBrowser : null
                 details: root.details
                 onBackRequested: root.leaveBrowse()
+                onModpacksRequested: (provider) => root.modpacksRequested(provider)
             }
 
             ManagedPackTab {
@@ -422,6 +471,8 @@ Item {
             WorldsTab {
                 id: worldsTab
                 details: root.details
+                running: root.running || root.launching
+                onPlayRequested: (folderName) => { if (root.shell) root.shell.joinWorld(root.instanceId, folderName) }
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onDataPacksRequested: (row) => {
                     root.pendingDataPackWorld = row
@@ -538,43 +589,55 @@ Item {
         MenuDivider {
             visible: instanceMenu.offerOptions
         }
-        MenuItem {
-            text: qsTr("Open folder")
+        // Three short submenus keep the menu to what is used most: folders, edits, and ways to hand it on.
+        Menu {
+            title: qsTr("Open folder")
             icon.source: Icons.url("folder")
-            onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
-        }
-        MenuEntry {
-            visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
-            text: qsTr("Open .minecraft folder")
-            icon.source: Icons.url("folder")
-            onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
-        }
-        MenuEntry {
-            visible: instanceMenu.isMinecraft
-            text: qsTr("Open mods folder")
-            icon.source: Icons.url("folder")
-            onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
+            MenuItem {
+                text: qsTr("Instance folder")
+                icon.source: Icons.url("folder")
+                onTriggered: root.openPathRequested(root.details ? root.details.instanceRoot : "")
+            }
+            MenuEntry {
+                visible: instanceMenu.isMinecraft && root.details.gameRoot !== root.details.instanceRoot
+                text: qsTr(".minecraft folder")
+                icon.source: Icons.url("folder")
+                onTriggered: root.openPathRequested(root.details ? root.details.gameRoot : "")
+            }
+            MenuEntry {
+                visible: instanceMenu.isMinecraft
+                text: qsTr("Mods folder")
+                icon.source: Icons.url("folder")
+                onTriggered: root.openPathRequested(root.details ? root.details.modsDir : "")
+            }
         }
         MenuDivider {
             visible: instanceMenu.offerManage
         }
-        MenuEntry {
-            visible: root.manageable
-            text: qsTr("Rename…")
+        SubmenuEntry {
+            menu: instanceMenu
+            submenu: editMenu
+            shown: root.manageable
+        }
+        Menu {
+            id: editMenu
+            title: qsTr("Edit")
             icon.source: Icons.url("edit")
-            onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
-        }
-        MenuEntry {
-            visible: root.manageable
-            text: qsTr("Change icon…")
-            icon.source: Icons.url("image")
-            onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
-        }
-        MenuEntry {
-            visible: root.manageable
-            text: qsTr("Change group…")
-            icon.source: Icons.url("folder-input")
-            onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
+            MenuItem {
+                text: qsTr("Rename…")
+                icon.source: Icons.url("edit")
+                onTriggered: root.renameRequested(root.instanceId, instanceMenu.name)
+            }
+            MenuItem {
+                text: qsTr("Change icon…")
+                icon.source: Icons.url("image")
+                onTriggered: root.iconRequested(root.instanceId, instanceMenu.iconKey)
+            }
+            MenuItem {
+                text: qsTr("Change group…")
+                icon.source: Icons.url("folder-input")
+                onTriggered: root.groupRequested(root.instanceId, instanceMenu.group)
+            }
         }
         MenuEntry {
             visible: root.manageable
@@ -584,17 +647,27 @@ Item {
                          ? exportFlows.duplicateInstance(root.instanceId, instanceMenu.name, instanceMenu.group, instanceMenu.iconKey)
                          : root.duplicateRequested(root.instanceId, instanceMenu.name, instanceMenu.group)
         }
-        MenuEntry {
-            visible: exportFlows.canExport
-            text: qsTr("Export…")
-            icon.source: Icons.url("archive")
-            onTriggered: exportFlows.exportInstance(root.instanceId)
+        SubmenuEntry {
+            menu: instanceMenu
+            submenu: shareMenu
+            shown: exportFlows.canExport || exportFlows.canShare
         }
-        MenuEntry {
-            visible: exportFlows.canShare
-            text: qsTr("Share as code…")
+        Menu {
+            id: shareMenu
+            title: qsTr("Share")
             icon.source: Icons.url("share")
-            onTriggered: exportFlows.shareAsCode(root.instanceId, instanceMenu.name)
+            MenuEntry {
+                visible: exportFlows.canExport
+                text: qsTr("Export…")
+                icon.source: Icons.url("archive")
+                onTriggered: exportFlows.exportInstance(root.instanceId)
+            }
+            MenuEntry {
+                visible: exportFlows.canShare
+                text: qsTr("Share as code…")
+                icon.source: Icons.url("share")
+                onTriggered: exportFlows.shareAsCode(root.instanceId, instanceMenu.name)
+            }
         }
         MenuEntry {
             visible: exportFlows.canCreateShortcut
@@ -607,6 +680,7 @@ Item {
         }
         MenuEntry {
             visible: root.manageable
+            danger: true
             text: qsTr("Delete…")
             icon.source: Icons.url("trash")
             // A running game's folder is in use.

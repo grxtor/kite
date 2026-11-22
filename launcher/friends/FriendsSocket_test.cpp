@@ -227,10 +227,12 @@ class FriendsSocketTest : public QObject
 	void pongsKeepAQuietSocketOpen()
 	{
 		auto timing = fastTiming();
-		timing.silenceMs = 250;
+		/* Several pings fit in the silence allowed: on a busy machine a pong a few hundred
+		 * milliseconds late must not look like a dead socket (it did, with 250 ms). */
+		timing.silenceMs = 800;
 		startClient(timing);
 		QTRY_VERIFY(m_socket->isUp());
-		QTest::qWait(kQuietMs * 3);
+		QTest::qWait(timing.silenceMs * 2);
 		QCOMPARE(m_server->sockets.size(), 1);
 		QVERIFY(m_socket->isUp());
 	}

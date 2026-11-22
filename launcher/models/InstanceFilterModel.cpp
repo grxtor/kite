@@ -21,6 +21,7 @@
 #include "InstanceFilterModel.h"
 
 #include <QLocale>
+#include <algorithm>
 
 #include "core/LauncherContext.h"
 #include "models/RoleByName.h"
@@ -125,6 +126,7 @@ void InstanceFilterModel::setFilterText(const QString& text)
 		return;
 	}
 	m_filterText = text;
+	m_filterWords = text.split(QChar::Space, Qt::SkipEmptyParts);
 	Q_EMIT filterTextChanged();
 	invalidateFilter();
 }
@@ -240,6 +242,8 @@ void InstanceFilterModel::setSourceModel(QAbstractItemModel* sourceModel)
 	m_lastLaunchRole = roleByName(sourceModel, "lastLaunch", -1);
 	m_idRole = roleByName(sourceModel, "instanceId", -1);
 	m_totalTimePlayedRole = roleByName(sourceModel, "totalTimePlayed", -1);
+	m_gameVersionRole = roleByName(sourceModel, "gameVersion", -1);
+	m_loaderRole = roleByName(sourceModel, "loader", -1);
 	QSortFilterProxyModel::setSourceModel(sourceModel);
 
 	/* A QSortFilterProxyModel does not sort until asked; done after the roles are
@@ -269,10 +273,32 @@ bool InstanceFilterModel::filterAcceptsRow(
 		 index.data(m_lastLaunchRole).toLongLong() <= 0)) {
 		return false;
 	}
-	if (!m_filterText.isEmpty() &&
-		!index.data(m_nameRole).toString().contains(m_filterText,
-													 Qt::CaseInsensitive)) {
-		return false;
+	return matchesSearch(index);
+}
+
+bool InstanceFilterModel::matchesSearch(const QModelIndex& index) const
+{
+	if (m_filterWords.isEmpty()) {
+		return true;
+	}
+	QStringList fields{index.data(m_nameRole).toString(),
+					   index.data(m_groupRole).toString()};
+	if (m_gameVersionRole >= 0) {
+		fields.append(index.data(m_gameVersionRole).toString());
+	}
+	if (m_loaderRole >= 0) {
+		// The source leaves the loader of a vanilla instance empty.
+		const QString loader = index.data(m_loaderRole).toString();
+		fields.append(loader.isEmpty() ? QStringLiteral("Vanilla") : loader);
+	}
+	for (const QString& word : m_filterWords) {
+		const bool found = std::any_of(
+			fields.cbegin(), fields.cend(), [&word](const QString& field) {
+				return field.contains(word, Qt::CaseInsensitive);
+			});
+		if (!found) {
+			return false;
+		}
 	}
 	return true;
 }

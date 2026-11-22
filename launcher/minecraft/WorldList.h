@@ -49,7 +49,15 @@ class WorldList : public QAbstractListModel
 		GameModeRole,
 		LastPlayedRole,
 		IconFileRole,
-		DayCountRole
+		DayCountRole,
+		// Whether level.dat's hardcore flag is set.
+		HardcoreRole,
+		// The game version the world was last saved in; empty when
+		// level.dat does not say.
+		GameVersionRole,
+		// Bytes on disk; empty until measured (off the GUI thread, after
+		// every update()).
+		SizeRole
 	};
 
 	WorldList(const QString& dir);
@@ -85,8 +93,10 @@ class WorldList : public QAbstractListModel
 	/// Install a world from location
 	void installWorld(QFileInfo filename);
 
-	/// Deletes the mod at the given index.
-	virtual bool deleteWorld(int index);
+	/// Moves the world at the given index to the trash, or deletes it where
+	/// there is none. @p trashed receives it only when it went to the trash.
+	virtual bool deleteWorld(int index,
+							 QList<FS::Trashed>* trashed = nullptr);
 
 	/// Removes the world icon, if any
 	virtual bool resetIcon(int index);
@@ -108,6 +118,9 @@ class WorldList : public QAbstractListModel
 		return worlds;
 	}
 
+	/// The bytes of every file under @p path (a world folder, or one zip).
+	static qint64 sizeOnDisk(const QString& path);
+
   private slots:
 	void directoryChanged(QString path);
 
@@ -117,6 +130,13 @@ class WorldList : public QAbstractListModel
   protected:
 	QFileSystemWatcher* m_watcher;
 	bool is_watching;
+	/// Measures every world off the GUI thread and reports SizeRole.
+	void measureSizes();
+
 	QDir m_dir;
 	QList<World> worlds;
+	/// Bytes per container path; a path not in here is not measured yet.
+	QHash<QString, qint64> m_sizes;
+	/// Counts update() calls, so a measurement of an older list is dropped.
+	int m_sizeRun = 0;
 };

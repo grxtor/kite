@@ -27,6 +27,8 @@ set(CORE_SOURCES
     models/SettingsAdapter.cpp
     models/InstanceDetails.h
     models/InstanceDetails.cpp
+    models/TrashUndo.h
+    models/TrashUndo.cpp
     models/ContentBrowser.h
     models/ContentBrowser.cpp
     models/LoaderInstaller.h
@@ -226,6 +228,8 @@ set(NET_SOURCES
     net/NetAction.h
     net/NetJob.cpp
     net/NetJob.h
+    net/NetworkStatus.cpp
+    net/NetworkStatus.h
     net/JsonPost.cpp
     net/JsonPost.h
     net/PasteUpload.cpp
@@ -236,6 +240,11 @@ set(NET_SOURCES
 
 add_unit_test(FileSink
     SOURCES net/FileSink_test.cpp
+    LIBS Kite_logic
+    )
+
+add_unit_test(NetworkStatus
+    SOURCES net/NetworkStatus_test.cpp
     LIBS Kite_logic
     )
 
@@ -256,6 +265,8 @@ set(LAUNCH_SOURCES
     launch/steps/Update.h
     launch/LaunchStep.cpp
     launch/LaunchStep.h
+    launch/LaunchFailure.cpp
+    launch/LaunchFailure.h
     launch/LaunchTask.cpp
     launch/LaunchTask.h
     launch/LaunchProgressTracker.cpp
@@ -499,6 +510,8 @@ set(MINECRAFT_SOURCES
     minecraft/mod/ModIconCache.cpp
     minecraft/mod/ModMetadataIndex.h
     minecraft/mod/ModMetadataIndex.cpp
+    minecraft/mod/InstalledContentKeys.h
+    minecraft/mod/InstalledContentKeys.cpp
     minecraft/mod/PackwizSidecar.h
     minecraft/mod/PackwizSidecar.cpp
     minecraft/mod/PackLayout.h
@@ -1248,6 +1261,11 @@ add_unit_test(InstanceFilterModel
     LIBS Kite_core
     )
 
+add_unit_test(ContentDrop
+    SOURCES models/ContentDrop_test.cpp
+    LIBS Kite_core
+    )
+
 add_unit_test(InstanceList
     SOURCES InstanceList_test.cpp
     LIBS Kite_core
@@ -1260,6 +1278,10 @@ add_unit_test(LaunchProgressTracker
 
 add_unit_test(LaunchTask
     SOURCES launch/LaunchTask_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(LaunchFailure
+    SOURCES launch/LaunchFailure_test.cpp
     LIBS Kite_core
     )
 add_unit_test(LoggedProcess
@@ -1303,6 +1325,11 @@ add_unit_test(SettingsAdapter
 
 add_unit_test(InstanceLogBridge
     SOURCES models/InstanceDetails_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(TrashUndo
+    SOURCES models/TrashUndo_test.cpp
     LIBS Kite_core
     )
 
@@ -1425,6 +1452,16 @@ add_unit_test(TechnicModpackModel
 
 add_unit_test(ContentBrowser
     SOURCES models/ContentBrowser_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(InstalledContentKeys
+    SOURCES minecraft/mod/InstalledContentKeys_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(ContentProviderModel
+    SOURCES modplatform/ContentProviderModel_test.cpp
     LIBS Kite_core
     )
 
@@ -1673,6 +1710,20 @@ add_unit_test(FriendChatPanelQml
     LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 qt_import_qml_plugins(FriendChatPanelQml_test)
+
+# The Friends page over made-up people (FriendsDevController): counts, search, the add field, a request's buttons.
+add_unit_test(FriendsPageQml
+    SOURCES qml/FriendsPageQml_test.cpp qml/FriendChatQmlHarness.h
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(FriendsPageQml_test)
+
+# The shell's own behaviour: page history, shortcuts, the offline notice, the account warning.
+add_unit_test(AppShellQml
+    SOURCES qml/AppShellQml_test.cpp
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(AppShellQml_test)
 
 # Kite_logic, not the core: the built-in icons are compiled into Kite_logic.
 add_unit_test(InstanceIconProvider

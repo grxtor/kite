@@ -126,6 +126,54 @@ class FriendsEventsTest : public QObject
 		QVERIFY(lists.friends.isEmpty());
 	}
 
+	/* An answered action changes the lists at once: the row it was pressed on must not sit there, its buttons
+	 * free again, until the next read comes back. */
+	void anAnsweredActionSettlesTheLists()
+	{
+		const QString kNotch = QStringLiteral("22222222-2222-4222-8222-222222222222");
+		FriendsApi::Person jeb;
+		jeb.uuid = kJeb;
+		FriendsApi::Person grumm;
+		grumm.uuid = kGrumm.toUpper();
+		FriendsApi::Person notch;
+		notch.uuid = kNotch;
+		notch.name = QStringLiteral("Notch");
+
+		auto lists = snapshot();
+		QVERIFY(FriendsEvents::settle(lists, "cancelRequest", grumm));
+		QVERIFY(lists.outgoing.isEmpty());
+		QVERIFY(!FriendsEvents::settle(lists, "cancelRequest", grumm));
+
+		/* A request just sent waits in the outgoing list, once; a friend is not asked again. */
+		QVERIFY(FriendsEvents::settle(lists, "sendRequest", notch));
+		QCOMPARE(lists.outgoing.size(), 1);
+		QCOMPARE(lists.outgoing.first().name, QStringLiteral("Notch"));
+		QVERIFY(!FriendsEvents::settle(lists, "sendRequest", notch));
+		jeb.name = QStringLiteral("jeb_");
+		QVERIFY(!FriendsEvents::settle(lists, "sendRequest", jeb));
+		QVERIFY(!FriendsEvents::settle(lists, "sendRequest", FriendsApi::Person{}));
+
+		lists.incoming.append(notch);
+		QVERIFY(FriendsEvents::settle(lists, "decline", notch));
+		QVERIFY(lists.incoming.isEmpty());
+		lists.incoming.append(notch);
+		QVERIFY(FriendsEvents::settle(lists, "accept", notch));
+		QVERIFY(lists.incoming.isEmpty());
+		QCOMPARE(lists.friends.size(), 1);
+
+		QVERIFY(FriendsEvents::settle(lists, "removeFriend", jeb));
+		QVERIFY(lists.friends.isEmpty());
+
+		/* A block takes the person out of every list. */
+		lists = snapshot();
+		lists.incoming.append(grumm);
+		QVERIFY(FriendsEvents::settle(lists, "block", grumm));
+		QVERIFY(lists.incoming.isEmpty() && lists.outgoing.isEmpty());
+		QVERIFY(FriendsEvents::settle(lists, "block", jeb));
+		QVERIFY(lists.friends.isEmpty());
+		QVERIFY(!FriendsEvents::settle(lists, "refresh", jeb));
+	}
+
 	void unreadCountsMoveWithTheChat()
 	{
 		auto lists = snapshot();

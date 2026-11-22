@@ -52,9 +52,10 @@ T.Switch {
         Rectangle {
             id: thumb
             readonly property real inset: Theme.space.xxs + 1
-            width: track.height - inset * 2
-            height: width
-            radius: width / 2
+            // Held down, the knob stretches toward where it is about to go.
+            width: height + (control.down ? Theme.space.xs : 0)
+            height: track.height - inset * 2
+            radius: height / 2
             y: (track.height - height) / 2
             x: Math.max(inset, Math.min(track.width - width - inset,
                                         control.visualPosition * (track.width - width)))
@@ -69,7 +70,10 @@ T.Switch {
             // No animation while dragging, so the thumb tracks the pointer 1:1.
             Behavior on x {
                 enabled: !control.down
-                NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+                NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.knobOvershoot }
+            }
+            Behavior on width {
+                NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.easing }
             }
         }
 

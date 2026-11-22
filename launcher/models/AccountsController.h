@@ -50,6 +50,12 @@ class AccountsController : public QObject
 	/// Bumped when the game's default skins arrive, so pages refetch skinless images.
 	Q_PROPERTY(int defaultSkinsRevision READ defaultSkinsRevision NOTIFY
 				   defaultSkinsRevisionChanged)
+	/// The default account's StateKeyRole ("online", "expired", "errored",
+	/// "gone", ...) and LastErrorRole; both empty with no default account.
+	Q_PROPERTY(QString defaultStateKey READ defaultStateKey NOTIFY
+				   defaultStateChanged)
+	Q_PROPERTY(
+		QString defaultError READ defaultError NOTIFY defaultStateChanged)
 	Q_PROPERTY(bool skinDemoRequested READ skinDemoRequested CONSTANT)
 	Q_PROPERTY(QString skinDemoPose READ skinDemoPose CONSTANT)
 
@@ -60,12 +66,20 @@ class AccountsController : public QObject
 	QObject* accounts() const;
 	QString defaultAccountId() const;
 	int defaultSkinsRevision() const;
+	QString defaultStateKey() const;
+	QString defaultError() const;
 
 	Q_INVOKABLE void setDefault(int row);
 	Q_INVOKABLE void clearDefault();
 	Q_INVOKABLE void remove(int row);
 	/// Runs ahead of the background refresh queue.
 	Q_INVOKABLE void refresh(int row);
+	/// refresh() for the default account, wherever its row is.
+	Q_INVOKABLE void refreshDefault();
+	/// Review renders only (a no-op without KITE_QML_ROUTE): "expired",
+	/// "errored", "gone" or "working" for the default account, and after a comma a state
+	/// for every other one; each gets a sample reason. Nothing is saved.
+	Q_INVOKABLE void debugSetStates(const QString& spec);
 
 	/// False if a Microsoft account that owns Minecraft is not in the list, the
 	/// trimmed name is empty, or it collides (case-insensitively) with an offline account.
@@ -109,8 +123,11 @@ class AccountsController : public QObject
   signals:
 	void defaultChanged();
 	void defaultSkinsRevisionChanged();
+	void defaultStateChanged();
 
   private:
+	int defaultRow() const;
+
 	shared_qobject_ptr<AccountList> m_accounts;
 	// Parented to this; nothing else pins its ownership for QML.
 	QPointer<SkinsController> m_skins;

@@ -10,7 +10,8 @@ import Kite.Theme
  * (it removes line breaks), so the field never holds one: Shift+Enter adds none and a pasted break becomes a space.
  * It wraps and grows to a few lines, then scrolls. Near the limit (FriendsChat.maxLength) it counts what is left
  * and stops there. While the server refuses messages for sending too fast it says how long to wait. When there is
- * no one to write to it says why instead (`reason`).
+ * no one to write to it says why instead (`reason`). What was written and not sent stays with the friend it was
+ * written to (`peer`): another conversation opens with its own draft, never with this one's.
  */
 Item {
     id: root
@@ -18,6 +19,11 @@ Item {
     // FriendsController.chat, or null.
     property var chat: null
     property string name
+    // Who the conversation is with (a uuid, "" for none).
+    property string peer
+    // What was typed to each friend and not sent, by uuid; for the session.
+    property var drafts: ({})
+    property string draftOf
     property bool canSend: true
     // Why nothing can be sent, while canSend is false.
     property string reason
@@ -34,6 +40,14 @@ Item {
     property real now: Date.now()
     readonly property int waitSeconds: root.chat && root.chat.rateLimitedUntilMs > root.now
                                        ? Math.ceil((root.chat.rateLimitedUntilMs - root.now) / 1000) : 0
+
+    onPeerChanged: {
+        if (root.draftOf.length > 0)
+            root.drafts[root.draftOf] = field.text
+        root.draftOf = root.peer
+        field.text = root.drafts[root.peer] || ""
+        field.cursorPosition = field.length
+    }
 
     function focusField() {
         field.forceActiveFocus()
@@ -106,9 +120,27 @@ Item {
             TextArea.flickable: TextArea {
                 id: field
                 objectName: "chatField"
-                // One line until there is more to say; the style's field is sized for a paragraph.
-                background.implicitHeight: Theme.control.height
-                background.implicitWidth: 0
+                // Its own plate, without the style's focus halo: inside this clipping scroller the halo, which
+                // reaches past the field, was cut into coloured corners. The accent edge says it has focus. One
+                // line until there is more to say.
+                // One line sits in the middle of the field whatever the font: the padding takes exactly what the
+                // line leaves, so there is no slack for the text to drift in.
+                FontMetrics { id: fieldMetrics; font: field.font }
+                readonly property real linePad: Math.max(Theme.space.xs, (Theme.control.height - fieldMetrics.height) / 2)
+                topPadding: linePad
+                bottomPadding: linePad
+                background: Rectangle {
+                    implicitHeight: Theme.control.height
+                    implicitWidth: 0
+                    radius: Theme.radius.sm
+                    color: "transparent"
+                    border.width: 1
+                    border.color: field.activeFocus ? Theme.palette.accent
+                                : field.hovered ? Theme.neutral.outlineHover : Theme.neutral.outline
+                    Behavior on border.color {
+                        ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+                    }
+                }
                 wrapMode: TextArea.Wrap
                 placeholderText: qsTr("Message %1").arg(root.name)
                 Accessible.name: qsTr("Message %1").arg(root.name)

@@ -324,6 +324,12 @@ class FriendsController : public QObject
 	/// actionFinished(), and not before the caller has returned.
 	void finishAction(const QString& action, bool ok, const QString& message);
 	bool canAct(const QString& action, const QString* uuid);
+	/// The lists as @p action on @p uuid left them, shown before the read that follows
+	/// (FriendsEvents::settle()); @p name only for a request just sent.
+	void settleAction(const QString& action, const QString& uuid,
+					  const QString& name = QString());
+	/// @p uuid off the blocked list (@p name empty) or on it, ahead of loadBlocked().
+	void settleBlocked(const QString& uuid, const QString& name);
 	void loadBlocked(std::function<void(const FriendsApi::Reply&, bool)> done);
 	QString nameOf(const QString& uuid) const;
 	QString requestErrorText(const FriendsApi::Reply& reply,

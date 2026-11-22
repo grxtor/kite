@@ -165,6 +165,22 @@ class FriendChatQmlTest : public FriendChatQmlHarness
 		shot(QStringLiteral("chat-composer-limit"));
 	}
 
+	/* What was typed to one friend is not waiting in the field when another's conversation opens. */
+	void aDraftStaysWithItsFriend()
+	{
+		openJeb();
+		QObject* field = find("chatField");
+		QVERIFY(field);
+		field->setProperty("text", QStringLiteral("only for jeb"));
+		m_chat->close();
+		m_chat->open(kDinnerbone);
+		QTRY_COMPARE(field->property("text").toString(), QString());
+		field->setProperty("text", QStringLiteral("for Dinnerbone"));
+		m_chat->close();
+		m_chat->open(kJeb);
+		QTRY_COMPARE(field->property("text").toString(), QStringLiteral("only for jeb"));
+	}
+
 	void aRateLimitSaysHowLongToWait()
 	{
 		openJeb();

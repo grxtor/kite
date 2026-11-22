@@ -25,10 +25,12 @@ T.Menu {
         return widest
     }
 
-    implicitWidth: Math.min(control.maximumWidth,
-                            Math.max(control.minimumWidth,
-                                     implicitBackgroundWidth + leftInset + rightInset,
-                                     control.widestEntry + leftPadding + rightPadding))
+    // A whole number of pixels: entries' text widths are fractional, and a menu hung by its right edge
+    // (x = anchor - width) then sat on a half pixel and visibly moved over by one when it settled.
+    implicitWidth: Math.ceil(Math.min(control.maximumWidth,
+                                      Math.max(control.minimumWidth,
+                                               implicitBackgroundWidth + leftInset + rightInset,
+                                               control.widestEntry + leftPadding + rightPadding)))
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
@@ -51,15 +53,17 @@ T.Menu {
         T.ScrollIndicator.vertical: ScrollIndicator { }
     }
 
-    // The popup glass treatment (Theme.glass): surfaceOverlay, the hairline
-    // border, a light top edge and the md shadow.
+    // The popup surface (Theme.glass): surfaceOverlay, the hairline border and the md shadow. Flat: no sheen
+    // and no light top edge.
     background: GlassSurface {
-        radius: Theme.radius.lg
+        radius: Theme.radius.sm
         level: Theme.elevation.md
     }
 
+    // A menu is under the pointer the moment it is asked for: a quick fade and nothing else. Growing and
+    // overshooting from its top centre made a menu hung from its right corner seem to arrive from the side.
     enter: Transition {
-        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.press; easing.type: Theme.motion.easing }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
@@ -67,6 +71,7 @@ T.Menu {
 
     T.Overlay.modal: Rectangle {
         color: Theme.palette.scrim
+        Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
     }
 
     T.Overlay.modeless: Rectangle {

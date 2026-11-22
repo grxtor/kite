@@ -84,6 +84,24 @@ namespace
 					Json::ensureString(authorRaw.toObject(), "name", ""));
 			}
 			project.author = authorNames.join(", ");
+
+			project.downloads =
+				qint64(obj.value(QStringLiteral("downloadCount")).toDouble());
+			project.dateModified = Json::ensureString(obj, "dateModified", "");
+			for (const auto& categoryRaw : Json::ensureArray(obj, "categories")) {
+				const QString name =
+					Json::ensureString(categoryRaw.toObject(), "name", "");
+				if (!name.isEmpty() && !project.categories.contains(name)) {
+					project.categories.append(name);
+				}
+			}
+			for (const auto& shotRaw : Json::ensureArray(obj, "screenshots")) {
+				const QString url =
+					Json::ensureString(shotRaw.toObject(), "url", "");
+				if (!url.isEmpty()) {
+					project.gallery.append(url);
+				}
+			}
 		} catch (const JSONValidationError& e) {
 			qWarning() << "Error loading CurseForge project:" << e.cause();
 			return false;

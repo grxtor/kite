@@ -123,7 +123,8 @@ class InstanceList : public QAbstractListModel
 		 * is then empty too). */
 		LaunchProgressRole,
 		/* file:// URL of the instance's cover, or empty: the picked screenshot's
-		 * copy, else the modpack's fetched art, else a version panorama. Found
+		 * copy, else its newest screenshot, else its last played world's icon,
+		 * else the modpack's fetched art, else a version panorama. Found
 		 * on a worker, so data() answers from the cache or empty at once. */
 		CoverImageRole,
 		/* Whether the instance's last launch crashed
@@ -135,7 +136,7 @@ class InstanceList : public QAbstractListModel
 		 * is no screenshot): "image://instanceicon/<key>" if its icon is an
 		 * icon file, else the logo's upstream URL (PackIconUrl), else empty. */
 		PackArtRole,
-		// "custom", "platform", "panorama" or "" (the UI draws a gradient); agrees with CoverImageRole.
+		// "custom", "screenshot", "world", "platform", "panorama" or "" (the UI draws the icon); agrees with CoverImageRole.
 		CoverKindRole,
 		// Screenshot a "custom" cover was copied from, or "": for marking it in the list.
 		CoverSourceRole,
@@ -260,7 +261,7 @@ class InstanceList : public QAbstractListModel
 	};
 	struct CoverInfo {
 		QString url;  ///< file:// URL, empty for none
-		QString kind; ///< "custom", "platform", "panorama" or empty
+		QString kind; ///< "custom", "screenshot", "world", "platform", "panorama" or empty
 	};
 
 	/* Panorama faces an instance may get (panorama_0..3: the horizon ones;
@@ -276,10 +277,20 @@ class InstanceList : public QAbstractListModel
 	 * directly. */
 	static QString panoramaPath(const CoverDirs& dirs, const QString& mcVersion,
 								int face = 0);
-	// The cover order: custom, platform art, panorama, nothing; a path is used only if that file exists.
+	/* The cover order: the picked one, the newest screenshot, the last played
+	 * world's icon, platform art, panorama, nothing. A path is used only if
+	 * that file exists. */
 	static CoverInfo pickCover(const QString& customPath,
+							   const QString& screenshotPath,
+							   const QString& worldIconPath,
 							   const QString& platformPath,
 							   const QString& panoramaPath);
+	/* The newest picture (png, jpg, jpeg) in @p gameRoot's screenshots folder,
+	 * or empty. Reads one folder listing; runs on a worker. */
+	static QString latestScreenshot(const QString& gameRoot);
+	/* icon.png of the save in @p gameRoot whose level.dat changed last, among
+	 * the saves that have one; empty for none. Runs on a worker. */
+	static QString latestWorldIcon(const QString& gameRoot);
 	/* Average of the visible pixels, weighted by opacity and
 	 * saturation as IconList::tint() does; invalid when nothing is visible. */
 	static QColor averageIconColor(const QImage& image);

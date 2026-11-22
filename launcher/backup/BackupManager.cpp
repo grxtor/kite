@@ -204,9 +204,13 @@ BackupEntry BackupManager::importBackup(const QString& srcZipPath,
 	return entryFromFile(destPath);
 }
 
-bool BackupManager::deleteBackup(const BackupEntry& entry)
+bool BackupManager::deleteBackup(const BackupEntry& entry,
+								 QList<FS::Trashed>* trashed)
 {
-	return QFile::remove(entry.fullPath);
+	if (!QFileInfo::exists(entry.fullPath)) {
+		return false;
+	}
+	return FS::trashOrDelete(entry.fullPath, trashed);
 }
 
 QString BackupManager::generateFileName(const QString& label) const

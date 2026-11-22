@@ -67,6 +67,11 @@ class FlameModpackModelTest : public QObject
 		QCOMPARE(pack.categories, (QStringList{"Kitchen Sink", "Tech"}));
 		QCOMPARE(pack.gameVersions, QStringList{"1.20.1"});
 		QCOMPARE(pack.screenshots, QStringList{"https://media.forgecdn.net/shot1.png"});
+		/* Only the links the reply states, for the pack page's Links card. */
+		QCOMPARE(pack.links.size(), 1);
+		QCOMPARE(pack.links.first().toMap().value("kind").toString(), QString("website"));
+		QCOMPARE(pack.links.first().toMap().value("url").toString(),
+				 QString("https://www.curseforge.com/minecraft/modpacks/all-the-mods-9"));
 	}
 
 	void test_ParseSearchResultsBadJson()

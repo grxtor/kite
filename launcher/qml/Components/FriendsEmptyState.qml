@@ -5,7 +5,7 @@ import QtQuick
 import Kite.Theme
 
 /*
- * The Friends tab with nobody on it: what to do next. The add field is on the page above; friends find each other by
+ * The Friends tab with nobody on it: what to do next (its button puts the cursor in the page's add field); friends find each other by
  * Minecraft name (and have to use Kite too), so this says so and shows yours, ready to copy (CopyName's chip). An
  * EmptyState like the other tabs', so the three share one type scale and place.
  */
@@ -21,6 +21,9 @@ EmptyState {
     body: root.myName.length > 0
           ? qsTr("Your friends need Kite too. Add them by their Minecraft name, or send them yours so they can add you:")
           : qsTr("Your friends need Kite too. Add them by their Minecraft name.")
+
+    actionText: qsTr("Add a friend")
+    actionIcon: "plus"
 
     extra: CopyName {
         chip: true
