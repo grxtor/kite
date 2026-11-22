@@ -10,12 +10,15 @@ import Kite.Theme
  * One screenshot large, over the whole window: Left/Right (or the arrows beside the picture, or a swipe) go through
  * the folder, Esc closes. Under the picture are its actions; they call back into the ScreenshotsTab (`owner`), so a
  * delete goes to the trash with Undo exactly as from the grid. Modal, so the window's shortcuts wait while it is open.
+ * `readOnly` is for pictures that are not the user's files (a provider's gallery, GalleryViewer): no cover, copy,
+ * folder, upload or delete, only "Open in browser".
  */
 Popup {
     id: root
 
     // The ScreenshotsTab: model, captionOf(), isCover(), copyImage(), askRemove(), upload() and the cover signals.
     required property var owner
+    property bool readOnly: false
     readonly property var model: owner.model
     readonly property int count: list.count
     readonly property int index: list.currentIndex
@@ -89,6 +92,7 @@ Popup {
                 }
                 Copy {
                     width: parent.width
+                    visible: !root.readOnly
                     text: root.current ? root.current.name : ""
                     elide: Text.ElideMiddle
                     role: "label"
@@ -148,7 +152,7 @@ Popup {
                 Image {
                     anchors.fill: full
                     visible: full.status !== Image.Ready
-                    source: "image://screenshot/" + encodeURIComponent(page.path)
+                    source: page.path.length > 0 ? "image://screenshot/" + encodeURIComponent(page.path) : ""
                     sourceSize: Qt.size(512, 512)
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
@@ -163,6 +167,12 @@ Popup {
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     mipmap: true
+                }
+                // A remote picture has no thumbnail to stand in while it loads.
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: root.readOnly && full.status === Image.Loading
+                    visible: running
                 }
             }
         }
@@ -202,7 +212,7 @@ Popup {
             Button {
                 anchors.verticalCenter: parent.verticalCenter
                 // The Gece look shows no covers.
-                visible: Theme.look !== "night"
+                visible: !root.readOnly && Theme.look !== "night"
                 text: root.currentIsCover ? qsTr("Remove cover") : qsTr("Set as cover")
                 icon.source: Icons.url("image")
                 onClicked: {
@@ -216,19 +226,21 @@ Popup {
             }
             Button {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: !root.readOnly
                 text: qsTr("Copy")
                 icon.source: Icons.url("copy")
                 onClicked: owner.copyImage(root.index)
             }
             Button {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: !root.readOnly
                 text: qsTr("Show in folder")
                 icon.source: Icons.url("folder")
                 onClicked: owner.openFolderRequested(owner.directory)
             }
             Button {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: owner.canUpload
+                visible: !root.readOnly && owner.canUpload
                 enabled: !!owner.uploader && !owner.uploader.busy
                 text: owner.uploading ? qsTr("Uploading…") : qsTr("Upload to Imgur")
                 icon.source: Icons.url("arrow-up")
@@ -236,6 +248,14 @@ Popup {
             }
             Button {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: root.readOnly
+                text: qsTr("Open in browser")
+                icon.source: Icons.url("external-link")
+                onClicked: ExternalLinks.open(root.contentItem, root.current ? root.current.url : "")
+            }
+            Button {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !root.readOnly
                 text: qsTr("Delete")
                 icon.source: Icons.url("trash")
                 onClicked: owner.askRemove([root.currentPath])

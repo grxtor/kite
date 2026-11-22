@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTest>
 
 #include "modplatform/modrinth/ModrinthModpackModel.h"
@@ -196,6 +198,74 @@ class ModrinthModpackModelTest : public QObject
 		QCOMPARE(second.value("downloadUrl").toString(),
 				 QString("https://cdn.modrinth.com/data/abc12345/versions/"
 						 "ver2/pack.mrpack"));
+	}
+
+	/* The pack page's Links card: the project's own page first, then only what
+	 * the project states. */
+	void test_ParseLinks()
+	{
+		const QJsonObject project = QJsonDocument::fromJson(
+			"{\"slug\":\"fabulously-optimized\","
+			"\"source_url\":\"https://github.com/example/fo\","
+			"\"issues_url\":null,\"wiki_url\":\"\","
+			"\"discord_url\":\"https://discord.gg/example\"}").object();
+		const QVariantList links = ModrinthModpackModel::parseLinks(project);
+		QCOMPARE(links.size(), 3);
+		QCOMPARE(links.at(0).toMap().value("kind").toString(),
+				 QString("website"));
+		QVERIFY(links.at(0).toMap().value("url").toString().endsWith(
+			"/modpack/fabulously-optimized"));
+		QCOMPARE(links.at(1).toMap().value("kind").toString(),
+				 QString("source"));
+		QCOMPARE(links.at(2).toMap().value("url").toString(),
+				 QString("https://discord.gg/example"));
+		QVERIFY(ModrinthModpackModel::parseLinks(QJsonObject()).isEmpty());
+	}
+
+	/* "What's inside": a version's dependencies name projects; a bare file
+	 * name (a jar in the overrides) names none. */
+	void test_ParseVersionDependencies()
+	{
+		const QByteArray json =
+			"["
+			" {\"id\":\"ver1\",\"dependencies\":["
+			"   {\"project_id\":\"AANobbMI\",\"dependency_type\":\"embedded\"},"
+			"   {\"project_id\":\"P7dR8mSH\",\"dependency_type\":\"embedded\"},"
+			"   {\"project_id\":\"AANobbMI\",\"dependency_type\":\"embedded\"},"
+			"   {\"project_id\":null,\"file_name\":\"private.jar\"}]},"
+			" {\"id\":\"ver2\",\"dependencies\":[]},"
+			" {\"id\":\"ver3\"}"
+			"]";
+		const auto deps = ModrinthModpackModel::parseVersionDependencies(json);
+		QCOMPARE(deps.size(), 1);
+		QCOMPARE(deps.value("ver1"), (QStringList{"AANobbMI", "P7dR8mSH"}));
+		QVERIFY(ModrinthModpackModel::parseVersionDependencies("nope")
+					.isEmpty());
+	}
+
+	void test_ParseContentsJson()
+	{
+		const QByteArray json =
+			"["
+			" {\"id\":\"AANobbMI\",\"slug\":\"sodium\",\"title\":\"Sodium\","
+			"  \"description\":\"Fast.\",\"project_type\":\"mod\","
+			"  \"icon_url\":\"https://cdn.modrinth.com/sodium.png\"},"
+			" {\"id\":\"P7dR8mSH\",\"slug\":\"fabric-api\","
+			"  \"title\":\"fabric API\",\"project_type\":\"mod\"},"
+			" {\"id\":\"untitled\"}"
+			"]";
+		const QVariantList contents =
+			ModrinthModpackModel::parseContentsJson(json);
+		QCOMPARE(contents.size(), 2);
+		/* By title, whatever the case. */
+		QCOMPARE(contents.at(0).toMap().value("title").toString(),
+				 QString("fabric API"));
+		const QVariantMap sodium = contents.at(1).toMap();
+		QCOMPARE(sodium.value("description").toString(), QString("Fast."));
+		QCOMPARE(sodium.value("kind").toString(), QString("mod"));
+		QCOMPARE(sodium.value("iconUrl").toString(),
+				 QString("https://cdn.modrinth.com/sodium.png"));
+		QVERIFY(sodium.value("url").toString().endsWith("sodium"));
 	}
 };
 

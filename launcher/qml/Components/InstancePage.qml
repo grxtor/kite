@@ -37,6 +37,8 @@ Item {
     }
 
     signal backRequested()
+    // Add content's "Modpacks": browse packs in Discover, on that provider.
+    signal modpacksRequested(string provider)
     // Open another instance (the Mods tab's new Kite Performance one).
     signal openInstanceRequested(string id)
     signal playRequested(string id)
@@ -97,7 +99,7 @@ Item {
             crashdetails: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
             shotview: ["screenshots", shotsTab],
-            browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
+            browsepick: ["browse", browseView], browseselect: ["browse", browseView], browsesort: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
         }
         const owner = owners[name]
         if (!owner)
@@ -453,6 +455,7 @@ Item {
                 browser: root.details ? root.details.contentBrowser : null
                 details: root.details
                 onBackRequested: root.leaveBrowse()
+                onModpacksRequested: (provider) => root.modpacksRequested(provider)
             }
 
             ManagedPackTab {

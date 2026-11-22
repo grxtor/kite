@@ -21,6 +21,8 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QHash>
+#include <QJsonObject>
 #include <QList>
 #include <QString>
 #include <QVariant>
@@ -46,11 +48,29 @@ class ModrinthModpackDetail : public QObject
 	 * Changes with `body`. */
 	Q_PROPERTY(QString bodyHtml READ bodyHtml NOTIFY bodyChanged)
 	/* QVariantList of maps: id, name, versionNumber, gameVersions (list),
-	 * loaders (list), datePublished, downloadUrl, featured. */
+	 * loaders (list), datePublished, downloadUrl, featured, contentCount
+	 * (how many projects loadContents() would list; 0 when unknown). */
 	Q_PROPERTY(QVariantList versions READ versions NOTIFY versionsChanged)
-	/* QVariantList of maps: url, featured, title; empty when the project
-	 * has no gallery. */
+	/* QVariantList of maps: url, featured, title, and rawUrl where the
+	 * provider has the picture at full size; empty when the project has no
+	 * gallery. */
 	Q_PROPERTY(QVariantList gallery READ gallery NOTIFY galleryChanged)
+	/* QVariantList of maps: kind ("website" | "source" | "issues" | "wiki" |
+	 * "discord"), url. Only what the provider states; "website" is the
+	 * project's page on the provider's own site. */
+	Q_PROPERTY(QVariantList links READ links NOTIFY linksChanged)
+	/* The licence's name ("MIT License"), "" when the provider states none. */
+	Q_PROPERTY(QString license READ license NOTIFY linksChanged)
+	Q_PROPERTY(QString licenseUrl READ licenseUrl NOTIFY linksChanged)
+	/* What one version of the pack holds, as far as the provider's API lists
+	 * it without the pack file (Modrinth: the version's dependencies):
+	 * QVariantList of maps title, description, iconUrl, url, kind ("mod" |
+	 * "resourcepack" | "shader" | "datapack" | ""), sorted by title. Filled by
+	 * the model's loadContents() for `contentsVersionId`. */
+	Q_PROPERTY(QVariantList contents READ contents NOTIFY contentsChanged)
+	Q_PROPERTY(QString contentsVersionId READ contentsVersionId NOTIFY
+				   contentsChanged)
+	Q_PROPERTY(bool contentsLoading READ contentsLoading NOTIFY contentsChanged)
 	Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 	Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
@@ -81,6 +101,30 @@ class ModrinthModpackDetail : public QObject
 	{
 		return m_gallery;
 	}
+	QVariantList links() const
+	{
+		return m_links;
+	}
+	QString license() const
+	{
+		return m_license;
+	}
+	QString licenseUrl() const
+	{
+		return m_licenseUrl;
+	}
+	QVariantList contents() const
+	{
+		return m_contents;
+	}
+	QString contentsVersionId() const
+	{
+		return m_contentsVersionId;
+	}
+	bool contentsLoading() const
+	{
+		return m_contentsLoading;
+	}
 	bool loading() const
 	{
 		return m_loading;
@@ -98,6 +142,12 @@ class ModrinthModpackDetail : public QObject
 				 RichBody::Format format = RichBody::Format::Markdown);
 	void setVersions(const QVariantList& versions);
 	void setGallery(const QVariantList& gallery);
+	void setLinks(const QVariantList& links, const QString& license = QString(),
+				  const QString& licenseUrl = QString());
+	/* @p loading true: @p versionId is being asked for and `contents` is
+	 * empty meanwhile. */
+	void setContents(const QString& versionId, const QVariantList& contents,
+					 bool loading);
 	void setLoading(bool loading);
 	void setError(const QString& error);
 
@@ -107,6 +157,8 @@ class ModrinthModpackDetail : public QObject
 	void bodyChanged();
 	void versionsChanged();
 	void galleryChanged();
+	void linksChanged();
+	void contentsChanged();
 	void loadingChanged();
 	void errorChanged();
 
@@ -117,6 +169,12 @@ class ModrinthModpackDetail : public QObject
 	QString m_bodyHtml;
 	QVariantList m_versions;
 	QVariantList m_gallery;
+	QVariantList m_links;
+	QString m_license;
+	QString m_licenseUrl;
+	QVariantList m_contents;
+	QString m_contentsVersionId;
+	bool m_contentsLoading = false;
 	bool m_loading = false;
 	QString m_error;
 };
@@ -246,6 +304,22 @@ class ModrinthModpackModel : public QAbstractListModel
 								 const QString& instanceName,
 								 const QString& group);
 
+	/* Fetches what version @p versionId of the opened pack holds into
+	 * `detail.contents`: the projects its dependencies name, in one request.
+	 * Nothing is asked for a version that lists none (see the versions'
+	 * `contentCount`) or the one already shown. */
+	Q_INVOKABLE void loadContents(const QString& versionId);
+
+	/* The links and licence of a /project/{id} object; network-free. */
+	static QVariantList parseLinks(const QJsonObject& project);
+	/* Version id -> the project ids its "dependencies" name, each once. A
+	 * dependency with only a file name (a jar in the pack's overrides) has no
+	 * project to show and is left out. */
+	static QHash<QString, QStringList>
+	parseVersionDependencies(const QByteArray& versionsBytes);
+	/* A /projects?ids= reply -> `detail.contents`. */
+	static QVariantList parseContentsJson(const QByteArray& bytes);
+
 	/* JSON -> rows; static so tests can feed a canned response. */
 	static QList<Modrinth::IndexedPack>
 	parseSearchResults(const QByteArray& bytes, int& totalHits);
@@ -303,4 +377,7 @@ class ModrinthModpackModel : public QAbstractListModel
 	bool m_versionsDone = true;
 	NetJob::Ptr m_bodyJob;
 	NetJob::Ptr m_versionsJob;
+	NetJob::Ptr m_contentsJob;
+	/* For the opened pack: version id -> dependency project ids. */
+	QHash<QString, QStringList> m_versionDependencies;
 };

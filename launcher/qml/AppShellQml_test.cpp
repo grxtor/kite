@@ -246,6 +246,92 @@ class AppShellQmlTest : public QObject
 		QCOMPARE(history->property("index").toInt(), 0);
 	}
 
+	/* A modpack opened in Discover is a page of its own: Back returns to the
+	 * results, Forward to the pack, and a second pack is a third page. */
+	void historyKeepsDiscoverPacksAsPages()
+	{
+		QQmlEngine engine;
+		auto history = create(engine, historyQml());
+		QVERIFY(history);
+		for (const char* route :
+			 { "home", "discover", "discover/modrinth/abc",
+			   "discover/modrinth/xyz" }) {
+			evaluate(history.get(), QStringLiteral("visit('%1')").arg(route));
+		}
+		QCOMPARE(history->property("entries").toStringList(),
+				 (QStringList{ "home", "discover", "discover/modrinth/abc",
+							   "discover/modrinth/xyz" }));
+		QVERIFY(evaluate(history.get(), QStringLiteral("back()")).toBool());
+		QVERIFY(evaluate(history.get(), QStringLiteral("back()")).toBool());
+		QVERIFY(evaluate(history.get(), QStringLiteral("forward()")).toBool());
+		QCOMPARE(history->property("went").toStringList(),
+				 (QStringList{ "discover/modrinth/abc", "discover",
+							   "discover/modrinth/abc" }));
+		/* A pack that can no longer be reopened is dropped like a deleted instance. */
+		evaluate(history.get(),
+				 QStringLiteral("gone = ['discover/modrinth/xyz']"));
+		QVERIFY(!evaluate(history.get(), QStringLiteral("forward()")).toBool());
+		QCOMPARE(history->property("entries").toStringList().size(), 3);
+	}
+
+	/* Several ticked results install one after another through the view's own
+	 * install; one that cannot be installed is counted and skipped. */
+	void batchInstallRunsOneAfterAnother()
+	{
+		QQmlEngine engine;
+		auto batch = create(engine, R"(
+			ContentBatchInstall {
+				id: batch
+				property var started: []
+				property var result: null
+				onFinished: (installed, failed) => result = [installed, failed]
+				owner: QtObject {
+					signal installSettled(string key, bool ok)
+					function projectKey(title, author) { return title + "/" + author }
+					function startInstall(key, row, versionId) {
+						if (versionId.length === 0)
+							return false
+						batch.started = batch.started.concat([key + "@" + row + ":" + versionId])
+						return true
+					}
+				}
+				browser: QtObject {
+					signal rowPrepared(int row)
+					property var rows: ["a", "b", "c"]
+					function rowOfProject(id) { return rows.indexOf(id) }
+					function prepareRow(row) { Qt.callLater(rowPrepared, row) }
+					function bestVersionId(row) { return row === 1 ? "" : "v" + row }
+				}
+			})");
+		QVERIFY(batch);
+		evaluate(batch.get(), QStringLiteral("toggle('a', 'A', 'x')"));
+		evaluate(batch.get(), QStringLiteral("toggle('b', 'B', 'x')"));
+		evaluate(batch.get(), QStringLiteral("toggle('c', 'C', 'x')"));
+		evaluate(batch.get(), QStringLiteral("toggle('gone', 'Gone', 'x')"));
+		evaluate(batch.get(), QStringLiteral("toggle('gone', 'Gone', 'x')"));
+		QCOMPARE(evaluate(batch.get(), QStringLiteral("selected.length")).toInt(), 3);
+		QVERIFY(evaluate(batch.get(), QStringLiteral("isSelected('b')")).toBool());
+
+		evaluate(batch.get(), QStringLiteral("start()"));
+		QVERIFY(batch->property("running").toBool());
+		QCOMPARE(evaluate(batch.get(), QStringLiteral("selected.length")).toInt(), 0);
+		/* Only the first has begun; the second waits for it. */
+		QTRY_COMPARE(batch->property("started").toStringList(),
+					 QStringList{ "A/x@0:v0" });
+		QCoreApplication::processEvents();
+		QCOMPARE(batch->property("started").toStringList().size(), 1);
+
+		/* Done: "b" has no version and is skipped, "c" begins. */
+		evaluate(batch.get(), QStringLiteral("owner.installSettled('A/x', true)"));
+		QTRY_COMPARE(batch->property("started").toStringList(),
+					 (QStringList{ "A/x@0:v0", "C/x@2:v2" }));
+		QVERIFY(batch->property("running").toBool());
+		evaluate(batch.get(), QStringLiteral("owner.installSettled('C/x', true)"));
+		QTRY_VERIFY(!batch->property("running").toBool());
+		QCOMPARE(evaluate(batch.get(), QStringLiteral("result[0]")).toInt(), 2);
+		QCOMPARE(evaluate(batch.get(), QStringLiteral("result[1]")).toInt(), 1);
+	}
+
 	void historyKeepsAtMostFiftyPages()
 	{
 		QQmlEngine engine;

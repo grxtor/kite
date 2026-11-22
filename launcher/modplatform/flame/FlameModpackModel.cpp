@@ -409,6 +409,22 @@ FlameModpackModel::parseSearchResults(const QByteArray& bytes, int& totalCount)
 				pack.screenshots.append(url);
 			}
 		}
+		const QJsonObject links = obj.value(QStringLiteral("links")).toObject();
+		const QList<QPair<QString, QString>> kinds = {
+			{QStringLiteral("website"), QStringLiteral("websiteUrl")},
+			{QStringLiteral("source"), QStringLiteral("sourceUrl")},
+			{QStringLiteral("issues"), QStringLiteral("issuesUrl")},
+			{QStringLiteral("wiki"), QStringLiteral("wikiUrl")},
+		};
+		for (const auto& kind : kinds) {
+			const QString url = Json::ensureString(links, kind.second, QString());
+			if (!url.isEmpty()) {
+				QVariantMap entry;
+				entry[QStringLiteral("kind")] = kind.first;
+				entry[QStringLiteral("url")] = url;
+				pack.links.append(entry);
+			}
+		}
 		results.append(pack);
 	}
 
@@ -566,6 +582,7 @@ void FlameModpackModel::loadDetail(const QString& projectId)
 			gallery.append(entry);
 		}
 		m_detail->setGallery(gallery);
+		m_detail->setLinks(pack->links);
 	}
 
 	if (keyMissing()) {

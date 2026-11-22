@@ -23,12 +23,14 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QModelIndex>
+#include <QTimer>
 #include <QVariantMap>
 #include <algorithm>
 
 #include "BuildConfig.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/mod/InstalledContentKeys.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "modplatform/ModDownloadTypes.h"
@@ -284,7 +286,57 @@ ContentProviderModel* ContentBrowser::ensureModel(const QString& provider,
 
 	connectModel(model);
 	m_models.insert(key, model);
+	watchFolder(type);
+	refreshInstalledKeys(type);
 	return model;
+}
+
+void ContentBrowser::watchFolder(ModPlatform::ContentType type)
+{
+	auto folder = folderModelFor(type);
+	if (!folder || m_watchedFolders.contains(type)) {
+		return;
+	}
+	m_watchedFolders.append(type);
+	/* A file's own id and name arrive one row at a time as the jars are read
+	 * (dataChanged); the list itself changes with updateFinished.
+	 * Coalesced: a folder of 300 mods reports 300 times in a row. */
+	auto refresh = [this, type] {
+		if (m_keyRefreshPending.contains(type)) {
+			return;
+		}
+		m_keyRefreshPending.append(type);
+		QTimer::singleShot(0, this, [this, type] {
+			m_keyRefreshPending.removeAll(type);
+			refreshInstalledKeys(type);
+		});
+	};
+	connect(folder.get(), &ModFolderModel::updateFinished, this, refresh);
+	connect(folder.get(), &QAbstractItemModel::dataChanged, this, refresh);
+	/* Nothing may have listed the folder yet (the page can open on Add content). */
+	folder->update();
+}
+
+void ContentBrowser::refreshInstalledKeys(ModPlatform::ContentType type)
+{
+	auto folder = folderModelFor(type);
+	if (!folder) {
+		return;
+	}
+	const QSet<QString> keys = InstalledContentKeys::keysOf(folder->allMods());
+	const QString suffix =
+		QStringLiteral(":") + ModPlatform::contentTypeFolderName(type);
+	for (auto it = m_models.constBegin(); it != m_models.constEnd(); ++it) {
+		if (!it.key().endsWith(suffix)) {
+			continue;
+		}
+		it.value()->setInstalledKeys(keys);
+		/* The index may have gained or lost a sidecar with the same change. */
+		it.value()->refreshInstalledState();
+	}
+	if (m_hideInstalled) {
+		emit countChanged();
+	}
 }
 
 ContentProviderModel* ContentBrowser::currentModel() const
@@ -450,6 +502,12 @@ void ContentBrowser::applyVersionsFromProject(
 void ContentBrowser::onEntryUpdated(int row)
 {
 	auto* model = qobject_cast<ContentProviderModel*>(sender());
+	if (model && model == currentModel()) {
+		const auto* project = model->projectAt(row);
+		if (project && project->versionsLoaded) {
+			emit rowPrepared(row);
+		}
+	}
 	if (!model || model != m_versionsModel || row != m_versionsRow) {
 		/* An answer for a row or model the caller has since moved on from. */
 		return;
@@ -482,6 +540,62 @@ void ContentBrowser::loadVersions(int row)
 	emit versionsLoadingChanged();
 
 	model->loadEntry(row);
+}
+
+void ContentBrowser::prepareRow(int row)
+{
+	auto* model = currentModel();
+	const auto* project = model ? model->projectAt(row) : nullptr;
+	if (!project) {
+		return;
+	}
+	if (project->versionsLoaded) {
+		/* Queued, so the caller hears it after this call returns either way. */
+		QMetaObject::invokeMethod(
+			this, [this, row] { emit rowPrepared(row); }, Qt::QueuedConnection);
+		return;
+	}
+	model->loadEntry(row);
+}
+
+int ContentBrowser::rowOfProject(const QString& projectId) const
+{
+	auto* model = currentModel();
+	const int rows = model ? model->rowCount(QModelIndex()) : 0;
+	for (int row = 0; row < rows; ++row) {
+		if (model->projectAt(row)->projectId == projectId) {
+			return row;
+		}
+	}
+	return -1;
+}
+
+QString ContentBrowser::pickVersionId(
+	const QList<ModPlatform::ContentVersion>& versions,
+	const QString& mcVersion, const QString& loader)
+{
+	const QVariantList entries = versionEntries(versions, mcVersion, loader);
+	for (const QVariant& entry : entries) {
+		const QVariantMap map = entry.toMap();
+		if (map.value(QStringLiteral("isCompatible")).toBool()) {
+			return map.value(QStringLiteral("id")).toString();
+		}
+	}
+	return entries.isEmpty() ? QString()
+							 : entries.first()
+								   .toMap()
+								   .value(QStringLiteral("id"))
+								   .toString();
+}
+
+QString ContentBrowser::bestVersionId(int row) const
+{
+	auto* model = currentModel();
+	const auto* project = model ? model->projectAt(row) : nullptr;
+	if (!project || !project->versionsLoaded) {
+		return QString();
+	}
+	return pickVersionId(project->versions, m_mcVersion, m_loaderType);
 }
 
 bool ContentBrowser::selectionFor(int row, const QString& versionId,

@@ -190,6 +190,21 @@ class ContentBrowser : public QObject
 	/// nothing installable (call loadVersions() first) or the type has no folder.
 	Q_INVOKABLE QObject* review(int row, const QString& versionId);
 
+	/* Installing several rows at once: prepareRow() fetches a row's versions
+	 * without making it the row `versions` answers for, and rowPrepared(row)
+	 * follows (queued when they were already in). bestVersionId() is then the
+	 * version the project's panel would preselect, "" when the row has none. */
+	Q_INVOKABLE void prepareRow(int row);
+	/// The row the project is at now, -1 when it is not shown: rows move when
+	/// installed projects are hidden and one more becomes installed.
+	Q_INVOKABLE int rowOfProject(const QString& projectId) const;
+	Q_INVOKABLE QString bestVersionId(int row) const;
+	/// The id review() would be given for the newest compatible of @p versions,
+	/// else the newest; "" for none.
+	static QString
+	pickVersionId(const QList<ModPlatform::ContentVersion>& versions,
+				  const QString& mcVersion, const QString& loader);
+
 	QVariantList categories() const;
 	QStringList categoryFilter() const
 	{
@@ -290,6 +305,7 @@ class ContentBrowser : public QObject
 	void instanceProfileChanged();
 	void changesAllowedChanged();
 	void installTargetAvailableChanged();
+	void rowPrepared(int row);
 
   private slots:
 	void onModelSearchStateChanged();
@@ -309,6 +325,9 @@ class ContentBrowser : public QObject
 	void applyFilters();
 	void clearCategoryFilter();
 	void refreshInstanceProfile();
+	/// Hands every model of @p type the folder's InstalledContentKeys.
+	void refreshInstalledKeys(ModPlatform::ContentType type);
+	void watchFolder(ModPlatform::ContentType type);
 	void rebuildGameVersionOptions();
 	bool selectionFor(int row, const QString& versionId,
 					  ModPlatform::SelectedMod& mod) const;
@@ -327,6 +346,9 @@ class ContentBrowser : public QObject
 
 	/// modelKey(provider, type) -> model; parented to this, kept so flipping providers keeps a search.
 	QHash<QString, ContentProviderModel*> m_models;
+	/// Content types whose folder is already followed for installed keys.
+	QList<ModPlatform::ContentType> m_watchedFolders;
+	QList<ModPlatform::ContentType> m_keyRefreshPending;
 
 	QVariantList m_versions;
 	bool m_versionsLoading = false;

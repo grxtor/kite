@@ -510,6 +510,8 @@ set(MINECRAFT_SOURCES
     minecraft/mod/ModIconCache.cpp
     minecraft/mod/ModMetadataIndex.h
     minecraft/mod/ModMetadataIndex.cpp
+    minecraft/mod/InstalledContentKeys.h
+    minecraft/mod/InstalledContentKeys.cpp
     minecraft/mod/PackwizSidecar.h
     minecraft/mod/PackwizSidecar.cpp
     minecraft/mod/PackLayout.h
@@ -1450,6 +1452,16 @@ add_unit_test(TechnicModpackModel
 
 add_unit_test(ContentBrowser
     SOURCES models/ContentBrowser_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(InstalledContentKeys
+    SOURCES minecraft/mod/InstalledContentKeys_test.cpp
+    LIBS Kite_core
+    )
+
+add_unit_test(ContentProviderModel
+    SOURCES modplatform/ContentProviderModel_test.cpp
     LIBS Kite_core
     )
 

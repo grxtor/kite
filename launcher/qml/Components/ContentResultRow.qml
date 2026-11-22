@@ -9,8 +9,10 @@ import Kite.Theme
 
 /*
  * One search result of ContentBrowserView: logo, "Title by author", one line of description (or the install's
- * progress), then "Install" (the version the project's panel preselects), or "Installed" once it is. Rows share one card, split by hairlines; hover and the picked row share one
- * look, a lifted inset strip with no hairline and no accent.
+ * progress), a quiet line of facts (downloads, last update, up to three categories), then "Install" (the version
+ * the project's panel preselects), or "Installed" once it is. A tick box slides in before the logo while the
+ * pointer is over the list or anything is ticked (`ticking`), for installing several at once. Rows share one card,
+ * split by hairlines; hover and the picked row share one look, a lifted inset strip with no hairline and no accent.
  */
 AbstractButton {
     id: row
@@ -22,6 +24,20 @@ AbstractButton {
     required property string author
     required property string logoUrl
     required property bool installed
+    required property string projectId
+    required property var downloads
+    required property string updated
+    required property var categories
+    required property string websiteUrl
+    required property var gallery
+
+    // The ContentBatchInstall, and whether the tick boxes show.
+    property var batch: null
+    property bool ticking: false
+    readonly property bool ticked: !!batch && batch.selected.length >= 0 && batch.isSelected(projectId)
+    readonly property bool tickable: !installed && !justInstalled && !downloading && !checking
+    readonly property int checkSize: 20
+    readonly property string updatedText: Format.ageText(updated)
 
     readonly property bool selected: owner.selectedRow === index
     readonly property string key: owner.projectKey(title, author)
@@ -36,14 +52,15 @@ AbstractButton {
 
     readonly property int logoSize: 40
     readonly property int logoSourceSize: logoSize * 2
-    readonly property int rowHeight: 64
+    readonly property int rowHeight: 92
 
     implicitHeight: rowHeight
     leftPadding: Theme.space.lg
     rightPadding: Theme.space.md
     hoverEnabled: true
     readonly property var project: ({ title: title, author: author, description: description,
-                                      logoUrl: logoUrl, installed: installed })
+                                      logoUrl: logoUrl, installed: installed, websiteUrl: websiteUrl,
+                                      gallery: gallery, downloads: downloads, updated: updated })
     onClicked: owner.select(index, project)
 
     background: Item {
@@ -86,6 +103,32 @@ AbstractButton {
 
     contentItem: RowLayout {
         spacing: Theme.space.md
+
+        // Grows from nothing, taking its share of the spacing with it, so the logo slides aside once for the
+        // whole list rather than under each row's pointer.
+        Item {
+            readonly property real reveal: row.ticking ? 1 : 0
+            Layout.preferredWidth: row.checkSize * shown
+            Layout.preferredHeight: row.checkSize
+            Layout.rightMargin: -Theme.space.md * (1 - shown)
+            property real shown: reveal
+            Behavior on shown { NumberAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            opacity: shown
+            visible: shown > 0
+            clip: true
+            CheckBox {
+                anchors.verticalCenter: parent.verticalCenter
+                width: row.checkSize
+                padding: 0
+                visible: row.tickable || row.ticked
+                checked: row.ticked
+                Accessible.name: qsTr("Select %1").arg(row.title)
+                onToggled: {
+                    row.batch.toggle(row.projectId, row.title, row.author)
+                    checked = Qt.binding(() => row.ticked)
+                }
+            }
+        }
 
         Item {
             Layout.preferredWidth: row.logoSize
@@ -141,6 +184,13 @@ AbstractButton {
                 elide: Text.ElideRight
                 role: "caption"
                 tone: row.downloading || row.checking ? "secondary" : "tertiary"
+            }
+            ContentResultMeta {
+                Layout.fillWidth: true
+                Layout.topMargin: Theme.space.xxs
+                downloads: row.downloads
+                updatedText: row.updatedText
+                categories: row.categories
             }
         }
 

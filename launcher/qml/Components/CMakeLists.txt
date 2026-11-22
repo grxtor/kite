@@ -348,6 +348,17 @@ qt_add_qml_module(Kite_qml_components
         LegacyUpgradeNotice.qml
         ContentResultRow.qml
         ContentProjectPanel.qml
+        ContentResultMeta.qml
+        ContentResultSkeleton.qml
+        ContentBatchInstall.qml
+        ContentBrowseSelectionBar.qml
+        GalleryStrip.qml
+        GalleryViewer.qml
+        ModpackDetailHeader.qml
+        ModpackDetailSidebar.qml
+        ModpackVersionList.qml
+        ModpackContentsList.qml
+        ModpackGalleryGrid.qml
     RESOURCES
         icons/alert-triangle.svg
         icons/archive.svg

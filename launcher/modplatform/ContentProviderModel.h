@@ -22,6 +22,7 @@
 
 #include <QAbstractListModel>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <memory>
@@ -75,6 +76,16 @@ namespace ModPlatform
 		QString author;
 		QString websiteUrl;
 
+		/* From the search hit, for the result row; zero/empty when the
+		 * provider's reply does not say. */
+		qint64 downloads = 0;
+		/* RFC 3339 date of the last change, as the provider states it. */
+		QString dateModified;
+		/* Display names of the project's categories, loaders left out. */
+		QStringList categories;
+		/* Gallery image URLs, the featured one first. */
+		QStringList gallery;
+
 		/* Key under which the icon is cached, and where to fetch it. */
 		QString logoKey;
 		QString logoUrl;
@@ -125,8 +136,20 @@ class ContentProviderModel : public QAbstractListModel
 		LogoKeyRole = Qt::UserRole + 4,
 		// For QML delegates, which load the logo themselves.
 		LogoUrlRole,
-		AuthorRole
+		AuthorRole,
+		/* double (a qint64 is not a QML number): download count, 0 if unknown. */
+		DownloadsRole,
+		/* QString: ISO date of the last change, "" if unknown. */
+		UpdatedRole,
+		/* QStringList: category names, at most maxRowCategories. */
+		CategoriesRole,
+		/* QString: the project's page on the provider's site. */
+		WebsiteUrlRole,
+		/* QStringList: gallery image URLs, the featured one first. */
+		GalleryRole
 	};
+	/* A result row shows this many category tags. */
+	static constexpr int maxRowCategories = 3;
 
 	~ContentProviderModel() override;
 
@@ -171,6 +194,17 @@ class ContentProviderModel : public QAbstractListModel
 
 	/* Index of what is installed; matching rows are flagged. */
 	void setInstalledIndex(std::shared_ptr<ModMetadataIndex> index);
+
+	/* InstalledContentKeys of the target folder: what is there without a
+	 * sidecar in the index (dropped in by hand) still counts as installed,
+	 * matched on the project's slug or name. */
+	void setInstalledKeys(const QSet<QString>& keys);
+	/* Flags the rows again from the index and the keys; for when the folder
+	 * changed. Only rows whose state changed are reported. */
+	void refreshInstalledState();
+	/* For tests: replaces the rows with what this search reply gives, flagged
+	 * like a real one; no request is made. */
+	void loadSearchReplyForTest(const QByteArray& bytes);
 
 	bool isSearching() const
 	{
@@ -268,6 +302,7 @@ class ContentProviderModel : public QAbstractListModel
 	bool m_hideInstalled = false;
 
 	std::shared_ptr<ModMetadataIndex> m_installedIndex;
+	QSet<QString> m_installedKeys;
 
 	/* Stops a failed request from retrying on every keystroke. */
 	bool m_categoriesRequested = false;

@@ -274,6 +274,11 @@ ApplicationWindow {
             else if (key === "perfdialog")
                 Qt.callLater(instancePage.review, "perfdialog")
             // review=versionmore|newcomponent|otherlogs|logfind|shotselect|shotrename
+            else if (key === "review" && value.indexOf("pack") === 0)
+                devPackReview.name = value
+            // modpacks: the instance page's Add content "Modpacks" link, after instance=<id>.
+            else if (key === "modpacks")
+                Qt.callLater(root.browseModpacks, "modrinth")
             else if (key === "review")
                 Qt.callLater(instancePage.review, value)
             // ask=pickAccount|busySkip|launchFailed|launchAccount: questions only a real launch asks.
@@ -345,10 +350,32 @@ ApplicationWindow {
             }
         }
     }
+    // review=pack…: once the opened pack's detail has loaded.
+    Timer {
+        id: devPackReview
+        property string name: ""
+        interval: 300
+        repeat: true
+        running: name.length > 0
+        onTriggered: {
+            const detail = discoverPage && discoverPage.active ? discoverPage.active.detail : null
+            if (!discoverPage || !discoverPage.openedPack || !detail || detail.loading)
+                return
+            stop()
+            discoverPage.review(name)
+            name = ""
+        }
+    }
     Timer {
         id: devDetail
         interval: 3500
+        // Again until the search has answered: a slow reply would leave the snapshot on the results.
+        repeat: true
         onTriggered: {
+            interval = 500
+            if (!discoverPage || !discoverPage.active || discoverPage.active.count === 0)
+                return
+            stop()
             var parts = root.devRoute.match(/detail=(\d+)/)
             discoverPage.openResult(parts ? parseInt(parts[1]) : 0)
         }
@@ -462,6 +489,7 @@ ApplicationWindow {
      * Cross-page links. Targets are paths, whole or split in two
      * (navigate("settings", "java") is navigate("settings/java")):
      *   "home", "discover", "accounts"
+     *   "discover/<provider>/<projectId>": a modpack's page, if it was opened before (history)
      *   "friends" or "friends/<tab>"
      *   "settings" or "settings/<section>"
      *   "instance/<id>" or "instance/<id>/<tab>"
@@ -473,8 +501,15 @@ ApplicationWindow {
                 ? String(page) : page + "/" + sub
         var parts = path.split("/")
         switch (parts[0]) {
-        case "home":
         case "discover":
+            root.page = "discover"
+            if (parts.length < 3) {
+                if (discoverPage)
+                    discoverPage.closePack()
+                return true
+            }
+            return !!discoverPage && discoverPage.reopen(parts.slice(1).join("/"))
+        case "home":
         case "accounts":
             root.page = parts[0]
             return true
@@ -721,7 +756,9 @@ ApplicationWindow {
     readonly property string route: root.page === "instance"
             ? "instance/" + root.openedInstanceId + (instancePage ? "/" + instancePage.tab : "")
             : root.page === "settings" && settingsPage ? "settings/" + settingsPage.section
-            : root.page === "friends" && friendsPage ? "friends/" + friendsPage.tab : root.page
+            : root.page === "friends" && friendsPage ? "friends/" + friendsPage.tab
+            : root.page === "discover" && discoverPage && discoverPage.packRoute.length > 0
+              ? "discover/" + discoverPage.packRoute : root.page
     NavHistory {
         id: history
         route: root.route
@@ -907,6 +944,35 @@ ApplicationWindow {
         onShortcutsRequested: root.dialog(shortcutsLoader).open()
     }
 
+    // Discover's way back up: the instance whose "Add content" sent the user here for modpacks, then Discover
+    // itself while a pack's page is open.
+    readonly property var discoverPack: root.discoverPage ? root.discoverPage.openedPack : null
+    property var discoverOrigin: null
+    readonly property var discoverTrail: {
+        const steps = []
+        if (root.discoverOrigin)
+            steps.push({ label: root.discoverOrigin.name, go: root.returnToAddContent })
+        if (root.discoverPack)
+            steps.push({ label: qsTr("Discover"), go: () => root.discoverPage.closePack() })
+        return steps
+    }
+    function browseModpacks(provider) {
+        const origin = { id: root.openedInstanceId, name: root.openedName }
+        root.page = "discover"
+        root.discoverOrigin = origin
+        if (root.discoverPage) {
+            root.discoverPage.closePack()
+            root.discoverPage.setProvider(provider)
+        }
+    }
+    function returnToAddContent() {
+        const origin = root.discoverOrigin
+        if (origin && root.navigate("instance/" + origin.id))
+            instancePage.tab = "browse"
+    }
+    // Only Discover reached from an instance leads back to it.
+    onPageChanged: if (root.page !== "discover") root.discoverOrigin = null
+
     // The open instance's name, read from the instance page model's row.
     property string openedName: ""
     Repeater {
@@ -928,7 +994,7 @@ ApplicationWindow {
         leftReserve: Math.max(0, root.windowControlsInset - sidebar.width)
         sideMargin: root.pageSideMargin
         title: root.page === "settings" ? qsTr("Settings")
-             : root.page === "discover" ? qsTr("Discover")
+             : root.page === "discover" ? (root.discoverPack ? (root.discoverPack.title || "") : qsTr("Discover"))
              : root.page === "accounts" ? qsTr("Accounts")
              : root.page === "friends" ? qsTr("Friends")
              : root.page === "instance" ? (instancePage && instancePage.browsing ? qsTr("Add content") : root.openedName)
@@ -938,10 +1004,13 @@ ApplicationWindow {
                 : root.page === "accounts" ? "user"
                 : root.page === "friends" ? "users"
                 : "home"
-        trail: root.page !== "instance" ? []
+        trail: root.page === "discover" ? root.discoverTrail.map((step) => step.label)
+             : root.page !== "instance" ? []
              : instancePage && instancePage.browsing ? [qsTr("Home"), root.openedName] : [qsTr("Home")]
         onTrailActivated: (index) => {
-            if (index === 0)
+            if (root.page === "discover")
+                root.discoverTrail[index].go()
+            else if (index === 0)
                 root.page = "home"
             else
                 instancePage.leaveBrowse()
@@ -1215,6 +1284,7 @@ ApplicationWindow {
                                 accountsController: root.accountsController
                                 onOpenAccountsRequested: root.page = "accounts"
                                 onBackRequested: root.page = "home"
+                                onModpacksRequested: (provider) => root.browseModpacks(provider)
                                 onOpenInstanceRequested: (id) => root.openInstance(id)
                                 onPlayRequested: (id) => root.launch(id)
                                 onStopRequested: (id) => root.call("killInstance", id)

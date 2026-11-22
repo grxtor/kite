@@ -48,6 +48,26 @@ Item {
     signal otherPlatformsRequested()
 
     property var openedPack: null
+    // The packs opened so far, by "<provider>/<projectId>": Back and Forward reopen one without its row.
+    property var visitedPacks: ({})
+    // Where the window is on this page, for the history: "" on the results, else the opened pack's key.
+    readonly property string packRoute: root.openedPack ? root.provider + "/" + root.openedPack.projectId : ""
+
+    function closePack() {
+        root.openedPack = null
+    }
+    // History: back to a pack that was open. False when it is no longer known.
+    function reopen(key) {
+        const entry = root.visitedPacks[key]
+        if (!entry)
+            return false
+        if (root.packRoute === key)
+            return true
+        if (entry.provider !== root.provider)
+            root.setProvider(entry.provider)
+        root.open(entry.pack)
+        return true
+    }
 
     readonly property int pagePadding: Theme.space.xl + Theme.space.xs
     readonly property int emptyStateWidth: 400
@@ -78,6 +98,7 @@ Item {
 
     function open(pack) {
         root.openedPack = pack
+        root.visitedPacks[root.provider + "/" + pack.projectId] = { provider: root.provider, pack: pack }
         // An install a row started goes on showing on the pack's page.
         var running = quickInstall.watcherFor(pack.projectId)
         if (running && running.running)
@@ -362,9 +383,20 @@ Item {
             bodyFormat: root.active && root.active.bodyFormat ? root.active.bodyFormat : "markdown"
             contentX: root.contentX
             contentWidth: root.contentWidth
-            onBackRequested: root.openedPack = null
+            onBackRequested: root.closePack()
             onShowInstanceRequested: (id) => root.showInstanceRequested(id)
         }
+    }
+
+    // Esc leaves the pack's page for the results; the picture viewer and the pop-ups take it first.
+    Shortcut {
+        sequences: [StandardKey.Cancel]
+        enabled: root.shown && !!root.openedPack && !detailPage.viewerOpen
+        onActivated: root.closePack()
+    }
+    // Review snapshots (dev route "review=pack…"), once the pack's detail has loaded.
+    function review(name) {
+        detailPage.review(name)
     }
 
     ScrollFade {

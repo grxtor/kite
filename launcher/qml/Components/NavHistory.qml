@@ -8,7 +8,7 @@ import QtQuick
  * The pages visited, for Back and Forward. `route` is the window's current place as a navigate() path ("home",
  * "settings/java", "instance/<id>/<tab>"); every change of it is a visit. A new page drops what lay forward
  * and is added, at most `limit` entries; another tab or section of the same page replaces its entry, so Back
- * returns to the tab that was left. back()/forward() move through the list with `go` (navigate) and add
+ * returns to the tab that was left. A modpack opened in Discover ("discover/<provider>/<id>") is a page of its own. back()/forward() move through the list with `go` (navigate) and add
  * nothing; an entry that no longer opens (a deleted instance) is dropped and the next one tried.
  */
 QtObject {
@@ -31,6 +31,8 @@ QtObject {
     // The page of a route, without its tab or section.
     function pageOf(route) {
         var parts = route.split("/")
+        if (parts[0] === "discover")
+            return route
         return parts[0] === "instance" ? parts.slice(0, 2).join("/") : parts[0]
     }
 
