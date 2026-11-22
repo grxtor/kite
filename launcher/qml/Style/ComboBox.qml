@@ -22,9 +22,8 @@ T.ComboBox {
     rightPadding: Theme.space.md + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
     spacing: Theme.space.xs
 
-    // Popup rows use this style's ItemDelegate.qml. They read like Menu's: the
-    // chosen value carries the soft accent pill, the row under the pointer or
-    // keyboard a neutral overlay.
+    // Popup rows: the chosen value is marked by a tick and a stronger weight, never by a filled pill; the row
+    // under the pointer or keyboard takes a neutral overlay.
     delegate: ItemDelegate {
         id: row
         required property var model
@@ -37,21 +36,37 @@ T.ComboBox {
         highlighted: control.highlightedIndex === index
         hoverEnabled: control.hoverEnabled
 
-        contentItem: Text {
-            text: row.text
-            // Plain: entries are often names (worlds, instances), and AutoText would read their tags as markup.
-            textFormat: Text.PlainText
-            font: row.font
-            color: row.chosen ? Theme.palette.accentText : Theme.palette.textPrimary
-            elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
+        contentItem: Item {
+            implicitHeight: label.implicitHeight
+            Text {
+                id: label
+                anchors.left: parent.left
+                anchors.right: tick.visible ? tick.left : parent.right
+                anchors.rightMargin: tick.visible ? Theme.space.sm : 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.text
+                // Plain: entries are often names (worlds, instances), and AutoText would read their tags as markup.
+                textFormat: Text.PlainText
+                font: row.font
+                color: Theme.palette.textPrimary
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
+            CheckMark {
+                id: tick
+                visible: row.chosen
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: Theme.icon.sm
+                height: Theme.icon.sm
+                color: Theme.palette.textPrimary
+            }
         }
 
         background: Rectangle {
             implicitHeight: Theme.control.menuItemHeight
             radius: Theme.radius.sm
-            color: row.chosen ? Theme.palette.accentSubtle
-                 : row.down ? Theme.palette.pressedOverlay
+            color: row.down ? Theme.palette.pressedOverlay
                  : row.highlighted ? Theme.palette.hoverOverlay
                  : "transparent"
         }
@@ -100,16 +115,17 @@ T.ComboBox {
         background: Item {}
     }
 
-    // The field look (TextField.qml). Open, it keeps the accent edge of a
-    // focused field, so the list visibly belongs to this box.
+    // The field look (TextField.qml). Open, the outline only strengthens; the accent edge is for a text field
+    // being typed in.
     background: Rectangle {
         implicitWidth: Theme.control.heightLg * 4
         implicitHeight: Theme.control.height
         radius: Theme.radius.sm
         color: "transparent"
         border.width: 1
-        border.color: control.popup.visible || (control.editable && control.activeFocus) ? Theme.palette.accent
-                    : control.hovered && control.enabled ? Theme.neutral.outlineHover : Theme.neutral.outline
+        border.color: control.editable && control.activeFocus ? Theme.palette.accent
+                    : control.popup.visible || (control.hovered && control.enabled) ? Theme.neutral.outlineHover
+                    : Theme.neutral.outline
         opacity: control.enabled ? 1.0 : Theme.opacity.disabled
 
         Behavior on border.color {
@@ -166,7 +182,7 @@ T.ComboBox {
 
         // The popup glass treatment Menu.qml uses.
         background: GlassSurface {
-            radius: Theme.radius.lg
+            radius: Theme.radius.md
             level: Theme.elevation.md
         }
     }

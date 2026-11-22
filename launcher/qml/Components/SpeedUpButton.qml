@@ -23,7 +23,9 @@ Button {
     icon.color: root.on && root.display === AbstractButton.IconOnly && root.enabled
                 ? Theme.tone("success").ink : root.contentColor
     readonly property bool badged: root.on && root.display !== AbstractButton.IconOnly
-    rightPadding: root.horizontalPadding + (root.badged ? badge.width + root.spacing : 0)
+    // Icon-only it is a square like its neighbours; the badge's room is only for the labelled button.
+    rightPadding: root.display === AbstractButton.IconOnly ? Theme.space.sm
+                : root.horizontalPadding + (root.badged ? badge.width + root.spacing : 0)
     ToolTip.visible: hovered && root.display === AbstractButton.IconOnly
     ToolTip.delay: 400
     ToolTip.text: root.on ? root.text + " \u00b7 " + badge.text : root.text
