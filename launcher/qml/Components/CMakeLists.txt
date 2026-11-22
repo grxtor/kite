@@ -415,6 +415,7 @@ qt_add_qml_module(Kite_qml_components
         icons/trash.svg
         icons/undo.svg
         icons/user.svg
+        icons/user-minus.svg
         icons/user-plus.svg
         icons/users.svg
         icons/x.svg

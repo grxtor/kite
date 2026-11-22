@@ -23,7 +23,12 @@ T.MenuItem {
 
     icon.width: Theme.icon.sm
     icon.height: Theme.icon.sm
-    icon.color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
+    // An entry that removes or blocks something reads in the danger colour, as the dialogs' buttons do.
+    property bool danger: false
+    readonly property color ink: !control.enabled ? Theme.palette.textDisabled
+                               : control.danger ? Theme.palette.danger : Theme.palette.textPrimary
+
+    icon.color: control.ink
 
     // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
     contentItem: IconText {
@@ -48,13 +53,13 @@ T.MenuItem {
         iconWidth: Theme.icon.sm
         iconHeight: Theme.icon.sm
         iconColor: control.subMenu ? (control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled)
-                                   : control.icon.color
+                                   : control.ink
         iconCache: control.icon.cache
         text: control.text
         font.family: Theme.font.family
         font.pixelSize: Theme.type.body.pixelSize
         font.weight: Theme.type.body.weight
-        color: control.enabled ? Theme.palette.textPrimary : Theme.palette.textDisabled
+        color: control.ink
     }
 
     readonly property bool tickAtEnd: control.checkable && (control.icon.source.toString().length > 0

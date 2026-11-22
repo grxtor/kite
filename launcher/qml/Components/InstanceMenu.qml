@@ -173,6 +173,7 @@ Menu {
     }
     MenuSeparator {}
     MenuItem {
+        danger: true
         text: qsTr("Delete…")
         icon.source: Icons.url("trash")
         enabled: !root.targetRunning

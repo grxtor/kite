@@ -680,6 +680,7 @@ Item {
         }
         MenuEntry {
             visible: root.manageable
+            danger: true
             text: qsTr("Delete…")
             icon.source: Icons.url("trash")
             // A running game's folder is in use.
