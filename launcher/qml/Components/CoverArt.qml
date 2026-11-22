@@ -100,11 +100,27 @@ Item {
         asynchronous: true
         cache: true
         // Capped at 2x: sharp on a retina display without decoding a screenshot at full resolution. A panorama is
-        // square and cropped to the item, so it decodes square at the longer side.
+        // square and cropped to the item, so it decodes square at the longer side. The decode size only ever
+        // grows, in steps: a size bound to the item reloaded the picture on every frame of a resize (the friends
+        // panel sliding in), which showed as the cover going black and coming back.
+        property int decodeWidth: 0
+        property int decodeHeight: 0
+        readonly property int decodeStep: 256
+        function growDecode() {
+            const w = Math.ceil(Math.max(8, width * 2 * root.photoSoftness) / decodeStep) * decodeStep
+            const h = Math.ceil(Math.max(8, height * 2 * root.photoSoftness) / decodeStep) * decodeStep
+            if (w > decodeWidth)
+                decodeWidth = w
+            if (h > decodeHeight)
+                decodeHeight = h
+        }
+        onWidthChanged: growDecode()
+        onHeightChanged: growDecode()
+        Component.onCompleted: growDecode()
         sourceSize: root.panorama
-                    ? Qt.size(Math.min(root.panoramaPixels, Math.max(8, Math.max(width, height) * 2 * root.photoSoftness)),
-                              Math.min(root.panoramaPixels, Math.max(8, Math.max(width, height) * 2 * root.photoSoftness)))
-                    : Qt.size(Math.max(8, width * 2 * root.photoSoftness), Math.max(8, height * 2 * root.photoSoftness))
+                    ? Qt.size(Math.min(root.panoramaPixels, Math.max(decodeWidth, decodeHeight)),
+                              Math.min(root.panoramaPixels, Math.max(decodeWidth, decodeHeight)))
+                    : Qt.size(decodeWidth, decodeHeight)
         scale: root.hovered ? 1.04 : 1.0
         transformOrigin: Item.Center
 
