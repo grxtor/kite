@@ -64,17 +64,27 @@ Item {
         visible: !!root.target
         width: root.collapsed ? root.railSquare : root.targetW
         height: root.collapsed ? root.railSquare : root.targetH
-        x: root.targetX + (!root.collapsed ? 0
-                           : root.railAxis >= 0 ? root.railAxis - root.railSquare / 2
-                           : (root.targetW - root.railSquare) / 2)
-        y: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
+        // Where it rests, and where it is on its way there: it slides with the pop easing and passes the row by
+        // a few px at most (Theme.motion.tame), however far it came. Its size never overshoots.
+        readonly property real restX: root.targetX + (!root.collapsed ? 0
+                                      : root.railAxis >= 0 ? root.railAxis - root.railSquare / 2
+                                      : (root.targetW - root.railSquare) / 2)
+        readonly property real restY: root.targetY + (root.collapsed ? (root.targetH - height) / 2 : 0)
+        property real slideX: restX
+        property real slideY: restY
+        property real travelX: 0
+        property real travelY: 0
+        onRestXChanged: travelX = restX - slideX
+        onRestYChanged: travelY = restY - slideY
+        x: Theme.motion.tame(slideX, restX, travelX)
+        y: Theme.motion.tame(slideY, restY, travelY)
         radius: root.cornerRadius
         color: Theme.palette.surfaceRaised
         borderWidth: 1
         borderColor: Theme.palette.border
 
-        Behavior on x { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
-        Behavior on y { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
+        Behavior on slideX { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+        Behavior on slideY { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         Behavior on width { enabled: root.placed && !root.live; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
         Behavior on height { enabled: root.placed; NumberAnimation { duration: Theme.motion.slow; easing.type: Theme.motion.easing } }
     }

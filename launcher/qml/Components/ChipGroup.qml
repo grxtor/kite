@@ -101,10 +101,16 @@ Row {
                 }
             }
 
+            // A light press. A tab's background is its stretch of the row's hairline, so only its label gives.
+            scale: !root.tabs && chip.down ? Theme.motion.pressScaleLight : 1
+            Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+
             contentItem: Item {
                 Row {
                     id: labelRow
                     anchors.centerIn: parent
+                    scale: root.tabs && chip.down ? Theme.motion.pressScaleLight : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                     spacing: Theme.space.xs + Theme.space.xxs
 
                     Copy {

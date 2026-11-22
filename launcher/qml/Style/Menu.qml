@@ -62,7 +62,7 @@ T.Menu {
     transformOrigin: T.Popup.Top
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
-        NumberAnimation { property: "scale"; from: Theme.motion.popScale; to: 1.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+        NumberAnimation { property: "scale"; from: Theme.motion.popScale; to: 1.0; duration: Theme.motion.pop; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }

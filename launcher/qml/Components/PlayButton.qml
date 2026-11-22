@@ -34,8 +34,8 @@ AbstractButton {
     implicitWidth: round ? size : Math.max(size * 3, label.implicitWidth + Theme.icon.md + Theme.space.xl * 2 + Theme.space.sm)
     opacity: enabled || busy ? 1.0 : Theme.opacity.disabled
     // Pressed, the button gives a little and comes back on release.
-    scale: control.down ? Theme.motion.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.easing } }
+    scale: control.down ? Theme.motion.pressScaleLarge : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
     // What the face shows ("play", "busy" or "stop"), a short fade behind the state: out, swap, in. The width
     // follows the new label instead of jumping to it.

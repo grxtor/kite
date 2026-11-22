@@ -155,9 +155,12 @@ Item {
             }
 
             StackLayout {
+                id: tabStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: root.tab === "requests" ? 1 : root.tab === "blocked" ? 2 : 0
+                // Not a hard swap: the tab's list comes in.
+                onCurrentIndexChanged: tabStack.children[tabStack.currentIndex].enter()
 
                 FriendsFriendsTab {
                     controller: root.controller

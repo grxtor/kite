@@ -28,6 +28,8 @@ AbstractButton {
     ToolTip.text: tip
 
     opacity: enabled ? 1.0 : Theme.opacity.disabled
+    scale: control.down ? Theme.motion.pressScale : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
     background: Rectangle {
         radius: Theme.radius.lg

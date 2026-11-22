@@ -36,7 +36,10 @@ Item {
     readonly property var shown: root.friendsState.named(root.all, root.query)
     readonly property var groups: Format.friendsGrouped(root.shown)
 
+    function enter() { list.enter() }
+
     FriendsListScroll {
+        id: list
         anchors.fill: parent
         controller: root.controller
         count: root.shown.length

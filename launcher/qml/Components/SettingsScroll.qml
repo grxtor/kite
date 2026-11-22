@@ -18,6 +18,27 @@ Item {
 
     Accessible.name: title
 
+    // The section was just switched to (SettingsPage): its content fades in and its groups rise one after the
+    // other, like a list's rows.
+    function enter() {
+        if (Theme.motion.reduced)
+            return
+        fadeIn.restart()
+        let at = 0
+        for (let i = 0; i < column.children.length; ++i) {
+            const entrance = column.children[i].entrance
+            if (!entrance || !column.children[i].visible)
+                continue
+            entrance.index = at++
+            entrance.replay()
+        }
+    }
+    NumberAnimation {
+        id: fadeIn
+        target: column; property: "opacity"; from: 0; to: 1
+        duration: Theme.motion.normal; easing.type: Theme.motion.easing
+    }
+
     Flickable {
         id: flick
         anchors.fill: parent

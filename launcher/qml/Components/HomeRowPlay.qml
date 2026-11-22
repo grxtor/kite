@@ -38,13 +38,13 @@ AbstractButton {
     opacity: enabled ? 1.0 : Theme.opacity.disabled
     // Pressed, the button gives a little and comes back on release.
     scale: control.down ? Theme.motion.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.easing } }
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
     transform: Scale {
         origin.x: control.width / 2
         origin.y: control.height / 2
         xScale: control.shown ? 1 : Theme.motion.appearScale
         yScale: xScale
-        Behavior on xScale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on xScale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
     }
 
     // What the glyph shows, a short fade behind `running`: out, swap, in.

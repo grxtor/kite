@@ -164,6 +164,9 @@ ApplicationWindow {
                 Theme.scheme = value
             else if (key === "look")
                 Theme.look = value
+            // motion=playful|calm|off, for this run only (the setting is not written).
+            else if (key === "motion")
+                Theme.motionStyle = value
             else if (key === "size") {
                 var wh = value.split("x")
                 root.width = parseInt(wh[0])
@@ -1064,7 +1067,7 @@ ApplicationWindow {
                     }
                     ParallelAnimation {
                         NumberAnimation { target: pageHost; property: "opacity"; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
-                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.motion.shift; to: 0; duration: Theme.motion.slow; easing.type: Theme.motion.easing }
+                        NumberAnimation { target: pageSlide; property: "y"; from: Theme.motion.shift; to: 0; duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
                     }
                 }
 

@@ -165,6 +165,9 @@ Item {
                     id: labelRow
                     spacing: Theme.space.sm
                     leftPadding: root.pillPadding
+                    // A light press on the label; the tab's own box is what the underline measures.
+                    scale: tab.down ? Theme.motion.pressScaleLight : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                     Copy {
                         id: label
                         anchors.verticalCenter: parent.verticalCenter
@@ -225,6 +228,8 @@ Item {
                 id: moreRow
                 spacing: Theme.space.xs
                 leftPadding: root.pillPadding
+                scale: moreButton.down ? Theme.motion.pressScaleLight : 1
+                Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                 Copy {
                     id: moreLabel
                     anchors.verticalCenter: parent.verticalCenter

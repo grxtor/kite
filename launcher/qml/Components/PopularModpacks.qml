@@ -73,10 +73,13 @@ Column {
         columnSpacing: root.gutter
         rowSpacing: root.gutter
 
+        ListEntrance { id: entrance; view: tiles; watchModel: false }
         Repeater {
+            id: tiles
             model: root.ready ? root.model : null
             delegate: ModpackTile {
                 id: tile
+                RiseIn { target: tile; index: tile.model.index; gate: entrance }
                 required property var model
                 readonly property string projectId: model.projectId
                 readonly property var pack: ({ projectId: projectId, title: model.title, author: model.author,

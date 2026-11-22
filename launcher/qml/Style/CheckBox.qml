@@ -60,12 +60,12 @@ T.CheckBox {
             anchors.margins: Theme.space.xxs
             color: Theme.palette.textOnAccent
             partial: control.checkState === Qt.PartiallyChecked
-            // The tick grows into the box as the fill fades in under it.
+            // The tick pops into the box as the fill fades in under it.
             opacity: box.boxChecked ? 1 : 0
-            scale: box.boxChecked ? 1 : Theme.motion.appearScale
+            scale: box.boxChecked ? 1 : Theme.motion.tickScale
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
-            Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+            Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         }
 
         FocusRing {

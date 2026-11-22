@@ -26,11 +26,30 @@ Rectangle {
 
     Accessible.role: Accessible.Grouping
 
+    // Bumped as segments are built: itemAt() is not reactive.
+    property int rev: 0
+    readonly property Item activeItem: {
+        root.rev
+        for (let i = 0; i < repeater.count; ++i) {
+            const item = repeater.itemAt(i)
+            if (item && item.active)
+                return item
+        }
+        return null
+    }
+    SegmentSlider {
+        target: root.activeItem
+        radius: root.radius
+    }
+
     Row {
         id: segments
 
         Repeater {
+            id: repeater
             model: root.options
+            onItemAdded: root.rev++
+            onItemRemoved: root.rev++
             delegate: AbstractButton {
                 id: option
                 required property var modelData
@@ -60,9 +79,9 @@ Rectangle {
                             width: parent.width + (option.first || option.last ? root.radius : root.radius * 2)
                             height: parent.height
                             radius: root.radius
-                            color: option.active ? Theme.palette.hoverOverlay
-                                 : option.down ? Theme.palette.pressedOverlay
-                                 : option.hovered ? Theme.palette.hoverOverlay : "transparent"
+                            // The active segment's fill is the group's SegmentSlider.
+                            color: option.down && !option.active ? Theme.palette.pressedOverlay
+                                 : option.hovered && !option.active ? Theme.palette.hoverOverlay : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                         }
                         Rectangle {
@@ -83,6 +102,8 @@ Rectangle {
                     role: "label"
                     color: option.active || option.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
                     font.weight: option.active ? Font.DemiBold : Font.Medium
+                    scale: option.down ? Theme.motion.pressScaleLight : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
             }

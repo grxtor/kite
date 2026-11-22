@@ -879,7 +879,11 @@ void Application::initSettings()
 	m_settings->registerSetting("UiFontFamily", QString("Inter"));
 	m_settings->registerSetting("UiSidebarCollapsed", true);
 	m_settings->registerSetting("UiSidebarWidth", 240);
+	// Before UiMotionStyle; read once more to carry "on" over as "off"
+	// (SettingsStore.resolveMotionStyle), never written again.
 	m_settings->registerSetting("UiReduceMotion", false);
+	// playful, calm or off; empty until the user picks one.
+	m_settings->registerSetting("UiMotionStyle", QString());
 
 	/* Screen-top menu bar (macOS only; elsewhere carried but unused). The
 	 * second key is the original name, kept so existing configs still read. */

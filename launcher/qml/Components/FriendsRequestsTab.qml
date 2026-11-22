@@ -33,6 +33,8 @@ Item {
         actions: ["accept", "decline", "cancelRequest"]
     }
 
+    function enter() { list.enter() }
+
     FriendsListScroll {
         id: list
         anchors.fill: parent
@@ -62,7 +64,9 @@ Item {
                 id: incomingCard
                 width: parent.width
 
+                ListEntrance { id: incomingEntrance; view: incomingRows; watchModel: false }
                 Repeater {
+                    id: incomingRows
                     model: root.incoming
                     delegate: FriendRow {
                         id: incomingRow
@@ -75,6 +79,7 @@ Item {
                         name: modelData.name
                         detail: qsTr("Wants to be your friend")
                         onMenuRequested: incomingMore.clicked()
+                        RiseIn { target: incomingRow; index: incomingRow.index; gate: incomingEntrance }
 
                         Button {
                             buttonSize: "sm"
@@ -115,7 +120,9 @@ Item {
                 id: sentCard
                 width: parent.width
 
+                ListEntrance { id: sentEntrance; view: sentRows; watchModel: false }
                 Repeater {
+                    id: sentRows
                     model: root.outgoing
                     delegate: FriendRow {
                         id: sentRow
@@ -128,6 +135,7 @@ Item {
                         name: modelData.name
                         detail: qsTr("Waiting for their answer")
                         detailTone: "faint"
+                        RiseIn { target: sentRow; index: sentRow.index; gate: sentEntrance }
 
                         Button {
                             buttonSize: "sm"

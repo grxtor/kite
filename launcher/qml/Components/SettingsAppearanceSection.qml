@@ -110,10 +110,15 @@ SettingsScroll {
     SettingsGroup {
         width: parent.width
         title: qsTr("Motion")
-        SettingSwitch {
-            key: "UiReduceMotion"
-            label: qsTr("Reduce motion")
-            description: qsTr("Turns off decorative animation across the launcher.")
+        SettingRow {
+            label: qsTr("Motion")
+            description: qsTr("How the launcher moves. Playful bounces a little, Calm is short and quiet, Off turns animation off.")
+            SegmentedChoice {
+                options: SettingsStore.motionStyles
+                current: SettingsStore.motionStyle
+                onActivated: (value) => SettingsStore.setValue("UiMotionStyle", value)
+                Accessible.name: qsTr("Motion")
+            }
         }
     }
     SettingsGroup {

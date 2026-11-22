@@ -216,7 +216,13 @@ Item {
                     StatusBadge {
                         id: updateBadge
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: row.newVersion.length > 0
+                        // An update found while the row is on screen pops in.
+                        readonly property bool shown: row.newVersion.length > 0
+                        visible: updateBadge.shown
+                        opacity: updateBadge.shown ? 1 : 0
+                        scale: updateBadge.shown ? 1 : Theme.motion.appearScale
+                        Behavior on opacity { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+                        Behavior on scale { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                         tone: "success"
                         text: qsTr("→ %1").arg(row.newVersion)
                     }

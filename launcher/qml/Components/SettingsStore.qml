@@ -26,10 +26,26 @@ SettingsSource {
         value: store.string("UiFontFamily")
     }
 
-    // Theme.motion reads it, so pages, dialogs and toasts stop animating without a check of their own.
-    readonly property Binding _reduceMotion: Binding {
+    readonly property var motionStyles: [
+        { value: "playful", label: qsTr("Playful") },
+        { value: "calm", label: qsTr("Calm") },
+        { value: "off", label: qsTr("Off") }
+    ]
+
+    // What UiMotionStyle means. Empty, it was never chosen: a config from before the setting keeps its
+    // "Reduce motion" (UiReduceMotion) as "off", and everything else starts playful.
+    function resolveMotionStyle(stored, legacyReduce) {
+        if (stored === "playful" || stored === "calm" || stored === "off")
+            return stored
+        return legacyReduce ? "off" : "playful"
+    }
+    readonly property string motionStyle: store.resolveMotionStyle(store.string("UiMotionStyle"),
+                                                                   store.bool("UiReduceMotion"))
+
+    // Theme.motion reads it, so pages, dialogs and toasts follow the style without a check of their own.
+    readonly property Binding _motionStyle: Binding {
         target: Theme
-        property: "reduceMotion"
-        value: store.bool("UiReduceMotion")
+        property: "motionStyle"
+        value: store.motionStyle
     }
 }

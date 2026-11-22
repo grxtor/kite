@@ -65,9 +65,12 @@ Item {
     Item {
         id: liftBox
         anchors.fill: parent
+        // Pressed, a card (one that lifts) gives a little.
+        scale: root.lift > 0 && leftTap.pressed ? Theme.motion.cardPressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         transform: Translate {
             y: !root.hovered || root.lift === 0 ? 0 : leftTap.pressed ? -1 : -root.lift
-            Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+            Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         }
 
         FocusFrame { cornerRadius: root.cornerRadius; z: 1; visible: root.activeFocus }

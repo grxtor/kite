@@ -14500,16 +14500,11 @@ Currently installed version: %1</source>
     </message>
     <message>
         <location line="+3"/>
-        <source>Reduce motion</source>
-        <translation>Hareketi azalt</translation>
+        <source>How the launcher moves. Playful bounces a little, Calm is short and quiet, Off turns animation off.</source>
+        <translation>Başlatıcının nasıl hareket ettiği. Oyuncu biraz zıplar, Sakin kısa ve sessizdir, Kapalı animasyonu kapatır.</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Turns off decorative animation across the launcher.</source>
-        <translation>Başlatıcıdaki süsleme amaçlı animasyonları kapatır.</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+11"/>
         <source>Cat picture</source>
         <translation>Kedi resmi</translation>
     </message>
@@ -15540,6 +15535,21 @@ Currently installed version: %1</source>
         <location line="+1"/>
         <source>Time played</source>
         <translation>Oynama süresi</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Playful</source>
+        <translation>Oyuncu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Calm</source>
+        <translation>Sakin</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Off</source>
+        <translation>Kapalı</translation>
     </message>
 </context>
 <context>

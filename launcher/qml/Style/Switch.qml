@@ -70,7 +70,7 @@ T.Switch {
             // No animation while dragging, so the thumb tracks the pointer 1:1.
             Behavior on x {
                 enabled: !control.down
-                NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+                NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.knobOvershoot }
             }
             Behavior on width {
                 NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.easing }

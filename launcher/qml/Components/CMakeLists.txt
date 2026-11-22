@@ -341,6 +341,7 @@ qt_add_qml_module(Kite_qml_components
         PlayerHead.qml
         ViewModeToggle.qml
         SegmentedChoice.qml
+        SegmentSlider.qml
         WindowDragBand.qml
         ChipGroup.qml
         InstanceNotesTab.qml

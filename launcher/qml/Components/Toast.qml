@@ -63,10 +63,16 @@ GlassSurface {
     visible: opacity > 0
     z: 1000
 
-    // In: up Theme.space.md px and a fade over `slow`. Out: the quick way, over `fast`.
+    // In: up `rise` px with the pop easing and a fade over `slow`. Out: the quick way, over `fast`.
     transform: Translate {
-        y: root.shown ? 0 : Theme.space.md
-        Behavior on y { NumberAnimation { duration: root.shown ? Theme.motion.slow : Theme.motion.fast; easing.type: Theme.motion.easing } }
+        y: root.shown ? 0 : Theme.motion.rise
+        Behavior on y {
+            NumberAnimation {
+                duration: root.shown ? Theme.motion.slow : Theme.motion.fast
+                easing.type: root.shown ? Theme.motion.popEasing : Theme.motion.easing
+                easing.overshoot: Theme.motion.popOvershoot
+            }
+        }
     }
     Behavior on opacity { NumberAnimation { duration: root.shown ? Theme.motion.slow : Theme.motion.fast; easing.type: Theme.motion.easing } }
 

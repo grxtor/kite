@@ -35,7 +35,9 @@ Column {
         id: card
         width: parent.width
 
+        ListEntrance { id: entrance; view: rows; watchModel: false }
         Repeater {
+            id: rows
             model: root.friends
             delegate: FriendStatusRow {
                 id: row
@@ -51,6 +53,7 @@ Column {
                 interactive: true
                 onClicked: root.messageRequested(row.modelData.uuid)
                 onMenuRequested: more.clicked()
+                RiseIn { target: row; index: row.index; gate: entrance }
 
                 FriendJoinButton {
                     friend: row.modelData

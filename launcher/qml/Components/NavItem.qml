@@ -76,6 +76,9 @@ AbstractButton {
             iconName: control.iconName
             size: Theme.icon.md
             color: control.ink
+            // Pressed, the icon gives; the row and its label stay put.
+            scale: control.down ? Theme.motion.pressScale : 1
+            Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         }
 
         Copy {

@@ -83,9 +83,12 @@ Item {
         id: liftBox
         width: root.width
         height: root.height
+        // Pressed, the whole card gives a little.
+        scale: card.pressed ? Theme.motion.cardPressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         transform: Translate {
             y: !root.hovered ? 0 : card.pressed ? -1 : -Theme.motion.lift
-            Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+            Behavior on y { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
         }
 
         InstanceSurface {

@@ -31,10 +31,11 @@ QtObject {
     readonly property bool lightAccent: palette.accent.hslLightness > 0.8
     function previewPalette(name) { return ThemeService.previewPalette(name) }
 
-    // The UiReduceMotion setting, set by SettingsStore (Theme cannot see the
-    // settings). While true every motion duration is 0 and `motion.reduced`
-    // is true.
-    property bool reduceMotion: false
+    // The UiMotionStyle setting, set by SettingsStore (Theme cannot see the
+    // settings): "playful", "calm" or "off". Every `motion` token resolves
+    // from it; "off" zeroes every duration and sets `motion.reduced`.
+    // Anything else reads as "playful".
+    property string motionStyle: "playful"
 
     // The ink and the soft fill of a status colour, for a badge, a notice or
     // an icon disc: "neutral", "success", "warning", "danger", "info" or
@@ -232,21 +233,38 @@ QtObject {
         readonly property color track: Qt.rgba(1, 1, 1, 0.18)
     }
 
-    /* Motion contract, the calm set: short, small, quiet.
-     *   - press: a button scales to `pressScale` over `press` and back.
+    /* Motion contract. Two styles share one grammar; a component reads the
+     * tokens below and never asks which style is on.
+     *   - playful (the default): longer, larger, springy. A transform
+     *     (translate, scale, rotation, the sliding marker, the switch knob)
+     *     eases with `popEasing`, a back-out that overshoots its end by about
+     *     a tenth of the distance and settles.
+     *   - calm: short, small, quiet. `popEasing` is the same OutCubic as
+     *     `easing`, so nothing overshoots.
+     * The grammar:
+     *   - press: a button scales to `pressScale` over `press` and back (the
+     *     big Play to `pressScaleLarge`, a tab, chip or segment to
+     *     `pressScaleLight`, a card to `cardPressScale`).
      *   - hover: a colour fades over `fast`. An instance card is the one
-     *     hover that moves: it lifts `lift` px over `normal` (1 px while
-     *     pressed), its border brightens over `fast` and its Play fades in.
-     *   - selection: one marker (rail shape, tab underline) slides to the new
-     *     item over `slow`; it never pops from item to item.
+     *     hover that moves: it lifts `lift` px over `normal`, its border
+     *     brightens over `fast` and its Play grows in from `appearScale`.
+     *   - selection: one marker (rail shape, tab underline, a segmented
+     *     toggle's fill) slides to the new item over `slow`; it never pops
+     *     from item to item, and it stays inside its row while it overshoots.
      *   - entrance: a page fades in over `normal` and rises `shift` px over
      *     `slow`; a list's first rows fade in and rise `rise` px, `stagger`
-     *     apart (RiseIn); a menu or dialog scales up from `popScale`.
-     *   - exit: always the quick way out, a fade over `fast`.
-     * No overshoot, bounce or elastic easing anywhere, and no glow. An idle
-     * animation loop is gated on a real busy/live state property, never on
-     * "the page happens to be idle". Every transform ends at rest: nothing is
-     * left faded or offset when an animation is cut short or motion is off.
+     *     apart (RiseIn); a menu or popup scales up from `popScale` over
+     *     `pop`, a dialog over `slow` while it rises `dialogRise` px.
+     *   - exit: always the quick way out, a fade over `fast`, no overshoot.
+     * Overshoot is for transforms only. Opacity and colour always use
+     * `easing`; so does anything that drives layout (a bar's height, a panel's
+     * or button's width, a row collapsing), so no sibling is ever pushed back
+     * and forth. Inside a clipped container an overshooting child must stay
+     * within the clip.
+     * No glow. An idle animation loop is gated on a real busy/live state
+     * property, never on "the page happens to be idle". Every transform ends
+     * at rest: nothing is left faded, scaled or offset when an animation is
+     * cut short or motion is off.
      *
      * Selection grammar, one look per control class:
      *   - rail/list nav (SidebarNav, Settings' section list): a sliding
@@ -256,41 +274,83 @@ QtObject {
      *     text over a 1 px hairline under the whole row; one 2 px accent
      *     underline slides to the active tab, which takes textPrimary, the
      *     rest textTertiary. No pill behind any tab.
-     *   - segmented toggle (ViewModeToggle): one outlined group with 1 px
-     *     dividers; the active segment takes hoverOverlay and textPrimary.
+     *   - segmented toggle (ViewModeToggle, SegmentedChoice): one outlined
+     *     group with 1 px dividers; the active segment takes hoverOverlay and
+     *     textPrimary.
      *   - filter chip (ChipGroup): an outline; selected, the outline and the
      *     label turn textPrimary.
      *   - swatch/tile picker (PalettePicker): an accent ring around the
      *     selected tile.
      * A control never falls back to a bare colour-only "selected" look.
      *
-     * Under the Reduce motion setting every duration is 0 and `reduced` is
-     * true; an endless animation must also gate `running` on !reduced.
+     * With motion off (the Motion setting's "Off") every duration is 0 and
+     * `reduced` is true; an endless animation must also gate `running` on
+     * !reduced.
      */
     readonly property QtObject motion: QtObject {
-        readonly property bool reduced: root.reduceMotion
-        readonly property int fast: reduced ? 0 : 120
-        readonly property int normal: reduced ? 0 : 180
-        readonly property int slow: reduced ? 0 : 260
+        readonly property bool reduced: root.motionStyle === "off"
+        // "playful" or "calm"; while `reduced` it is moot.
+        readonly property string style: root.motionStyle === "calm" ? "calm" : "playful"
+        readonly property bool _playful: style === "playful"
+
+        readonly property int fast: reduced ? 0 : _playful ? 140 : 120
+        readonly property int normal: reduced ? 0 : _playful ? 240 : 180
+        readonly property int slow: reduced ? 0 : _playful ? 400 : 260
         // A button going down under the pointer, and coming back.
-        readonly property int press: reduced ? 0 : 80
+        readonly property int press: reduced ? 0 : _playful ? 100 : 80
+        // A menu or popup growing open.
+        readonly property int pop: reduced ? 0 : _playful ? 240 : 120
         // Between one row and the next as a list comes in, for the first
         // `staggerRows` rows; the rest come with the last of them.
-        readonly property int stagger: reduced ? 0 : 30
+        readonly property int stagger: reduced ? 0 : _playful ? 45 : 30
         readonly property int staggerRows: 12
         // One half of the running dot's breathing loop.
         readonly property int pulse: reduced ? 0 : 900
+
+        // Opacity, colour and anything that drives layout.
         readonly property int easing: Easing.OutCubic
-        // Distances, in px: what a page (and a dialog) rises into place, what
-        // a list row rises, what a hovered card lifts.
-        readonly property int shift: 10
-        readonly property int rise: 8
-        readonly property int lift: 3
-        // A pressed button, and a menu or dialog as it starts to open.
-        readonly property real pressScale: 0.97
-        readonly property real popScale: 0.96
-        // A small piece (a card's Play, a tick) as it starts to appear.
-        readonly property real appearScale: 0.85
+        // Transforms: `easing.type: popEasing; easing.overshoot: popOvershoot`
+        // (the overshoot is ignored by OutCubic). The switch knob takes
+        // `knobOvershoot`.
+        readonly property int popEasing: _playful ? Easing.OutBack : Easing.OutCubic
+        readonly property real popOvershoot: _playful ? 1.7 : 0
+        readonly property real knobOvershoot: _playful ? 2.0 : 0
+        // How far past its end the pop easing goes, as a share of the travel
+        // (about a tenth), and the most a sliding marker may pass its row, in
+        // px: a marker crossing a whole rail would otherwise fly well past.
+        readonly property real _popPeak: {
+            const s = popOvershoot
+            const u = 2 * s / (3 * (s + 1))
+            return u * u * s / 3
+        }
+        readonly property int slideOvershootMax: 6
+        // A sliding marker's animated position `value` on its way to `target`
+        // over the signed distance `travel`: unchanged until it passes the
+        // target, then scaled so its furthest point is slideOvershootMax px.
+        function tame(value, target, travel) {
+            const peak = Math.abs(travel) * _popPeak
+            const over = value - target
+            if (peak <= slideOvershootMax || over * travel <= 0)
+                return value
+            return target + over * slideOvershootMax / peak
+        }
+
+        // Distances, in px: what a page rises into place, a list row, a
+        // dialog, and what a hovered card lifts.
+        readonly property int shift: _playful ? 18 : 10
+        readonly property int rise: _playful ? 14 : 8
+        readonly property int dialogRise: _playful ? 16 : 10
+        readonly property int lift: _playful ? 6 : 3
+        // A pressed button; the big Play; a tab, chip or segment; a card.
+        readonly property real pressScale: _playful ? 0.93 : 0.97
+        readonly property real pressScaleLarge: _playful ? 0.95 : 0.97
+        readonly property real pressScaleLight: _playful ? 0.97 : 0.985
+        readonly property real cardPressScale: _playful ? 0.985 : 1.0
+        // A menu, popup or dialog as it starts to open.
+        readonly property real popScale: _playful ? 0.88 : 0.96
+        // A small piece as it starts to appear: a card's Play, a tick.
+        readonly property real appearScale: _playful ? 0.7 : 0.85
+        readonly property real tickScale: _playful ? 0.5 : 0.85
     }
 
     // Inter 4.1 static TTFs, bundled as Kite.Theme resources

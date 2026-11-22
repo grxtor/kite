@@ -18,6 +18,8 @@ AbstractButton {
     focusPolicy: Qt.TabFocus
     implicitWidth: row.implicitWidth
     implicitHeight: Math.max(row.implicitHeight, Theme.control.heightSm)
+    scale: control.down ? Theme.motion.pressScaleLight : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
     Accessible.role: Accessible.Link
     Accessible.name: control.text

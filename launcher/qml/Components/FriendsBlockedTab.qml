@@ -29,6 +29,8 @@ Item {
         actions: ["unblock"]
     }
 
+    function enter() { list.enter() }
+
     FriendsListScroll {
         id: list
         anchors.fill: parent
@@ -53,7 +55,9 @@ Item {
             id: card
             width: parent.width
 
+            ListEntrance { id: entrance; view: rows; watchModel: false }
             Repeater {
+                id: rows
                 model: root.blocked
                 delegate: FriendRow {
                     id: row
@@ -66,6 +70,7 @@ Item {
                     name: modelData.name
                     detail: qsTr("Can't send you requests or see you online")
                     detailTone: "faint"
+                    RiseIn { target: row; index: row.index; gate: entrance }
 
                     Button {
                         buttonSize: "sm"

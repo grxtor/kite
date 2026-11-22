@@ -18,6 +18,9 @@ Column {
 
     spacing: Theme.space.sm
 
+    // Played by SettingsScroll.enter() when the section is opened.
+    readonly property RiseIn entrance: RiseIn { target: root; when: false }
+
     GroupHeading {
         width: parent.width
         title: root.title

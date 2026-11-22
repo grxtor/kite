@@ -17,7 +17,7 @@ Rectangle {
         tip: root.railed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
         rotation: root.railed ? 180 : 0
 
-        Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+        Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
         onClicked: root.setCollapsed(!SettingsStore.bool("UiSidebarCollapsed"))
     }

@@ -50,8 +50,10 @@ Popup {
     // The last picture was deleted: nothing left to look at.
     onCountChanged: if (root.count === 0 && root.opened) root.close()
 
+    // The viewer fades in while the picture grows into place with the pop easing; out is the quick fade.
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+        NumberAnimation { target: list; property: "scale"; from: Theme.motion.popScale; to: 1; duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; to: 0; duration: Theme.motion.fast; easing.type: Theme.motion.easing }

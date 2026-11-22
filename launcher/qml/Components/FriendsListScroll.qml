@@ -33,6 +33,18 @@ Item {
     readonly property bool empty: !!root.controller && root.controller.loaded && root.total === 0
     readonly property bool noMatch: root.total > 0 && root.count === 0
 
+    // The tab was just switched to: its list comes in like a page, a fade and a rise that settles with the pop
+    // easing.
+    function enter() {
+        if (!Theme.motion.reduced)
+            entrance.restart()
+    }
+    ParallelAnimation {
+        id: entrance
+        NumberAnimation { target: column; property: "opacity"; from: 0; to: 1; duration: Theme.motion.normal; easing.type: Theme.motion.easing }
+        NumberAnimation { target: columnRise; property: "y"; from: Theme.motion.rise; to: 0; duration: Theme.motion.slow; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot }
+    }
+
     Item {
         anchors.fill: parent
         visible: root.count > 0
@@ -51,6 +63,7 @@ Item {
                 id: column
                 width: flick.width
                 enabled: root.actionsEnabled
+                transform: Translate { id: columnRise }
             }
         }
 

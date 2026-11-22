@@ -666,6 +666,59 @@ class QmlModuleTest : public QObject
 				 QStringLiteral("|1 unread message|3 unread messages|8 min left|1 min left|In game|success|tertiary"));
 	}
 
+	/* The Motion setting: a config from before it keeps "Reduce motion" as
+	 * Off, anything else starts Playful, and a choice wins over the old key.
+	 * Theme follows the stored style live. */
+	void motionStyleCarriesReduceMotionOver()
+	{
+		QQmlEngine engine;
+		engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+		QQmlComponent component(&engine);
+		component.setData(R"(
+			import QtQuick
+			import Kite.Components
+			import Kite.Theme
+			QtObject {
+				id: probe
+				property var stored: ({ UiMotionStyle: "", UiReduceMotion: false })
+				signal valueChanged()
+				function value(key) { return probe.stored[key] }
+				function setValue(key, value) {
+					var next = Object.assign({}, probe.stored)
+					next[key] = value
+					probe.stored = next
+					probe.valueChanged()
+				}
+				function resolved() {
+					return [SettingsStore.resolveMotionStyle("", true), SettingsStore.resolveMotionStyle("", false),
+							SettingsStore.resolveMotionStyle("calm", true), SettingsStore.resolveMotionStyle("playful", true),
+							SettingsStore.resolveMotionStyle("off", false), SettingsStore.resolveMotionStyle("bogus", false)].join("|")
+				}
+				function live() {
+					var seen = []
+					SettingsStore.adapter = probe
+					seen.push(Theme.motionStyle + ":" + Theme.motion.reduced)
+					// A config file reads booleans back as strings.
+					probe.setValue("UiReduceMotion", "true")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					probe.setValue("UiMotionStyle", "calm")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					probe.setValue("UiMotionStyle", "off")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					probe.setValue("UiMotionStyle", "playful")
+					seen.push(Theme.motionStyle + ":" + Theme.motion.fast)
+					SettingsStore.adapter = null
+					return seen.join("|")
+				}
+			})",
+						  QUrl());
+		std::unique_ptr<QObject> probe(component.create());
+		QVERIFY2(probe, qPrintable(component.errorString()));
+		QCOMPARE(callString(probe.get(), "resolved"), QStringLiteral("off|playful|calm|playful|off|playful"));
+		QCOMPARE(callString(probe.get(), "live"),
+				 QStringLiteral("playful:false|off:0|calm:120|off:0|playful:140"));
+	}
+
 	/* A folder path counts as absolute with a Windows drive too, and becomes a
 	 * url the folder dialog can start from. */
 	void windowsDrivePathsAreAbsolute()

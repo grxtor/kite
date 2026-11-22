@@ -99,7 +99,7 @@ Column {
                     size: Theme.icon.md
                     rotation: root.collapsed ? -90 : 0
                     color: header.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                    Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.easing } }
+                    Behavior on rotation { NumberAnimation { duration: Theme.motion.normal; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
                     Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
                 }
 
