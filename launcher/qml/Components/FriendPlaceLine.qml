@@ -27,9 +27,17 @@ Row {
     // The room the line has after the favicon; the version goes before the text is shortened.
     readonly property real textRoom: root.width - (favicon.visible ? favicon.width + root.spacing : 0)
     readonly property bool suffixFits: root.suffix.length > 0
-                                       && metrics.advanceWidth + root.spacing + suffixText.implicitWidth
+                                       && whole.advanceWidth + root.spacing + suffixText.implicitWidth
                                           <= root.textRoom
 
+    // The text's whole width, measured apart from `metrics`: its elide width hangs on suffixFits, and asking it
+    // for the width too was a binding loop.
+    TextMetrics {
+        id: whole
+        font.family: Theme.font.family
+        font.pixelSize: Theme.type.label.pixelSize
+        text: root.text
+    }
     // The elided text is worked out here: an elided Text keeps its full box and leaves a gap before the version.
     TextMetrics {
         id: metrics

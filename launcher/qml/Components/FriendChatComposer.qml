@@ -10,7 +10,8 @@ import Kite.Theme
  * (it removes line breaks), so the field never holds one: Shift+Enter adds none and a pasted break becomes a space.
  * It wraps and grows to a few lines, then scrolls. Near the limit (FriendsChat.maxLength) it counts what is left
  * and stops there. While the server refuses messages for sending too fast it says how long to wait. When there is
- * no one to write to it says why instead (`reason`).
+ * no one to write to it says why instead (`reason`). What was written and not sent stays with the friend it was
+ * written to (`peer`): another conversation opens with its own draft, never with this one's.
  */
 Item {
     id: root
@@ -18,6 +19,11 @@ Item {
     // FriendsController.chat, or null.
     property var chat: null
     property string name
+    // Who the conversation is with (a uuid, "" for none).
+    property string peer
+    // What was typed to each friend and not sent, by uuid; for the session.
+    property var drafts: ({})
+    property string draftOf
     property bool canSend: true
     // Why nothing can be sent, while canSend is false.
     property string reason
@@ -34,6 +40,14 @@ Item {
     property real now: Date.now()
     readonly property int waitSeconds: root.chat && root.chat.rateLimitedUntilMs > root.now
                                        ? Math.ceil((root.chat.rateLimitedUntilMs - root.now) / 1000) : 0
+
+    onPeerChanged: {
+        if (root.draftOf.length > 0)
+            root.drafts[root.draftOf] = field.text
+        root.draftOf = root.peer
+        field.text = root.drafts[root.peer] || ""
+        field.cursorPosition = field.length
+    }
 
     function focusField() {
         field.forceActiveFocus()

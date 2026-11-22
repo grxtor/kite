@@ -28,6 +28,7 @@
 #include <QMetaObject>
 
 #include "FriendsDisplay.h"
+#include "FriendsEvents.h"
 #include "FriendsFaces.h"
 #include "core/LauncherContext.h"
 #include "settings/SettingsObject.h"
@@ -97,6 +98,49 @@ void FriendsController::act(const QString& action, const QByteArray& verb,
 					poll();
 				}
 			});
+}
+
+void FriendsController::settleAction(const QString& action, const QString& uuid,
+									 const QString& name)
+{
+	if (!m_loaded) {
+		return;
+	}
+	FriendsApi::Person person;
+	person.uuid = uuid;
+	person.name = name;
+	person.createdAt = QDateTime::currentDateTimeUtc();
+	FriendsApi::FriendsSnapshot next = m_snapshot;
+	if (FriendsEvents::settle(next, action, person)) {
+		applyLive(next);
+	}
+}
+
+void FriendsController::settleBlocked(const QString& uuid, const QString& name)
+{
+	QVariantList next;
+	for (const QVariant& one : m_blocked) {
+		if (one.toMap().value("uuid").toString().compare(uuid, Qt::CaseInsensitive) != 0) {
+			next.append(one);
+		}
+	}
+	if (!name.isEmpty() && next.size() != m_blocked.size()) {
+		/* Already there. */
+		return;
+	}
+	if (!name.isEmpty()) {
+		FriendsApi::Person person;
+		person.uuid = uuid;
+		person.name = name;
+		person.createdAt = QDateTime::currentDateTimeUtc();
+		QVariantList added = FriendsDisplay::personList({person});
+		attachFaces(added);
+		next.append(added);
+	}
+	if (next != m_blocked) {
+		m_blocked = std::move(next);
+		emit changed();
+	}
 }
 
 void FriendsController::refresh()
@@ -170,8 +214,11 @@ void FriendsController::sendRequest(const QString& rawName)
 			}
 			*ok = true;
 			if (result->status == "accepted") {
+				/* They had asked first: their request is answered by this one. */
+				settleAction("accept", result->uuid);
 				return tr("%1 is now your friend").arg(result->name);
 			}
+			settleAction("sendRequest", result->uuid, result->name);
 			return reply.status == kCreated
 					   ? tr("Friend request sent to %1").arg(result->name)
 					   : tr("You have already sent %1 a request")
@@ -188,6 +235,10 @@ void FriendsController::accept(const QString& uuid)
 		[this, uuid](const FriendsApi::Reply& reply, bool* ok) {
 			const auto user = reply.ok() ? FriendsApi::parseUser(reply.body)
 										 : std::nullopt;
+			/* Answered or gone (404), the request is no longer there to answer. */
+			if (user || reply.status == 404) {
+				settleAction("accept", uuid);
+			}
 			if (!user) {
 				return reply.status == 404
 						   ? tr("That friend request is gone")
@@ -204,8 +255,11 @@ void FriendsController::decline(const QString& uuid)
 		return;
 	}
 	act("decline", kPost, FriendsApi::Path::decline(uuid), QByteArray(),
-		[this](const FriendsApi::Reply& reply, bool* ok) {
+		[this, uuid](const FriendsApi::Reply& reply, bool* ok) {
 			*ok = reply.ok();
+			if (*ok || reply.status == 404) {
+				settleAction("decline", uuid);
+			}
 			return *ok ? tr("Request declined")
 					   : reply.status == 404
 							 ? tr("That friend request is gone")
@@ -219,8 +273,11 @@ void FriendsController::cancelRequest(const QString& uuid)
 		return;
 	}
 	act("cancelRequest", kDelete, FriendsApi::Path::cancel(uuid), QByteArray(),
-		[this](const FriendsApi::Reply& reply, bool* ok) {
+		[this, uuid](const FriendsApi::Reply& reply, bool* ok) {
 			*ok = reply.ok();
+			if (*ok || reply.status == 404) {
+				settleAction("cancelRequest", uuid);
+			}
 			return *ok ? tr("Request cancelled")
 					   : reply.status == 404
 							 ? tr("That friend request is gone")
@@ -235,8 +292,11 @@ void FriendsController::removeFriend(const QString& uuid)
 	}
 	const QString name = nameOf(uuid);
 	act("removeFriend", kDelete, FriendsApi::Path::removeFriend(uuid),
-		QByteArray(), [this, name](const FriendsApi::Reply& reply, bool* ok) {
+		QByteArray(), [this, name, uuid](const FriendsApi::Reply& reply, bool* ok) {
 			*ok = reply.ok();
+			if (*ok || reply.status == 404) {
+				settleAction("removeFriend", uuid);
+			}
 			return *ok ? tr("%1 is no longer your friend").arg(name)
 					   : reply.status == 404
 							 ? tr("%1 is not your friend").arg(name)
@@ -288,6 +348,8 @@ void FriendsController::block(const QString& uuid)
 			if (*ok) {
 				/* A block hides the history from both. */
 				m_chat->forget(uuid);
+				settleAction("block", uuid);
+				settleBlocked(uuid, name);
 				loadBlocked([](const FriendsApi::Reply&, bool) {});
 				return tr("%1 is blocked").arg(name);
 			}
@@ -304,8 +366,11 @@ void FriendsController::unblock(const QString& uuid)
 	}
 	const QString name = nameOf(uuid);
 	act("unblock", kDelete, FriendsApi::Path::block(uuid), QByteArray(),
-		[this, name](const FriendsApi::Reply& reply, bool* ok) {
+		[this, name, uuid](const FriendsApi::Reply& reply, bool* ok) {
 			*ok = reply.ok();
+			if (*ok || reply.status == 404) {
+				settleBlocked(uuid, QString());
+			}
 			if (*ok) {
 				loadBlocked([](const FriendsApi::Reply&, bool) {});
 				return tr("%1 is unblocked").arg(name);

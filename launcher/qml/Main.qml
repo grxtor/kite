@@ -108,6 +108,16 @@ ApplicationWindow {
     property string devJoinInvite: ""
     property string devInviteSend: ""
     property var devShareSteps: []
+    // friendsdemo=<scenario>[:<dir of heads>]: made-up friends (FriendsDevController), nothing sent anywhere.
+    property string devFriendsDemo: ""
+    Loader {
+        id: devFriends
+        active: root.devFriendsDemo.length > 0
+        sourceComponent: FriendsDevController {
+            scenario: root.devFriendsDemo.split(":")[0]
+            faceDir: root.devFriendsDemo.split(":").slice(1).join(":")
+        }
+    }
     Connections {
         target: root.devInviteSend.length > 0 ? root.friendsController : null
         function onChanged() {
@@ -183,6 +193,8 @@ ApplicationWindow {
                 root.openImport(value)
             else if (key === "friends")
                 Qt.callLater(root.openFriends, "friends")
+            else if (key === "friendsdemo")
+                root.devFriendsDemo = value
             // friendsTab: "requests" or "blocked".
             else if (key === "friendsTab")
                 Qt.callLater(root.openFriends, value)
@@ -352,8 +364,8 @@ ApplicationWindow {
         SettingsStore.setValue("UiSidebarWidth", width)
     }
 
-    // Null where this build has no friends.
-    readonly property var friendsController: root.shellValue("friends")
+    // Null where this build has no friends. The dev route's stand-in (friendsdemo=) takes its place.
+    readonly property var friendsController: devFriends.item || root.shellValue("friends")
     readonly property var shareCodes: root.shellValue("shareCodes")
     // A window narrower than friendsPanelMinWindow starts without the panel and
     // leaves the FriendsPanelOpen setting alone; the toggle still opens it.
@@ -362,7 +374,12 @@ ApplicationWindow {
     property bool friendsPanelOpen: false
     property bool friendsPanelExpanded: false
     property int friendsPanelWidth: 320
-    readonly property bool friendsPanelShown: !!root.friendsController && root.friendsPanelOpen
+    // On the Friends page the panel would only repeat the page (its heads, its requests bell, its add button),
+    // so there it shows for one thing the page has not got: a conversation, opened out, for as long as one is open.
+    readonly property bool friendChatOpen: !!root.friendsController && !!root.friendsController.chat
+                                           && root.friendsController.chat.openUuid.length > 0
+    readonly property bool friendsPanelShown: !!root.friendsController
+                                              && (root.page === "friends" ? root.friendChatOpen : root.friendsPanelOpen)
     // Where friends play, shared by every friends view; their servers are pinged while one of them is on screen.
     readonly property FriendPlaces friendPlaces: FriendPlaces {
         pinger: root.serverPinger
@@ -371,6 +388,7 @@ ApplicationWindow {
         invites: root.friendsController ? root.friendsController.invites : []
         active: Format.friendsPhase(root.friendsController) === "ready"
                 && (root.friendsPanelShown || root.page === "friends" || root.page === "home")
+                && !devFriends.item
     }
     function setFriendsPanelOpen(open) {
         root.friendsPanelOpen = open
@@ -382,7 +400,9 @@ ApplicationWindow {
     }
     // The conversation with @p uuid in the friends panel, opened (and opened out) for it.
     function openFriendChat(uuid) {
-        root.setFriendsPanelOpen(true)
+        // From the Friends page it shows for the conversation alone and the saved choice is left as it is.
+        if (root.page !== "friends")
+            root.setFriendsPanelOpen(true)
         friendsPanel.openChat(uuid)
     }
     function setFriendsPanelWidth(width) {
@@ -944,7 +964,8 @@ ApplicationWindow {
         ]
         trailing: [
             FriendsPanelToggle {
-                visible: !!root.friendsController
+                // Not on the Friends page, where the panel is not the user's to show or hide.
+                visible: !!root.friendsController && root.page !== "friends"
                 open: root.friendsPanelOpen
                 // Counts only while the list is ready.
                 onlineCount: Format.friendsPhase(root.friendsController) === "ready"
@@ -963,7 +984,7 @@ ApplicationWindow {
         anchors.top: topBar.bottom
         anchors.bottom: parent.bottom
         open: root.friendsPanelShown
-        expanded: root.friendsPanelExpanded
+        expanded: root.friendsPanelExpanded || root.page === "friends"
         expandedWidth: root.friendsPanelWidth
         roomWidth: root.width - sidebar.width
         controller: root.friendsController

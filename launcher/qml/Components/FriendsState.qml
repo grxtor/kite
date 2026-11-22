@@ -31,6 +31,12 @@ QtObject {
     // (the friends server's invites, PR #14).
     readonly property var invites: root.controller && root.controller.invites ? root.controller.invites : []
 
+    // The people of @p list whose name has @p query in it, whatever the case; all of them for an empty query.
+    function named(list, query) {
+        var wanted = (query || "").trim().toLowerCase()
+        return wanted.length === 0 ? (list || [])
+                                   : (list || []).filter((one) => String(one.name).toLowerCase().indexOf(wanted) >= 0)
+    }
     // The invite from the friend with @p uuid, or null.
     function inviteFrom(uuid) {
         return root.invites.find((one) => one.uuid === uuid) || null

@@ -9,7 +9,8 @@ import Kite.Theme
  * The body of a Friends tab: whatever is declared inside it stacks in a column that scrolls, with a scroll bar and
  * ScrollFade's fade. The three tabs share it. The rows can be switched off (`actionsEnabled`) while the list stays
  * scrollable: disabling the tab would take the scrolling with it. With no rows (`count`) once the lists are read,
- * `emptyState` shows instead of the list.
+ * `emptyState` shows instead of the list; with rows but none that match the search (`total`, `query`), a line
+ * says so and offers to clear it.
  */
 Item {
     id: root
@@ -21,11 +22,16 @@ Item {
     property bool actionsEnabled: true
     // FriendsController, or null.
     property var controller: null
-    // Rows in the tab.
+    // Rows in the tab, and how many there are before the search (`query`) narrowed them.
     property int count: 0
+    property int total: root.count
+    property string query
+
+    signal clearRequested()
 
     // Not before the lists have been read: an empty list that is still arriving is not "no one".
-    readonly property bool empty: !!root.controller && root.controller.loaded && root.count === 0
+    readonly property bool empty: !!root.controller && root.controller.loaded && root.total === 0
+    readonly property bool noMatch: root.total > 0 && root.count === 0
 
     Item {
         anchors.fill: parent
@@ -49,6 +55,16 @@ Item {
         }
 
         ScrollFade { flickable: flick }
+    }
+
+    EmptyState {
+        anchors.fill: parent
+        visible: root.noMatch
+        upperThird: true
+        iconName: "search"
+        title: qsTr("No one called “%1”").arg(root.query)
+        actionText: qsTr("Clear search")
+        onActionTriggered: root.clearRequested()
     }
 
     Item {

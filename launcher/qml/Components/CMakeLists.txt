@@ -150,6 +150,9 @@ qt_add_qml_module(Kite_qml_components
         FiltersButton.qml
         FriendJoinButton.qml
         FriendsRetry.qml
+        FriendsDevController.qml
+        FriendsListCard.qml
+        FriendsAddField.qml
         FriendsState.qml
         FriendPlaces.qml
         ServerFavicon.qml

@@ -104,7 +104,7 @@ Item {
 
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("IN GAME — %1").arg(root.friendsState.groups.playing.length)
+                    title: qsTr("In game · %1").arg(root.friendsState.groups.playing.length)
                     places: root.places
                     friends: root.friendsState.groups.playing
                     expanded: root.playingOpen
@@ -117,7 +117,7 @@ Item {
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("IN KITE — %1").arg(root.friendsState.groups.online.length)
+                    title: qsTr("In Kite · %1").arg(root.friendsState.groups.online.length)
                     places: root.places
                     friends: root.friendsState.groups.online
                     expanded: root.onlineOpen
@@ -128,7 +128,7 @@ Item {
                 }
                 FriendsPanelGroup {
                     width: parent.width
-                    title: qsTr("OFFLINE — %1").arg(root.friendsState.groups.offline.length)
+                    title: qsTr("Offline · %1").arg(root.friendsState.groups.offline.length)
                     places: root.places
                     friends: root.friendsState.groups.offline
                     expanded: root.offlineOpen

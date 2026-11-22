@@ -131,6 +131,42 @@ namespace FriendsEvents
 		return {};
 	}
 
+	bool settle(FriendsApi::FriendsSnapshot& snapshot, const QString& action,
+				const FriendsApi::Person& person)
+	{
+		const QString& uuid = person.uuid;
+		if (uuid.isEmpty()) {
+			return false;
+		}
+		if (action == QLatin1String("accept") || action == QLatin1String("decline")) {
+			return removeUuid(snapshot.incoming, uuid);
+		}
+		if (action == QLatin1String("cancelRequest")) {
+			return removeUuid(snapshot.outgoing, uuid);
+		}
+		if (action == QLatin1String("removeFriend")) {
+			return removeUuid(snapshot.friends, uuid);
+		}
+		if (action == QLatin1String("block")) {
+			bool changed = removeUuid(snapshot.friends, uuid);
+			changed = removeUuid(snapshot.incoming, uuid) || changed;
+			return removeUuid(snapshot.outgoing, uuid) || changed;
+		}
+		if (action == QLatin1String("sendRequest")) {
+			const auto known = [&uuid](const auto& list) {
+				return std::any_of(list.cbegin(), list.cend(),
+								   [&uuid](const auto& one) { return same(one.uuid, uuid); });
+			};
+			if (!FriendsApi::isMinecraftName(person.name) || known(snapshot.outgoing) ||
+				known(snapshot.friends)) {
+				return false;
+			}
+			snapshot.outgoing.append(person);
+			return true;
+		}
+		return false;
+	}
+
 	bool setUnread(FriendsApi::FriendsSnapshot& snapshot, const QString& uuid, int count)
 	{
 		auto* one = friendOf(snapshot, uuid);

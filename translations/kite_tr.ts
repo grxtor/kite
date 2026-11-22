@@ -4926,11 +4926,6 @@ Lütfen tekrar dene.</translation>
 <context>
     <name>FriendsBlockedTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsBlockedTab.qml" line="+43"/>
-        <source>BLOCKED — %1</source>
-        <translation>ENGELLENENLER — %1</translation>
-    </message>
-    <message>
         <location line="+14"/>
         <source>Unblock</source>
         <translation>Engeli kaldır</translation>
@@ -4944,6 +4939,18 @@ Lütfen tekrar dene.</translation>
         <location line="+1"/>
         <source>Someone you block cannot send you requests or see when you are online. They are not told.</source>
         <translation>Engellediğin kişi sana istek gönderemez ve senin çevrimiçi olduğunu göremez. Ona haber verilmez.</translation>
+    </message>
+    <message>
+        <source>Blocked · %1</source>
+        <translation>Engellenen · %1</translation>
+    </message>
+    <message>
+        <source>Can&apos;t send you requests or see you online</source>
+        <translation>Sana istek gönderemez, çevrimiçi olduğunu göremez</translation>
+    </message>
+    <message>
+        <source>Unblock %1</source>
+        <translation>%1 engelini kaldır</translation>
     </message>
 </context>
 <context>
@@ -5386,23 +5393,24 @@ Lütfen tekrar dene.</translation>
         <source>Your friends need Kite too. Add them by their Minecraft name.</source>
         <translation>Arkadaşlarının da Kite kullanması gerekir. Onları Minecraft adıyla ekle.</translation>
     </message>
+    <message>
+        <source>Add a friend</source>
+        <translation>Arkadaş ekle</translation>
+    </message>
 </context>
 <context>
     <name>FriendsFriendsTab</name>
     <message>
-        <location filename="../launcher/qml/Components/FriendsFriendsTab.qml" line="+47"/>
-        <source>IN GAME — %1</source>
-        <translation>OYUNDA — %1</translation>
+        <source>In game · %1</source>
+        <translation>Oyunda · %1</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>IN KITE — %1</source>
-        <translation>KITE&apos;TA — %1</translation>
+        <source>In Kite · %1</source>
+        <translation>Kite&apos;ta · %1</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>OFFLINE — %1</source>
-        <translation>ÇEVRİMDIŞI — %1</translation>
+        <source>Offline · %1</source>
+        <translation>Çevrimdışı · %1</translation>
     </message>
 </context>
 <context>
@@ -5477,6 +5485,18 @@ Lütfen tekrar dene.</translation>
         <source>Blocked</source>
         <translation>Engellenenler</translation>
     </message>
+    <message>
+        <source>Search requests</source>
+        <translation>İstek ara</translation>
+    </message>
+    <message>
+        <source>Search blocked people</source>
+        <translation>Engellenen ara</translation>
+    </message>
+    <message>
+        <source>Search friends</source>
+        <translation>Arkadaş ara</translation>
+    </message>
 </context>
 <context>
     <name>FriendsPageState</name>
@@ -5530,24 +5550,17 @@ Lütfen tekrar dene.</translation>
         <source>Trying…</source>
         <translation>Deneniyor…</translation>
     </message>
+    <message>
+        <source>You&apos;re offline</source>
+        <translation>Çevrimdışısın</translation>
+    </message>
+    <message>
+        <source>Friends comes back when your connection does.</source>
+        <translation>Bağlantın gelince Arkadaşlar da geri gelir.</translation>
+    </message>
 </context>
 <context>
     <name>FriendsPanelFull</name>
-    <message>
-        <location filename="../launcher/qml/Components/FriendsPanelFull.qml" line="+107"/>
-        <source>IN GAME — %1</source>
-        <translation>OYUNDA — %1</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>IN KITE — %1</source>
-        <translation>KITE&apos;TA — %1</translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <source>OFFLINE — %1</source>
-        <translation>ÇEVRİMDIŞI — %1</translation>
-    </message>
     <message>
         <location line="+17"/>
         <source>Add friends who use Kite to see where they play.</source>
@@ -5557,6 +5570,18 @@ Lütfen tekrar dene.</translation>
         <location line="+4"/>
         <source>Add a friend</source>
         <translation>Arkadaş ekle</translation>
+    </message>
+    <message>
+        <source>In game · %1</source>
+        <translation>Oyunda · %1</translation>
+    </message>
+    <message>
+        <source>In Kite · %1</source>
+        <translation>Kite&apos;ta · %1</translation>
+    </message>
+    <message>
+        <source>Offline · %1</source>
+        <translation>Çevrimdışı · %1</translation>
     </message>
 </context>
 <context>
@@ -5656,11 +5681,6 @@ Lütfen tekrar dene.</translation>
         <translation>Seninle arkadaş olmak istiyor</translation>
     </message>
     <message>
-        <location line="-10"/>
-        <source>INCOMING — %1</source>
-        <translation>GELEN — %1</translation>
-    </message>
-    <message>
         <location line="+15"/>
         <source>Accept</source>
         <translation>Kabul et</translation>
@@ -5671,21 +5691,6 @@ Lütfen tekrar dene.</translation>
         <translation>Reddet</translation>
     </message>
     <message>
-        <location line="+21"/>
-        <source>SENT — %1</source>
-        <translation>GÖNDERİLEN — %1</translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>Request sent</source>
-        <translation>İstek gönderildi</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Cancel</source>
-        <translation>İptal</translation>
-    </message>
-    <message>
         <location line="-73"/>
         <source>No friend requests</source>
         <translation>Arkadaşlık isteği yok</translation>
@@ -5694,6 +5699,34 @@ Lütfen tekrar dene.</translation>
         <location line="+1"/>
         <source>Requests you get, and requests you send, wait here until they are answered.</source>
         <translation>Aldığın ve gönderdiğin istekler yanıtlanana kadar burada bekler.</translation>
+    </message>
+    <message>
+        <source>Incoming · %1</source>
+        <translation>Gelen · %1</translation>
+    </message>
+    <message>
+        <source>Accept %1</source>
+        <translation>%1 isteğini kabul et</translation>
+    </message>
+    <message>
+        <source>Decline %1</source>
+        <translation>%1 isteğini reddet</translation>
+    </message>
+    <message>
+        <source>Sent · %1</source>
+        <translation>Gönderilen · %1</translation>
+    </message>
+    <message>
+        <source>Waiting for their answer</source>
+        <translation>Cevabı bekleniyor</translation>
+    </message>
+    <message>
+        <source>Cancel request</source>
+        <translation>İsteği iptal et</translation>
+    </message>
+    <message>
+        <source>Cancel the request to %1</source>
+        <translation>%1 adlı kişiye gönderdiğin isteği iptal et</translation>
     </message>
 </context>
 <context>
@@ -5744,24 +5777,12 @@ Lütfen tekrar dene.</translation>
         <translation>Çevrimiçi · arkadaşların seni görebilir</translation>
     </message>
     <message>
-        <location line="+85"/>
-        <source>Add a friend by name</source>
-        <translation>Adıyla arkadaş ekle</translation>
+        <source>Privacy</source>
+        <translation>Gizlilik</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Minecraft name of the friend to add</source>
-        <translation>Eklenecek arkadaşın Minecraft adı</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Add</source>
-        <translation>Ekle</translation>
-    </message>
-    <message>
-        <location line="+9"/>
-        <source>A Minecraft name has 1 to 16 letters, numbers or underscores.</source>
-        <translation>Minecraft adı 1 ile 16 arasında harf, rakam ya da alt çizgiden oluşur.</translation>
+        <source>Friends privacy settings</source>
+        <translation>Arkadaşlar gizlilik ayarları</translation>
     </message>
 </context>
 <context>
@@ -18037,6 +18058,55 @@ Lütfen hesabını şuna göre ayarla: %1.</translation>
         <location filename="../launcher/qml/Components/TabListRow.qml" line="+1"/>
         <source>Join</source>
         <translation>Katıl</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsListScroll</name>
+    <message>
+        <source>No one called “%1”</source>
+        <translation>“%1” adında kimse yok</translation>
+    </message>
+    <message>
+        <source>Clear search</source>
+        <translation>Aramayı temizle</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsAddField</name>
+    <message>
+        <source>A Minecraft name has 1 to 16 letters, numbers or underscores.</source>
+        <translation>Minecraft adı 1 ile 16 arasında harf, rakam ya da alt çizgiden oluşur.</translation>
+    </message>
+    <message>
+        <source>That is your own name.</source>
+        <translation>Bu senin kendi adın.</translation>
+    </message>
+    <message>
+        <source>Add a friend by name</source>
+        <translation>Adıyla arkadaş ekle</translation>
+    </message>
+    <message>
+        <source>Minecraft name of the friend to add</source>
+        <translation>Eklenecek arkadaşın Minecraft adı</translation>
+    </message>
+    <message>
+        <source>Sending…</source>
+        <translation>Gönderiliyor…</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+</context>
+<context>
+    <name>FriendsGroup</name>
+    <message>
+        <source>Message</source>
+        <translation>Mesaj gönder</translation>
+    </message>
+    <message>
+        <source>Message %1</source>
+        <translation>%1 ile mesajlaş</translation>
     </message>
 </context>
 </TS>

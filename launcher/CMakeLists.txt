@@ -1699,6 +1699,13 @@ add_unit_test(FriendChatPanelQml
     )
 qt_import_qml_plugins(FriendChatPanelQml_test)
 
+# The Friends page over made-up people (FriendsDevController): counts, search, the add field, a request's buttons.
+add_unit_test(FriendsPageQml
+    SOURCES qml/FriendsPageQml_test.cpp qml/FriendChatQmlHarness.h
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(FriendsPageQml_test)
+
 # The shell's own behaviour: page history, shortcuts, the offline notice, the account warning.
 add_unit_test(AppShellQml
     SOURCES qml/AppShellQml_test.cpp
