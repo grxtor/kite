@@ -24,9 +24,10 @@ T.ToolButton {
     icon.height: Theme.icon.md
     icon.color: contentColor
 
-    // Pressed, the whole button gives a little and comes back on release.
-    scale: control.down ? Theme.motion.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+    // Pressed, the button's face gives a little and comes back on release. The face, not the control: a menu
+    // hung from the control follows its transform, and slid over by a pixel as the control grew back.
+    property real pressFactor: control.down ? Theme.motion.pressScale : 1
+    Behavior on pressFactor { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
     readonly property color contentColor: !control.enabled
         ? Theme.palette.textDisabled
@@ -34,6 +35,7 @@ T.ToolButton {
 
     // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
     contentItem: IconText {
+        scale: control.pressFactor
         spacing: control.spacing
         mirrored: control.mirrored
         display: control.display
@@ -52,6 +54,7 @@ T.ToolButton {
     }
 
     background: Rectangle {
+        scale: control.pressFactor
         implicitWidth: Theme.control.height
         implicitHeight: Theme.control.height
         radius: Theme.radius.sm

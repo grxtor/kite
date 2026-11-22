@@ -75,9 +75,10 @@ T.Button {
     readonly property bool isDanger: resolvedVariant === "danger"
     readonly property bool iconOnly: display === T.AbstractButton.IconOnly
     opacity: enabled || control.filled ? 1.0 : Theme.opacity.disabled
-    // Pressed, the whole button gives a little and comes back on release.
-    scale: control.down ? Theme.motion.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+    // Pressed, the button's face gives a little and comes back on release. The face, not the control: a menu
+    // hung from the control follows its transform, and slid over by a pixel as the control grew back.
+    property real pressFactor: control.down ? Theme.motion.pressScale : 1
+    Behavior on pressFactor { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
     // One colour for icon and label.
     readonly property color contentColor: control.primaryLook ? Theme.palette.canvas
@@ -105,6 +106,7 @@ T.Button {
 
     // IconText, not IconLabel: the text is often a name from someone else and must stay plain.
     contentItem: IconText {
+        scale: control.pressFactor
         spacing: control.spacing
         mirrored: control.mirrored
         display: control.display
@@ -123,6 +125,7 @@ T.Button {
     }
 
     background: Rectangle {
+        scale: control.pressFactor
         id: background
         implicitWidth: control.sizeHeight
         implicitHeight: control.sizeHeight

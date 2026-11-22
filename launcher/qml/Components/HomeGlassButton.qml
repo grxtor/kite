@@ -28,10 +28,12 @@ AbstractButton {
     ToolTip.text: tip
 
     opacity: enabled ? 1.0 : Theme.opacity.disabled
-    scale: control.down ? Theme.motion.pressScale : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
+    // The face gives on a press, not the control: a menu hung from the control would move with it.
+    property real pressFactor: control.down ? Theme.motion.pressScale : 1
+    Behavior on pressFactor { NumberAnimation { duration: Theme.motion.press; easing.type: Theme.motion.popEasing; easing.overshoot: Theme.motion.popOvershoot } }
 
     background: Rectangle {
+        scale: control.pressFactor
         radius: Theme.radius.lg
         color: control.fill
 
@@ -45,6 +47,7 @@ AbstractButton {
     }
 
     contentItem: Item {
+        scale: control.pressFactor
         MeshIcon {
             anchors.centerIn: parent
             iconName: control.iconName
