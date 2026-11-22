@@ -109,15 +109,9 @@ Item {
         Flickable {
             id: scroller
             visible: root.canSend
-            // Room around the field for its focus halo, which the scroller's clip otherwise cut into corners.
-            readonly property int halo: Theme.focus.width
             width: parent.width
-            height: Math.min(field.implicitHeight, root.maxFieldHeight) + halo * 2
-            contentWidth: width - halo * 2
-            leftMargin: halo
-            rightMargin: halo
-            topMargin: halo
-            bottomMargin: halo
+            height: Math.min(field.implicitHeight, root.maxFieldHeight)
+            contentWidth: width
             boundsBehavior: Flickable.StopAtBounds
             clip: true
 
@@ -126,9 +120,21 @@ Item {
             TextArea.flickable: TextArea {
                 id: field
                 objectName: "chatField"
-                // One line until there is more to say; the style's field is sized for a paragraph.
-                background.implicitHeight: Theme.control.height
-                background.implicitWidth: 0
+                // Its own plate, without the style's focus halo: inside this clipping scroller the halo, which
+                // reaches past the field, was cut into coloured corners. The accent edge says it has focus. One
+                // line until there is more to say.
+                background: Rectangle {
+                    implicitHeight: Theme.control.height
+                    implicitWidth: 0
+                    radius: Theme.radius.sm
+                    color: "transparent"
+                    border.width: 1
+                    border.color: field.activeFocus ? Theme.palette.accent
+                                : field.hovered ? Theme.neutral.outlineHover : Theme.neutral.outline
+                    Behavior on border.color {
+                        ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing }
+                    }
+                }
                 wrapMode: TextArea.Wrap
                 placeholderText: qsTr("Message %1").arg(root.name)
                 Accessible.name: qsTr("Message %1").arg(root.name)
