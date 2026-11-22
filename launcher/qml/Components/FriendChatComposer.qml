@@ -109,9 +109,15 @@ Item {
         Flickable {
             id: scroller
             visible: root.canSend
+            // Room around the field for its focus halo, which the scroller's clip otherwise cut into corners.
+            readonly property int halo: Theme.focus.width
             width: parent.width
-            height: Math.min(field.implicitHeight, root.maxFieldHeight)
-            contentWidth: width
+            height: Math.min(field.implicitHeight, root.maxFieldHeight) + halo * 2
+            contentWidth: width - halo * 2
+            leftMargin: halo
+            rightMargin: halo
+            topMargin: halo
+            bottomMargin: halo
             boundsBehavior: Flickable.StopAtBounds
             clip: true
 
