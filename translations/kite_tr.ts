@@ -585,6 +585,10 @@
         <source>About Kite</source>
         <translation>Kite hakkında</translation>
     </message>
+    <message>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+    </message>
 </context>
 <context>
     <name>Application</name>
@@ -2203,6 +2207,18 @@ Ayrıntılar günlük dosyasında:
         <location line="+0"/>
         <source>%1 %2 removed.</source>
         <translation>%1 %2 kaldırıldı.</translation>
+    </message>
+    <message>
+        <source>1 update found. Check again</source>
+        <translation>1 güncelleme bulundu. Yeniden denetle</translation>
+    </message>
+    <message>
+        <source>%1 updates found. Check again</source>
+        <translation>%1 güncelleme bulundu. Yeniden denetle</translation>
+    </message>
+    <message>
+        <source>Update all (%1)</source>
+        <translation>Hepsini güncelle (%1)</translation>
     </message>
 </context>
 <context>
@@ -6383,14 +6399,21 @@ Lütfen tekrar dene.</translation>
         <translation>Kurulumları sırala: %1</translation>
     </message>
     <message>
-        <location line="+27"/>
-        <source>Group instances</source>
-        <translation>Kurulumları grupla</translation>
-    </message>
-    <message>
         <location line="+13"/>
         <source>New instance</source>
         <translation>Yeni kurulum</translation>
+    </message>
+    <message>
+        <source>Group by</source>
+        <translation>Gruplama</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Yok</translation>
+    </message>
+    <message>
+        <source>Group</source>
+        <translation>Grup</translation>
     </message>
 </context>
 <context>
@@ -6433,13 +6456,12 @@ Lütfen tekrar dene.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Check the spelling, or search for part of the name.</source>
-        <translation>Yazımı denetle ya da adın bir kısmını ara.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
         <source>Clear search</source>
         <translation>Aramayı temizle</translation>
+    </message>
+    <message>
+        <source>Check the spelling, or search by name, group, version or loader.</source>
+        <translation>Yazımı denetle ya da ad, grup, sürüm veya yükleyiciyle ara.</translation>
     </message>
 </context>
 <context>
@@ -7361,16 +7383,6 @@ Başlatıcı bu kaydı tutmaya başlamadan önce yüklenen kurulumlarda liste yo
         <location line="+58"/>
         <source>Group options</source>
         <translation>Grup seçenekleri</translation>
-    </message>
-    <message>
-        <location line="+45"/>
-        <source>Rename group…</source>
-        <translation>Grubu yeniden adlandır…</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Delete group…</source>
-        <translation>Grubu sil…</translation>
     </message>
 </context>
 <context>
@@ -8698,27 +8710,6 @@ Neden:
         <source>Ungrouped</source>
         <translation>Grupsuz</translation>
     </message>
-    <message>
-        <location line="+22"/>
-        <source>Delete the group “%1”? Its instances stay in your library, without a group.</source>
-        <translation>“%1” grubu silinsin mi? Kurulumları kütüphanende, grupsuz olarak kalır.</translation>
-    </message>
-    <message>
-        <location line="+78"/>
-        <source>Rename group</source>
-        <translation>Grubu yeniden adlandır</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Rename</source>
-        <translation>Yeniden adlandır</translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <location line="+1"/>
-        <source>Delete group</source>
-        <translation>Grubu sil</translation>
-    </message>
 </context>
 <context>
     <name>LoaderInstallDialog</name>
@@ -9179,6 +9170,10 @@ Neden:
         <location line="+0"/>
         <source>Move to trash</source>
         <translation>Çöp kutusuna taşı</translation>
+    </message>
+    <message>
+        <source>Still no connection.</source>
+        <translation>Hâlâ bağlantı yok.</translation>
     </message>
 </context>
 <context>
@@ -11799,6 +11794,10 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <source>Remove</source>
         <translation>Kaldır</translation>
     </message>
+    <message>
+        <source>Update</source>
+        <translation>Güncelle</translation>
+    </message>
 </context>
 <context>
     <name>PackProfile</name>
@@ -12000,6 +11999,22 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="+7"/>
         <source>Remove…</source>
         <translation>Kaldır…</translation>
+    </message>
+    <message>
+        <source>%1 → %2</source>
+        <translation>%1 → %2</translation>
+    </message>
+    <message>
+        <source>→ %1</source>
+        <translation>→ %1</translation>
+    </message>
+    <message>
+        <source>Update</source>
+        <translation>Güncelle</translation>
+    </message>
+    <message>
+        <source>Update %1</source>
+        <translation>Güncelle: %1</translation>
     </message>
 </context>
 <context>
@@ -12539,6 +12554,18 @@ Tüm dosyalar İndirilenler klasöründe göründüğünde Devam&apos;a tıkla.<
         <location line="-1"/>
         <source>Sign out of “%1”? You can sign in again at any time.</source>
         <translation>“%1” hesabından çıkış yapılsın mı? İstediğin zaman yeniden giriş yapabilirsin.</translation>
+    </message>
+    <message>
+        <source>Sign in again</source>
+        <translation>Yeniden giriş yap</translation>
+    </message>
+    <message>
+        <source>Open Accounts</source>
+        <translation>Hesaplar&apos;ı aç</translation>
+    </message>
+    <message>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
     </message>
 </context>
 <context>
@@ -13870,6 +13897,10 @@ Zararlı modlar çoğunlukla Discord gibi platformlarda gönderilen bağlantıla
         <location line="+0"/>
         <source>%1 screenshots deleted.</source>
         <translation>%1 ekran görüntüsü silindi.</translation>
+    </message>
+    <message>
+        <source>Open in another app</source>
+        <translation>Başka uygulamada aç</translation>
     </message>
 </context>
 <context>
@@ -17528,6 +17559,22 @@ inheritsFrom eksik</translation>
         <source>The world could not be deleted. Are its files in use?</source>
         <translation>Dünya silinemedi. Dosyaları kullanımda olabilir mi?</translation>
     </message>
+    <message>
+        <source>The game is already running.</source>
+        <translation>Oyun zaten açık.</translation>
+    </message>
+    <message>
+        <source>This Minecraft version cannot open a world from the launcher. It works from 1.20 on.</source>
+        <translation>Bu Minecraft sürümünde dünya başlatıcıdan açılamıyor. 1.20 ve sonrasında çalışır.</translation>
+    </message>
+    <message>
+        <source>Hardcore</source>
+        <translation>Zorlu</translation>
+    </message>
+    <message>
+        <source>Play this world</source>
+        <translation>Bu dünyayı oyna</translation>
+    </message>
 </context>
 <context>
     <name>XboxAuthorizationStep</name>
@@ -17616,6 +17663,367 @@ Lütfen hesabını şuna göre ayarla: %1.</translation>
         <location line="+4"/>
         <source>Got Xbox user token</source>
         <translation>Xbox kullanıcı belirteci alındı</translation>
+    </message>
+</context>
+<context>
+    <name>GroupMenu</name>
+    <message>
+        <source>Rename group…</source>
+        <translation>Grubu yeniden adlandır…</translation>
+    </message>
+    <message>
+        <source>Delete group…</source>
+        <translation>Grubu sil…</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryGroupChips</name>
+    <message>
+        <source>All</source>
+        <translation>Tümü</translation>
+    </message>
+    <message>
+        <source>Ungrouped</source>
+        <translation>Grupsuz</translation>
+    </message>
+    <message>
+        <source>Group options</source>
+        <translation>Grup seçenekleri</translation>
+    </message>
+</context>
+<context>
+    <name>PopularModpacks</name>
+    <message>
+        <source>Popular modpacks</source>
+        <translation>Popüler mod paketleri</translation>
+    </message>
+</context>
+<context>
+    <name>ModpackTile</name>
+    <message>
+        <source>by %1</source>
+        <translation>Yapımcı: %1</translation>
+    </message>
+    <message>
+        <source>Installing…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation>Yüklendi</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
+    <message>
+        <source>Install %1</source>
+        <translation>%1 yükle</translation>
+    </message>
+</context>
+<context>
+    <name>LooseDropFlow</name>
+    <message>
+        <source>Drop to add to %1</source>
+        <translation>%1 kurulumuna eklemek için bırak</translation>
+    </message>
+    <message>
+        <source>Drop to add to…</source>
+        <translation>Bir kuruluma eklemek için bırak…</translation>
+    </message>
+    <message>
+        <source>Drop to import as a new instance</source>
+        <translation>Yeni kurulum olarak içe aktarmak için bırak</translation>
+    </message>
+    <message>
+        <source>Create an instance first</source>
+        <translation>Önce bir kurulum oluştur</translation>
+    </message>
+    <message>
+        <source>Nothing here to add</source>
+        <translation>Burada eklenecek bir şey yok</translation>
+    </message>
+    <message>
+        <source>Create an instance first, then drop these on it.</source>
+        <translation>Önce bir kurulum oluştur, sonra bunları onun üstüne bırak.</translation>
+    </message>
+    <message>
+        <source>Importing the first pack. 1 other was skipped.</source>
+        <translation>İlk paket içe aktarılıyor. Diğer 1 paket atlandı.</translation>
+    </message>
+    <message>
+        <source>Importing the first pack. %1 others were skipped.</source>
+        <translation>İlk paket içe aktarılıyor. Diğer %1 paket atlandı.</translation>
+    </message>
+    <message>
+        <source>Add to which instance?</source>
+        <translation>Hangi kuruluma eklensin?</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Ekle</translation>
+    </message>
+</context>
+<context>
+    <name>GroupDialogs</name>
+    <message>
+        <source>Delete the group “%1”? Its instances stay in your library, without a group.</source>
+        <translation>“%1” grubu silinsin mi? Kurulumları kütüphanende, grupsuz olarak kalır.</translation>
+    </message>
+    <message>
+        <source>Rename group</source>
+        <translation>Grubu yeniden adlandır</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Yeniden adlandır</translation>
+    </message>
+    <message>
+        <source>Delete group</source>
+        <translation>Grubu sil</translation>
+    </message>
+</context>
+<context>
+    <name>KeyMap</name>
+    <message>
+        <source>Navigation</source>
+        <translation>Gezinme</translation>
+    </message>
+    <message>
+        <source>Library</source>
+        <translation>Kütüphane</translation>
+    </message>
+    <message>
+        <source>Instance</source>
+        <translation>Kurulum</translation>
+    </message>
+    <message>
+        <source>Log</source>
+        <translation>Günlük</translation>
+    </message>
+    <message>
+        <source>Chat</source>
+        <translation>Sohbet</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Geri</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>İleri</translation>
+    </message>
+    <message>
+        <source>Mouse back button</source>
+        <translation>Farenin geri tuşu</translation>
+    </message>
+    <message>
+        <source>Mouse forward button</source>
+        <translation>Farenin ileri tuşu</translation>
+    </message>
+    <message>
+        <source>Go to Home</source>
+        <translation>Ana sayfaya git</translation>
+    </message>
+    <message>
+        <source>Go to Discover</source>
+        <translation>Keşfet&apos;e git</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Ayarlar</translation>
+    </message>
+    <message>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+    </message>
+    <message>
+        <source>Close a dialog or menu</source>
+        <translation>Pencereyi veya menüyü kapat</translation>
+    </message>
+    <message>
+        <source>Search the library</source>
+        <translation>Kütüphanede ara</translation>
+    </message>
+    <message>
+        <source>New instance</source>
+        <translation>Yeni kurulum</translation>
+    </message>
+    <message>
+        <source>Play the selected instance</source>
+        <translation>Seçili kurulumu oyna</translation>
+    </message>
+    <message>
+        <source>Move between instances</source>
+        <translation>Kurulumlar arasında gez</translation>
+    </message>
+    <message>
+        <source>Open the instance</source>
+        <translation>Kurulumu aç</translation>
+    </message>
+    <message>
+        <source>Select the instance</source>
+        <translation>Kurulumu seç</translation>
+    </message>
+    <message>
+        <source>Open the instance&apos;s menu</source>
+        <translation>Kurulumun menüsünü aç</translation>
+    </message>
+    <message>
+        <source>Play this instance</source>
+        <translation>Bu kurulumu oyna</translation>
+    </message>
+    <message>
+        <source>Clear the selection, leave Add content</source>
+        <translation>Seçimi temizle, İçerik ekle&apos;den çık</translation>
+    </message>
+    <message>
+        <source>Find in the log</source>
+        <translation>Günlükte bul</translation>
+    </message>
+    <message>
+        <source>Next match</source>
+        <translation>Sonraki eşleşme</translation>
+    </message>
+    <message>
+        <source>Previous match</source>
+        <translation>Önceki eşleşme</translation>
+    </message>
+    <message>
+        <source>Send the message</source>
+        <translation>Mesajı gönder</translation>
+    </message>
+    <message>
+        <source>New line</source>
+        <translation>Yeni satır</translation>
+    </message>
+    <message>
+        <source>Close the conversation</source>
+        <translation>Sohbeti kapat</translation>
+    </message>
+    <message>
+        <source>Ctrl</source>
+        <translation>Ctrl</translation>
+    </message>
+    <message>
+        <source>Alt</source>
+        <translation>Alt</translation>
+    </message>
+    <message>
+        <source>Shift</source>
+        <translation>Shift</translation>
+    </message>
+    <message>
+        <source>Return</source>
+        <translation>Return</translation>
+    </message>
+    <message>
+        <source>Enter</source>
+        <translation>Enter</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Boşluk</translation>
+    </message>
+    <message>
+        <source>Esc</source>
+        <translation>Esc</translation>
+    </message>
+    <message>
+        <source>Menu</source>
+        <translation>Menü</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutsDialog</name>
+    <message>
+        <source>Keyboard shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>OfflineNotice</name>
+    <message>
+        <source>You&apos;re offline. Installed instances still play; Discover and downloads need a connection.</source>
+        <translation>Çevrimdışısın. Yüklü kurulumlarını yine oynayabilirsin; Keşfet ve indirmeler için bağlantı gerek.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+</context>
+<context>
+    <name>AccountStates</name>
+    <message>
+        <source>Your sign-in has expired. Sign in again to play online.</source>
+        <translation>Girişinin süresi doldu. Çevrimiçi oynamak için yeniden giriş yap.</translation>
+    </message>
+    <message>
+        <source>Kite could not check this account. Sign in again to play online.</source>
+        <translation>Kite bu hesabı doğrulayamadı. Çevrimiçi oynamak için yeniden giriş yap.</translation>
+    </message>
+    <message>
+        <source>This account no longer exists. Remove it or use another account.</source>
+        <translation>Bu hesap artık yok. Hesabı kaldır ya da başka bir hesap kullan.</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenshotViewer</name>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 / %2</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+    <message>
+        <source>Previous</source>
+        <translation>Önceki</translation>
+    </message>
+    <message>
+        <source>Next</source>
+        <translation>Sonraki</translation>
+    </message>
+    <message>
+        <source>Remove cover</source>
+        <translation>Kapağı kaldır</translation>
+    </message>
+    <message>
+        <source>Set as cover</source>
+        <translation>Kapak yap</translation>
+    </message>
+    <message>
+        <source>Cover set.</source>
+        <translation>Kapak ayarlandı.</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+    <message>
+        <source>Show in folder</source>
+        <translation>Klasörde göster</translation>
+    </message>
+    <message>
+        <source>Uploading…</source>
+        <translation>Yükleniyor…</translation>
+    </message>
+    <message>
+        <source>Upload to Imgur</source>
+        <translation>Imgur'a yükle</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Sil</translation>
     </message>
 </context>
 </TS>

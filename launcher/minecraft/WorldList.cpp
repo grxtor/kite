@@ -26,6 +26,9 @@
 #include <QString>
 #include <QFileSystemWatcher>
 #include <QDebug>
+#include <QDirIterator>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 WorldList::WorldList(const QString& dir) : QAbstractListModel(), m_dir(dir)
 {
@@ -87,7 +90,58 @@ bool WorldList::update()
 	beginResetModel();
 	worlds.swap(newWorlds);
 	endResetModel();
+	measureSizes();
 	return true;
+}
+
+qint64 WorldList::sizeOnDisk(const QString& path)
+{
+	const QFileInfo info(path);
+	if (!info.isDir()) {
+		return info.isFile() ? info.size() : 0;
+	}
+	qint64 total = 0;
+	QDirIterator files(path, QDir::Files | QDir::Hidden | QDir::NoSymLinks,
+					   QDirIterator::Subdirectories);
+	while (files.hasNext()) {
+		files.next();
+		total += files.fileInfo().size();
+	}
+	return total;
+}
+
+void WorldList::measureSizes()
+{
+	const int run = ++m_sizeRun;
+	QStringList paths;
+	for (const World& world : worlds) {
+		paths.append(world.container().absoluteFilePath());
+	}
+	if (paths.isEmpty()) {
+		m_sizes.clear();
+		return;
+	}
+	using Sizes = QHash<QString, qint64>;
+	auto* watcher = new QFutureWatcher<Sizes>(this);
+	connect(watcher, &QFutureWatcher<Sizes>::finished, this,
+			[this, watcher, run]() {
+				watcher->deleteLater();
+				if (run != m_sizeRun) {
+					return;
+				}
+				m_sizes = watcher->result();
+				if (!worlds.isEmpty()) {
+					emit dataChanged(index(0), index(int(worlds.size()) - 1),
+									 {SizeRole});
+				}
+			});
+	watcher->setFuture(QtConcurrent::run([paths]() {
+		Sizes sizes;
+		for (const QString& path : paths) {
+			sizes.insert(path, sizeOnDisk(path));
+		}
+		return sizes;
+	}));
 }
 
 void WorldList::directoryChanged(QString path)
@@ -142,6 +196,9 @@ QHash<int, QByteArray> WorldList::roleNames() const
 	roles.insert(LastPlayedRole, "lastPlayed");
 	roles.insert(IconFileRole, "iconFile");
 	roles.insert(DayCountRole, "dayCount");
+	roles.insert(HardcoreRole, "hardcore");
+	roles.insert(GameVersionRole, "gameVersion");
+	roles.insert(SizeRole, "size");
 	return roles;
 }
 
@@ -225,6 +282,19 @@ QVariant WorldList::data(const QModelIndex& index, int role) const
 		}
 		case DayCountRole: {
 			return dayCountData(world);
+		}
+		case HardcoreRole: {
+			return world.hardcore();
+		}
+		case GameVersionRole: {
+			return world.gameVersion();
+		}
+		case SizeRole: {
+			const auto size =
+				m_sizes.constFind(world.container().absoluteFilePath());
+			return size == m_sizes.constEnd()
+					   ? QVariant()
+					   : QVariant::fromValue<qlonglong>(*size);
 		}
 		default:
 			return QVariant();

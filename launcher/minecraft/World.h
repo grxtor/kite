@@ -80,6 +80,17 @@ class World
 	{
 		return m_randomSeed;
 	}
+	// level.dat's "hardcore" flag; a hardcore world's GameType is Survival.
+	bool hardcore() const
+	{
+		return m_hardcore;
+	}
+	// The game version the world was last saved in ("1.21.4"), from
+	// level.dat's Version compound (1.9 on). Empty for older worlds.
+	QString gameVersion() const
+	{
+		return m_gameVersion;
+	}
 	bool isValid() const
 	{
 		return is_valid;
@@ -125,5 +136,7 @@ class World
 	int64_t m_randomSeed = 0;
 	std::optional<int64_t> m_dayCount;
 	GameType m_gameType;
+	bool m_hardcore = false;
+	QString m_gameVersion;
 	bool is_valid = false;
 };

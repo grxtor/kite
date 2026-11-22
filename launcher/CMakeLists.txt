@@ -228,6 +228,8 @@ set(NET_SOURCES
     net/NetAction.h
     net/NetJob.cpp
     net/NetJob.h
+    net/NetworkStatus.cpp
+    net/NetworkStatus.h
     net/JsonPost.cpp
     net/JsonPost.h
     net/PasteUpload.cpp
@@ -238,6 +240,11 @@ set(NET_SOURCES
 
 add_unit_test(FileSink
     SOURCES net/FileSink_test.cpp
+    LIBS Kite_logic
+    )
+
+add_unit_test(NetworkStatus
+    SOURCES net/NetworkStatus_test.cpp
     LIBS Kite_logic
     )
 
@@ -1252,6 +1259,11 @@ add_unit_test(InstanceFilterModel
     LIBS Kite_core
     )
 
+add_unit_test(ContentDrop
+    SOURCES models/ContentDrop_test.cpp
+    LIBS Kite_core
+    )
+
 add_unit_test(InstanceList
     SOURCES InstanceList_test.cpp
     LIBS Kite_core
@@ -1686,6 +1698,13 @@ add_unit_test(FriendChatPanelQml
     LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
     )
 qt_import_qml_plugins(FriendChatPanelQml_test)
+
+# The shell's own behaviour: page history, shortcuts, the offline notice, the account warning.
+add_unit_test(AppShellQml
+    SOURCES qml/AppShellQml_test.cpp
+    LIBS Kite_qml Kite_qmlplugin Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Gui
+    )
+qt_import_qml_plugins(AppShellQml_test)
 
 # Kite_logic, not the core: the built-in icons are compiled into Kite_logic.
 add_unit_test(InstanceIconProvider

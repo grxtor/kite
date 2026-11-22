@@ -20,6 +20,7 @@
 
 #include <QAbstractListModel>
 #include <QSignalSpy>
+#include <QStandardItemModel>
 #include <QTest>
 
 #include "models/InstanceFilterModel.h"
@@ -39,9 +40,12 @@ class FakeInstanceModel : public QAbstractListModel
 		QString group;
 		qint64 lastLaunch = 0;
 		qint64 totalTimePlayed = 0;
+		QString gameVersion;
+		/// Empty for vanilla, as InstanceList has it.
+		QString loader;
 	};
 
-	enum Roles { IdRole = Qt::UserRole + 1, NameRole, GroupRole, LastLaunchRole, TotalTimePlayedRole };
+	enum Roles { IdRole = Qt::UserRole + 1, NameRole, GroupRole, LastLaunchRole, TotalTimePlayedRole, GameVersionRole, LoaderRole };
 
 	explicit FakeInstanceModel(QList<Row> rows, QObject* parent = nullptr)
 		: QAbstractListModel(parent), m_rows(std::move(rows))
@@ -70,6 +74,10 @@ class FakeInstanceModel : public QAbstractListModel
 				return row.lastLaunch;
 			case TotalTimePlayedRole:
 				return row.totalTimePlayed;
+			case GameVersionRole:
+				return row.gameVersion;
+			case LoaderRole:
+				return row.loader;
 			default:
 				return QVariant();
 		}
@@ -83,6 +91,8 @@ class FakeInstanceModel : public QAbstractListModel
 			{ GroupRole, "group" },
 			{ LastLaunchRole, "lastLaunch" },
 			{ TotalTimePlayedRole, "totalTimePlayed" },
+			{ GameVersionRole, "gameVersion" },
+			{ LoaderRole, "loader" },
 		};
 	}
 
@@ -199,6 +209,96 @@ class InstanceFilterModelTest : public QObject
 	}
 
 	/// Empty group means "no filter"; a non-empty one keeps only that group.
+	/// The rows the search tests below look through.
+	static QList<FakeInstanceModel::Row> searchRows()
+	{
+		return {
+			{ "a", "Create Sky", "Modpacks", 0, 0, "1.21.1", "NeoForge" },
+			{ "b", "Fabulously Optimized", "Modpacks", 0, 0, "1.21.4", "Fabric" },
+			{ "c", "Building world", "Survival", 0, 0, "1.20.1", "Fabric" },
+			{ "d", "Snapshot", "", 0, 0, "1.21.4", "" },
+		};
+	}
+
+	static QStringList idsOf(const InstanceFilterModel& filter)
+	{
+		QStringList ids;
+		for (int row = 0; row < filter.rowCount(); ++row) {
+			ids.append(
+				filter.index(row, 0).data(FakeInstanceModel::IdRole).toString());
+		}
+		ids.sort();
+		return ids;
+	}
+
+	/// The search also looks at the group, the Minecraft version and the
+	/// loader, whatever the case.
+	void test_filterText_matchesGroupVersionAndLoader()
+	{
+		FakeInstanceModel source(searchRows());
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+
+		filter.setFilterText("fabric");
+		QCOMPARE(idsOf(filter), QStringList({ "b", "c" }));
+		filter.setFilterText("NEOFORGE");
+		QCOMPARE(idsOf(filter), QStringList({ "a" }));
+		filter.setFilterText("1.21");
+		QCOMPARE(idsOf(filter), QStringList({ "a", "b", "d" }));
+		filter.setFilterText("survival");
+		QCOMPARE(idsOf(filter), QStringList({ "c" }));
+		// Still the name.
+		filter.setFilterText("sky");
+		QCOMPARE(idsOf(filter), QStringList({ "a" }));
+	}
+
+	/// Every word must be found, each in any of the fields.
+	void test_filterText_wordsAreAnded()
+	{
+		FakeInstanceModel source(searchRows());
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+
+		filter.setFilterText("fabric 1.21");
+		QCOMPARE(idsOf(filter), QStringList({ "b" }));
+		filter.setFilterText("  1.21   modpacks ");
+		QCOMPARE(idsOf(filter), QStringList({ "a", "b" }));
+		filter.setFilterText("fabric neoforge");
+		QCOMPARE(filter.count(), 0);
+		// Only spaces is no search.
+		filter.setFilterText("   ");
+		QCOMPARE(filter.count(), 4);
+	}
+
+	/// An instance without a loader answers to "vanilla".
+	void test_filterText_vanillaMatchesInstancesWithoutLoader()
+	{
+		FakeInstanceModel source(searchRows());
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+
+		filter.setFilterText("vanilla");
+		QCOMPARE(idsOf(filter), QStringList({ "d" }));
+		filter.setFilterText("vanilla 1.20");
+		QCOMPARE(filter.count(), 0);
+	}
+
+	/// A source without version and loader roles is searched by name and group.
+	void test_filterText_withoutVersionRoles_usesNameAndGroup()
+	{
+		QStandardItemModel source;
+		auto* item = new QStandardItem("Fabric pack");
+		item->setData("Mine", Qt::UserRole);
+		source.appendRow(item);
+		InstanceFilterModel filter;
+		filter.setSourceModel(&source);
+
+		filter.setFilterText("fabric mine");
+		QCOMPARE(filter.count(), 1);
+		filter.setFilterText("vanilla");
+		QCOMPARE(filter.count(), 0);
+	}
+
 	void test_group_emptyMeansAllGroups_otherwiseOnlyThatGroup()
 	{
 		FakeInstanceModel source({

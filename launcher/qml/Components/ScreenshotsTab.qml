@@ -8,9 +8,9 @@ import QtQuick.Layouts
 import Kite.Theme
 
 /*
- * The instance's screenshots as a grid of thumbnails, newest first. Ticking a
- * hovered tile selects it; once anything is selected, clicking a tile toggles
- * it. Upload goes to Imgur (a link, or an album for several) and is left out
+ * The instance's screenshots as a grid of thumbnails, newest first. Clicking a
+ * tile opens it large (ScreenshotViewer). Ticking a hovered tile selects it;
+ * once anything is selected, clicking a tile toggles it. Upload goes to Imgur (a link, or an album for several) and is left out
  * of builds without an Imgur client id.
  */
 Item {
@@ -53,10 +53,13 @@ Item {
     // Set by the Upload actions, so only this tab reacts to the result.
     property alias uploading: linkToast.pending
 
-    // For the "review=<name>" dev route: everything selected, or the first picture's rename.
+    // For the "review=<name>" dev route: everything selected, the second picture in the viewer, or the first
+    // picture's rename.
     function review(name) {
         if (name === "shotselect") {
             root.selectAll()
+        } else if (name === "shotview" && root.model && root.model.count > 0) {
+            viewer.show(Math.min(1, root.model.count - 1))
         } else if (name === "shotrename" && root.model && root.model.count > 0) {
             const path = root.model.pathAt(0)
             renamePrompt.path = path
@@ -197,7 +200,7 @@ Item {
         id: linkToast
         uploader: root.uploader
         clipboardItem: clipboard
-        toastItem: toast
+        toastItem: root.toast
         manyText: qsTr("Album link copied to your clipboard.")
     }
 
@@ -359,7 +362,7 @@ Item {
                             if (root.selectedCount > 0)
                                 root.toggleSelected(cell.path)
                             else
-                                Qt.openUrlExternally(cell.url)
+                                viewer.show(cell.index)
                         }
                     }
 
@@ -398,6 +401,11 @@ Item {
                     id: tileMenu
                     MenuItem {
                         text: qsTr("Open")
+                        icon.source: Icons.url("image")
+                        onTriggered: viewer.show(cell.index)
+                    }
+                    MenuItem {
+                        text: qsTr("Open in another app")
                         icon.source: Icons.url("external-link")
                         onTriggered: Qt.openUrlExternally(cell.url)
                     }
@@ -513,7 +521,14 @@ Item {
 
     ClipboardText { id: clipboard }
 
-    Toast { id: toast }
+    // While the viewer is open it covers this tab, so it says what happened itself.
+    Toast { id: tabToast }
+    readonly property var toast: viewer.opened ? viewer.toast : tabToast
+
+    ScreenshotViewer {
+        id: viewer
+        owner: root
+    }
 
     EmptyState {
         anchors.centerIn: parent

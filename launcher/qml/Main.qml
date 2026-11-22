@@ -39,6 +39,7 @@ ApplicationWindow {
         onNewInstanceRequested: (mode) => root.openNewInstance(mode)
         onNavigateRequested: (target) => root.navigate(target)
         onCheckForUpdatesRequested: root.call("checkForUpdates")
+        onShortcutsRequested: root.dialog(shortcutsLoader).open()
     }
 
     property string selectedId: ""
@@ -60,6 +61,13 @@ ApplicationWindow {
         target: LauncherStore
         property: "iconRevision"
         value: root.shellValue("iconRevision", 0)
+    }
+    // The app's one "is there a network" flag (NetworkStatus): the offline notice and the server strip read it.
+    readonly property var network: root.shellValue("network")
+    Binding {
+        target: LauncherStore
+        property: "online"
+        value: !root.network || root.network.online !== false
     }
 
     Component.onCompleted: {
@@ -211,6 +219,10 @@ ApplicationWindow {
                 Qt.callLater(homePage.openInstanceMenu, value)
             else if (key === "groupmenu")
                 Qt.callLater(homePage.openGroupMenu, value)
+            // The library on Home: libgroup=<group> picks that filter chip ("-" the ungrouped one),
+            // libsearch=<words> searches, libview=list|grid, libfocus=<n> gives card n the keyboard focus.
+            else if (key.startsWith("lib"))
+                Qt.callLater(homePage.reviewLibrary, key, value)
             else if (key === "duplicate")
                 Qt.callLater(homePage.duplicateInstance, value)
             // share=<id>: "Share as code" for that instance.
@@ -255,6 +267,14 @@ ApplicationWindow {
             // updates=idle|pending|pendingGame|managed: Settings > Updates with a stand-in updater.
             else if (key === "updates")
                 root.call("debugUpdateState", value)
+            // shortcuts: the keyboard shortcuts sheet. network=offline|online: as if the connection dropped.
+            // accountstate=expired|errored|gone[,<state of the other accounts>]: accounts that cannot play online.
+            else if (key === "shortcuts")
+                root.dialog(shortcutsLoader).open()
+            else if (key === "network")
+                root.network.debugSetReachability(value)
+            else if (key === "accountstate")
+                root.accountsController.debugSetStates(value)
             // sidebar=collapsed is the rail, anything else the labelled sidebar. Both are saved.
             else if (key === "sidebar")
                 SettingsStore.setValue("UiSidebarCollapsed", value === "collapsed")
@@ -568,7 +588,7 @@ ApplicationWindow {
     // First-run setup covers the window: the shortcuts and the menu bar wait.
     readonly property bool onboarding: !!onboardingLoader.item && onboardingLoader.item.active === true
     Shortcut {
-        sequences: [StandardKey.Find]
+        sequences: KeyMap.keys("find")
         enabled: root.page !== "instance" && !root.onboarding
         onActivated: {
             if (root.page === "home") {
@@ -669,9 +689,20 @@ ApplicationWindow {
     }
 
     Shortcut {
-        sequences: [StandardKey.New]
+        sequences: KeyMap.keys("new")
         enabled: !root.onboarding
         onActivated: root.openNewInstance()
+    }
+
+    // Where the window is, as a navigate() path; NavHistory keeps the pages visited for Back and Forward.
+    readonly property string route: root.page === "instance"
+            ? "instance/" + root.openedInstanceId + (instancePage ? "/" + instancePage.tab : "")
+            : root.page === "settings" && settingsPage ? "settings/" + settingsPage.section
+            : root.page === "friends" && friendsPage ? "friends/" + friendsPage.tab : root.page
+    NavHistory {
+        id: history
+        route: root.route
+        go: root.navigate
     }
 
     ContentDropFlow {
@@ -679,6 +710,16 @@ ApplicationWindow {
         onNotify: (text, tone) => toast.show(text, tone)
         onImportRequested: (source) => root.openImport(source)
     }
+    // A drop on a page that is no instance's: import, or add to an instance it asks for.
+    LooseDropFlow {
+        id: looseDrop
+        shell: root.shell
+        contentFlow: dropFlow
+        onNotify: (text, tone) => toast.show(text, tone)
+        onImportRequested: (source) => root.openImport(source)
+    }
+    // The library or sidebar tile a file drag is over (InstanceDropTarget): it takes the drop, not the page.
+    property Item dropTile: null
 
     function dropUrls(urls) {
         const list = []
@@ -693,8 +734,8 @@ ApplicationWindow {
     }
 
     // Files and links dropped on the window. On an instance's page they are added to it by what they are (mods,
-    // packs, worlds; ContentDrop); anywhere else a zip, .mrpack or link opens import. Declared first, so
-    // NewInstanceDialog's and the library's drop areas above it keep their drops.
+    // packs, worlds; ContentDrop); anywhere else LooseDropFlow imports a modpack or asks which instance takes the
+    // files. Declared first, so NewInstanceDialog's and the library's drop areas above it keep their drops.
     DropArea {
         id: windowDrop
         anchors.fill: parent
@@ -705,13 +746,18 @@ ApplicationWindow {
         // What the drag in progress holds, for the overlay (ContentDrop.preview()).
         property var rows: []
         property string unknown: ""
+        // What the overlay says off an instance's page (LooseDropFlow.read()); "" for its own "Drop to add".
+        property string title: ""
+        property string iconName: "download"
         // Dev route "dragover": the overlay stays up without a real drag.
         property bool previewing: false
 
         function show(paths) {
-            const found = windowDrop.onInstance ? root.openedDetails.drop.preview(paths) : ({ rows: [], unknown: "" })
+            const found = windowDrop.onInstance ? root.openedDetails.drop.preview(paths) : looseDrop.read(paths)
             windowDrop.rows = found.rows
             windowDrop.unknown = found.unknown
+            windowDrop.title = found.title || ""
+            windowDrop.iconName = found.iconName || "download"
         }
         function preview(paths) {
             windowDrop.show(paths)
@@ -722,6 +768,8 @@ ApplicationWindow {
             windowDrop.previewing = false
             if (windowDrop.onInstance)
                 dropFlow.handle(root.openedDetails.drop, paths, instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
+            else
+                looseDrop.drop(paths)
         }
 
         onEntered: (drag) => windowDrop.show(drag.hasUrls ? root.dropUrls(drag.urls) : [])
@@ -734,7 +782,7 @@ ApplicationWindow {
                 dropFlow.handle(root.openedDetails.drop, urls,
                                 instanceLoader.item ? instanceLoader.item.needsLoaderFirst : null)
             else
-                root.openImport(urls[0])
+                looseDrop.drop(urls)
         }
     }
 
@@ -833,6 +881,7 @@ ApplicationWindow {
         accountAvatarSource: root.shellValue("accountFace", "")
         accountsController: root.accountsController
         onOpenAccountsRequested: root.page = "accounts"
+        onShortcutsRequested: root.dialog(shortcutsLoader).open()
     }
 
     // The open instance's name, read from the instance page model's row.
@@ -956,6 +1005,13 @@ ApplicationWindow {
             anchors.bottomMargin: panel.overhangBottom > 0 ? 0 : 1
             spacing: 0
 
+            OfflineNotice {
+                Layout.fillWidth: true
+                network: root.network
+                sideMargin: root.pageSideMargin
+                onStillOffline: toast.show(qsTr("Still no connection."))
+            }
+
             // Fades the old page out over `fast`, swaps StackLayout's currentIndex
             // at the invisible midpoint, then fades the new page in over `normal`
             // while it rises `shift` px into place over `slow`.
@@ -1065,6 +1121,16 @@ ApplicationWindow {
                         }
                         onCreateRequested: root.openNewInstance()
                         onDiscoverRequested: root.page = "discover"
+                        modpackModel: root.shellValue("modpackModel")
+                        modpackInstaller: function (projectId, versionId, name, group) {
+                            return root.shell.installModpack(projectId, versionId, name, group)
+                        }
+                        suggestionsEnabled: !root.onboarding
+                        onPackRequested: (pack) => {
+                            root.page = "discover"
+                            if (root.discoverPage)
+                                root.discoverPage.openModrinth(pack)
+                        }
                     }
 
                     PageSlot {
@@ -1381,13 +1447,40 @@ ApplicationWindow {
         }
     }
 
-    // Over the page while files are dragged across an instance's page.
+    // Over the page while files are dragged across it; gives way to a tile that takes the drop itself.
     DropOverlay {
         anchors.fill: panel
         radius: root.panelRadius
-        visible: (windowDrop.containsDrag || windowDrop.previewing) && windowDrop.onInstance
+        visible: (windowDrop.containsDrag && !root.dropTile) || windowDrop.previewing
         rows: windowDrop.rows
         unknown: windowDrop.unknown
+        heading: windowDrop.title
+        iconName: windowDrop.iconName
+    }
+
+    Loader {
+        id: shortcutsLoader
+        active: false
+        sourceComponent: ShortcutsDialog {}
+    }
+
+    // Keys and the mouse's back/forward buttons (KeyMap); Play is the play bar's own, and never Stop.
+    AppShortcuts {
+        anchors.fill: parent
+        active: !root.onboarding && !(root.uiHost && root.uiHost.busy)
+        settingsInMenu: root.nativeMenuBar
+        onTriggered: (action) => {
+            if (action === "back")
+                history.back()
+            else if (action === "forward")
+                history.forward()
+            else if (action === "help")
+                root.dialog(shortcutsLoader).open()
+            else if (action !== "play")
+                root.navigate(action)
+            else if (!playDock.dockRunning)
+                playDock.tryLaunch()
+        }
     }
 
     Toast {

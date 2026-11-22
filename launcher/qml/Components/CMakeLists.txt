@@ -9,7 +9,7 @@ qt_add_library(Kite_qml_components STATIC)
 # Must run before qt_add_qml_module, or these register as ordinary types and
 # every "import Kite.Components" gets its own private instance (see
 # Theme/CMakeLists.txt).
-set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml ExternalLinks.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(Icons.qml Format.qml SettingsStore.qml JavaStore.qml LauncherStore.qml ExternalLinks.qml KeyMap.qml AccountStates.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(Kite_qml_components
     URI Kite.Components
@@ -27,6 +27,9 @@ qt_add_qml_module(Kite_qml_components
         InstanceCard.qml
         InstanceListRow.qml
         InstanceSection.qml
+        InstanceDrag.qml
+        GroupMenu.qml
+        GroupDialogs.qml
         LinkButton.qml
         ExternalLinks.qml
         ExternalLinkDialog.qml
@@ -84,6 +87,13 @@ qt_add_qml_module(Kite_qml_components
         ModHealthDialog.qml
         ContentFilterPopup.qml
         NoticeBar.qml
+        OfflineNotice.qml
+        KeyMap.qml
+        KeyCap.qml
+        ShortcutsDialog.qml
+        AppShortcuts.qml
+        NavHistory.qml
+        AccountStates.qml
         ReviewRow.qml
         VersionRow.qml
         UpdateReviewDialog.qml
@@ -104,7 +114,9 @@ qt_add_qml_module(Kite_qml_components
         DropOverlay.qml
         InstanceDropTarget.qml
         ContentDropFlow.qml
+        LooseDropFlow.qml
         ScreenshotsTab.qml
+        ScreenshotViewer.qml
         LogTab.qml
         CrashCauseMenu.qml
         CrashCauseView.qml
@@ -149,6 +161,7 @@ qt_add_qml_module(Kite_qml_components
         GroupHeading.qml
         HomeWorldList.qml
         InstanceArt.qml
+        InstanceBanner.qml
         InstanceSurface.qml
         TapSequence.qml
         JavaInstallList.qml
@@ -221,6 +234,8 @@ qt_add_qml_module(Kite_qml_components
         HomeNews.qml
         GettingStartedCard.qml
         LibrarySections.qml
+        LibraryGroupChips.qml
+        LibraryKeys.qml
         InstanceMenu.qml
         HomeSidePanel.qml
         HomeFriends.qml
@@ -276,6 +291,8 @@ qt_add_qml_module(Kite_qml_components
         PanelNote.qml
         CopyName.qml
         HomeEmptyState.qml
+        PopularModpacks.qml
+        ModpackTile.qml
         HomeSectionTitle.qml
         HomeHero.qml
         HomeHeroFacts.qml
@@ -356,6 +373,7 @@ qt_add_qml_module(Kite_qml_components
         icons/hourglass.svg
         icons/image.svg
         icons/info.svg
+        icons/keyboard.svg
         icons/layers.svg
         icons/library.svg
         icons/list.svg

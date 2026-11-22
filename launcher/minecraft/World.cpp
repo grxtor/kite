@@ -453,6 +453,43 @@ namespace
 		return GameType(read_int(parent, name));
 	}
 
+	// A flag is a byte; absent in old worlds, which is not worth a warning.
+	bool read_flag(nbt::value& parent, const char* name)
+	{
+		try {
+			auto& namedValue = parent.at(name);
+			if (namedValue.get_type() != nbt::tag_type::Byte) {
+				return false;
+			}
+			return namedValue.as<nbt::tag_byte>().get() != 0;
+		} catch (const std::out_of_range&) {
+			return false;
+		} catch (const std::bad_cast&) {
+			return false;
+		}
+	}
+
+	// "Version" is a compound from 1.9 on ({Id, Name, Snapshot}); before
+	// that it is absent, and in the oldest formats an int.
+	QString read_version_name(nbt::value& parent)
+	{
+		try {
+			auto& version = parent.at("Version");
+			if (version.get_type() != nbt::tag_type::Compound) {
+				return QString();
+			}
+			auto& name = version.at("Name");
+			if (name.get_type() != nbt::tag_type::String) {
+				return QString();
+			}
+			return QString::fromStdString(name.as<nbt::tag_string>().get());
+		} catch (const std::out_of_range&) {
+			return QString();
+		} catch (const std::bad_cast&) {
+			return QString();
+		}
+	}
+
 	// One Minecraft day is 24000 ticks in every version so far.
 	const int64_t ticksPerDay = 24000;
 
@@ -594,6 +631,8 @@ void World::loadFromLevelDat(QByteArray data)
 		timestamp ? QDateTime::fromMSecsSinceEpoch(*timestamp) : levelDatTime;
 
 	m_gameType = read_gametype(val, "GameType");
+	m_hardcore = read_flag(val, "hardcore");
+	m_gameVersion = read_version_name(val);
 
 	m_dayCount = read_day_count(val);
 

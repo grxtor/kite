@@ -96,6 +96,7 @@ Item {
             otherlogs: ["log", logTab], logfind: ["log", logTab],
             crashdetails: ["log", logTab],
             shotselect: ["screenshots", shotsTab], shotrename: ["screenshots", shotsTab],
+            shotview: ["screenshots", shotsTab],
             browsepick: ["browse", browseView], modhealth: ["content", contentTab], bundles: ["content", contentTab], perfdialog: ["content", contentTab]
         }
         const owner = owners[name]
@@ -139,8 +140,11 @@ Item {
     // File name of the screenshot the instance's own cover was made from; "" when it has none.
     readonly property string coverSource: root.headerCard ? root.headerCard.coverSource : ""
     readonly property int headerIconSize: 64
+    // The header's height over a cover (InstanceBanner); without one it is as tall as its row.
+    readonly property int bannerHeight: 192
     readonly property int headerActionSize: Theme.control.heightLg
     property bool running: false
+    property bool launching: false
 
     readonly property var modsModel: details ? details.mods : null
     readonly property var worldsModel: details ? details.worlds : null
@@ -211,6 +215,11 @@ Item {
                 readonly property string iconKey: model.iconKey || ""
                 readonly property string group: model.group || ""
                 readonly property string coverSource: model.coverSource || ""
+                // Over the cover the words are light in both themes (Theme.media), as on Home's stage.
+                readonly property bool onCover: banner.shown
+                readonly property color ink: onCover ? Theme.media.text : Theme.palette.textPrimary
+                readonly property color inkSecondary: onCover ? Theme.media.textSecondary : Theme.palette.textSecondary
+                readonly property color inkFaint: onCover ? Theme.media.textFaint : Theme.palette.textTertiary
                 readonly property bool isRunning: !!model.isRunning
                 readonly property string launchStatus: model.launchStatus || ""
                 readonly property real launchProgress: model.launchProgress === undefined ? -1 : model.launchProgress
@@ -223,7 +232,7 @@ Item {
                 Layout.maximumWidth: Theme.layout.maxContentWidth
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: Theme.space.xs
-                implicitHeight: headerRow.implicitHeight
+                implicitHeight: onCover ? root.bannerHeight : headerRow.implicitHeight
                 visible: !root.browsing
                 Component.onDestruction: if (root.headerCard === headerCard) root.headerCard = null
 
@@ -243,6 +252,7 @@ Item {
                     root.running = isRunning
                 }
                 onIsRunningChanged: root.running = isRunning
+                onLaunchingChanged: root.launching = launching
 
                 component MetaItem: Row {
                     property string iconName
@@ -252,21 +262,32 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: parent.iconName
                         size: Theme.icon.sm
-                        color: Theme.palette.textTertiary
+                        color: headerCard.inkFaint
                     }
                     Copy {
                         anchors.verticalCenter: parent.verticalCenter
                         text: parent.text
                         role: "label"
-                        tone: "secondary"
+                        color: headerCard.inkSecondary
                         font.weight: Font.Medium
                     }
+                }
+
+                InstanceBanner {
+                    id: banner
+                    anchors.fill: parent
+                    source: headerCard.model.coverImage || ""
+                    kind: headerCard.model.coverKind || ""
                 }
 
                 RowLayout {
                     id: headerRow
                     anchors.left: parent.left
                     anchors.right: parent.right
+                    anchors.leftMargin: headerCard.onCover ? Theme.space.xl : 0
+                    anchors.rightMargin: headerCard.onCover ? Theme.space.xl : 0
+                    // Over a cover the row sits on the banner's lower edge, clear of its fade into the page.
+                    y: headerCard.onCover ? headerCard.height - banner.fadeHeight - height : 0
                     spacing: Theme.space.lg
 
                     HomeHeroTile {
@@ -291,6 +312,7 @@ Item {
                             text: headerCard.name
                             elide: Text.ElideRight
                             role: "display"
+                            color: headerCard.ink
                         }
 
                         Flow {
@@ -332,7 +354,7 @@ Item {
                                       : headerCard.launchStatus
                                 elide: Text.ElideRight
                                 role: "label"
-                                tone: "secondary"
+                                color: headerCard.inkSecondary
                             }
                             LaunchProgressBar {
                                 Layout.fillWidth: true
@@ -345,13 +367,21 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: Theme.space.sm
 
-                        // While the launch prepares, as on Home and the play bar.
+                        // While the launch prepares, as on Home and the play bar. Over a cover the outlined
+                        // controls stand on a plate of the page's colour, which their ink is made for.
                         Button {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: headerCard.launching
                             buttonSize: "lg"
                             text: qsTr("Cancel")
                             onClicked: root.stopRequested(root.instanceId)
+                            Rectangle {
+                                anchors.fill: parent
+                                z: -1
+                                visible: headerCard.onCover
+                                radius: Theme.radius.sm
+                                color: Theme.palette.canvas
+                            }
                         }
                         PlayButton {
                             round: false
@@ -369,6 +399,13 @@ Item {
                             tip: qsTr("More")
                             Accessible.role: Accessible.ButtonMenu
                             onClicked: instanceMenu.visible ? instanceMenu.close() : headerCard.openMenu()
+                            Rectangle {
+                                anchors.fill: parent
+                                z: -1
+                                visible: headerCard.onCover
+                                radius: Theme.radius.sm
+                                color: Theme.palette.canvas
+                            }
                         }
                     }
                 }
@@ -430,6 +467,8 @@ Item {
             WorldsTab {
                 id: worldsTab
                 details: root.details
+                running: root.running || root.launching
+                onPlayRequested: (folderName) => { if (root.shell) root.shell.joinWorld(root.instanceId, folderName) }
                 onOpenFolderRequested: (path) => root.openPathRequested(path)
                 onDataPacksRequested: (row) => {
                     root.pendingDataPackWorld = row

@@ -6,10 +6,10 @@ import QtQuick.Controls
 import Kite.Theme
 
 /*
- * The library's instances: every group as a collapsible section, the instance
- * ⋯ menu, the group dialogs and the Export/Create shortcut flows. No scrolling
- * of its own (Home's page scrolls it); its height is its content's. Without
- * `sectionModelFor`, `instanceModel` is one section without a header.
+ * The library's instances: one grid of them all under the groups as filter chips (LibraryGroupChips), or, with
+ * "Group by: Group", every group as a collapsible section; the instance ⋯ menu, the group dialogs and the
+ * Export/Create shortcut flows. No scrolling of its own (Home's page scrolls it); its height is its content's.
+ * Arrow keys move between the cards (LibraryKeys).
  */
 Item {
     id: root
@@ -61,6 +61,13 @@ Item {
                                     && !(root.instanceModel && root.instanceModel.grouped === false)
     readonly property var groups: root.instanceModel && root.instanceModel.groups ? root.instanceModel.groups : []
 
+    // The one grid's filter: "all" or "g:<group>" (LibraryGroupChips). Back to "all" when its group is gone,
+    // deleted or with nothing left that answers the search.
+    property string groupFilter: chips.allKey
+    readonly property bool filtered: !root.grouped && chips.named.length > 0 && root.groupFilter !== chips.allKey
+    onGroupsChanged: if (root.groupFilter !== chips.allKey && root.groups.indexOf(chips.groupOf(root.groupFilter)) < 0)
+                         root.groupFilter = chips.allKey
+
     // An instance is being dragged to another group: the host's view holds still and scrolls near
     // its top or bottom edge.
     property bool dragging: false
@@ -105,8 +112,17 @@ Item {
         var info = root.library ? root.library.describe(id) : ({})
         flows.duplicateInstance(id, info.name || id, info.group || "", info.iconKey || "")
     }
+    // Review snapshots (Main.qml's "libgroup=<name>", "libfocus=<n>"): a filter chip, a card's keyboard focus.
+    function review(key, value) {
+        if (key === "libgroup")
+            root.groupFilter = chips.groupPrefix + (value === "-" ? "" : value)
+        else if (key === "libfocus")
+            keys.focusCard(keys.sectionList()[0], parseInt(value))
+    }
     // A group's ⋯ menu, for review snapshots (Main.qml's "groupmenu=<name>").
     function openGroupMenu(group) {
+        if (!root.grouped)
+            chips.openMenu(chips.groupPrefix + group, chips)
         for (var i = 0; i < sections.count; ++i) {
             var section = sections.itemAt(i)
             if (section && section.group === group && section.manageable)
@@ -151,16 +167,9 @@ Item {
                 onToggleRequested: root.setCollapsed(modelData, root.collapsedGroups.indexOf(modelData) < 0)
                 manageable: !!root.library && modelData.length > 0
                 dragEnabled: !!root.library && root.groups.length > 1
-                onRenameGroupRequested: (group) => {
-                    groupRenameDialog.group = group
-                    groupRenameDialog.value = group
-                    groupRenameDialog.open()
-                }
-                onDeleteGroupRequested: (group) => {
-                    groupDeleteDialog.group = group
-                    groupDeleteDialog.text = qsTr("Delete the group “%1”? Its instances stay in your library, without a group.").arg(group)
-                    groupDeleteDialog.open()
-                }
+                navigator: keys.navigate
+                onRenameGroupRequested: (group) => groupDialogs.askRename(group)
+                onDeleteGroupRequested: (group) => groupDialogs.askDelete(group)
                 onInstanceDropped: (id, group) => root.library.moveToGroup(id, group)
                 onDragActiveChanged: (active) => root.dragging = active
                 onDragMoved: (sceneY) => root.dragSceneY = sceneY
@@ -172,21 +181,60 @@ Item {
             }
         }
 
-        InstanceSection {
+        // One grid of every instance, the groups a filter over it.
+        Column {
             visible: !root.grouped
             width: sectionsColumn.width
-            showHeader: false
-            model: root.grouped ? null : root.instanceModel
-            columns: root.columns
-            cardWidth: root.cardWidth
-            gutter: root.gutter
-            selectedId: root.selectedId
-            viewMode: root.viewMode
-            onSelectRequested: (id) => root.selectRequested(id)
-            onOpenRequested: (id) => root.editRequested(id)
-            onLaunchRequested: (id) => root.launchRequested(id)
-            onStopRequested: (id) => root.stopRequested(id)
-            onMenuRequested: (id, running, name, iconKey, group, anchor) => instanceMenu.openFor(id, running, name, iconKey, group, anchor)
+            spacing: Theme.space.lg
+
+            LibraryGroupChips {
+                id: chips
+                width: parent.width
+                // Not `visible`: the chips decide that themselves.
+                instanceModel: root.grouped ? null : root.instanceModel
+                sectionModelFor: root.sectionModelFor
+                current: root.groupFilter
+                manageable: !!root.library
+                onActivated: (key) => root.groupFilter = key
+                onRenameRequested: (group) => groupDialogs.askRename(group)
+                onDeleteRequested: (group) => groupDialogs.askDelete(group)
+            }
+
+            InstanceSection {
+                id: allSection
+                width: parent.width
+                showHeader: false
+                model: root.grouped ? null
+                     : root.filtered ? root.sectionModelFor(chips.groupOf(root.groupFilter)) : root.instanceModel
+                navigator: keys.navigate
+                columns: root.columns
+                cardWidth: root.cardWidth
+                gutter: root.gutter
+                selectedId: root.selectedId
+                viewMode: root.viewMode
+                onSelectRequested: (id) => root.selectRequested(id)
+                onOpenRequested: (id) => root.editRequested(id)
+                onLaunchRequested: (id) => root.launchRequested(id)
+                onStopRequested: (id) => root.stopRequested(id)
+                // This section has no group of its own: the menu is told each instance's.
+                onMenuRequested: (id, running, name, iconKey, group, anchor) =>
+                    instanceMenu.openFor(id, running, name, iconKey,
+                                         root.library ? (root.library.describe(id).group || "") : "", anchor)
+            }
+        }
+    }
+
+    LibraryKeys {
+        id: keys
+        flickable: root.flickable
+        columns: root.viewMode === "list" ? 1 : root.columns
+        sectionList: () => {
+            var list = []
+            for (var i = 0; root.grouped && i < sections.count; ++i) {
+                if (!sections.itemAt(i).collapsed)
+                    list.push(sections.itemAt(i))
+            }
+            return root.grouped ? list : [allSection]
         }
     }
 
@@ -233,25 +281,13 @@ Item {
         }
     }
 
-    PromptDialog {
-        id: groupRenameDialog
-        property string group
-        title: qsTr("Rename group")
-        confirmText: qsTr("Rename")
-        onSubmitted: (text) => {
-            if (root.library)
-                root.library.renameGroup(group, text)
-            close()
+    GroupDialogs {
+        id: groupDialogs
+        library: root.library
+        // The renamed group stays the one shown.
+        onRenamed: (from, to) => {
+            if (root.groupFilter === chips.groupPrefix + from && root.groups.indexOf(to) >= 0)
+                root.groupFilter = chips.groupPrefix + to
         }
-    }
-
-    ConfirmDialog {
-        id: groupDeleteDialog
-        property string group
-        title: qsTr("Delete group")
-        confirmText: qsTr("Delete group")
-        // Nothing is lost: the instances stay, ungrouped.
-        danger: false
-        onConfirmed: if (root.library) root.library.deleteGroup(group)
     }
 }

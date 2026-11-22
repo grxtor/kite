@@ -78,6 +78,7 @@ Rectangle {
     signal recentPlayRequested(string id)
     signal newInstanceRequested()
     signal openAccountsRequested()
+    signal shortcutsRequested()
     signal widthCommitted(int width)
 
     function openProfileMenu() { accountButton.openMenu() }
@@ -361,7 +362,9 @@ Rectangle {
             kind: root.accountKind
             avatarSource: root.accountAvatarSource
             controller: root.accountsController
+            surround: root.surround
             onOpenAccountsRequested: root.openAccountsRequested()
+            onShortcutsRequested: root.shortcutsRequested()
         }
     }
 

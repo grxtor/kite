@@ -529,6 +529,24 @@ void InstanceDetails::refreshWorlds()
 	}
 }
 
+QString InstanceDetails::worldQuickPlayFor(const QSet<QString>& traits)
+{
+	if (traits.contains(QStringLiteral("feature:is_quick_play_singleplayer"))) {
+		return QStringLiteral("supported");
+	}
+	/* MinecraftInstance::traits() says this while there is no profile. */
+	if (traits.contains(QStringLiteral("version-incomplete"))) {
+		return QStringLiteral("unknown");
+	}
+	return QStringLiteral("unsupported");
+}
+
+QString InstanceDetails::worldQuickPlay() const
+{
+	return m_mc ? worldQuickPlayFor(m_mc->traits())
+				: QStringLiteral("unsupported");
+}
+
 bool InstanceDetails::mceditConfigured() const
 {
 	auto* launcher = LauncherContext::instance();

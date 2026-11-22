@@ -31,6 +31,9 @@ Item {
     property string packArt: ""
 
     property bool selected: false
+    // The focus came from a click, not the keyboard: the focus ring then leaves a selected one alone. Kept while
+    // the card's menu has the focus; the next key press ends it (InstanceSection).
+    property bool pointerFocus: false
 
     signal clicked()
     signal openRequested()
@@ -76,8 +79,9 @@ Item {
         selected: root.selected
         focused: root.activeFocus
         // A click opens the instance's page; only Play launches. Space and the right click select.
-        onClicked: { root.forceActiveFocus(); root.openRequested() }
-        onContextRequested: { root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
+        keyboard: root.activeFocus && !root.pointerFocus
+        onClicked: { root.pointerFocus = true; root.forceActiveFocus(); root.openRequested() }
+        onContextRequested: { root.pointerFocus = true; root.forceActiveFocus(); root.clicked(); root.menuRequested(null) }
 
         RowLayout {
             anchors.fill: parent

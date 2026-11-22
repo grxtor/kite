@@ -25,4 +25,6 @@ QtObject {
     property int iconRevision: 0
     // QmlShell, for iconFillsTile(key) -- see Icons.fillsTile().
     property var icons: null
+    // False only while the machine is known to have no network connection (NetworkStatus); Main.qml binds it.
+    property bool online: true
 }

@@ -1003,7 +1003,8 @@ void Application::initSettings()
 	m_settings->registerSetting("BackgroundCat", QString("kitteh"));
 
 	m_settings->registerSetting("InstSortMode", "Name");
-	m_settings->registerSetting("InstGrouped", true);
+	// Off: the library is one grid, its groups a filter over it.
+	m_settings->registerSetting("InstGrouped", false);
 
 	m_settings->registerSetting("PasteEEAPIKey", "kite");
 	// Crash reports to Kite's server (crashdoctor/CrashFollowUp): asked every
@@ -2076,6 +2077,14 @@ bool Application::ensureQmlShell()
 					launch(inst, LaunchMode::Normal,
 						   std::make_shared<MinecraftServerTarget>(
 							   MinecraftServerTarget::parse(address, false)));
+				}
+			});
+	connect(m_qmlShell.get(), &QmlShell::joinWorldRequested, this,
+			[this](const QString& id, const QString& folderName) {
+				if (auto inst = instances()->getInstanceById(id)) {
+					launch(inst, LaunchMode::Normal,
+						   std::make_shared<MinecraftServerTarget>(
+							   MinecraftServerTarget::parse(folderName, true)));
 				}
 			});
 	connect(m_qmlShell.get(), &QmlShell::folderRequested, this,

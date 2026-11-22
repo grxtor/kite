@@ -82,6 +82,17 @@ AccountsController::AccountsController(shared_qobject_ptr<AccountList> accounts,
 			&AccountsController::defaultChanged);
 	connect(m_accounts.get(), &AccountList::defaultAccountChanged, this,
 			&AccountsController::defaultChanged);
+	/* The default account's state: which account it is, or that account's
+	 * sign-in starting or ending (AccountList reports a row's state through
+	 * dataChanged and listChanged). */
+	for (auto changed : { &AccountList::listChanged,
+						  &AccountList::defaultAccountChanged,
+						  &AccountList::listActivityChanged }) {
+		connect(m_accounts.get(), changed, this,
+				&AccountsController::defaultStateChanged);
+	}
+	connect(m_accounts.get(), &AccountList::dataChanged, this,
+			&AccountsController::defaultStateChanged);
 	// A skinless account is drawn in the default skin once it arrives; the page refetches.
 	connect(DefaultSkins::instance(), &DefaultSkins::loaded, this, [this] {
 		++m_defaultSkinsRevision;
@@ -101,6 +112,32 @@ QString AccountsController::defaultAccountId() const
 		return QString();
 	}
 	return account->accountId();
+}
+
+int AccountsController::defaultRow() const
+{
+	auto account = m_accounts->defaultAccount();
+	for (int row = 0; account && row < m_accounts->count(); ++row) {
+		if (m_accounts->at(row) == account) {
+			return row;
+		}
+	}
+	return -1;
+}
+
+QString AccountsController::defaultStateKey() const
+{
+	const int row = defaultRow();
+	return row < 0 ? QString()
+				   : m_accounts->data(m_accounts->index(row),
+									  AccountList::StateKeyRole)
+						 .toString();
+}
+
+QString AccountsController::defaultError() const
+{
+	auto account = m_accounts->defaultAccount();
+	return account ? account->lastError() : QString();
 }
 
 int AccountsController::defaultSkinsRevision() const
@@ -139,6 +176,41 @@ void AccountsController::refresh(int row)
 		return;
 	}
 	m_accounts->requestRefresh(account->internalId());
+}
+
+void AccountsController::refreshDefault()
+{
+	refresh(defaultRow());
+}
+
+void AccountsController::debugSetStates(const QString& spec)
+{
+	if (qEnvironmentVariableIsEmpty("KITE_QML_ROUTE")) {
+		return;
+	}
+	const QStringList wanted = spec.split(QLatin1Char(','));
+	const int chosen = defaultRow();
+	for (int row = 0; row < m_accounts->count(); ++row) {
+		const QString key = wanted.value(row == chosen ? 0 : 1);
+		AccountData* data = m_accounts->at(row)->accountData();
+		if (key == QLatin1String("expired")) {
+			data->accountState = AccountState::Expired;
+			data->errorString = QStringLiteral(
+				"Failed to authenticate. The session has expired.");
+		} else if (key == QLatin1String("errored")) {
+			data->accountState = AccountState::Errored;
+			data->errorString = QStringLiteral(
+				"Xbox Live did not answer (XSTS: 503 Service Unavailable).");
+		} else if (key == QLatin1String("gone")) {
+			data->accountState = AccountState::Gone;
+			data->errorString = QStringLiteral(
+				"Failed to authenticate. The account no longer exists.");
+		} else {
+			continue;
+		}
+		const QModelIndex index = m_accounts->index(row);
+		emit m_accounts->dataChanged(index, index);
+	}
 }
 
 bool AccountsController::addOffline(const QString& username)

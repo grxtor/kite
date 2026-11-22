@@ -24,6 +24,7 @@
 #include <QList>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QVariantList>
@@ -77,6 +78,14 @@ class ContentUpdateList : public QAbstractListModel
 
 	Q_INVOKABLE void setChecked(int row, bool checked);
 	Q_INVOKABLE void setAllChecked(bool checked);
+	/// The version the file with @p key (ContentFilterModel's key role) can be
+	/// updated to, as a person reads it; empty when the last check found none.
+	Q_INVOKABLE QString newVersionFor(const QString& key) const;
+	/// Ticks the update of the file with @p key and unticks the rest, for a
+	/// row's own "Update". False (nothing changes) when it has no update.
+	Q_INVOKABLE bool checkOnly(const QString& key);
+	/// Drops the updates of files no longer among @p keys (removed since the check).
+	void keepOnly(const QSet<QString>& keys);
 
 	/// Version page on Modrinth, project page on CurseForge (no stable per-file address).
 	static QString changelogUrl(const ModUpdateCheckTask::UpdateInfo& update);
@@ -107,7 +116,11 @@ class ContentUpdateController : public QObject
 {
 	Q_OBJECT
 
+	/// What the last check found, kept until it is applied or checked again,
+	/// so the list can mark the files that have an update.
 	Q_PROPERTY(QObject* updates READ updates CONSTANT)
+	/// The kind ("mods", ...) `updates` is about; empty before the first check.
+	Q_PROPERTY(QString updatesKind READ updatesKind NOTIFY updatesKindChanged)
 	Q_PROPERTY(bool checking READ checking NOTIFY checkingChanged)
 	/// Why the last call refused to start or found nothing; cleared by the next call that starts.
 	Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
@@ -128,6 +141,10 @@ class ContentUpdateController : public QObject
 	~ContentUpdateController() override;
 
 	QObject* updates() const;
+	QString updatesKind() const
+	{
+		return m_updatesKind;
+	}
 	bool checking() const
 	{
 		return !m_check.isNull();
@@ -217,6 +234,7 @@ class ContentUpdateController : public QObject
 
   signals:
 	void checkingChanged();
+	void updatesKindChanged();
 	void lastErrorChanged();
 	void versionsChanged();
 

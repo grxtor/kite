@@ -70,6 +70,7 @@ Item {
             required property string stateKey
             required property string status
             required property string accountId
+            required property string lastError
             readonly property bool isHero: index === root.heroIndex
             onIsHeroChanged: claimHero()
             function claimHero() {
@@ -105,6 +106,9 @@ Item {
     readonly property string heroAccountId: heroItem ? heroItem.accountId : ""
     readonly property string heroStatus: heroItem ? heroItem.status : ""
     readonly property string heroStateKey: heroItem ? heroItem.stateKey : ""
+    // Expired, errored or gone: the hero says why and offers "Sign in again" in the open.
+    readonly property bool heroAttention: AccountStates.needsAttention(root.heroStateKey)
+    readonly property string heroReason: heroItem && root.heroAttention ? heroItem.lastError : ""
     readonly property int heroRow: heroItem ? heroItem.index : -1
     property bool skin3DAvailable: false
     // accountSkinInfo() of the hero row; re-read with imageRevision.
@@ -273,10 +277,22 @@ Item {
                                         }
                                         AccountStateBadge {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            visible: root.heroIsMSA && root.heroStatus.length > 0
+                                            visible: (root.heroIsMSA || root.heroAttention) && root.heroStatus.length > 0
                                             stateKey: root.heroStateKey
                                             text: root.heroStatus
                                         }
+                                    }
+
+                                    Copy {
+                                        Layout.fillWidth: true
+                                        visible: root.heroAttention
+                                        text: root.heroReason.length > 0 ? root.heroReason
+                                                                         : AccountStates.summary(root.heroStateKey)
+                                        role: "label"
+                                        tone: "tertiary"
+                                        wrapMode: Text.Wrap
+                                        maximumLineCount: 2
+                                        elide: Text.ElideRight
                                     }
 
                                     Copy {
@@ -297,6 +313,12 @@ Item {
                                             variant: "primary"
                                             text: qsTr("Use this account")
                                             onClicked: root.controller.setDefault(root.heroRow)
+                                        }
+                                        Button {
+                                            visible: root.heroAttention
+                                            text: qsTr("Sign in again")
+                                            icon.source: Icons.url("refresh")
+                                            onClicked: root.controller.refresh(root.heroRow)
                                         }
                                         Button {
                                             // Skins and capes belong to a Microsoft account.

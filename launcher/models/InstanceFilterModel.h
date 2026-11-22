@@ -26,7 +26,8 @@
 #include <QStringList>
 
 /*
- * The Library's proxy model: grouped, locale-sorted groups, natural-sort names
+ * The Library's proxy model: searched by name, group, Minecraft version and
+ * loader (every word of the search must be in one of them), grouped, locale-sorted groups, natural-sort names
  * within a group, and the "InstSortMode" last-launch override. "Time played" is
  * a third value ("TotalTimePlayed") on that setting. QtCore/QtGui only: iconKey is forwarded as the plain string
  * InstanceList exposes. The name, group, last-launch and total-time-played
@@ -108,8 +109,14 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	/// Recomputes groups and firstId, emitting only what actually moved.
 	void refreshDerived();
 
+	/// Whether @p index answers every word of the search (name, group,
+	/// Minecraft version or loader; "vanilla" for an instance without one).
+	bool matchesSearch(const QModelIndex& index) const;
+
 	QCollator m_naturalSort;
 	QString m_filterText;
+	/// m_filterText split at whitespace; a row must answer all of them.
+	QStringList m_filterWords;
 	QString m_group;
 	bool m_exactGroup = false;
 	QString m_instanceId;
@@ -127,4 +134,7 @@ class InstanceFilterModel : public QSortFilterProxyModel
 	int m_idRole = -1;
 	/// -1 when the source has no such role; "Time played" then falls back to name sorting.
 	int m_totalTimePlayedRole = -1;
+	/// -1 when the source has no such role; the search then skips it.
+	int m_gameVersionRole = -1;
+	int m_loaderRole = -1;
 };

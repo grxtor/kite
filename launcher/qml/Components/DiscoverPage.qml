@@ -86,6 +86,12 @@ Item {
             root.active.loadDetail(pack.projectId)
     }
 
+    // A Modrinth pack picked outside this page (Home's popular packs).
+    function openModrinth(pack) {
+        root.setProvider("modrinth")
+        root.open(pack)
+    }
+
     DiscoverQuickInstall {
         id: quickInstall
         model: root.active

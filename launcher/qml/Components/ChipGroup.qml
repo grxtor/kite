@@ -10,7 +10,8 @@ import Kite.Theme
  * A row of filter chips, one of them on (a category). Each chip is its own outline, so it never reads as a
  * segmented switch; the selected one's outline and label turn textPrimary. `tabs: true` draws the same choice as
  * text tabs over one hairline with the selected tab underlined in the accent, for a kind picker (Mods / Resource
- * packs / Shader packs) that switches what a whole list shows.
+ * packs / Shader packs) that switches what a whole list shows. An option with a `count` shows it after the label
+ * as a dimmer number; a right click or the Menu key on a chip asks for its menu (contextRequested).
  */
 Row {
     id: root
@@ -19,6 +20,8 @@ Row {
     property var current
     property bool tabs: false
     signal activated(var value)
+    // A chip's own menu was asked for; nothing happens unless the host opens one at @p chip.
+    signal contextRequested(var value, Item chip)
 
     spacing: root.tabs ? 0 : Theme.space.sm
 
@@ -57,14 +60,21 @@ Row {
 
             anchors.verticalCenter: parent ? parent.verticalCenter : undefined
             implicitHeight: root.tabs ? Theme.control.height : Theme.control.heightSm
-            implicitWidth: Math.ceil(label.implicitWidth) + Theme.space.md * 2
+            implicitWidth: Math.ceil(labelRow.implicitWidth) + Theme.space.md * 2
             hoverEnabled: true
             // Mirrors `selected` for accessibility only; clicking must not
             // toggle it, which would drop the binding.
             checked: selected
             Accessible.role: Accessible.RadioButton
-            Accessible.name: modelData.label
+            readonly property bool counted: modelData.count !== undefined
+            Accessible.name: chip.counted ? modelData.label + ", " + modelData.count : modelData.label
             onClicked: if (!selected) root.activated(modelData.value)
+            Keys.onMenuPressed: root.contextRequested(modelData.value, chip)
+
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: root.contextRequested(chip.modelData.value, chip)
+            }
 
             background: Rectangle {
                 radius: root.tabs ? Theme.radius.sm : Theme.radius.indicator
@@ -91,17 +101,29 @@ Row {
                 }
             }
 
-            contentItem: Copy {
-                id: label
-                text: chip.modelData.label
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                role: "label"
-                color: chip.selected ? Theme.palette.textPrimary
-                     : root.tabs ? (chip.hovered ? Theme.palette.textSecondary : Theme.palette.textTertiary)
-                     : chip.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
-                font.weight: chip.selected ? Font.DemiBold : Font.Medium
-                Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+            contentItem: Item {
+                Row {
+                    id: labelRow
+                    anchors.centerIn: parent
+                    spacing: Theme.space.xs + Theme.space.xxs
+
+                    Copy {
+                        text: chip.modelData.label
+                        role: "label"
+                        color: chip.selected ? Theme.palette.textPrimary
+                             : root.tabs ? (chip.hovered ? Theme.palette.textSecondary : Theme.palette.textTertiary)
+                             : chip.hovered ? Theme.palette.textPrimary : Theme.palette.textSecondary
+                        font.weight: chip.selected ? Font.DemiBold : Font.Medium
+                        Behavior on color { ColorAnimation { duration: Theme.motion.fast; easing.type: Theme.motion.easing } }
+                    }
+                    Copy {
+                        visible: chip.counted
+                        text: chip.counted ? String(chip.modelData.count) : ""
+                        role: "label"
+                        tone: "tertiary"
+                        font.features: ({ "tnum": 1 })
+                    }
+                }
             }
         }
     }

@@ -9,7 +9,8 @@ import Kite.Theme
 
 /*
  * One account in the Accounts page's "other accounts" list: face, name, kind and state, and the actions --
- * "Use this account" and the rest behind ⋯. The page hides the row shown in its hero (`hidden`).
+ * "Use this account" and the rest behind ⋯. An account that cannot play online (AccountStates) also says why
+ * under its name and has "Sign in again" on the row. The page hides the row shown in its hero (`hidden`).
  */
 Item {
     id: root
@@ -22,6 +23,7 @@ Item {
     required property string stateKey
     required property string status
     required property string accountId
+    required property string lastError
 
     property bool hidden: false
     // Space under the card, counted in the row's own height: a ListView spaces even a collapsed delegate, so
@@ -37,7 +39,9 @@ Item {
 
     readonly property string shownName: profileName.length > 0 ? profileName : name
     readonly property int faceSize: 48
-    readonly property int rowHeight: 80
+    readonly property bool attention: AccountStates.needsAttention(root.stateKey)
+    readonly property string reason: root.attention ? root.lastError : ""
+    readonly property int rowHeight: root.reason.length > 0 ? 96 : 80
     readonly property bool hovered: !root.hidden && hoverHandler.hovered
 
     implicitHeight: root.hidden ? 0 : root.rowHeight + root.gap
@@ -88,13 +92,28 @@ Item {
                     }
                     AccountStateBadge {
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: root.isMSA && root.status.length > 0
+                        visible: (root.isMSA || root.attention) && root.status.length > 0
                         stateKey: root.stateKey
                         text: root.status
                     }
                 }
+
+                Copy {
+                    width: parent.width
+                    visible: root.reason.length > 0
+                    text: root.reason
+                    role: "caption"
+                    tone: "tertiary"
+                    elide: Text.ElideRight
+                }
             }
 
+            Button {
+                visible: root.attention
+                text: qsTr("Sign in again")
+                icon.source: Icons.url("refresh")
+                onClicked: root.refreshRequested()
+            }
             Button {
                 visible: !root.isDefault
                 variant: "ghost"

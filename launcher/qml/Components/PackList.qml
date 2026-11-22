@@ -52,6 +52,12 @@ Item {
     readonly property int detailsIndent: rowPadding + checkSize + Theme.space.md + thumbSize + Theme.space.md
 
     property bool updatable: false
+    // ContentUpdateList: what the last "Check for updates" found for this kind, or null. A row with an update
+    // shows the new version and an Update button; every row then keeps room for the button.
+    property var updates: null
+    readonly property int updateCount: updates ? updates.count : 0
+    readonly property int updateSlotWidth: updateCount > 0 ? updateMeasure.implicitWidth + Theme.space.md : 0
+    signal updateRequested(string key)
 
     signal openFolderRequested(string path)
     signal changeVersionRequested(string key)
@@ -181,7 +187,7 @@ Item {
                     font.weight: Font.DemiBold
                 }
                 Copy {
-                    Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth
+                    Layout.preferredWidth: root.actionsWidth + root.healthSlotWidth + root.updateSlotWidth
                     horizontalAlignment: Text.AlignRight
                     text: qsTr("Actions")
                     role: "label"
@@ -237,6 +243,7 @@ Item {
 
     StatusBadge { id: problemMeasure; visible: false; text: qsTr("Problem") }
     StatusBadge { id: warningMeasure; visible: false; text: qsTr("Warning") }
+    Button { id: updateMeasure; visible: false; buttonSize: "sm"; text: qsTr("Update") }
 
     // A search that matches nothing (ContentTab shows its own empty state for an empty folder).
     EmptyState {

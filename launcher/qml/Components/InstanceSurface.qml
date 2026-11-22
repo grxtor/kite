@@ -15,8 +15,10 @@ StateFill {
     id: root
 
     property bool selected: false
-    // The host has keyboard focus; the ring stays off while it is selected.
+    // The host has the focus; after a click the ring stays off while it is selected.
     property bool focused: false
+    // The focus was moved here with the keyboard (Tab, arrows): the ring shows on a selected one too.
+    property bool keyboard: false
 
     signal clicked()
     signal contextRequested()
@@ -50,5 +52,5 @@ StateFill {
     }
 
     // Outset so it never competes with the selected state.
-    FocusFrame { z: 1; visible: root.focused && !root.selected }
+    FocusFrame { z: 1; visible: root.focused && (!root.selected || root.keyboard) }
 }

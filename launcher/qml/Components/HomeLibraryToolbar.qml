@@ -8,8 +8,8 @@ import Kite.Theme
 
 /*
  * The Library section's toolbar on Home: a wide search, sort, grid or list, and New instance. The search field
- * gives up its width first. The sort button names the current order and opens a menu with "Group instances" (the
- * InstGrouped setting, handed by QmlShell to the library proxy).
+ * gives up its width first. The sort button names the current order and opens a menu with "Group by" (None or
+ * Group: the InstGrouped setting, handed by QmlShell to the library proxy).
  */
 RowLayout {
     id: root
@@ -83,13 +83,28 @@ RowLayout {
 
         MenuSeparator {}
 
-        MenuItem {
-            text: qsTr("Group instances")
-            checkable: true
-            checked: root.grouped
-            onToggled: SettingsStore.setValue("InstGrouped", checked)
+        // The InstGrouped setting: off is one grid with the groups as a filter over it, on a section per group.
+        Menu {
+            title: qsTr("Group by")
+
+            MenuItem {
+                text: qsTr("None")
+                checkable: true
+                checked: !root.grouped
+                ButtonGroup.group: groupByGroup
+                onTriggered: SettingsStore.setValue("InstGrouped", false)
+            }
+            MenuItem {
+                text: qsTr("Group")
+                checkable: true
+                checked: root.grouped
+                ButtonGroup.group: groupByGroup
+                onTriggered: SettingsStore.setValue("InstGrouped", true)
+            }
         }
     }
+
+    ButtonGroup { id: groupByGroup }
 
     ViewModeToggle {
         current: root.viewMode

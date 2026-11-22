@@ -21,7 +21,11 @@ Item {
     // The page's own corner, so the scrim ends where the page does.
     property int radius: Theme.radius.xl
 
-    readonly property string title: qsTr("Drop to add")
+    // What the drop will do when that is not "Drop to add" (a page that is no instance's: LooseDropFlow).
+    property string heading: ""
+    readonly property string title: root.heading.length > 0 ? root.heading : qsTr("Drop to add")
+    // The glyph over the title.
+    property string iconName: "download"
     readonly property int cardWidth: 340
     readonly property int outlineInset: Theme.space.md
     readonly property int dashLength: 6
@@ -77,7 +81,7 @@ Item {
 
             MeshIcon {
                 Layout.alignment: Qt.AlignHCenter
-                iconName: "download"
+                iconName: root.iconName
                 size: Theme.icon.xl
                 color: Theme.palette.accentText
             }

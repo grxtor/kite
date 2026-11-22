@@ -56,7 +56,10 @@ class AccountList : public QAbstractListModel
 		IsDefaultRole,
 		IsMSARole,
 		StateKeyRole,
-		AccountIdRole
+		AccountIdRole,
+		// Why the last sign-in or refresh failed (the account's own words),
+		// empty when it did not.
+		LastErrorRole
 	};
 
 	enum VListColumns {

@@ -56,6 +56,24 @@ class InstanceLogBridgeTest : public QObject
 	Q_OBJECT
 
   private slots:
+	void test_WorldQuickPlayFollowsTheVersionTraits()
+	{
+		QCOMPARE(InstanceDetails::worldQuickPlayFor(
+					 {QStringLiteral("feature:is_quick_play_singleplayer"),
+					  QStringLiteral("feature:is_quick_play_multiplayer")}),
+				 QStringLiteral("supported"));
+		/* 1.19.4 and older: servers can be joined, worlds cannot. */
+		QCOMPARE(InstanceDetails::worldQuickPlayFor(
+					 {QStringLiteral("FirstThreadOnMacOS")}),
+				 QStringLiteral("unsupported"));
+		QCOMPARE(InstanceDetails::worldQuickPlayFor({}),
+				 QStringLiteral("unsupported"));
+		/* No profile yet: MinecraftInstance::traits() says so. */
+		QCOMPARE(InstanceDetails::worldQuickPlayFor(
+					 {QStringLiteral("version-incomplete")}),
+				 QStringLiteral("unknown"));
+	}
+
 	void test_NoLaunchTask_ModelIsNullAndHasLogIsFalse()
 	{
 		InstanceFixture fixture;

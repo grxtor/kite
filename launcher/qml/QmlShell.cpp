@@ -83,6 +83,7 @@
 #include "friends/ShareCodesController.h"
 #include "servers/FeaturedServers.h"
 #include "servers/ServerPinger.h"
+#include "net/NetworkStatus.h"
 #include "modbridge/ModBridge.h"
 #include "settings/Setting.h"
 #include "models/RecentWorldsModel.h"
@@ -530,6 +531,18 @@ bool QmlShell::joinServer(const QString& id, const QString& address)
 	const bool starts = instance && instance->canLaunch();
 	watchPerformance(id);
 	emit joinServerRequested(id, address);
+	return starts;
+}
+
+bool QmlShell::joinWorld(const QString& id, const QString& folderName)
+{
+	if (folderName.isEmpty()) {
+		return false;
+	}
+	auto instance = LAUNCHER->instances()->getInstanceById(id);
+	const bool starts = instance && instance->canLaunch();
+	watchPerformance(id);
+	emit joinWorldRequested(id, folderName);
 	return starts;
 }
 
@@ -1484,6 +1497,14 @@ QObject* QmlShell::serverPinger() const
 	return expose(m_serverPinger.get());
 }
 
+QObject* QmlShell::network() const
+{
+	if (!m_network) {
+		m_network = std::make_unique<NetworkStatus>();
+	}
+	return expose(m_network.get());
+}
+
 QObject* QmlShell::featuredServers() const
 {
 	if (!m_featuredServers) {
@@ -1526,6 +1547,25 @@ QObject* QmlShell::contentDrop(const QString& id)
 				 .first;
 	}
 	return expose(it->second.get());
+}
+
+QVariantMap QmlShell::sortDrop(const QStringList& urls) const
+{
+	return ContentDrop::sort(urls);
+}
+
+QVariantList QmlShell::dropTargets() const
+{
+	const auto all = minecraftInstances();
+	const QList<JoinChoice> choices = choicesOf(all);
+	QList<int> order;
+	for (int i = 0; i < choices.size(); ++i) {
+		order.append(i);
+	}
+	std::stable_sort(order.begin(), order.end(), [&choices](int a, int b) {
+		return playedBefore(choices.at(a), choices.at(b));
+	});
+	return joinCandidates(picked(all, order));
 }
 
 QObject* QmlShell::shortcutController(const QString& id)

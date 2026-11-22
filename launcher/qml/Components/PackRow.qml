@@ -30,6 +30,14 @@ Item {
     readonly property string homepage: model.homepage || ""
     readonly property string source: model.source || ""
     readonly property bool selected: owner.isSelected(key)
+    // The version the last update check found for this file; empty when it found none.
+    readonly property string newVersion: {
+        const found = owner.updates
+        if (!found)
+            return ""
+        found.count
+        return found.newVersionFor(row.key)
+    }
     readonly property bool expanded: owner.expandedKey === key
     // The last row draws no hairline under itself: the card's border ends it.
     property bool lastRow: false
@@ -177,6 +185,7 @@ Item {
                     width: parent.width
                     visible: text.length > 0
                     text: owner.showVersionColumn ? (row.summary.length > 0 ? row.summary : row.source)
+                          : row.version && row.newVersion.length > 0 ? qsTr("%1 → %2").arg(row.version).arg(row.newVersion)
                           : (row.version ? String(row.version) : row.byline)
                     elide: Text.ElideRight
                     role: "label"
@@ -190,12 +199,27 @@ Item {
                 Layout.maximumWidth: owner.versionColumnWidth
                 spacing: Theme.space.xxs
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
-                Copy {
+                Row {
                     width: parent.width
-                    visible: text.length > 0
-                    text: row.version ? String(row.version) : ""
-                    elide: Text.ElideRight
-                    font.weight: Font.Medium
+                    // As tall as the version alone: the badge is taller and must not push the file name down.
+                    height: versionText.implicitHeight
+                    spacing: Theme.space.sm
+                    Copy {
+                        id: versionText
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, parent.width - (updateBadge.visible ? updateBadge.width + parent.spacing : 0))
+                        visible: text.length > 0
+                        text: row.version ? String(row.version) : ""
+                        elide: Text.ElideRight
+                        font.weight: Font.Medium
+                    }
+                    StatusBadge {
+                        id: updateBadge
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: row.newVersion.length > 0
+                        tone: "success"
+                        text: qsTr("→ %1").arg(row.newVersion)
+                    }
                 }
                 Copy {
                     width: parent.width
@@ -223,6 +247,22 @@ Item {
                     ToolTip.visible: badgeHover.hovered
                     ToolTip.delay: 400
                     ToolTip.text: row.problems.join("\n")
+                }
+            }
+
+            HoverReason {
+                visible: owner.updateSlotWidth > 0
+                reason: owner.unlocked ? "" : owner.lockedReason
+                Layout.preferredWidth: owner.updateSlotWidth - Theme.space.md
+                Layout.alignment: Qt.AlignVCenter
+                Button {
+                    anchors.right: parent.right
+                    visible: row.newVersion.length > 0
+                    enabled: owner.unlocked
+                    buttonSize: "sm"
+                    text: qsTr("Update")
+                    Accessible.name: qsTr("Update %1").arg(row.name)
+                    onClicked: owner.updateRequested(row.key)
                 }
             }
 

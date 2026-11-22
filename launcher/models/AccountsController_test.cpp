@@ -65,6 +65,63 @@ class AccountsControllerTest : public QObject
 				 QByteArray("stateKey"));
 		QCOMPARE(roles.value(AccountList::AccountIdRole),
 				 QByteArray("accountId"));
+		QCOMPARE(roles.value(AccountList::LastErrorRole),
+				 QByteArray("lastError"));
+	}
+
+	/* A failed sign-in leaves its state and its reason on the account; the
+	 * row shows both. */
+	void test_data_lastError_isTheAccountsOwnReason()
+	{
+		AccountList list;
+		auto msa = MinecraftAccount::createBlankMSA();
+		list.addAccount(msa);
+		const QModelIndex idx = list.index(0);
+		QVERIFY(list.data(idx, AccountList::LastErrorRole).toString().isEmpty());
+
+		msa->accountData()->accountState = AccountState::Expired;
+		msa->accountData()->errorString = QStringLiteral("Token expired.");
+		QCOMPARE(list.data(idx, AccountList::StateKeyRole).toString(),
+				 QStringLiteral("expired"));
+		QCOMPARE(list.data(idx, AccountList::LastErrorRole).toString(),
+				 QStringLiteral("Token expired."));
+	}
+
+	/* The profile button reads the default account's state from the
+	 * controller, whichever row it is. */
+	void test_defaultState_followsTheDefaultAccount()
+	{
+		shared_qobject_ptr<AccountList> list(new AccountList);
+		AccountsController controller(list);
+		QVERIFY(controller.defaultStateKey().isEmpty());
+		QVERIFY(controller.defaultError().isEmpty());
+
+		auto offline = MinecraftAccount::createOffline("Steve");
+		auto msa = MinecraftAccount::createBlankMSA();
+		list->addAccount(offline);
+		list->addAccount(msa);
+		msa->accountData()->accountState = AccountState::Gone;
+		msa->accountData()->errorString = QStringLiteral("No such account.");
+
+		QSignalSpy spy(&controller, &AccountsController::defaultStateChanged);
+		list->setDefaultAccount(offline);
+		QVERIFY(spy.count() > 0);
+		QCOMPARE(controller.defaultStateKey(), QStringLiteral("online"));
+		QVERIFY(controller.defaultError().isEmpty());
+
+		spy.clear();
+		list->setDefaultAccount(msa);
+		QVERIFY(spy.count() > 0);
+		QCOMPARE(controller.defaultStateKey(), QStringLiteral("gone"));
+		QCOMPARE(controller.defaultError(), QStringLiteral("No such account."));
+
+		// A row reporting a change (a sign-in ending) is re-read too.
+		spy.clear();
+		msa->accountData()->accountState = AccountState::Online;
+		msa->accountData()->errorString.clear();
+		emit list->dataChanged(list->index(1), list->index(1));
+		QCOMPARE(spy.count(), 1);
+		QCOMPARE(controller.defaultStateKey(), QStringLiteral("online"));
 	}
 
 	void test_data_isMSA_and_accountId_distinguishAccountTypes()

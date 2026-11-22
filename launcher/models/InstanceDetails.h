@@ -23,6 +23,7 @@
 
 #include <QModelIndex>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <memory>
 
@@ -189,6 +190,11 @@ class InstanceDetails : public QObject
 	/// game has run: that is when the manifest is fetched.
 	Q_INVOKABLE QString kiteModSupport() const;
 	Q_INVOKABLE bool mceditConfigured() const;
+	/// Whether a launch can open a world directly (--quickPlaySingleplayer,
+	/// 1.20 on): "supported", "unsupported", or "unknown" while the version's
+	/// files are not read yet.
+	Q_INVOKABLE QString worldQuickPlay() const;
+	static QString worldQuickPlayFor(const QSet<QString>& traits);
 	/// Empty on success, otherwise a message for the user.
 	Q_INVOKABLE QString openWorldInMCEdit(int row);
 

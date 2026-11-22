@@ -33,6 +33,7 @@
 
 
 #include "flows/MSA.h"
+#include "net/NetworkStatus.h"
 
 MinecraftAccount::MinecraftAccount(QObject* parent) : QObject(parent)
 {
@@ -215,12 +216,8 @@ bool MinecraftAccount::shouldFetchGameFiles(
 
 QNetworkInformation::Reachability MinecraftAccount::networkReachability()
 {
-	// Loaded once; with no backend the answer is "unknown", treated as "try".
-	static const bool loaded = QNetworkInformation::loadDefaultBackend();
-	if (!loaded || !QNetworkInformation::instance()) {
-		return QNetworkInformation::Reachability::Unknown;
-	}
-	return QNetworkInformation::instance()->reachability();
+	// With no backend the answer is "unknown", treated as "try".
+	return NetworkStatus::systemReachability();
 }
 
 void MinecraftAccount::fillSession(AuthSessionPtr session)

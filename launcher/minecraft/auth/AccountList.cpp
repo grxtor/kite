@@ -434,6 +434,8 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
 			return accountStateKey(account->accountState());
 		case AccountIdRole:
 			return account->accountId();
+		case LastErrorRole:
+			return account->lastError();
 
 		default:
 			return QVariant();
@@ -451,6 +453,7 @@ QHash<int, QByteArray> AccountList::roleNames() const
 	roles.insert(IsMSARole, "isMSA");
 	roles.insert(StateKeyRole, "stateKey");
 	roles.insert(AccountIdRole, "accountId");
+	roles.insert(LastErrorRole, "lastError");
 	return roles;
 }
 

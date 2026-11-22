@@ -76,6 +76,10 @@ Item {
     readonly property bool updatable: !!root.content && !!root.content.updater
                                       && root.content.updater.supportsUpdates(root.kind)
     readonly property int count: root.listModel ? root.listModel.totalCount : 0
+    // What the last update check found for the kind on show (ContentUpdateList), kept until it is applied.
+    readonly property var knownUpdates: root.updatable && root.content.updater.updatesKind === root.kind
+                                        ? root.content.updater.updates : null
+    readonly property int updateCount: root.knownUpdates ? root.knownUpdates.count : 0
 
     function showKind(kind) {
         if (root.kinds.some((k) => k.value === kind))
@@ -266,12 +270,15 @@ Item {
             rowSpacing: Theme.space.md
             columns: oneRow ? 2 : 1
 
-            readonly property int searchMinWidth: 200
+            // Narrow enough that the Mods toolbar, with its Kite Performance bolt, stays one row at a 1000 px window.
+            readonly property int searchMinWidth: 152
             readonly property bool showKinds: root.kinds.length > 1
             readonly property int kindsWidth: showKinds ? kindChips.implicitWidth + columnSpacing : 0
             readonly property int gap: Theme.space.sm
             readonly property int updatesIconWidth: root.updatable ? Theme.control.height + gap : 0
-            readonly property int actionsWidth: Theme.control.height + moreButton.implicitWidth
+            readonly property bool showSpeedUp: root.kind === "mods" && root.speedUpOffered
+            readonly property int speedUpWidth: showSpeedUp ? Theme.control.height + gap : 0
+            readonly property int actionsWidth: speedUpWidth + Theme.control.height + moreButton.implicitWidth
                                                 + addButton.implicitWidth + gap * 3
             // Measured against the tab's own width, which the toolbar's contents never feed back into.
             readonly property bool oneRow: root.width >= kindsWidth + searchMinWidth + updatesIconWidth + actionsWidth
@@ -309,8 +316,29 @@ Item {
                         icon.source: Icons.url("refresh")
                         ToolTip.visible: hovered && display === AbstractButton.IconOnly
                         ToolTip.delay: 400
-                        ToolTip.text: text
+                        ToolTip.text: root.updateCount === 1 ? qsTr("1 update found. Check again")
+                                      : root.updateCount > 1 ? qsTr("%1 updates found. Check again").arg(root.updateCount)
+                                      : text
                         onClicked: root.withLoader(() => flows.checkUpdates([]))
+
+                        CountPill {
+                            x: parent.width - width + Theme.space.xs
+                            y: -Theme.space.xs
+                            count: root.updateCount
+                            tone: "success"
+                        }
+                    }
+                }
+
+                // Kite Performance, Mods only: a bolt, green while the mode is on.
+                HoverReason {
+                    visible: toolbar.showSpeedUp
+                    reason: root.lockedReason
+                    SpeedUpButton {
+                        enabled: root.unlocked && !root.flowsBusy
+                        display: AbstractButton.IconOnly
+                        on: root.performance
+                        onClicked: root.speedUp()
                     }
                 }
 
@@ -335,15 +363,7 @@ Item {
 
                     Menu {
                         id: moreMenu
-                        // Kite Performance and the add-on bundles live here, so the toolbar keeps one
-                        // filled action.
-                        MenuEntry {
-                            visible: root.kind === "mods" && root.speedUpOffered
-                            enabled: root.unlocked && !root.flowsBusy
-                            text: root.performance ? qsTr("Kite Performance settings") : qsTr("Speed up")
-                            icon.source: Icons.url("zap")
-                            onTriggered: root.speedUp()
-                        }
+                        // The add-on bundles live here, so the toolbar keeps one filled action.
                         MenuEntry {
                             visible: root.kind === "mods"
                             enabled: root.unlocked && !root.flowsBusy
@@ -367,6 +387,13 @@ Item {
                             onTriggered: root.openFolderRequested(root.content ? root.content.configsDir : "")
                         }
                         MenuSeparator {}
+                        MenuEntry {
+                            visible: root.updateCount > 0
+                            enabled: root.unlocked && !root.flowsBusy
+                            text: qsTr("Update all (%1)").arg(root.updateCount)
+                            icon.source: Icons.url("download")
+                            onTriggered: flows.reviewUpdates("")
+                        }
                         MenuEntry {
                             visible: root.updatable
                             enabled: root.unlocked && root.count > 0 && !root.flowsBusy
@@ -466,6 +493,8 @@ Item {
             noun: root.current.noun
             onOpenFolderRequested: (path) => root.openFolderRequested(path)
             updatable: root.updatable
+            updates: root.knownUpdates
+            onUpdateRequested: (key) => flows.reviewUpdates(key)
             onChangeVersionRequested: (key) => root.withLoader(() => flows.changeVersion(key))
             onResetMetadataRequested: (key, name) => flows.resetMetadata([key], name)
             onRemoveRequested: (key, name) => root.askRemove([key], name)
