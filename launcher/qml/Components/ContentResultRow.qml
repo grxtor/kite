@@ -31,6 +31,8 @@ AbstractButton {
     readonly property bool justInstalled: !!download && download.succeeded
     readonly property bool failed: !!download && download.failed
     property bool lastRow: false
+    // The row below is hovered or picked: its lifted strip meets this row's edge, so the hairline goes.
+    property bool nextLifted: false
 
     readonly property int logoSize: 40
     readonly property int logoSourceSize: logoSize * 2
@@ -67,7 +69,7 @@ AbstractButton {
             anchors.rightMargin: Theme.space.md
             height: 1
             color: Theme.palette.divider
-            visible: !row.lastRow
+            visible: !row.lastRow && !row.hovered && !row.selected && !row.nextLifted
         }
         LaunchProgressBar {
             anchors.left: parent.left
@@ -142,10 +144,17 @@ AbstractButton {
             }
         }
 
-        StatusBadge {
+        // As tall as the Install button it replaces, so the trailing column keeps one line.
+        Item {
             visible: row.installed || row.justInstalled || row.failed
-            tone: row.failed ? "danger" : "success"
-            text: row.failed ? qsTr("Failed") : qsTr("Installed")
+            Layout.preferredWidth: stateBadge.implicitWidth
+            Layout.preferredHeight: Theme.control.heightSm
+            StatusBadge {
+                id: stateBadge
+                anchors.centerIn: parent
+                tone: row.failed ? "danger" : "success"
+                text: row.failed ? qsTr("Failed") : qsTr("Installed")
+            }
         }
         HoverReason {
             visible: !row.installed && !row.justInstalled

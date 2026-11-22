@@ -371,10 +371,20 @@ Item {
                         onAtYEndChanged: if (atYEnd && root.browser && root.browser.canFetchMore && !root.browser.searching)
                                              root.browser.fetchMore()
 
+                        // The row under the pointer, so its neighbour above can drop the hairline between them.
+                        property int hoveredRow: -1
+
                         ListEntrance { id: entrance; view: results }
                         delegate: ContentResultRow {
                             id: resultRow
                             owner: root
+                            onHoveredChanged: {
+                                if (hovered)
+                                    results.hoveredRow = index
+                                else if (results.hoveredRow === index)
+                                    results.hoveredRow = -1
+                            }
+                            nextLifted: results.hoveredRow === index + 1 || root.selectedRow === index + 1
                             width: ListView.view.width
                             lastRow: index === ListView.view.count - 1
                             RiseIn { target: resultRow; index: resultRow.index; gate: entrance }

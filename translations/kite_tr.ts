@@ -1810,6 +1810,11 @@ Ayrıntılar günlük dosyasında:
         <source>Install %1</source>
         <translation>%1 yükle</translation>
     </message>
+    <message>
+        <location line="+1"/>
+        <source>Install</source>
+        <translation>Yükle</translation>
+    </message>
 </context>
 <context>
     <name>ContentSelectionBar</name>
@@ -18024,6 +18029,14 @@ Lütfen hesabını şuna göre ayarla: %1.</translation>
     <message>
         <source>Delete</source>
         <translation>Sil</translation>
+    </message>
+</context>
+<context>
+    <name>TabListRow</name>
+    <message>
+        <location filename="../launcher/qml/Components/TabListRow.qml" line="+1"/>
+        <source>Join</source>
+        <translation>Katıl</translation>
     </message>
 </context>
 </TS>
