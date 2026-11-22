@@ -123,6 +123,12 @@ Item {
                 // Its own plate, without the style's focus halo: inside this clipping scroller the halo, which
                 // reaches past the field, was cut into coloured corners. The accent edge says it has focus. One
                 // line until there is more to say.
+                // One line sits in the middle of the field whatever the font: the padding takes exactly what the
+                // line leaves, so there is no slack for the text to drift in.
+                FontMetrics { id: fieldMetrics; font: field.font }
+                readonly property real linePad: Math.max(Theme.space.xs, (Theme.control.height - fieldMetrics.height) / 2)
+                topPadding: linePad
+                bottomPadding: linePad
                 background: Rectangle {
                     implicitHeight: Theme.control.height
                     implicitWidth: 0
