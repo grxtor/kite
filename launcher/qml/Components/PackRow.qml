@@ -203,7 +203,7 @@ Item {
                 Row {
                     width: parent.width
                     // A file with no version shows its file name alone, centred in the row.
-                    visible: versionText.visible || updateBadge.visible
+                    visible: versionText.text.length > 0 || updateBadge.shown
                     // As tall as the version alone: the badge is taller and must not push the file name down.
                     height: versionText.implicitHeight
                     spacing: Theme.space.sm

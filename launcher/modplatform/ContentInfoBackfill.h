@@ -68,6 +68,10 @@ namespace ContentInfo
 	/// for), or neither logo nor summary is known. Only Modrinth and
 	/// CurseForge entries.
 	bool needsInfo(const ModMetadataIndex::Entry& entry);
+	/// True the first time @p what is asked about this session, false after:
+	/// what a run could not get is not asked for again until the next launch.
+	/// GUI thread only.
+	bool firstAskThisSession(const QString& what);
 	/// Fills what @p entry lacks from the answers; what it has stays. True if
 	/// anything changed.
 	bool fill(ModMetadataIndex::Entry& entry,

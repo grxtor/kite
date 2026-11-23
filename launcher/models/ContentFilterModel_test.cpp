@@ -18,12 +18,15 @@
  * limitations under the License.
  */
 
+#include <QBuffer>
+#include <QImage>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 
 #include "MMCZip.h"
 #include "minecraft/mod/ModFolderModel.h"
+#include "minecraft/mod/ModIconCache.h"
 #include "minecraft/mod/ModMetadataIndex.h"
 #include "models/ContentFilterModel.h"
 #include "models/InstanceContentController.h"
@@ -40,6 +43,17 @@ namespace
 			return {};
 		}
 		return zip.close() ? path : QString();
+	}
+
+	QByteArray png(int size)
+	{
+		QImage image(size, size, QImage::Format_ARGB32);
+		image.fill(Qt::red);
+		QByteArray bytes;
+		QBuffer buffer(&bytes);
+		buffer.open(QIODevice::WriteOnly);
+		image.save(&buffer, "PNG");
+		return bytes;
 	}
 
 	QStringList names(const ContentFilterModel& model)
@@ -62,6 +76,13 @@ class ContentFilterModelTest : public QObject
 	Q_OBJECT
 
   private slots:
+	/* The logo cache is relative to the working directory, as in the app. */
+	void initTestCase()
+	{
+		QVERIFY(m_cwd.isValid());
+		QVERIFY(QDir::setCurrent(m_cwd.path()));
+	}
+
 	void init()
 	{
 		QVERIFY(m_dir.isValid());
@@ -278,7 +299,8 @@ class ContentFilterModelTest : public QObject
 				 QStringLiteral("r5.10"));
 		QCOMPARE(row.data(ContentFilterModel::DescriptionRole).toString(),
 				 QStringLiteral("Keeps the vanilla feel"));
-		QCOMPARE(row.data(ModFolderModel::IconUrlRole).toString(), entry.iconUrl);
+		/* Not downloaded yet: the glyph, never the remote URL. */
+		QCOMPARE(row.data(ModFolderModel::IconUrlRole).toString(), QString());
 		QCOMPARE(row.data(ContentFilterModel::FileNameRole).toString(),
 				 QStringLiteral("zz_pack.zip"));
 
@@ -298,6 +320,52 @@ class ContentFilterModelTest : public QObject
 				 QStringLiteral("Rendering engine"));
 		m_model->setFilterText("recorded");
 		QCOMPARE(m_model->count(), 0);
+	}
+
+	/* Own logo, else the platform's once on disk, else nothing; never https. */
+	void iconOrderOwnThenStoredThenEmpty()
+	{
+		const QString url = "https://cdn.modrinth.com/data/AANobbMI/icon.png";
+		const QString cacheDir = m_folder->iconCacheDir();
+		QCOMPARE(cacheDir, ModIconCache::directory());
+		QCOMPARE(ContentFilterModel::storedLogoUrl(url, cacheDir), QString());
+		QCOMPARE(ContentFilterModel::storedLogoUrl(QString(), cacheDir), QString());
+
+		ModMetadataIndex::Entry entry;
+		entry.fileName = "lithium.jar";
+		entry.platform = "modrinth";
+		entry.projectId = "gvQqBUqZ";
+		entry.iconUrl = url;
+		QVERIFY(m_folder->metadataIndex()->put(entry));
+		m_model->setFilterText("lithium");
+		const QModelIndex row = m_model->index(0, 0);
+		QCOMPARE(row.data(ModFolderModel::IconUrlRole).toString(), QString());
+
+		const QString key = ModIconCache::keyForUrl(url);
+		QVERIFY(ModIconCache::store(cacheDir, key, png(16)));
+		QCOMPARE(row.data(ModFolderModel::IconUrlRole).toString(),
+				 "image://modicon/" + key);
+
+		/* A jar with its own logo keeps it. */
+		const QString jar = QDir(m_dir.path()).filePath("iris.jar");
+		{
+			MMCZip::ZipWriter zip(jar);
+			QVERIFY(zip.open());
+			QVERIFY(zip.addFile("fabric.mod.json",
+								QByteArray(R"({"schemaVersion":1,"id":"iris",)"
+										   R"("name":"Iris","icon":"icon.png"})")));
+			QVERIFY(zip.addFile("icon.png", png(32)));
+			QVERIFY(zip.close());
+		}
+		entry.fileName = "iris.jar";
+		QVERIFY(m_folder->metadataIndex()->put(entry));
+		QSignalSpy finished(m_folder.get(), &ModFolderModel::updateFinished);
+		QVERIFY(m_folder->update());
+		QVERIFY(finished.wait(5000));
+		m_model->setFilterText("iris");
+		QTRY_COMPARE_WITH_TIMEOUT(
+			m_model->index(0, 0).data(ModFolderModel::IconUrlRole).toString(),
+			"image://modicon/" + ModIconCache::keyFor(QFileInfo(jar)), 5000);
 	}
 
 	void nameFallsBackToFileName()
@@ -357,6 +425,7 @@ class ContentFilterModelTest : public QObject
 			   seen.contains("Fabric API");
 	}
 
+	QTemporaryDir m_cwd;
 	QTemporaryDir m_dir;
 	std::shared_ptr<ModFolderModel> m_folder;
 	std::unique_ptr<ContentFilterModel> m_model;

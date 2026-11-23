@@ -27,6 +27,7 @@
 
 class Mod;
 class ModFolderModel;
+class QTimer;
 class ModMetadataIndex;
 
 /*
@@ -35,7 +36,10 @@ class ModMetadataIndex;
  * plus per-file details as roles. `name`, `version`, `description` and
  * `iconUrl` are what the archive declares, else what the platform told the
  * sidecar (a shader pack declares nothing), so the list, its search and its
- * order all use the name that is shown. Rows are addressed by `key`
+ * order all use the name that is shown. A platform logo is shown only from
+ * ModIconCache, never as a remote URL: missing ones are downloaded once
+ * (ContentLogoFetch) after the folder is read, a file is added or a sidecar
+ * gains a logo URL. Rows are addressed by `key`
  * (the file name without ".disabled", ModMetadataIndex::canonicalFileName()),
  * which survives sorting, searching and switching a file off and on. Holds a
  * shared_ptr to its folder model, so a model the instance has replaced (the
@@ -93,6 +97,9 @@ class ContentFilterModel : public QSortFilterProxyModel
 	/// folder model cannot see (the sidecar behind `source`/`homepage`/`name`).
 	void refreshRows(const QStringList& keys);
 
+	/// "image://modicon/<key>" if the logo at @p url is in @p cacheDir, else empty.
+	static QString storedLogoUrl(const QString& url, const QString& cacheDir);
+
 	/// ModMetadataIndex::canonicalFileName() of the mod's file.
 	static QString keyFor(const Mod& mod);
 	/// Platform page first, the address the file declares second. @p index may be null.
@@ -120,6 +127,14 @@ class ContentFilterModel : public QSortFilterProxyModel
 				  const QModelIndex& right) const override;
 
   private:
+	/// dataChanged for the rows with @p keys (all roles when @p roles is empty).
+	void announce(const QStringList& keys, const QList<int>& roles);
+	void scheduleLogoFetch();
+	void fetchLogos();
+
 	std::shared_ptr<ModFolderModel> m_folder;
 	QString m_filterText;
+	QTimer* m_logoTimer = nullptr;
+	/// To the folder model, for the logo scan; dropped with the folder.
+	QList<QMetaObject::Connection> m_folderConnections;
 };

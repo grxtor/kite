@@ -99,6 +99,11 @@ class Mod
 	{
 		return m_resolving;
 	}
+	/// The archive has been read: details() and iconKey() are final.
+	bool isResolved() const
+	{
+		return m_resolved;
+	}
 	int resolutionTicket()
 	{
 		return m_resolutionTicket;

@@ -14,9 +14,28 @@
  * limitations under the License.
  */
 
+#include <QBuffer>
+#include <QImage>
+#include <QImageWriter>
+#include <QTemporaryDir>
 #include <QTest>
 
+#include "minecraft/mod/ModIconCache.h"
 #include "modplatform/ContentInfoBackfill.h"
+
+namespace
+{
+	QByteArray encoded(const char* format, int size)
+	{
+		QImage image(size, size, QImage::Format_ARGB32);
+		image.fill(Qt::blue);
+		QByteArray bytes;
+		QBuffer buffer(&bytes);
+		buffer.open(QIODevice::WriteOnly);
+		image.save(&buffer, format);
+		return bytes;
+	}
+} // namespace
 
 /* The pure half of the backfill: reading the platforms' answers and deciding
  * what a sidecar lacks. No network. */
@@ -98,6 +117,44 @@ class ContentInfoBackfillTest : public QObject
 		local.platform = "local";
 		local.projectId = "x";
 		QVERIFY(!ContentInfo::needsInfo(local));
+	}
+
+	/* Where ContentLogoFetch puts a platform logo, and how the list finds it. */
+	void logoKeyIsTheUrlsSha1()
+	{
+		const QString url = "https://cdn.modrinth.com/data/HVnmMxH1/icon.webp";
+		const QString key = ModIconCache::keyForUrl(url);
+		QVERIFY(ModIconCache::isValidKey(key));
+		QCOMPARE(key, ModIconCache::keyForUrl(url));
+		QVERIFY(key != ModIconCache::keyForUrl(url + "?v=2"));
+		QCOMPARE(ModIconCache::keyForUrl("abc"),
+				 QStringLiteral("a9993e364706816aba3e25717850c26c9cd0d89d"));
+	}
+
+	void logoStoreAndLookUp()
+	{
+		QTemporaryDir dir;
+		const QString key = ModIconCache::keyForUrl("https://x/icon.png");
+		QVERIFY(!ModIconCache::contains(dir.path(), key));
+		QVERIFY(ModIconCache::store(dir.path(), key, encoded("PNG", 300)));
+		QVERIFY(ModIconCache::contains(dir.path(), key));
+		const QImage back(ModIconCache::pathFor(dir.path(), key));
+		/* Shrunk to the cache's largest edge. */
+		QCOMPARE(back.size(), QSize(ModIconCache::kMaxExtent, ModIconCache::kMaxExtent));
+		QVERIFY(!ModIconCache::store(dir.path(), key + "x", encoded("PNG", 8)));
+		QVERIFY(!ModIconCache::store(dir.path(), key, "<html>not an image</html>"));
+	}
+
+	/* Modrinth sends .webp logos. */
+	void logoStoreDecodesWebp()
+	{
+		if (!QImageWriter::supportedImageFormats().contains("webp")) {
+			QSKIP("Qt webp image plugin not available");
+		}
+		QTemporaryDir dir;
+		const QString key = ModIconCache::keyForUrl("https://x/icon.webp");
+		QVERIFY(ModIconCache::store(dir.path(), key, encoded("WEBP", 96)));
+		QCOMPARE(QImage(ModIconCache::pathFor(dir.path(), key)).size(), QSize(96, 96));
 	}
 
 	void fillKeepsWhatIsThere()

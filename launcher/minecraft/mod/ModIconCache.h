@@ -27,7 +27,8 @@
 /*
  * On-disk cache of the logos mods and packs declare (fabric.mod.json "icon",
  * mods.toml "logoFile", pack.png, ...), so a mod list need not reopen every jar
- * each time it draws.
+ * each time it draws. Also holds the platform's logo for a file that declares
+ * none (a shader pack), downloaded once (ContentLogoFetch, keyForUrl()).
  *
  * KEY. One key per file version: the SHA-1 of the file's absolute path (a
  * trailing ".disabled" dropped, so toggling reuses the entry) plus its
@@ -35,7 +36,8 @@
  * is lowercase hex, safe in an image:// URL; isValidKey() rejects anything else
  * so a key can never point outside directory().
  *
- * WRITES. store() runs on LocalModParseTask's worker thread. It decodes the
+ * WRITES. store() runs on LocalModParseTask's worker thread (or the GUI thread
+ * for a downloaded platform logo). It decodes the
  * logo, shrinks anything larger than kMaxExtent (keeping the aspect ratio;
  * smaller pixel art is kept) and saves PNG through QSaveFile, so a reader never
  * sees a half-written file. Entries for files that no longer exist are not
@@ -55,6 +57,10 @@ namespace ModIconCache
 	QString directory();
 
 	QString keyFor(const QFileInfo& file);
+	/// Key of a platform logo stored for files without one of their own: the
+	/// SHA-1 of its URL. Platforms put a new logo at a new URL, so a changed
+	/// logo gets a new key and an old entry is never shown for it.
+	QString keyForUrl(const QString& url);
 	bool isValidKey(const QString& key);
 	QString pathFor(const QString& cacheDir, const QString& key);
 

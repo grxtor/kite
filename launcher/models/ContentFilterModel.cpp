@@ -21,16 +21,30 @@
 #include "ContentFilterModel.h"
 
 #include <QSet>
+#include <QTimer>
 
 #include "minecraft/mod/ModFolderModel.h"
 #include "minecraft/mod/ModMetadataIndex.h"
-#include "modplatform/ContentApis.h"
+#include "modplatform/ContentLogoFetch.h"
+
+namespace
+{
+	/* Files are read one after another, each announcing itself; look for
+	 * missing logos once that settles, not per file. */
+	constexpr int kLogoScanDelayMs = 500;
+} // namespace
 
 ContentFilterModel::ContentFilterModel(QObject* parent)
 	: QSortFilterProxyModel(parent)
 {
 	setSortCaseSensitivity(Qt::CaseInsensitive);
 	setDynamicSortFilter(true);
+
+	m_logoTimer = new QTimer(this);
+	m_logoTimer->setSingleShot(true);
+	m_logoTimer->setInterval(kLogoScanDelayMs);
+	connect(m_logoTimer, &QTimer::timeout, this,
+			&ContentFilterModel::fetchLogos);
 
 	/* `count` follows whatever changes the visible rows. */
 	connect(this, &QAbstractItemModel::rowsInserted, this,
@@ -53,10 +67,21 @@ void ContentFilterModel::setFolderModel(std::shared_ptr<ModFolderModel> model)
 	/* Swap the source first, then let go of the old model: the proxy must
 	 * never point at a model that has already been destroyed. */
 	auto previous = std::move(m_folder);
+	for (const auto& connection : std::as_const(m_folderConnections)) {
+		disconnect(connection);
+	}
+	m_folderConnections.clear();
 	m_folder = std::move(model);
 	setSourceModel(m_folder.get());
 	if (m_folder) {
 		sort(0);
+		/* A file just read or just added may need its platform logo. */
+		const auto schedule = [this] { scheduleLogoFetch(); };
+		m_folderConnections = {
+			connect(m_folder.get(), &QAbstractItemModel::dataChanged, this, schedule),
+			connect(m_folder.get(), &QAbstractItemModel::rowsInserted, this,
+					schedule)};
+		scheduleLogoFetch();
 	}
 	previous.reset();
 	emit countChanged();
@@ -102,12 +127,13 @@ QVariant ContentFilterModel::data(const QModelIndex& index, int role) const
 									 : QVariant(version);
 		}
 		case ModFolderModel::IconUrlRole: {
-			/* The archive's logo, else the platform's (an https URL). */
+			/* The archive's logo, else the platform's once it is on disk. */
 			const QVariant own = QSortFilterProxyModel::data(index, role);
 			if (!own.toString().isEmpty() || !metadata) {
 				return own;
 			}
-			return metadata->get(keyFor(mod)).iconUrl;
+			return storedLogoUrl(metadata->get(keyFor(mod)).iconUrl,
+								 m_folder->iconCacheDir());
 		}
 		case KeyRole:
 			return keyFor(mod);
@@ -177,6 +203,34 @@ void ContentFilterModel::refreshRows(const QStringList& keys)
 {
 	/* A recorded name can be the shown one, which sorts and is searched. */
 	invalidate();
+	announce(keys, {});
+	/* The sidecar may name a logo now. */
+	scheduleLogoFetch();
+}
+
+void ContentFilterModel::scheduleLogoFetch()
+{
+	if (!m_logoTimer->isActive()) {
+		m_logoTimer->start();
+	}
+}
+
+void ContentFilterModel::fetchLogos()
+{
+	if (!m_folder) {
+		return;
+	}
+	auto* fetch = new ContentLogoFetch(m_folder, this);
+	connect(fetch, &ContentLogoFetch::stored, this,
+			[this](const QStringList& keys) {
+				announce(keys, {ModFolderModel::IconUrlRole});
+			});
+	fetch->start();
+}
+
+void ContentFilterModel::announce(const QStringList& keys,
+								  const QList<int>& roles)
+{
 	const QSet<QString> wanted(keys.begin(), keys.end());
 	const int rows = rowCount();
 	int first = -1;
@@ -187,94 +241,10 @@ void ContentFilterModel::refreshRows(const QStringList& keys)
 		if (hit && first < 0) {
 			first = row;
 		} else if (!hit && first >= 0) {
-			emit dataChanged(index(first, 0), index(row - 1, 0));
+			emit dataChanged(index(first, 0), index(row - 1, 0), roles);
 			first = -1;
 		}
 	}
-}
-
-QString ContentFilterModel::keyFor(const Mod& mod)
-{
-	return ModMetadataIndex::canonicalFileName(mod.filename().fileName());
-}
-
-QString ContentFilterModel::homepageFor(const Mod& mod,
-										const ModMetadataIndex* index)
-{
-	if (index) {
-		const ModMetadataIndex::Entry entry = index->get(keyFor(mod));
-		if (entry.hasPlatformOrigin()) {
-			const QString page =
-				ModPlatform::projectPageUrlById(entry.platform, entry.projectId);
-			if (!page.isEmpty()) {
-				return page;
-			}
-		}
-	}
-	return mod.homeurl();
-}
-
-QString ContentFilterModel::sourceFor(const Mod& mod,
-									  const ModMetadataIndex* index)
-{
-	if (!index) {
-		return QString();
-	}
-	const ModMetadataIndex::Entry entry = index->get(keyFor(mod));
-	if (!entry.hasPlatformOrigin()) {
-		return QString();
-	}
-	return ModPlatform::displayNameById(entry.platform);
-}
-
-QString ContentFilterModel::nameFor(const Mod& mod,
-									const ModMetadataIndex* index)
-{
-	const QString declared = mod.details().name;
-	if (!declared.isEmpty() || !index) {
-		return declared.isEmpty() ? mod.name() : declared;
-	}
-	const QString recorded = index->get(keyFor(mod)).name;
-	return recorded.isEmpty() ? mod.name() : recorded;
-}
-
-QString ContentFilterModel::versionFor(const Mod& mod,
-									   const ModMetadataIndex* index)
-{
-	const QString declared = mod.version();
-	if (!declared.isEmpty() || !index) {
-		return declared;
-	}
-	return index->get(keyFor(mod)).versionNumber;
-}
-
-QString ContentFilterModel::descriptionFor(const Mod& mod,
-										   const ModMetadataIndex* index)
-{
-	const QString declared = mod.description();
-	if (!declared.isEmpty() || !index) {
-		return declared;
-	}
-	return index->get(keyFor(mod)).description;
-}
-
-bool ContentFilterModel::matches(const Mod& mod, const QString& text,
-								 const ModMetadataIndex* index)
-{
-	if (text.isEmpty()) {
-		return true;
-	}
-	if (nameFor(mod, index).contains(text, Qt::CaseInsensitive) ||
-		descriptionFor(mod, index).contains(text, Qt::CaseInsensitive) ||
-		mod.filename().fileName().contains(text, Qt::CaseInsensitive)) {
-		return true;
-	}
-	for (const QString& author : mod.authors()) {
-		if (author.contains(text, Qt::CaseInsensitive)) {
-			return true;
-		}
-	}
-	return false;
 }
 
 bool ContentFilterModel::filterAcceptsRow(int sourceRow,

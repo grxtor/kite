@@ -76,6 +76,7 @@ set(CORE_SOURCES
     models/ManagedPackController.cpp
     models/ContentFilterModel.h
     models/ContentFilterModel.cpp
+    models/ContentRowValues.cpp
     models/ModHealthModel.h
     models/ModHealthModel.cpp
     models/ModHealthModelIds.h
@@ -869,6 +870,8 @@ set(CONTENT_DOWNLOAD_SOURCES
     modplatform/ContentDownloadTask.cpp
     modplatform/ContentInfoBackfill.h
     modplatform/ContentInfoBackfill.cpp
+    modplatform/ContentLogoFetch.h
+    modplatform/ContentLogoFetch.cpp
     modplatform/ModInstallConflictAnalyzer.h
     modplatform/ModInstallConflictAnalyzer.cpp
     modplatform/ModUpdateCheckTask.h

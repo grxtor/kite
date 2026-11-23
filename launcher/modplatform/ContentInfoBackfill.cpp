@@ -34,14 +34,6 @@ namespace
 	/* Ids per Modrinth request: they go in the URL. */
 	constexpr int kPerRequest = 100;
 
-	/* Files asked about this session, by sidecar folder and file and version:
-	 * an answer that does not fill the gap is not asked for again until the
-	 * next launch. Touched on the GUI thread only. */
-	QSet<QString>& askedThisSession()
-	{
-		static QSet<QString> asked;
-		return asked;
-	}
 
 	/* Ids go into a URL or JSON as they are; a sidecar from another tool could
 	 * hold anything, and one bad id would fail the whole batch. */
@@ -84,6 +76,16 @@ namespace
 		}
 	}
 } // namespace
+
+bool ContentInfo::firstAskThisSession(const QString& what)
+{
+	static QSet<QString> asked;
+	if (asked.contains(what)) {
+		return false;
+	}
+	asked.insert(what);
+	return true;
+}
 
 ContentInfo::Project ContentInfo::projectFrom(const QJsonObject& object)
 {
@@ -201,10 +203,9 @@ void ContentInfoBackfill::start()
 			const QString asked = m_index->indexDir() + QLatin1Char('/') +
 								  entry.fileName + QLatin1Char('@') +
 								  entry.versionId;
-			if (askedThisSession().contains(asked)) {
+			if (!ContentInfo::firstAskThisSession(asked)) {
 				continue;
 			}
-			askedThisSession().insert(asked);
 			m_wanted.append(entry);
 
 			const bool modrinth = entry.platform == kModrinth;

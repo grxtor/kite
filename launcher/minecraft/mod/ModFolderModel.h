@@ -137,6 +137,12 @@ class ModFolderModel : public QAbstractListModel
 		return m_metadata;
 	}
 
+	/// Where the logos this list shows are cached (ModIconCache::directory()).
+	QString iconCacheDir() const
+	{
+		return m_iconCacheDir;
+	}
+
   public slots:
 	void disableInteraction(bool disabled);
 

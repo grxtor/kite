@@ -52,6 +52,13 @@ QString ModIconCache::keyFor(const QFileInfo& file)
 	return QString::fromLatin1(hash.result().toHex());
 }
 
+QString ModIconCache::keyForUrl(const QString& url)
+{
+	return QString::fromLatin1(
+		QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Sha1)
+			.toHex());
+}
+
 bool ModIconCache::isValidKey(const QString& key)
 {
 	if (key.size() != kKeyLength) {
