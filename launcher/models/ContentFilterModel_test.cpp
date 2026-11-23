@@ -236,6 +236,88 @@ class ContentFilterModelTest : public QObject
 		QCOMPARE(item.modId, QStringLiteral("fabric-api"));
 	}
 
+	/* A shader pack says nothing about itself: the list shows what the
+	 * platform told the sidecar, and searches and sorts by it. A jar that
+	 * does declare itself keeps its own. */
+	void sidecarFillsWhatTheArchiveLacks()
+	{
+		const QString pack = QDir(m_dir.path()).filePath("zz_pack.zip");
+		{
+			MMCZip::ZipWriter zip(pack);
+			QVERIFY(zip.open() && zip.addFile("shaders/final.fsh", QByteArray("void main(){}")));
+			QVERIFY(zip.close());
+		}
+		ModMetadataIndex::Entry entry;
+		entry.fileName = "zz_pack.zip";
+		entry.name = "Complementary Shaders - Reimagined";
+		entry.platform = "modrinth";
+		entry.projectId = "HVnmMxH1";
+		entry.versionId = "RKfUB9VC";
+		entry.versionNumber = "r5.10";
+		entry.iconUrl = "https://cdn.modrinth.com/data/HVnmMxH1/icon.png";
+		entry.description = "Keeps the vanilla feel";
+		QVERIFY(m_folder->metadataIndex()->put(entry));
+
+		ModMetadataIndex::Entry sodium = entry;
+		sodium.fileName = "sodium.jar";
+		sodium.name = "Recorded Sodium";
+		sodium.versionNumber = "9.9";
+		sodium.description = "Recorded summary";
+		QVERIFY(m_folder->metadataIndex()->put(sodium));
+
+		QSignalSpy finished(m_folder.get(), &ModFolderModel::updateFinished);
+		QVERIFY(m_folder->update());
+		QVERIFY(finished.wait(5000));
+		QCOMPARE(m_folder->size(), size_t(4));
+
+		QCOMPARE(names(*m_model),
+				 (QStringList{"Complementary Shaders - Reimagined", "Fabric API",
+							  "Lithium", "Sodium"}));
+		const QModelIndex row = m_model->index(0, 0);
+		QCOMPARE(row.data(ModFolderModel::VersionRole).toString(),
+				 QStringLiteral("r5.10"));
+		QCOMPARE(row.data(ContentFilterModel::DescriptionRole).toString(),
+				 QStringLiteral("Keeps the vanilla feel"));
+		QCOMPARE(row.data(ModFolderModel::IconUrlRole).toString(), entry.iconUrl);
+		QCOMPARE(row.data(ContentFilterModel::FileNameRole).toString(),
+				 QStringLiteral("zz_pack.zip"));
+
+		m_model->setFilterText("reimagined");
+		QCOMPARE(names(*m_model),
+				 QStringList{"Complementary Shaders - Reimagined"});
+		m_model->setFilterText("vanilla feel");
+		QCOMPARE(m_model->count(), 1);
+
+		m_model->setFilterText("sodium");
+		const QModelIndex own = m_model->index(0, 0);
+		QCOMPARE(own.data(ModFolderModel::NameRole).toString(),
+				 QStringLiteral("Sodium"));
+		QCOMPARE(own.data(ModFolderModel::VersionRole).toString(),
+				 QStringLiteral("0.6.5"));
+		QCOMPARE(own.data(ContentFilterModel::DescriptionRole).toString(),
+				 QStringLiteral("Rendering engine"));
+		m_model->setFilterText("recorded");
+		QCOMPARE(m_model->count(), 0);
+	}
+
+	void nameFallsBackToFileName()
+	{
+		QSignalSpy finished(m_folder.get(), &ModFolderModel::updateFinished);
+		{
+			MMCZip::ZipWriter zip(QDir(m_dir.path()).filePath("Bare_Pack.zip"));
+			QVERIFY(zip.open() && zip.addFile("pack.txt", QByteArray("x")));
+			QVERIFY(zip.close());
+		}
+		QVERIFY(m_folder->update());
+		QVERIFY(finished.wait(5000));
+		m_model->setFilterText("bare");
+		QCOMPARE(names(*m_model), QStringList{"Bare_Pack"});
+		QCOMPARE(m_model->index(0, 0).data(ModFolderModel::VersionRole).toString(),
+				 QString());
+		QCOMPARE(m_model->index(0, 0).data(ModFolderModel::IconUrlRole).toString(),
+				 QString());
+	}
+
 	void formatAndFieldStrings()
 	{
 		QCOMPARE(InstanceContentController::formatFromString("HTML"),

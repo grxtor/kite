@@ -101,6 +101,11 @@ namespace
 		item.platform = entry.platform;
 		item.projectId = entry.projectId;
 		item.versionId = newVer;
+		item.versionNumber = Json::ensureString(vObj, "version_number", "");
+		/* Same project: what the sidecar knows about it stays. */
+		item.slug = entry.slug;
+		item.iconUrl = entry.iconUrl;
+		item.description = entry.description;
 		item.isDependency = entry.isDependency;
 		item.replaceExisting = true;
 		item.replacesFileName = entry.fileName;
@@ -173,6 +178,10 @@ namespace
 		item.platform = entry.platform;
 		item.projectId = entry.projectId;
 		item.versionId = newVer;
+		item.versionNumber = Json::ensureString(fObj, "displayName", "");
+		item.slug = entry.slug;
+		item.iconUrl = entry.iconUrl;
+		item.description = entry.description;
 		item.fileName = Json::ensureString(fObj, "fileName", "");
 		item.downloadUrl = Json::ensureString(fObj, "downloadUrl", "");
 		item.fileSize = Json::ensureInteger(fObj, "fileLength", 0);

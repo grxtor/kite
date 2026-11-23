@@ -240,6 +240,13 @@ QByteArray Packwiz::serialize(const ModMetadataIndex::Entry& entry)
 		root.insert_or_assign("x-kite-version-number",
 							  entry.versionNumber.toStdString());
 	}
+	if (!entry.iconUrl.isEmpty()) {
+		root.insert_or_assign("x-kite-icon-url", entry.iconUrl.toStdString());
+	}
+	if (!entry.description.isEmpty()) {
+		root.insert_or_assign("x-kite-description",
+							  entry.description.toStdString());
+	}
 	if (curseForge && !entry.downloadUrl.isEmpty()) {
 		root.insert_or_assign("x-kite-download-url",
 							  entry.downloadUrl.toStdString());
@@ -320,6 +327,8 @@ ModMetadataIndex::Entry Packwiz::parse(const QByteArray& bytes,
 	}
 
 	entry.versionNumber = nodeString(table["x-kite-version-number"]);
+	entry.iconUrl = nodeString(table["x-kite-icon-url"]);
+	entry.description = nodeString(table["x-kite-description"]);
 
 	entry.slug = nodeString(table["x-kite-slug"]);
 	if (entry.slug.isEmpty()) {

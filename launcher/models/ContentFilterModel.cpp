@@ -76,7 +76,10 @@ QHash<int, QByteArray> ContentFilterModel::roleNames() const
 
 QVariant ContentFilterModel::data(const QModelIndex& index, int role) const
 {
-	if (role < KeyRole || role > SourceRole) {
+	const bool fromSidecar = role == ModFolderModel::NameRole ||
+							 role == ModFolderModel::VersionRole ||
+							 role == ModFolderModel::IconUrlRole;
+	if (!fromSidecar && (role < KeyRole || role > SourceRole)) {
 		return QSortFilterProxyModel::data(index, role);
 	}
 	if (!m_folder || !index.isValid()) {
@@ -88,19 +91,36 @@ QVariant ContentFilterModel::data(const QModelIndex& index, int role) const
 		return QVariant();
 	}
 	const Mod& mod = m_folder->at(size_t(source.row()));
+	const ModMetadataIndex* metadata = m_folder->metadataIndex().get();
 	switch (role) {
+		case ModFolderModel::NameRole:
+			return nameFor(mod, metadata);
+		case ModFolderModel::VersionRole: {
+			/* Empty: the folder model's own placeholder ("Folder", "File"). */
+			const QString version = versionFor(mod, metadata);
+			return version.isEmpty() ? QSortFilterProxyModel::data(index, role)
+									 : QVariant(version);
+		}
+		case ModFolderModel::IconUrlRole: {
+			/* The archive's logo, else the platform's (an https URL). */
+			const QVariant own = QSortFilterProxyModel::data(index, role);
+			if (!own.toString().isEmpty() || !metadata) {
+				return own;
+			}
+			return metadata->get(keyFor(mod)).iconUrl;
+		}
 		case KeyRole:
 			return keyFor(mod);
 		case FileNameRole:
 			return mod.filename().fileName();
 		case DescriptionRole:
-			return mod.description();
+			return descriptionFor(mod, metadata);
 		case AuthorsRole:
 			return mod.authors();
 		case HomepageRole:
-			return homepageFor(mod, m_folder->metadataIndex().get());
+			return homepageFor(mod, metadata);
 		case SourceRole:
-			return sourceFor(mod, m_folder->metadataIndex().get());
+			return sourceFor(mod, metadata);
 		default:
 			break;
 	}
@@ -155,6 +175,8 @@ QStringList ContentFilterModel::visibleKeys() const
 
 void ContentFilterModel::refreshRows(const QStringList& keys)
 {
+	/* A recorded name can be the shown one, which sorts and is searched. */
+	invalidate();
 	const QSet<QString> wanted(keys.begin(), keys.end());
 	const int rows = rowCount();
 	int first = -1;
@@ -205,13 +227,45 @@ QString ContentFilterModel::sourceFor(const Mod& mod,
 	return ModPlatform::displayNameById(entry.platform);
 }
 
-bool ContentFilterModel::matches(const Mod& mod, const QString& text)
+QString ContentFilterModel::nameFor(const Mod& mod,
+									const ModMetadataIndex* index)
+{
+	const QString declared = mod.details().name;
+	if (!declared.isEmpty() || !index) {
+		return declared.isEmpty() ? mod.name() : declared;
+	}
+	const QString recorded = index->get(keyFor(mod)).name;
+	return recorded.isEmpty() ? mod.name() : recorded;
+}
+
+QString ContentFilterModel::versionFor(const Mod& mod,
+									   const ModMetadataIndex* index)
+{
+	const QString declared = mod.version();
+	if (!declared.isEmpty() || !index) {
+		return declared;
+	}
+	return index->get(keyFor(mod)).versionNumber;
+}
+
+QString ContentFilterModel::descriptionFor(const Mod& mod,
+										   const ModMetadataIndex* index)
+{
+	const QString declared = mod.description();
+	if (!declared.isEmpty() || !index) {
+		return declared;
+	}
+	return index->get(keyFor(mod)).description;
+}
+
+bool ContentFilterModel::matches(const Mod& mod, const QString& text,
+								 const ModMetadataIndex* index)
 {
 	if (text.isEmpty()) {
 		return true;
 	}
-	if (mod.name().contains(text, Qt::CaseInsensitive) ||
-		mod.description().contains(text, Qt::CaseInsensitive) ||
+	if (nameFor(mod, index).contains(text, Qt::CaseInsensitive) ||
+		descriptionFor(mod, index).contains(text, Qt::CaseInsensitive) ||
 		mod.filename().fileName().contains(text, Qt::CaseInsensitive)) {
 		return true;
 	}
@@ -230,7 +284,8 @@ bool ContentFilterModel::filterAcceptsRow(int sourceRow,
 	if (!m_folder || sourceRow < 0 || size_t(sourceRow) >= m_folder->size()) {
 		return false;
 	}
-	return matches(m_folder->at(size_t(sourceRow)), m_filterText.trimmed());
+	return matches(m_folder->at(size_t(sourceRow)), m_filterText.trimmed(),
+				   m_folder->metadataIndex().get());
 }
 
 bool ContentFilterModel::lessThan(const QModelIndex& left,
@@ -241,7 +296,9 @@ bool ContentFilterModel::lessThan(const QModelIndex& left,
 	}
 	const Mod& a = m_folder->at(size_t(left.row()));
 	const Mod& b = m_folder->at(size_t(right.row()));
-	const int byName = a.name().compare(b.name(), Qt::CaseInsensitive);
+	const ModMetadataIndex* index = m_folder->metadataIndex().get();
+	const int byName =
+		nameFor(a, index).compare(nameFor(b, index), Qt::CaseInsensitive);
 	if (byName != 0) {
 		return byName < 0;
 	}

@@ -224,6 +224,9 @@ void ContentDownloadTask::writeSidecars()
 		/* Kept: the slug identifies the same project across providers and names
 		 * a packwiz sidecar. */
 		e.slug = item.slug;
+		e.versionNumber = item.versionNumber;
+		e.iconUrl = item.iconUrl;
+		e.description = item.description;
 		e.downloadUrl = item.downloadUrl;
 		e.sha1 = item.sha1.toLower();
 		e.fileSize = item.fileSize;

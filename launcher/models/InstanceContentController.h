@@ -161,6 +161,9 @@ class InstanceContentController : public QObject
 	void onGlobalDataPacksChanged();
 	void setLastError(const QString& error);
 	void onTrashRestored(const QStringList& paths);
+	/// Asks the platforms for what @p folder's sidecars lack (ContentInfoBackfill).
+	void fillContentInfo(const QString& kind,
+						 const std::shared_ptr<ModFolderModel>& folder);
 
   private:
 	MinecraftInstance* m_instance = nullptr;

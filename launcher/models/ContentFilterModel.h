@@ -32,7 +32,10 @@ class ModMetadataIndex;
 /*
  * What ContentTab.qml lists for one content folder: the ModFolderModel sorted
  * by name and narrowed by a search (name, description, authors and file name),
- * plus per-file details as roles. Rows are addressed by `key`
+ * plus per-file details as roles. `name`, `version`, `description` and
+ * `iconUrl` are what the archive declares, else what the platform told the
+ * sidecar (a shader pack declares nothing), so the list, its search and its
+ * order all use the name that is shown. Rows are addressed by `key`
  * (the file name without ".disabled", ModMetadataIndex::canonicalFileName()),
  * which survives sorting, searching and switching a file off and on. Holds a
  * shared_ptr to its folder model, so a model the instance has replaced (the
@@ -86,8 +89,8 @@ class ContentFilterModel : public QSortFilterProxyModel
 	/// Source indexes of the rows with these keys, searched or not; unknown keys are skipped.
 	QModelIndexList sourceIndexesForKeys(const QStringList& keys) const;
 	Q_INVOKABLE QStringList visibleKeys() const;
-	/// Re-announces the rows with @p keys, for a change the folder model
-	/// cannot see (the sidecar behind `source`/`homepage`).
+	/// Re-sorts and re-announces the rows with @p keys, for a change the
+	/// folder model cannot see (the sidecar behind `source`/`homepage`/`name`).
 	void refreshRows(const QStringList& keys);
 
 	/// ModMetadataIndex::canonicalFileName() of the mod's file.
@@ -96,8 +99,15 @@ class ContentFilterModel : public QSortFilterProxyModel
 	static QString homepageFor(const Mod& mod, const ModMetadataIndex* index);
 	/// "Modrinth" / "CurseForge" / "". @p index may be null.
 	static QString sourceFor(const Mod& mod, const ModMetadataIndex* index);
-	/// Whether @p text (trimmed) appears in the name, description, authors or file name, ignoring case.
-	static bool matches(const Mod& mod, const QString& text);
+	/// The archive's name, else the one recorded in the sidecar, else the file's base name. @p index may be null.
+	static QString nameFor(const Mod& mod, const ModMetadataIndex* index);
+	/// The archive's version, else the recorded version number (never the platform's id); may be empty.
+	static QString versionFor(const Mod& mod, const ModMetadataIndex* index);
+	/// The archive's description, else the platform's summary from the sidecar.
+	static QString descriptionFor(const Mod& mod, const ModMetadataIndex* index);
+	/// Whether @p text (trimmed) appears in the shown name, description, authors or file name, ignoring case.
+	static bool matches(const Mod& mod, const QString& text,
+						const ModMetadataIndex* index = nullptr);
 
   signals:
 	void filterTextChanged();

@@ -44,6 +44,7 @@
 #include "models/ModHealthModel.h"
 #include "models/TrashUndo.h"
 #include "modplatform/BundleCatalog.h"
+#include "modplatform/ContentInfoBackfill.h"
 #include "modplatform/modrinth/ModrinthApi.h"
 #include "settings/Setting.h"
 
@@ -307,7 +308,17 @@ QObject* InstanceContentController::model(const QString& kind)
 	auto* proxy = new ContentFilterModel(this);
 	proxy->setFolderModel(folder);
 	m_models.insert(kind, proxy);
+	fillContentInfo(kind, folder);
 	return proxy;
+}
+
+void InstanceContentController::fillContentInfo(
+	const QString& kind, const std::shared_ptr<ModFolderModel>& folder)
+{
+	auto* backfill = new ContentInfoBackfill(folder->metadataIndex(), this);
+	connect(backfill, &ContentInfoBackfill::filled, this,
+			[this, kind](const QStringList& keys) { refreshRows(kind, keys); });
+	backfill->start();
 }
 
 QString InstanceContentController::dir(const QString& kind) const
@@ -496,7 +507,7 @@ InstanceContentController::exportItemFor(const Mod& mod,
 										 const ModMetadataIndex* index)
 {
 	ContentListExport::Item item;
-	item.name = mod.name();
+	item.name = ContentFilterModel::nameFor(mod, index);
 	item.modId = mod.details().mod_id;
 	item.fileName = mod.filename().fileName();
 	item.url = ContentFilterModel::homepageFor(mod, index);
@@ -706,6 +717,9 @@ void InstanceContentController::onGlobalDataPacksChanged()
 			m_watched.append(folder);
 		}
 		proxy->setFolderModel(folder);
+		if (folder) {
+			fillContentInfo(kDataPacks, folder);
+		}
 	}
 	emit kindsChanged();
 }

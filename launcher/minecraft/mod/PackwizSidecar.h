@@ -47,8 +47,8 @@
  *     mod-id = "AANobbMI"
  *     version = "..."
  *
- * What we track beyond that (transitive dependency flag, install time, size)
- * lives under `x-kite-*` keys, the format's extension namespace; foreign
+ * What we track beyond that (transitive dependency flag, install time, size,
+ * the platform's logo URL and summary) lives under `x-kite-*` keys, the format's extension namespace; foreign
  * readers skip them.
  *
  * `hash-format` is load-bearing: other tools store whatever digest the

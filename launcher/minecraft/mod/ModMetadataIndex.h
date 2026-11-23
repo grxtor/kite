@@ -65,6 +65,12 @@ class ModMetadataIndex
 		// where an id is expected.
 		QString versionNumber;
 
+		// What the platform shows for the project: its logo's address and its
+		// one-line summary. For files whose archive says nothing about itself
+		// (shader packs, most resource packs), the list shows these instead.
+		QString iconUrl;
+		QString description;
+
 		// sha1 is the SHA-1 we recorded; hashFormat/hash are the sidecar's
 		// digest verbatim. Foreign sidecars may carry SHA-512 (Modrinth is
 		// asked for it first), so sha1 stays empty for them rather than hold a
