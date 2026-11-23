@@ -21,7 +21,7 @@ export interface Release {
 // The release the download buttons serve. Flip it to the next version only once that release
 // is published (not while it is a draft): the site deploys from main, and an unpublished
 // release's files are 404s.
-const SITE_DOWNLOAD_VERSION = '1.3.0';
+const SITE_DOWNLOAD_VERSION = '1.4.0';
 
 const FILES = `https://github.com/grxtor/kite/releases/download/v${SITE_DOWNLOAD_VERSION}`;
 
