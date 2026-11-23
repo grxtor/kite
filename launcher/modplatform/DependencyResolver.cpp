@@ -69,6 +69,7 @@ namespace
 		dep.isRequired = true;
 		dep.requiredBy = requiredBy;
 		dep.versionType = Json::ensureString(vObj, "version_type", "");
+		dep.versionNumber = Json::ensureString(vObj, "version_number", "");
 
 		auto files = Json::ensureArray(vObj, "files");
 		for (auto fileRaw : files) {
@@ -587,6 +588,7 @@ void DependencyResolver::onDependencyProjectResolved(
 		dep.fileSize = Json::ensureInteger(fileObj, "fileLength", 0);
 		dep.sha1 = ModPlatform::curseForgeSha1FromFileObject(fileObj);
 		dep.name = Json::ensureString(fileObj, "displayName", dep.fileName);
+		dep.versionNumber = Json::ensureString(fileObj, "displayName", "");
 		dep.versionType = curseForgeReleaseTypeName(
 			Json::ensureInteger(fileObj, "releaseType", 0));
 

@@ -47,6 +47,9 @@ ContentInstallReview::ContentInstallReview(
 	own.item.projectId = mod.projectId;
 	own.item.versionId = mod.versionId;
 	own.item.slug = mod.slug;
+	own.item.versionNumber = mod.versionNumber;
+	own.item.iconUrl = mod.iconUrl;
+	own.item.description = mod.description;
 	own.item.browserDownloadOnly = mod.browserDownloadOnly;
 	own.provider = providerName(mod.platform);
 	own.versionType = mod.versionType;
@@ -247,6 +250,7 @@ void ContentInstallReview::applyResolution(
 		row.item.projectId = dep.projectId;
 		row.item.versionId = dep.versionId;
 		row.item.slug = dep.slug;
+		row.item.versionNumber = dep.versionNumber;
 		row.item.browserDownloadOnly = dep.browserDownloadOnly;
 		row.provider = providerName(dep.platform);
 		row.requiredBy = dep.requiredBy;

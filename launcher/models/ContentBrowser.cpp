@@ -485,6 +485,11 @@ ModPlatform::SelectedMod ContentBrowser::selectionFrom(
 	mod.loaders = loader;
 	mod.versionType = version.versionType;
 	mod.browserDownloadOnly = version.browserDownloadOnly;
+	/* CurseForge has no bare number; its display name is what the site shows. */
+	mod.versionNumber = !version.versionNumber.isEmpty() ? version.versionNumber
+														 : version.name;
+	mod.iconUrl = project.logoUrl;
+	mod.description = project.description;
 	return mod;
 }
 

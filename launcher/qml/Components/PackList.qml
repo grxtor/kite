@@ -49,6 +49,16 @@ Item {
                                                                    warningMeasure.implicitWidth) : 0
     readonly property int healthSlotWidth: showsHealth ? healthBadgeWidth + Theme.space.md : 0
     readonly property int rowPadding: Theme.space.lg
+    // Of the card's inside edge, for whatever sits in its corners.
+    readonly property real cornerRadius: card.radius - card.border.width
+    // What the card lies on: its bottom corners are trimmed back to this. Over the Gece sky, the sky's colour
+    // at about where the card ends.
+    property color matte: Theme.look === "night" ? Theme.sky.colorAt(root.skyAt) : Theme.palette.canvas
+    readonly property real skyAt: {
+        card.height
+        const win = root.Window.window
+        return win && win.height > 0 ? card.mapToItem(null, 0, card.height).y / win.height : 0.9
+    }
     readonly property int detailsIndent: rowPadding + checkSize + Theme.space.md + thumbSize + Theme.space.md
 
     property bool updatable: false
@@ -131,7 +141,7 @@ Item {
             anchors.margins: card.border.width
             height: Theme.control.heightLg
             // Rounded to sit in the card's corners (the card's clip is square).
-            radius: card.radius - card.border.width
+            radius: root.cornerRadius
             color: Theme.palette.surfaceRaised
             z: 1
 
@@ -205,7 +215,6 @@ Item {
             anchors.bottom: parent.bottom
             anchors.margins: card.border.width
             anchors.topMargin: 0
-            bottomMargin: Theme.space.xs
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.model
@@ -237,7 +246,27 @@ Item {
             anchors.margins: card.border.width
             flickable: list
             fadeTo: Theme.palette.surface
-            radius: Theme.radius.lg
+        }
+
+        // The card's clip is square, so a row's fill would poke through the rounded corners: a ring in the
+        // colour behind the card covers them (only its four corners fall inside), and the border goes back on top.
+        Rectangle {
+            readonly property int ring: card.radius + 2
+            anchors.fill: parent
+            anchors.margins: -ring
+            radius: card.radius + ring
+            color: "transparent"
+            border.width: ring
+            border.color: root.matte
+            z: 2
+        }
+        Rectangle {
+            anchors.fill: parent
+            radius: card.radius
+            color: "transparent"
+            border.width: card.border.width
+            border.color: card.border.color
+            z: 2
         }
     }
 

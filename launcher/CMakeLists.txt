@@ -867,6 +867,8 @@ set(CONTENT_DOWNLOAD_SOURCES
     modplatform/PlatformCoverFetcher.cpp
     modplatform/ContentDownloadTask.h
     modplatform/ContentDownloadTask.cpp
+    modplatform/ContentInfoBackfill.h
+    modplatform/ContentInfoBackfill.cpp
     modplatform/ModInstallConflictAnalyzer.h
     modplatform/ModInstallConflictAnalyzer.cpp
     modplatform/ModUpdateCheckTask.h
@@ -1512,6 +1514,14 @@ add_unit_test(KeyValueFilterModel
 
 add_unit_test(ContentFilterModel
     SOURCES models/ContentFilterModel_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(ContentInfoBackfill
+    SOURCES modplatform/ContentInfoBackfill_test.cpp
+    LIBS Kite_core
+    )
+add_unit_test(PackwizSidecar
+    SOURCES minecraft/mod/PackwizSidecar_test.cpp
     LIBS Kite_core
     )
 add_unit_test(ContentInstallReview

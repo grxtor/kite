@@ -42,6 +42,12 @@ namespace ModPlatform
 		QString sha1;
 		int fileSize = 0;
 		QString platform; // "curseforge" or "modrinth"
+		/* For the sidecar, so the list can show them for files that carry
+		 * no metadata of their own: the readable version ("1.2.3", never the
+		 * id), the project's logo URL and one-line summary. */
+		QString versionNumber;
+		QString iconUrl;
+		QString description;
 		QString mcVersion;
 		QString loaders;
 		/* "release" / "beta" / "alpha"; empty when the provider does not say. */
@@ -62,6 +68,7 @@ namespace ModPlatform
 		int fileSize = 0;
 		QString platform;
 		QString versionType;
+		QString versionNumber;
 		bool isRequired = true;
 		bool browserDownloadOnly = false;
 
@@ -88,6 +95,10 @@ namespace ModPlatform
 		QString projectId;
 		QString versionId;
 		QString slug;
+		/* As in SelectedMod; empty when not known at hand. */
+		QString versionNumber;
+		QString iconUrl;
+		QString description;
 
 		/* The URL is the website's, not the API's (author opted out of
 		 * third-party downloads); the download can be refused. */

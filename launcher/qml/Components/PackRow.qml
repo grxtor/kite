@@ -182,6 +182,7 @@ Item {
                     }
                 }
                 Copy {
+                    id: summaryLine
                     width: parent.width
                     visible: text.length > 0
                     text: owner.showVersionColumn ? (row.summary.length > 0 ? row.summary : row.source)
@@ -201,6 +202,8 @@ Item {
                 opacity: row.itemEnabled ? 1 : Theme.opacity.disabled + 0.2
                 Row {
                     width: parent.width
+                    // A file with no version shows its file name alone, centred in the row.
+                    visible: versionText.visible || updateBadge.visible
                     // As tall as the version alone: the badge is taller and must not push the file name down.
                     height: versionText.implicitHeight
                     spacing: Theme.space.sm
@@ -307,7 +310,9 @@ Item {
 
         Copy {
             Layout.fillWidth: true
-            text: row.model.description || qsTr("No description.")
+            // Not when the row's own line already says all of it.
+            visible: text.length > 0 && (text !== summaryLine.text || summaryLine.truncated)
+            text: row.model.description || ""
             wrapMode: Text.Wrap
             maximumLineCount: 6
             elide: Text.ElideRight
